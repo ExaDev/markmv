@@ -1,3 +1,13 @@
+## [1.3.0](https://github.com/ExaDev/markmv/compare/v1.2.1...v1.3.0) (2025-06-10)
+
+### Features
+
+* add homepage and bugs URL fields to package.json ([37fdf87](https://github.com/ExaDev/markmv/commit/37fdf871307c7d34a3e7c61db362aaffffbdf256))
+
+### Documentation
+
+* update badges and repository URLs to reflect ExaDev organisation ([0cccfd4](https://github.com/ExaDev/markmv/commit/0cccfd428717f0c32af4173bc80283ef10d8e402))
+
 ## [1.2.1](https://github.com/ExaDev/markmv/compare/v1.2.0...v1.2.1) (2025-06-10)
 
 ### Bug Fixes
