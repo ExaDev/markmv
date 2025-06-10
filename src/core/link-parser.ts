@@ -126,8 +126,8 @@ export class LinkParser {
         absolute: isAbsolute(href),
       };
 
-      // Resolve internal links
-      if (linkType === 'internal') {
+      // Resolve internal links and image paths
+      if (linkType === 'internal' || linkType === 'image') {
         link.resolvedPath = this.resolveInternalPath(href, dirname(absolutePath));
       }
 
@@ -197,7 +197,7 @@ export class LinkParser {
   private extractDependencies(links: MarkdownLink[]): string[] {
     return links
       .filter(
-        (link) => (link.type === 'internal' || link.type === 'claude-import') && link.resolvedPath
+        (link) => (link.type === 'internal' || link.type === 'claude-import' || link.type === 'image') && link.resolvedPath
       )
       .map((link) => link.resolvedPath!)
       .filter((path, index, arr) => arr.indexOf(path) === index); // Remove duplicates
