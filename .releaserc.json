@@ -56,10 +56,33 @@
         "assets": [
           {
             "path": "dist/*.tgz",
-            "label": "Distribution tarball"
+            "label": "NPM Distribution Package",
+            "name": "markmv-${nextRelease.version}.tgz"
+          },
+          {
+            "path": "CHANGELOG.md",
+            "label": "Release Changelog"
+          },
+          {
+            "path": "README.md",
+            "label": "Project Documentation"
+          },
+          {
+            "path": "coverage/coverage-summary.json",
+            "label": "Test Coverage Summary"
+          },
+          {
+            "path": "coverage/lcov.info",
+            "label": "Coverage Report (LCOV)"
           }
         ],
-        "successComment": "🎉 This ${issue.pull_request ? 'PR is included' : 'issue has been resolved'} in version ${nextRelease.version} 🎉\n\nThe release is available on:\n- [GitHub Releases](${releases.filter(release => release.name === 'GitHub')[0].url})\n- [npm package (@latest dist-tag)](https://www.npmjs.com/package/markmv)\n\nYour **[semantic-release](https://github.com/semantic-release/semantic-release)** bot 📦🚀"
+        "successComment": "🎉 This ${issue.pull_request ? 'PR is included' : 'issue has been resolved'} in version ${nextRelease.version} 🎉\n\nThe release is available on:\n- **[GitHub Releases](${releases.filter(release => release.name === 'GitHub')[0].url})** - includes coverage reports\n- **[npm package (@latest dist-tag)](https://www.npmjs.com/package/markmv)**\n\n## Installation\n```bash\nnpm install -g markmv@${nextRelease.version}\n```\n\n## Test Coverage\nThis release includes comprehensive test coverage reports. View coverage details in the release assets.\n\nYour **[semantic-release](https://github.com/semantic-release/semantic-release)** bot 📦🚀",
+        "failComment": "❌ This release failed. Check the [build logs](${env.GITHUB_SERVER_URL}/${env.GITHUB_REPOSITORY}/actions/runs/${env.GITHUB_RUN_ID}) for details.",
+        "failTitle": "🚨 Release failed for ${nextRelease.version}",
+        "addReleases": "bottom",
+        "draftRelease": false,
+        "prerelease": false,
+        "releasedLabels": ["released<%= nextRelease.channel ? \` on @\${nextRelease.channel}\` : \"\" %>"]
       }
     ],
     [

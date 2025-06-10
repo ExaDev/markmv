@@ -68,8 +68,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
-      - name: Run tests
-        run: npm run test:run
+      - name: Run tests with coverage
+        run: npm run test:coverage
+        
+      - name: Upload coverage reports to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./coverage/lcov.info
+        continue-on-error: true
+        
+      - name: Generate coverage badge data
+        run: |
+          # Extract coverage percentage from coverage report
+          if [ -f coverage/coverage-summary.json ]; then
+            COVERAGE=$(node -p "Math.round(JSON.parse(require('fs').readFileSync('coverage/coverage-summary.json', 'utf8')).total.lines.pct)")
+            echo "Coverage: ${COVERAGE}%"
+            echo "COVERAGE_PERCENT=${COVERAGE}" >> $GITHUB_ENV
+          else
+            echo "COVERAGE_PERCENT=unknown" >> $GITHUB_ENV
+          fi
         
       - name: Build
         run: npm run build
