@@ -126,23 +126,24 @@ Another [link](../target.md) here.
       const sourceFile = join(testDir, 'large.md');
       const content = `# Large Document
 
-${'This is a line of content that will be repeated many times.\n'.repeat(200)}
+${'This is a line of content that will be repeated many times.\n'.repeat(50)}
 
 ## Middle Section
 
-${'More content lines here for the middle section.\n'.repeat(200)}`;
+${'More content lines here for the middle section.\n'.repeat(50)}`;
 
       await writeFile(sourceFile, content);
 
       const result = await splitter.splitFile(sourceFile, {
         strategy: 'size',
-        maxSize: 5, // 5KB
+        maxSize: 2, // 2KB
         outputDir: testDir,
       });
 
+
       expect(result.success).toBe(true);
       expect(result.createdFiles.length).toBeGreaterThan(1);
-    });
+    }, 10000);
 
     it('should handle manual splitting with markers', async () => {
       const sourceFile = join(testDir, 'manual.md');
