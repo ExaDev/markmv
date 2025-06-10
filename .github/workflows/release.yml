@@ -97,6 +97,28 @@ jobs:
           ls -la dist/
           node dist/cli.js --version || echo "CLI not yet ready"
         
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0.17.8
+        with:
+          path: ./
+          format: spdx-json
+          output-file: sbom.spdx.json
+          upload-artifact: true
+          upload-release-assets: false
+        
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v1
+        id: attest-build
+        with:
+          subject-path: 'dist/**/*'
+        
+      - name: Attest SBOM
+        uses: actions/attest-sbom@v1
+        id: attest-sbom
+        with:
+          subject-path: 'dist/**/*'
+          sbom-path: 'sbom.spdx.json'
+        
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
