@@ -4,12 +4,12 @@ import type {
   OperationChange,
   OperationResult,
 } from '../types/operations.js';
-import type { LinkRefactorResult } from './link-refactorer.js';
 import { FileUtils } from '../utils/file-utils.js';
 import { PathUtils } from '../utils/path-utils.js';
 import { TransactionManager } from '../utils/transaction-manager.js';
 import { DependencyGraph } from './dependency-graph.js';
 import { LinkParser } from './link-parser.js';
+import type { LinkRefactorResult } from './link-refactorer.js';
 import { LinkRefactorer } from './link-refactorer.js';
 import { LinkValidator } from './link-validator.js';
 

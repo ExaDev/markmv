@@ -3,7 +3,7 @@ import { join, relative, resolve } from 'node:path';
 import { glob } from 'glob';
 import { FileUtils } from '../utils/file-utils';
 
-// This is a test comment with trailing spaces    
+// This is a test comment with trailing spaces
 
 export interface IndexOptions {
   type: 'links' | 'import' | 'embed' | 'hybrid';
