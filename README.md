@@ -1,5 +1,9 @@
 # markmv ✏️
 
+```bash
+npx markmv --help
+```
+
 [![CI](https://github.com/ExaDev/markmv/actions/workflows/ci.yml/badge.svg)](https://github.com/ExaDev/markmv/actions/workflows/ci.yml)
 [![npm version](https://badge.fury.io/js/markmv.svg)](https://badge.fury.io/js/markmv)
 [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
