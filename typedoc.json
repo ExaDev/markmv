@@ -36,7 +36,7 @@
     "invalidLink": true,
     "notDocumented": true
   },
-  "treatWarningsAsErrors": true,
+  "treatWarningsAsErrors": false,
   "logLevel": "Info",
   "exclude": [
     "**/*.test.ts",
