@@ -1,3 +1,11 @@
+/**
+ * Represents a section of content extracted during a split operation.
+ *
+ * Contains all information needed to create a separate file from a portion
+ * of the original markdown content.
+ *
+ * @category Strategies
+ */
 export interface SplitSection {
   /** Section title/identifier */
   title: string;
@@ -13,6 +21,14 @@ export interface SplitSection {
   filename: string;
 }
 
+/**
+ * Result of a split operation containing extracted sections and metadata.
+ *
+ * Provides information about all sections that were created and any
+ * content that remains in the original file.
+ *
+ * @category Strategies
+ */
 export interface SplitResult {
   /** Array of sections to create as separate files */
   sections: SplitSection[];
@@ -24,6 +40,14 @@ export interface SplitResult {
   warnings: string[];
 }
 
+/**
+ * Configuration options for split strategy operations.
+ *
+ * Controls various aspects of the splitting process including output location,
+ * splitting criteria, and filename generation patterns.
+ *
+ * @category Strategies
+ */
 export interface SplitStrategyOptions {
   /** Output directory for split files */
   outputDir?: string;
@@ -41,6 +65,26 @@ export interface SplitStrategyOptions {
   filenamePattern?: string;
 }
 
+/**
+ * Abstract base class for all split strategies.
+ *
+ * Provides common functionality for splitting markdown files including
+ * filename generation, frontmatter handling, and content sanitization.
+ * Concrete strategies implement specific splitting algorithms.
+ *
+ * @category Strategies
+ *
+ * @example Implementing a custom split strategy
+ * ```typescript
+ * class CustomSplitStrategy extends BaseSplitStrategy {
+ *   async split(content: string, originalFilename: string): Promise<SplitResult> {
+ *     // Custom splitting logic
+ *     const sections = this.customSplit(content);
+ *     return { sections, remainingContent: undefined, errors: [], warnings: [] };
+ *   }
+ * }
+ * ```
+ */
 export abstract class BaseSplitStrategy {
   protected options: SplitStrategyOptions;
 
@@ -124,6 +168,27 @@ export abstract class BaseSplitStrategy {
   }
 }
 
+/**
+ * Split strategy that divides content based on markdown headers.
+ *
+ * Splits the file at headers of a specified level, creating a new file
+ * for each section. This is ideal for documents with clear hierarchical
+ * structure where each major section can stand alone.
+ *
+ * @category Strategies
+ *
+ * @example Header-based splitting
+ * ```typescript
+ * const strategy = new HeaderBasedSplitStrategy({
+ *   headerLevel: 2,  // Split on ## headers
+ *   outputDir: './sections/',
+ *   filenamePattern: '{title}'
+ * });
+ * 
+ * const result = await strategy.split(content, 'document.md');
+ * console.log(`Created ${result.sections.length} sections`);
+ * ```
+ */
 export class HeaderBasedSplitStrategy extends BaseSplitStrategy {
   async split(content: string, originalFilename: string): Promise<SplitResult> {
     const { frontmatter, content: mainContent } = this.extractFrontmatter(content);
@@ -204,6 +269,27 @@ export class HeaderBasedSplitStrategy extends BaseSplitStrategy {
   }
 }
 
+/**
+ * Split strategy that divides content based on file size limits.
+ *
+ * Creates new files when the current section exceeds a specified size limit.
+ * This ensures that no generated file becomes too large, which is useful
+ * for performance or platform constraints.
+ *
+ * @category Strategies
+ *
+ * @example Size-based splitting
+ * ```typescript
+ * const strategy = new SizeBasedSplitStrategy({
+ *   maxSize: 50,  // 50KB per file
+ *   outputDir: './chunks/',
+ *   filenamePattern: '{original}-part-{index}'
+ * });
+ * 
+ * const result = await strategy.split(content, 'large-document.md');
+ * console.log(`Split into ${result.sections.length} files under 50KB each`);
+ * ```
+ */
 export class SizeBasedSplitStrategy extends BaseSplitStrategy {
   async split(content: string, originalFilename: string): Promise<SplitResult> {
     const { frontmatter, content: mainContent } = this.extractFrontmatter(content);
@@ -338,6 +424,27 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
   }
 }
 
+/**
+ * Split strategy that divides content at manually specified markers.
+ *
+ * Looks for specific comment markers or text patterns in the content to
+ * determine split points. This provides precise control over where splits
+ * occur, regardless of content structure.
+ *
+ * @category Strategies
+ *
+ * @example Manual marker splitting
+ * ```typescript
+ * const strategy = new ManualSplitStrategy({
+ *   splitMarkers: ['<!-- split -->', '---BREAK---'],
+ *   outputDir: './parts/',
+ *   filenamePattern: '{title}'
+ * });
+ * 
+ * // Content with markers like: <!-- split -->
+ * const result = await strategy.split(content, 'document.md');
+ * ```
+ */
 export class ManualSplitStrategy extends BaseSplitStrategy {
   async split(content: string, originalFilename: string): Promise<SplitResult> {
     const { frontmatter, content: mainContent } = this.extractFrontmatter(content);
@@ -422,6 +529,27 @@ export class ManualSplitStrategy extends BaseSplitStrategy {
   }
 }
 
+/**
+ * Split strategy that divides content at specific line numbers.
+ *
+ * Allows precise splitting at user-specified line numbers. This is useful
+ * when you know exactly where you want to split a document, perhaps based
+ * on analysis or external requirements.
+ *
+ * @category Strategies
+ *
+ * @example Line-based splitting
+ * ```typescript
+ * const strategy = new LineBasedSplitStrategy({
+ *   splitLines: [100, 250, 400],  // Split at these line numbers
+ *   outputDir: './sections/',
+ *   filenamePattern: 'section-{index}'
+ * });
+ * 
+ * const result = await strategy.split(content, 'document.md');
+ * console.log(`Split at lines: ${strategy.options.splitLines?.join(', ')}`);
+ * ```
+ */
 export class LineBasedSplitStrategy extends BaseSplitStrategy {
   async split(content: string, originalFilename: string): Promise<SplitResult> {
     const { frontmatter, content: mainContent } = this.extractFrontmatter(content);

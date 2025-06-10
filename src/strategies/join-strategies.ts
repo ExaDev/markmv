@@ -1,3 +1,11 @@
+/**
+ * Represents a section of content to be joined from a markdown file.
+ *
+ * Contains all necessary information for intelligent joining including content,
+ * metadata, dependencies, and ordering information.
+ *
+ * @category Strategies
+ */
 export interface JoinSection {
   /** Original file path */
   filePath: string;
@@ -13,6 +21,14 @@ export interface JoinSection {
   order: number;
 }
 
+/**
+ * Result of a join operation containing combined content and metadata.
+ *
+ * Provides comprehensive information about the joining process including
+ * success status, conflicts, and any issues encountered.
+ *
+ * @category Strategies
+ */
 export interface JoinResult {
   /** Whether the join was successful */
   success: boolean;
@@ -32,6 +48,14 @@ export interface JoinResult {
   deduplicatedLinks: string[];
 }
 
+/**
+ * Represents a conflict detected during the join operation.
+ *
+ * Conflicts can arise from duplicate headers, frontmatter merging issues,
+ * or content overlaps that require resolution.
+ *
+ * @category Strategies
+ */
 export interface JoinConflict {
   /** Type of conflict */
   type: 'frontmatter-merge' | 'duplicate-headers' | 'link-collision' | 'content-overlap';
@@ -45,6 +69,14 @@ export interface JoinConflict {
   lines?: number[];
 }
 
+/**
+ * Configuration options for join strategy operations.
+ *
+ * Controls various aspects of the joining process including ordering,
+ * content formatting, and conflict resolution behavior.
+ *
+ * @category Strategies
+ */
 export interface JoinStrategyOptions {
   /** Output file path */
   outputPath?: string;
@@ -64,6 +96,26 @@ export interface JoinStrategyOptions {
   preserveStructure?: boolean;
 }
 
+/**
+ * Abstract base class for all join strategies.
+ *
+ * Provides common functionality for joining markdown files including
+ * frontmatter merging, conflict detection, and link deduplication.
+ * Concrete strategies implement specific ordering algorithms.
+ *
+ * @category Strategies
+ *
+ * @example Implementing a custom join strategy
+ * ```typescript
+ * class CustomJoinStrategy extends BaseJoinStrategy {
+ *   async join(sections: JoinSection[]): Promise<JoinResult> {
+ *     // Custom ordering logic
+ *     const orderedSections = this.customSort(sections);
+ *     return this.buildResult(orderedSections);
+ *   }
+ * }
+ * ```
+ */
 export abstract class BaseJoinStrategy {
   protected options: JoinStrategyOptions;
 
@@ -332,6 +384,28 @@ export abstract class BaseJoinStrategy {
   }
 }
 
+/**
+ * Join strategy that orders content based on dependency relationships.
+ *
+ * Uses topological sorting to arrange sections so that files are ordered
+ * according to their cross-reference dependencies. Files with no dependencies
+ * come first, followed by files that depend on them.
+ *
+ * @category Strategies
+ *
+ * @example Dependency-based joining
+ * ```typescript
+ * const strategy = new DependencyOrderJoinStrategy({
+ *   mergeFrontmatter: true,
+ *   deduplicateLinks: true
+ * });
+ * 
+ * const result = await strategy.join(sections);
+ * if (result.success) {
+ *   console.log(`Joined ${result.sourceFiles.length} files in dependency order`);
+ * }
+ * ```
+ */
 export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
   async join(sections: JoinSection[]): Promise<JoinResult> {
     const errors: string[] = [];
@@ -464,6 +538,25 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
   }
 }
 
+/**
+ * Join strategy that orders content alphabetically by title or filename.
+ *
+ * Provides simple, predictable ordering by sorting files alphabetically
+ * based on their extracted title (from frontmatter or first header) or
+ * falling back to the filename if no title is available.
+ *
+ * @category Strategies
+ *
+ * @example Alphabetical joining
+ * ```typescript
+ * const strategy = new AlphabeticalJoinStrategy({
+ *   separator: '\n\n<!-- Next Section -->\n\n'
+ * });
+ * 
+ * const result = await strategy.join(sections);
+ * console.log(`Files ordered: ${result.sourceFiles.join(', ')}`);
+ * ```
+ */
 export class AlphabeticalJoinStrategy extends BaseJoinStrategy {
   async join(sections: JoinSection[]): Promise<JoinResult> {
     const errors: string[] = [];
@@ -533,6 +626,26 @@ export class AlphabeticalJoinStrategy extends BaseJoinStrategy {
   }
 }
 
+/**
+ * Join strategy that uses a custom manual ordering with alphabetical fallback.
+ *
+ * Allows explicit specification of file order through the customOrder option.
+ * Files not specified in the custom order are appended in alphabetical order.
+ * This provides maximum control over the final document structure.
+ *
+ * @category Strategies
+ *
+ * @example Manual ordering with fallback
+ * ```typescript
+ * const strategy = new ManualOrderJoinStrategy({
+ *   customOrder: ['intro.md', 'main-content.md', 'conclusion.md'],
+ *   mergeFrontmatter: true
+ * });
+ * 
+ * // Files will be ordered as specified, with any others alphabetically
+ * const result = await strategy.join(sections);
+ * ```
+ */
 export class ManualOrderJoinStrategy extends BaseJoinStrategy {
   async join(sections: JoinSection[]): Promise<JoinResult> {
     const errors: string[] = [];
@@ -621,6 +734,26 @@ export class ManualOrderJoinStrategy extends BaseJoinStrategy {
   }
 }
 
+/**
+ * Join strategy that orders content chronologically by date.
+ *
+ * Extracts dates from frontmatter (date, created, modified fields) or attempts
+ * to parse dates from filenames. Orders content from oldest to newest, providing
+ * a timeline-based organization for content.
+ *
+ * @category Strategies
+ *
+ * @example Chronological joining
+ * ```typescript
+ * const strategy = new ChronologicalJoinStrategy({
+ *   separator: '\n\n---\n\n'
+ * });
+ * 
+ * // Files will be ordered by date (oldest first)
+ * const result = await strategy.join(sections);
+ * console.log(`Chronological order: ${result.sourceFiles.join(' → ')}`);
+ * ```
+ */
 export class ChronologicalJoinStrategy extends BaseJoinStrategy {
   async join(sections: JoinSection[]): Promise<JoinResult> {
     const errors: string[] = [];

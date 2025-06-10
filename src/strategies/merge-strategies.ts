@@ -1,3 +1,11 @@
+/**
+ * Represents a section of content to be merged into a target file.
+ *
+ * Contains content information, positioning strategy, and metadata
+ * for intelligent merging operations.
+ *
+ * @category Strategies
+ */
 export interface MergeSection {
   /** Content of the section */
   content: string;
@@ -13,6 +21,14 @@ export interface MergeSection {
   transclusionRef?: string;
 }
 
+/**
+ * Result of a merge operation containing combined content and metadata.
+ *
+ * Provides comprehensive information about the merging process including
+ * conflicts, transclusions, and any issues encountered.
+ *
+ * @category Strategies
+ */
 export interface MergeResult {
   /** Whether the merge was successful */
   success: boolean;
@@ -32,6 +48,14 @@ export interface MergeResult {
   transclusions: string[];
 }
 
+/**
+ * Represents a conflict detected during the merge operation.
+ *
+ * Conflicts can arise from header collisions, content overlaps,
+ * or transclusion loops that require resolution.
+ *
+ * @category Strategies
+ */
 export interface MergeConflict {
   /** Type of conflict */
   type: 'header-collision' | 'content-overlap' | 'transclusion-loop' | 'frontmatter-conflict';
@@ -47,6 +71,14 @@ export interface MergeConflict {
   autoResolved: boolean;
 }
 
+/**
+ * Configuration options for merge strategy operations.
+ *
+ * Controls various aspects of the merging process including conflict resolution,
+ * transclusion handling, and content formatting.
+ *
+ * @category Strategies
+ */
 export interface MergeStrategyOptions {
   /** Strategy for handling conflicts */
   conflictResolution?: 'auto' | 'interactive' | 'manual';
@@ -64,6 +96,26 @@ export interface MergeStrategyOptions {
   maxTransclusionDepth?: number;
 }
 
+/**
+ * Abstract base class for all merge strategies.
+ *
+ * Provides common functionality for merging markdown files including
+ * transclusion handling, conflict detection, and frontmatter management.
+ * Concrete strategies implement specific merging approaches.
+ *
+ * @category Strategies
+ *
+ * @example Implementing a custom merge strategy
+ * ```typescript
+ * class CustomMergeStrategy extends BaseMergeStrategy {
+ *   async merge(targetContent: string, sourceContent: string): Promise<MergeResult> {
+ *     // Custom merging logic
+ *     const conflicts = this.detectConflicts(targetContent, sourceContent);
+ *     return this.buildResult(mergedContent, conflicts);
+ *   }
+ * }
+ * ```
+ */
 export abstract class BaseMergeStrategy {
   protected options: MergeStrategyOptions;
 
@@ -278,6 +330,26 @@ export abstract class BaseMergeStrategy {
   }
 }
 
+/**
+ * Merge strategy that appends source content to the end of target content.
+ *
+ * Simply adds the source file content to the end of the target file,
+ * with optional separator and frontmatter merging. This is the simplest
+ * merge strategy and works well for accumulating content.
+ *
+ * @category Strategies
+ *
+ * @example Append merge with transclusions
+ * ```typescript
+ * const strategy = new AppendMergeStrategy({
+ *   createTransclusions: true,
+ *   separator: '\n\n---\n\n'
+ * });
+ * 
+ * const result = await strategy.merge(targetContent, sourceContent, 'target.md', 'source.md');
+ * console.log(`Appended content, ${result.transclusions.length} transclusions created`);
+ * ```
+ */
 export class AppendMergeStrategy extends BaseMergeStrategy {
   async merge(
     targetContent: string,
@@ -378,6 +450,26 @@ export class AppendMergeStrategy extends BaseMergeStrategy {
   }
 }
 
+/**
+ * Merge strategy that prepends source content to the beginning of target content.
+ *
+ * Adds the source file content to the beginning of the target file,
+ * after any frontmatter. This is useful when you want new content
+ * to appear first in the document.
+ *
+ * @category Strategies
+ *
+ * @example Prepend merge with custom separator
+ * ```typescript
+ * const strategy = new PrependMergeStrategy({
+ *   separator: '\n\n<!-- New Content Above -->\n\n',
+ *   mergeFrontmatter: true
+ * });
+ * 
+ * const result = await strategy.merge(targetContent, sourceContent, 'target.md', 'source.md');
+ * console.log('Source content prepended to target');
+ * ```
+ */
 export class PrependMergeStrategy extends BaseMergeStrategy {
   async merge(
     targetContent: string,
@@ -450,6 +542,27 @@ export class PrependMergeStrategy extends BaseMergeStrategy {
   }
 }
 
+/**
+ * Merge strategy that provides intelligent conflict detection and resolution.
+ *
+ * Analyzes both files to detect potential conflicts such as duplicate headers,
+ * overlapping content, or structural issues. Provides automatic resolution
+ * where possible and clear reporting of conflicts that need manual attention.
+ *
+ * @category Strategies
+ *
+ * @example Interactive merge with conflict resolution
+ * ```typescript
+ * const strategy = new InteractiveMergeStrategy({
+ *   conflictResolution: 'auto',
+ *   createTransclusions: true,
+ *   preserveStructure: true
+ * });
+ * 
+ * const result = await strategy.merge(targetContent, sourceContent, 'target.md', 'source.md');
+ * console.log(`Merge completed with ${result.conflicts.length} conflicts detected`);
+ * ```
+ */
 export class InteractiveMergeStrategy extends BaseMergeStrategy {
   async merge(
     targetContent: string,
