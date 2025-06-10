@@ -47,11 +47,9 @@ jobs:
       - name: Build
         run: npm run build
         
-      - name: Upload coverage reports
+      - name: Generate coverage report
         if: matrix.node-version == '20.x'
-        uses: codecov/codecov-action@v4
-        with:
-          fail_ci_if_error: true
+        run: npm run test:coverage
           
       # Generate SBOM and build attestation only for Node.js 20.x
       - name: Generate SBOM
