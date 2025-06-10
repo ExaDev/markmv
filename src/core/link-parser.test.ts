@@ -39,9 +39,10 @@ And here's an [external link](https://example.com).
         href: './other.md',
         text: 'regular link',
         line: 3,
-        column: 12,
+        column: 11,
         absolute: false,
         resolvedPath: join(testDir, 'other.md'),
+        referenceId: undefined,
       });
 
       const externalLink = result.links.find((l) => l.href === 'https://example.com');
@@ -50,8 +51,9 @@ And here's an [external link](https://example.com).
         href: 'https://example.com',
         text: 'external link',
         line: 4,
-        column: 17,
+        column: 15,
         absolute: false,
+        referenceId: undefined,
       });
     });
 
@@ -89,10 +91,11 @@ Some text with @inline-import.md in the middle.
         type: 'claude-import',
         href: '/absolute/path/file.md',
         text: '@/absolute/path/file.md',
-        line: 4,
-        column: 1,
+        line: 3,
+        column: 18,
         absolute: true,
         resolvedPath: '/absolute/path/file.md',
+        referenceId: undefined,
       });
 
       const homeImport = claudeImports.find((l) => l.href === '~/home/file.md');
@@ -124,6 +127,7 @@ Some text with @inline-import.md in the middle.
         line: 3,
         column: 1,
         absolute: false,
+        referenceId: undefined,
         resolvedPath: join(testDir, 'image.png'),
       });
     });
