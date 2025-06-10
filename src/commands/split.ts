@@ -1,16 +1,81 @@
 import { ContentSplitter } from '../core/content-splitter.js';
 import type { SplitOperationOptions } from '../types/operations.js';
 
+/**
+ * Configuration options for split command operations.
+ *
+ * Controls how a single markdown file is divided into multiple files,
+ * including strategy selection, output location, and preview mode.
+ *
+ * @category Commands
+ */
 export interface SplitOptions {
+  /** Strategy for splitting the file content */
   strategy?: 'headers' | 'size' | 'manual' | 'lines';
+  /** Output directory for the split files */
   output?: string;
+  /** Perform a dry run without making actual changes */
   dryRun?: boolean;
+  /** Header level to use for header-based splitting (1-6) */
   headerLevel?: number;
+  /** Maximum size in KB for size-based splitting */
   maxSize?: number;
-  splitLines?: string; // Comma-separated line numbers
+  /** Comma-separated line numbers for line-based splitting */
+  splitLines?: string;
+  /** Enable verbose output with detailed progress information */
   verbose?: boolean;
 }
 
+/**
+ * Execute the split command to divide a single markdown file into multiple files.
+ *
+ * This command provides intelligent splitting of markdown files using various
+ * strategies and automatic link refactoring. It supports:
+ * - Header-based splitting (by heading levels)
+ * - Size-based splitting (by file size limits)
+ * - Line-based splitting (at specific line numbers)
+ * - Manual splitting (with user guidance)
+ * - Automatic link updates and integrity validation
+ * - Custom output directory specification
+ *
+ * The split operation automatically updates all cross-references to reflect the
+ * new file structure and maintains link integrity throughout the project.
+ *
+ * @param source - Path to the markdown file to split
+ * @param options - Configuration options for the split operation
+ *
+ * @throws Will exit the process with code 1 if the operation fails
+ *
+ * @category Commands
+ *
+ * @example Header-based splitting
+ * ```typescript
+ * await splitCommand('large-document.md', {
+ *   strategy: 'headers',
+ *   headerLevel: 2,
+ *   output: './sections/'
+ * });
+ * ```
+ *
+ * @example Size-based splitting with dry run
+ * ```typescript
+ * await splitCommand('big-file.md', {
+ *   strategy: 'size',
+ *   maxSize: 50, // 50KB per file
+ *   dryRun: true,
+ *   verbose: true
+ * });
+ * ```
+ *
+ * @example Line-based splitting
+ * ```typescript
+ * await splitCommand('content.md', {
+ *   strategy: 'lines',
+ *   splitLines: '100,250,400',
+ *   output: './parts/'
+ * });
+ * ```
+ */
 export async function splitCommand(source: string, options: SplitOptions): Promise<void> {
   const splitter = new ContentSplitter();
 

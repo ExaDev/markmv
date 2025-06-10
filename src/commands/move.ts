@@ -5,13 +5,36 @@ import { FileOperations } from '../core/file-operations.js';
 import type { MoveOperationOptions, OperationResult } from '../types/operations.js';
 import { PathUtils } from '../utils/path-utils.js';
 
+/**
+ * Configuration options for move command operations.
+ *
+ * Controls the behavior of the move command including preview mode and output verbosity.
+ *
+ * @category Commands
+ */
 export interface MoveOptions {
+  /** Perform a dry run without making actual changes */
   dryRun?: boolean;
+  /** Enable verbose output with detailed progress information */
   verbose?: boolean;
 }
 
 /**
- * Expand source patterns (which may include globs) to actual markdown file paths
+ * Expand source patterns (which may include globs) to actual markdown file paths.
+ *
+ * This function processes an array of file patterns that may include:
+ * - Direct file paths
+ * - Glob patterns (*.md, **/*.md, etc.)
+ * - Mixed combinations of both
+ *
+ * It validates that all resolved files are markdown files and provides verbose
+ * output when requested.
+ *
+ * @param patterns - Array of file patterns or direct paths to expand
+ * @param verbose - Whether to output detailed expansion information
+ * @returns Promise resolving to an array of absolute markdown file paths
+ *
+ * @internal
  */
 async function expandSourcePatterns(patterns: string[], verbose = false): Promise<string[]> {
   const allFiles = new Set<string>();
@@ -69,6 +92,44 @@ async function expandSourcePatterns(patterns: string[], verbose = false): Promis
   return Array.from(allFiles).sort();
 }
 
+/**
+ * Execute the move command to relocate markdown files with intelligent link refactoring.
+ *
+ * This is the main entry point for the move command functionality. It supports:
+ * - Single file moves to a new location
+ * - Multiple file moves to a target directory
+ * - Glob pattern expansion for source files
+ * - Dry run mode for previewing changes
+ * - Comprehensive link integrity validation and updates
+ *
+ * The command automatically discovers and updates all cross-references to moved files
+ * throughout the project, ensuring that no links are broken during the move operation.
+ *
+ * @param sources - Array containing source patterns and destination (last element)
+ * @param options - Configuration options for the move operation
+ *
+ * @throws Will exit the process with code 1 if the operation fails
+ *
+ * @category Commands
+ *
+ * @example Single file move
+ * ```typescript
+ * await moveCommand(['docs/old.md', 'docs/new.md'], { verbose: true });
+ * ```
+ *
+ * @example Multiple files to directory
+ * ```typescript
+ * await moveCommand(['*.md', 'archive/'], { dryRun: true });
+ * ```
+ *
+ * @example Glob pattern with dry run
+ * ```typescript
+ * await moveCommand(['docs/**\/*.md', 'backup/'], {
+ *   dryRun: true,
+ *   verbose: true
+ * });
+ * ```
+ */
 export async function moveCommand(sources: string[], options: MoveOptions): Promise<void> {
   if (sources.length < 2) {
     console.error('❌ Error: At least 2 arguments required (source(s) and destination)');

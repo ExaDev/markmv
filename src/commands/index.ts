@@ -5,34 +5,84 @@ import { FileUtils } from '../utils/file-utils';
 
 // Test PR creation with trailing spaces on main branch
 
+/**
+ * Configuration options for index generation operations.
+ *
+ * Controls how documentation indexes are created, including content type,
+ * organization strategy, and output locations.
+ *
+ * @category Commands
+ */
 export interface IndexOptions {
+  /** Type of index content to generate */
   type: 'links' | 'import' | 'embed' | 'hybrid';
+  /** Strategy for organizing files in the index */
   strategy: 'directory' | 'metadata' | 'manual';
+  /** Where to place generated index files */
   location: 'all' | 'root' | 'branch' | 'existing';
+  /** Name for generated index files */
   name: string;
+  /** Style for embedded content (Obsidian or standard markdown) */
   embedStyle: 'obsidian' | 'markdown';
+  /** Path to custom template file */
   template?: string;
+  /** Perform a dry run without making actual changes */
   dryRun: boolean;
+  /** Enable verbose output with detailed progress information */
   verbose: boolean;
 }
 
+/**
+ * Metadata extracted from markdown file frontmatter.
+ *
+ * Used for organizing and presenting files in generated indexes.
+ *
+ * @category Commands
+ */
 export interface FileMetadata {
+  /** Document title from frontmatter */
   title?: string;
+  /** Document description from frontmatter */
   description?: string;
+  /** Category for grouping documents */
   category?: string;
+  /** Numeric order for sorting within groups */
   order?: number;
+  /** Tags associated with the document */
   tags?: string[];
 }
 
+/**
+ * Represents a markdown file that can be included in an index.
+ *
+ * Contains file path information, extracted metadata, and content
+ * for use in index generation.
+ *
+ * @category Commands
+ */
 export interface IndexableFile {
+  /** Absolute path to the file */
   path: string;
+  /** Path relative to the index generation root */
   relativePath: string;
+  /** Extracted frontmatter metadata */
   metadata: FileMetadata;
+  /** Full file content */
   content: string;
 }
 
 /**
- * CLI wrapper for index generation
+ * Execute the index command to generate documentation indexes.
+ *
+ * This is the main entry point for the index command functionality.
+ * It processes CLI options and delegates to the core index generation logic.
+ *
+ * @param directory - Target directory for index generation (defaults to current directory)
+ * @param cliOptions - Raw CLI options object
+ *
+ * @category Commands
+ *
+ * @internal This is a CLI wrapper - use generateIndexFiles for programmatic access
  */
 export async function indexCommand(directory: string | undefined, cliOptions: any): Promise<void> {
   const options: IndexOptions = {

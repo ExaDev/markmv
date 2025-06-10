@@ -6,13 +6,73 @@ import {
   PrependMergeStrategy,
 } from '../strategies/merge-strategies.js';
 
+/**
+ * Configuration options for merge command operations.
+ *
+ * Controls how content from one markdown file is merged into another,
+ * including strategy selection, transclusion creation, and preview mode.
+ *
+ * @category Commands
+ */
 export interface MergeOptions {
+  /** Strategy for merging content into the target file */
   strategy?: 'append' | 'prepend' | 'interactive';
+  /** Perform a dry run without making actual changes */
   dryRun?: boolean;
+  /** Enable verbose output with detailed progress information */
   verbose?: boolean;
+  /** Create Obsidian-style transclusions instead of copying content */
   createTransclusions?: boolean;
 }
 
+/**
+ * Execute the merge command to combine content from one markdown file into another.
+ *
+ * This command provides intelligent merging of markdown content using various
+ * strategies and conflict resolution. It supports:
+ * - Append strategy (add content to the end)
+ * - Prepend strategy (add content to the beginning)
+ * - Interactive strategy (resolve conflicts interactively)
+ * - Obsidian transclusion creation for reference-based merging
+ * - Frontmatter merging and conflict resolution
+ * - Dry run mode for previewing changes
+ *
+ * The merge operation intelligently handles frontmatter, content sections,
+ * and provides comprehensive conflict detection and resolution.
+ *
+ * @param source - Path to the source markdown file to merge from
+ * @param target - Path to the target markdown file to merge into
+ * @param options - Configuration options for the merge operation
+ *
+ * @throws Will exit the process with code 1 if the operation fails
+ *
+ * @category Commands
+ *
+ * @example Append merge with transclusions
+ * ```typescript
+ * await mergeCommand('notes/section.md', 'docs/handbook.md', {
+ *   strategy: 'append',
+ *   createTransclusions: true,
+ *   verbose: true
+ * });
+ * ```
+ *
+ * @example Interactive merge with dry run
+ * ```typescript
+ * await mergeCommand('draft.md', 'final.md', {
+ *   strategy: 'interactive',
+ *   dryRun: true,
+ *   verbose: true
+ * });
+ * ```
+ *
+ * @example Prepend merge
+ * ```typescript
+ * await mergeCommand('intro.md', 'document.md', {
+ *   strategy: 'prepend'
+ * });
+ * ```
+ */
 export async function mergeCommand(
   source: string,
   target: string,
