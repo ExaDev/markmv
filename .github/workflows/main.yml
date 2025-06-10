@@ -1,0 +1,423 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+concurrency:
+  group: "ci-cd-${{ github.ref }}"
+  cancel-in-progress: false
+
+jobs:
+  # Quality Gates - All quality checks must pass before anything else
+  quality:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x, 22.x]
+      fail-fast: false
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          
+      - name: Cache TypeScript build
+        uses: actions/cache@v4
+        with:
+          path: |
+            dist/
+            tsconfig.tsbuildinfo
+          key: ${{ runner.os }}-tsc-${{ matrix.node-version }}-${{ hashFiles('src/**/*.ts', 'tsconfig.json') }}
+          restore-keys: |
+            ${{ runner.os }}-tsc-${{ matrix.node-version }}-
+            ${{ runner.os }}-tsc-
+            
+      - name: Cache test results
+        uses: actions/cache@v4
+        with:
+          path: |
+            coverage/
+            .vitest/
+          key: ${{ runner.os }}-test-${{ matrix.node-version }}-${{ hashFiles('src/**/*.ts', 'src/**/*.test.ts', 'vitest.config.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-test-${{ matrix.node-version }}-
+            ${{ runner.os }}-test-
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      # Auto-fix linting issues (only on push to main)
+      - name: Check for fixable linting issues
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: check-fixes
+        run: |
+          git status --porcelain > before.txt
+          npm run lint:fix || true
+          npm run format || true
+          git status --porcelain > after.txt
+          
+          if ! diff before.txt after.txt >/dev/null; then
+            echo "fixes-available=true" >> $GITHUB_OUTPUT
+            git checkout -- .
+          else
+            echo "fixes-available=false" >> $GITHUB_OUTPUT
+          fi
+          
+          rm -f before.txt after.txt
+          
+      - name: Auto-fix linting issues
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.check-fixes.outputs.fixes-available == 'true'
+        run: |
+          npm run lint:fix
+          npm run format
+          
+      - name: Commit auto-fixes
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.check-fixes.outputs.fixes-available == 'true'
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .
+          
+          if ! git diff --cached --quiet; then
+            git commit -m "style: auto-fix linting issues"
+            git push
+          fi
+        
+      # Quality checks (must pass for all further steps)
+      - name: Run lint (fast fail)
+        run: npm run lint
+        
+      - name: Check formatting (fast fail)
+        run: npm run format:check
+        
+      - name: Run type check (fast fail)
+        run: npm run typecheck
+        
+      - name: Run security audit
+        run: npm audit --audit-level=high
+        continue-on-error: true
+        
+      - name: Build
+        run: npm run build
+        
+      - name: Run tests
+        run: npm run test:run
+        
+      # Coverage generation (only on Node 20.x to avoid duplication)
+      - name: Generate test coverage
+        if: matrix.node-version == '20.x'
+        run: |
+          npm run test:coverage | tee coverage-output.txt
+          
+          # Extract overall coverage percentage
+          COVERAGE=$(grep "All files" coverage-output.txt | awk '{print $4}' | head -1)
+          echo "TEST_COVERAGE=$COVERAGE" >> $GITHUB_ENV
+          echo "📊 Test coverage: $COVERAGE%" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Generate documentation coverage
+        if: matrix.node-version == '20.x'
+        run: |
+          # Generate regular report for summary
+          npm run docs:coverage
+          
+          # Generate JSON report for programmatic access
+          OUTPUT_JSON=true npm run docs:coverage-json 2>/dev/null > docs-coverage.json
+          
+          # Extract coverage percentage
+          DOCS_COVERAGE=$(jq -r '.overallCoverage' docs-coverage.json)
+          echo "DOCS_COVERAGE=$DOCS_COVERAGE" >> $GITHUB_ENV
+          echo "📚 Documentation coverage: $DOCS_COVERAGE%" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Upload coverage artifacts
+        if: matrix.node-version == '20.x'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            coverage/
+            coverage-output.txt
+            docs-coverage.json
+          retention-days: 30
+
+  # Update Coverage Badges - Only runs after successful quality checks on main
+  update-badges:
+    needs: quality
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+          
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-reports
+        continue-on-error: true
+        
+      - name: Extract coverage data
+        id: coverage
+        run: |
+          # Test coverage
+          if [ -f "coverage-output.txt" ]; then
+            TEST_COV=$(grep "All files" coverage-output.txt | awk '{print $4}' | head -1)
+          else
+            TEST_COV="unknown"
+          fi
+          
+          # Documentation coverage
+          if [ -f "docs-coverage.json" ]; then
+            DOCS_COV=$(jq -r '.overallCoverage' docs-coverage.json)
+          else
+            DOCS_COV="unknown"
+          fi
+          
+          echo "test-coverage=$TEST_COV" >> $GITHUB_OUTPUT
+          echo "docs-coverage=$DOCS_COV" >> $GITHUB_OUTPUT
+          
+      - name: Determine badge colors
+        id: colors
+        run: |
+          # Test coverage color
+          TEST_COV="${{ steps.coverage.outputs.test-coverage }}"
+          if [ "$TEST_COV" = "unknown" ]; then
+            TEST_COLOR="lightgrey"
+          else
+            TEST_NUM=$(echo "$TEST_COV" | sed 's/%//' | cut -d'.' -f1)
+            if [ "$TEST_NUM" -ge 90 ]; then
+              TEST_COLOR="brightgreen"
+            elif [ "$TEST_NUM" -ge 80 ]; then
+              TEST_COLOR="green"
+            elif [ "$TEST_NUM" -ge 70 ]; then
+              TEST_COLOR="yellow"
+            elif [ "$TEST_NUM" -ge 60 ]; then
+              TEST_COLOR="orange"
+            else
+              TEST_COLOR="red"
+            fi
+          fi
+          
+          # Documentation coverage color
+          DOCS_COV="${{ steps.coverage.outputs.docs-coverage }}"
+          if [ "$DOCS_COV" = "unknown" ]; then
+            DOCS_COLOR="lightgrey"
+          else
+            DOCS_NUM=$(echo "$DOCS_COV" | sed 's/%//' | cut -d'.' -f1)
+            if [ "$DOCS_NUM" -ge 95 ]; then
+              DOCS_COLOR="brightgreen"
+            elif [ "$DOCS_NUM" -ge 90 ]; then
+              DOCS_COLOR="green"
+            elif [ "$DOCS_NUM" -ge 80 ]; then
+              DOCS_COLOR="yellow"
+            elif [ "$DOCS_NUM" -ge 70 ]; then
+              DOCS_COLOR="orange"
+            else
+              DOCS_COLOR="red"
+            fi
+          fi
+          
+          echo "test-color=$TEST_COLOR" >> $GITHUB_OUTPUT
+          echo "docs-color=$DOCS_COLOR" >> $GITHUB_OUTPUT
+          
+      - name: Update README badges
+        run: |
+          COMMIT_HASH=$(git rev-parse HEAD)
+          
+          TEST_COV="${{ steps.coverage.outputs.test-coverage }}"
+          DOCS_COV="${{ steps.coverage.outputs.docs-coverage }}"
+          TEST_COLOR="${{ steps.colors.outputs.test-color }}"
+          DOCS_COLOR="${{ steps.colors.outputs.docs-color }}"
+          
+          # URL encode percentage signs
+          TEST_COV_ENCODED=$(echo "$TEST_COV" | sed 's/%/%25/g')
+          DOCS_COV_ENCODED=$(echo "$DOCS_COV" | sed 's/%/%25/g')
+          
+          # Create new badge URLs
+          TEST_BADGE="[![Test Coverage](https://img.shields.io/badge/coverage-${TEST_COV_ENCODED}-${TEST_COLOR}.svg)](https://github.com/ExaDev/markmv/commit/${COMMIT_HASH})"
+          DOCS_BADGE="[![Documentation Coverage](https://img.shields.io/badge/docs-${DOCS_COV_ENCODED}-${DOCS_COLOR}.svg)](https://github.com/ExaDev/markmv/commit/${COMMIT_HASH})"
+          
+          # Update README.md
+          awk -v test_badge="$TEST_BADGE" -v docs_badge="$DOCS_BADGE" '
+          /\[\!\[Test Coverage\]/ { print test_badge; next }
+          /\[\!\[Documentation Coverage\]/ { print docs_badge; next }
+          { print }
+          ' README.md > README.md.tmp && mv README.md.tmp README.md
+          
+      - name: Commit badge updates
+        run: |
+          if ! git diff --quiet README.md; then
+            git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            
+            git add README.md
+            git commit -m "ci: update coverage badges
+
+Test Coverage: ${{ steps.coverage.outputs.test-coverage }}
+Documentation Coverage: ${{ steps.coverage.outputs.docs-coverage }}
+
+Auto-generated by CI pipeline"
+            
+            git push
+            echo "✅ Coverage badges updated"
+          else
+            echo "ℹ️ No badge updates needed"
+          fi
+
+  # Documentation Deployment - Only after successful quality checks and badge updates
+  documentation:
+    needs: [quality, update-badges]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Get the latest commit (including badge updates)
+          ref: main
+          fetch-depth: 1
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build project
+        run: npm run build
+        
+      - name: Show current badge status
+        run: |
+          echo "## 📊 Documentation Build Status" >> $GITHUB_STEP_SUMMARY
+          echo "Including the following badges in documentation:" >> $GITHUB_STEP_SUMMARY
+          grep -E "(Test Coverage|Documentation Coverage)" README.md >> $GITHUB_STEP_SUMMARY || echo "No coverage badges found" >> $GITHUB_STEP_SUMMARY
+        
+      - name: Generate documentation
+        run: npm run docs
+        
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v4
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./docs
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # Release - Only after ALL quality checks pass and docs are updated
+  release:
+    needs: [quality, update-badges, documentation]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+      attestations: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          # Get the latest commit (including badge updates)
+          ref: main
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-reports
+        continue-on-error: true
+        
+      - name: Upload coverage to Coveralls
+        if: hashFiles('coverage/lcov.info') != ''
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./coverage/lcov.info
+        continue-on-error: true
+        
+      - name: Build
+        run: npm run build
+        
+      - name: Verify build output
+        run: |
+          ls -la dist/
+          node dist/cli.js --version || echo "CLI not yet ready"
+        
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0.17.8
+        with:
+          path: ./
+          format: spdx-json
+          output-file: sbom.spdx.json
+          upload-artifact: true
+          upload-release-assets: false
+        
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v1
+        id: attest-build
+        with:
+          subject-path: 'dist/**/*'
+        
+      - name: Attest SBOM
+        uses: actions/attest-sbom@v1
+        id: attest-sbom
+        with:
+          subject-path: 'dist/**/*'
+          sbom-path: 'sbom.spdx.json'
+        
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm run release
