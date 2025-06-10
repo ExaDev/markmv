@@ -1,10 +1,10 @@
 # markmv ✏️
 
-[![CI](https://github.com/joe-mearman/markmv/actions/workflows/ci.yml/badge.svg)](https://github.com/joe-mearman/markmv/actions/workflows/ci.yml)
+[![CI](https://github.com/ExaDev/markmv/actions/workflows/ci.yml/badge.svg)](https://github.com/ExaDev/markmv/actions/workflows/ci.yml)
 [![npm version](https://badge.fury.io/js/markmv.svg)](https://badge.fury.io/js/markmv)
-[![Coverage Status](https://coveralls.io/repos/github/joe-mearman/markmv/badge.svg?branch=main)](https://coveralls.io/github/joe-mearman/markmv?branch=main)
-[![Test Coverage](https://img.shields.io/badge/coverage-check%20releases-brightgreen)](https://github.com/joe-mearman/markmv/releases/latest)
 [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
 
 > A powerful TypeScript CLI tool for intelligent markdown file operations with automatic link refactoring
 
@@ -380,10 +380,10 @@ This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAl
 
 <div align="center">
 
-**[🏠 Homepage](https://github.com/joe-mearman/markmv)** •
+**[🏠 Homepage](https://github.com/ExaDev/markmv)** •
 **[📖 Documentation](docs/)** •
-**[🐛 Report Bug](https://github.com/joe-mearman/markmv/issues)** •
-**[✨ Request Feature](https://github.com/joe-mearman/markmv/issues)**
+**[🐛 Report Bug](https://github.com/ExaDev/markmv/issues)** •
+**[✨ Request Feature](https://github.com/ExaDev/markmv/issues)**
 
 Made with ❤️ by [Joe Mearman](https://github.com/joe-mearman)
 
