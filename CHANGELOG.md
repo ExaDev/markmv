@@ -1,3 +1,18 @@
+## [1.4.0](https://github.com/ExaDev/markmv/compare/v1.3.2...v1.4.0) (2025-06-10)
+
+### Features
+
+* implement index command for markdown documentation organization ([331c6a4](https://github.com/ExaDev/markmv/commit/331c6a44f870ec774df8e10aa4b25a96432a60d3))
+
+### Bug Fixes
+
+* correct terminology and add embed support for index command ([a08ae99](https://github.com/ExaDev/markmv/commit/a08ae99cd4fdfc9c25e9f3483cbefe88b0973c4b))
+* resolve linting issues in index command implementation ([3bfffe6](https://github.com/ExaDev/markmv/commit/3bfffe6f93716b00a59d30418275f661ce28be48))
+
+### Tests
+
+* add comprehensive tests for index command functionality ([d52a125](https://github.com/ExaDev/markmv/commit/d52a125b04794ab386ecee2acd37b75334862aa6))
+
 ## [1.3.2](https://github.com/ExaDev/markmv/compare/v1.3.1...v1.3.2) (2025-06-10)
 
 ### Documentation
