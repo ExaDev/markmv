@@ -33,19 +33,20 @@ jobs:
       - name: Check for fixable linting issues
         id: check-fixes
         run: |
-          # Run npm run check and capture if it makes any changes
+          # Run lint and format checks to see if fixes are available
           git status --porcelain > before.txt
-          npm run check || true
+          npm run lint:fix || true
+          npm run format || true
           git status --porcelain > after.txt
           
           # Check if there are any differences
           if ! diff before.txt after.txt >/dev/null; then
-            echo "Linting fixes are available"
+            echo "Linting/formatting fixes are available"
             echo "fixes-available=true" >> $GITHUB_OUTPUT
             # Reset changes for the actual fix step
             git checkout -- .
           else
-            echo "No linting fixes needed"
+            echo "No linting/formatting fixes needed"
             echo "fixes-available=false" >> $GITHUB_OUTPUT
           fi
           
@@ -59,7 +60,9 @@ jobs:
           
       - name: Auto-fix linting issues
         if: steps.check-fixes.outputs.fixes-available == 'true'
-        run: npm run check
+        run: |
+          npm run lint:fix
+          npm run format
           
       - name: Commit auto-fixes to source branch
         if: steps.check-fixes.outputs.fixes-available == 'true' && github.ref != 'refs/heads/main'
@@ -96,9 +99,9 @@ jobs:
           Automatically generated PR to fix linting issues detected in CI.
           
           **Fixed issues:**
-          - Removed trailing whitespace
-          - Fixed import ordering
-          - Applied Biome formatting rules
+          - ESLint rule violations
+          - Prettier formatting issues
+          - Import ordering and style
           
           This PR was created automatically because linting issues were detected on the protected main branch.
           EOF
@@ -159,6 +162,9 @@ jobs:
         
       - name: Run lint (fast fail)
         run: npm run lint
+        
+      - name: Check formatting (fast fail)
+        run: npm run format:check
         
       - name: Run type check (fast fail)
         run: npm run typecheck
