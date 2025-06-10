@@ -1,3 +1,14 @@
+## [1.3.1](https://github.com/ExaDev/markmv/compare/v1.3.0...v1.3.1) (2025-06-10)
+
+### Documentation
+
+* fix README inaccuracies and align with actual implementation ([b80c8cf](https://github.com/ExaDev/markmv/commit/b80c8cf7eeda3e7249ba8a6b3d082ed5d2771cd0))
+* update installation and usage examples to promote npx usage ([85b121c](https://github.com/ExaDev/markmv/commit/85b121c866c6c5209ac9a9aeb96b806c0307abfb))
+
+### Performance Improvements
+
+* improve CI caching and build performance ([98bd414](https://github.com/ExaDev/markmv/commit/98bd414ebcdca5bc3153dbd4fe5b0e7b393bf175))
+
 ## [1.3.0](https://github.com/ExaDev/markmv/compare/v1.2.1...v1.3.0) (2025-06-10)
 
 ### Features
