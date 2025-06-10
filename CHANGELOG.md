@@ -1,3 +1,9 @@
+## [1.3.2](https://github.com/ExaDev/markmv/compare/v1.3.1...v1.3.2) (2025-06-10)
+
+### Documentation
+
+* add npx command at top of README for immediate visibility ([5fc562d](https://github.com/ExaDev/markmv/commit/5fc562d56c943ee175e2430ecf8eb4833a3567f4))
+
 ## [1.3.1](https://github.com/ExaDev/markmv/compare/v1.3.0...v1.3.1) (2025-06-10)
 
 ### Documentation
