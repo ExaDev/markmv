@@ -1,3 +1,13 @@
+## [1.8.1](https://github.com/ExaDev/markmv/compare/v1.8.0...v1.8.1) (2025-06-10)
+
+### Bug Fixes
+
+* remove invalid comment from typedoc.json ([43c90c0](https://github.com/ExaDev/markmv/commit/43c90c0f36180f7a969529c84b8693fa7072196a))
+
+### Documentation
+
+* trigger documentation rebuild for v1.8.0 ([f96358a](https://github.com/ExaDev/markmv/commit/f96358adccf51f2d070650bb3f351d13098b7e84))
+
 ## [1.8.0](https://github.com/ExaDev/markmv/compare/v1.7.0...v1.8.0) (2025-06-10)
 
 ### Features
