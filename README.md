@@ -71,7 +71,7 @@ markmv split large-guide.md --strategy headers --level 2
 # Join multiple files
 markmv join intro.md setup.md usage.md --output complete-guide.md
 
-# Interactive merge with conflict resolution  
+# Interactive merge with conflict resolution
 markmv merge draft.md master.md --interactive
 ```
 
@@ -85,8 +85,8 @@ Move individual files or entire directories while preserving link integrity:
 # Move a single file
 markmv move source.md destination.md
 
-# Move with custom output directory
-markmv move source.md --output docs/
+# Preview move operation
+markmv move source.md destination.md --dry-run
 
 # Move entire directory
 markmv move old-docs/ new-docs/
@@ -96,10 +96,8 @@ markmv move source.md destination.md --dry-run
 ```
 
 **Options:**
-- `--output, -o`: Specify output directory
-- `--dry-run`: Preview changes without executing
+- `--dry-run, -d`: Preview changes without executing
 - `--verbose, -v`: Detailed operation logging
-- `--force`: Overwrite existing files
 
 ### Splitting Files
 
@@ -120,13 +118,16 @@ markmv split manual-file.md --strategy manual
 - **Headers**: Split at specified header levels (h1-h6)
 - **Size**: Split when sections exceed size limits
 - **Manual**: Split at custom markers (`<!-- split -->` or `---split---`)
+- **Lines**: Split after specified number of lines
 
 **Options:**
-- `--strategy`: Splitting strategy (headers, size, manual)
-- `--level`: Header level for header strategy (1-6)
-- `--max-size`: Maximum section size for size strategy
+- `--strategy`: Splitting strategy (headers, size, manual, lines)
+- `--header-level, -l`: Header level for header strategy (1-6)
+- `--max-size, -m`: Maximum section size for size strategy
+- `--split-lines`: Number of lines per section for lines strategy
 - `--output, -o`: Output directory for split files
-- `--preserve-structure`: Keep original file with frontmatter
+- `--dry-run, -d`: Preview changes without executing
+- `--verbose, -v`: Detailed operation logging
 
 ### Joining Files
 
@@ -145,10 +146,9 @@ markmv join docs/*.md --output guide.md --resolve-conflicts
 
 **Options:**
 - `--output, -o`: Output file path (required)
-- `--adjust-headers`: Automatically adjust header levels
-- `--resolve-conflicts`: Enable conflict resolution
-- `--separator`: Custom section separator
-- `--table-of-contents`: Generate table of contents
+- `--order-strategy`: Strategy for ordering joined content
+- `--dry-run, -d`: Preview changes without executing
+- `--verbose, -v`: Detailed operation logging
 
 ### Merging Files
 
@@ -165,37 +165,17 @@ markmv merge source.md target.md --strategy append
 markmv merge source.md target.md --interactive
 
 # Merge with Obsidian transclusion
-markmv merge source.md target.md --transclusion
+markmv merge source.md target.md --create-transclusions
 ```
 
 **Merge Strategies:**
 - **append**: Add source content to end of target
 - **prepend**: Add source content to beginning of target
-- **section**: Merge specific sections only
 - **interactive**: Manual conflict resolution
 
 ## ⚙️ Configuration
 
-Create a `.markmvrc.json` file in your project root:
-
-```json
-{
-  "linkStyle": "relative",
-  "preserveFormatting": true,
-  "autoBackup": true,
-  "verboseOutput": false,
-  "splitOptions": {
-    "defaultStrategy": "headers",
-    "headerLevel": 2,
-    "maxSize": "100KB"
-  },
-  "joinOptions": {
-    "adjustHeaders": true,
-    "generateToc": false,
-    "separator": "\\n\\n---\\n\\n"
-  }
-}
-```
+Configuration options can be passed via command line flags. See each command's `--help` for available options.
 
 ## 🧪 Examples
 
@@ -249,10 +229,10 @@ markmv join kb/deploy/*.md --output guides/deployment.md
 
 ```bash
 # Clone repository
-git clone https://github.com/joe-mearman/markmv.git
+git clone https://github.com/ExaDev/markmv.git
 cd markmv
 
-# Install dependencies  
+# Install dependencies
 npm install
 
 # Build project
@@ -294,12 +274,12 @@ src/
 ├── cli.ts                 # CLI entry point
 ├── commands/              # Command implementations
 │   ├── move.ts           # Move command
-│   ├── split.ts          # Split command  
+│   ├── split.ts          # Split command
 │   ├── join.ts           # Join command
 │   └── merge.ts          # Merge command
 ├── core/                 # Core functionality
 │   ├── content-splitter.ts
-│   ├── file-joiner.ts
+│   ├── content-joiner.ts
 │   ├── link-parser.ts
 │   └── link-refactorer.ts
 ├── utils/                # Utility functions
@@ -307,7 +287,7 @@ src/
 │   ├── path-utils.ts
 │   └── transaction-manager.ts
 └── types/                # TypeScript definitions
-    ├── commands.ts
+    ├── config.ts
     ├── links.ts
     └── operations.ts
 ```
@@ -331,11 +311,7 @@ This project uses [semantic versioning](https://semver.org/) with [conventional 
 
 ## 📚 Documentation
 
-- [API Documentation](docs/api.md)
-- [Configuration Guide](docs/configuration.md)
-- [Advanced Usage](docs/advanced.md)
-- [Troubleshooting](docs/troubleshooting.md)
-- [Migration Guide](docs/migration.md)
+For detailed documentation and examples, see the sections below or visit the [GitHub repository](https://github.com/ExaDev/markmv).
 
 ## 🐛 Troubleshooting
 
@@ -381,10 +357,10 @@ This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAl
 <div align="center">
 
 **[🏠 Homepage](https://github.com/ExaDev/markmv)** •
-**[📖 Documentation](docs/)** •
+**[📖 Documentation](https://github.com/ExaDev/markmv#readme)** •
 **[🐛 Report Bug](https://github.com/ExaDev/markmv/issues)** •
 **[✨ Request Feature](https://github.com/ExaDev/markmv/issues)**
 
-Made with ❤️ by [Joe Mearman](https://github.com/joe-mearman)
+Made by [Joseph Mearman](https://github.com/Mmearman)
 
 </div>
