@@ -37,13 +37,24 @@ jobs:
           git status --porcelain > before.txt
           npm run check || true
           git status --porcelain > after.txt
+          
+          # Check if there are any differences
           if ! diff before.txt after.txt >/dev/null; then
+            echo "Linting fixes are available"
             echo "fixes-available=true" >> $GITHUB_OUTPUT
             # Reset changes for the actual fix step
             git checkout -- .
           else
+            echo "No linting fixes needed"
             echo "fixes-available=false" >> $GITHUB_OUTPUT
           fi
+          
+          # Debug output
+          echo "Before:"
+          cat before.txt
+          echo "After:"
+          cat after.txt
+          
           rm -f before.txt after.txt
           
       - name: Auto-fix linting issues
@@ -68,6 +79,13 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git checkout -b "$BRANCH_NAME"
           git add .
+          
+          # Check if there are actually changes to commit
+          if git diff --cached --quiet; then
+            echo "No changes to commit after running lint fixes"
+            exit 0
+          fi
+          
           git commit -m "style: auto-fix linting issues"
           git push origin "$BRANCH_NAME"
           
