@@ -1,3 +1,16 @@
+## [1.13.0](https://github.com/ExaDev/markmv/compare/v1.12.1...v1.13.0) (2025-06-10)
+
+### Features
+
+* add graceful handling for branch protection in badge updates ([e680eac](https://github.com/ExaDev/markmv/commit/e680eacdc6c119b1185cdaf7b71cb941357cff26))
+* consolidate CI/CD into single workflow pipeline ([8bd3930](https://github.com/ExaDev/markmv/commit/8bd39308e67f70f4a162b25741310ab89a4658b4))
+* reorder pipeline to build docs after version updates ([2b8b107](https://github.com/ExaDev/markmv/commit/2b8b10793a15827ac333a0d6be04cd48f344c3ac))
+
+### Bug Fixes
+
+* resolve documentation coverage JSON parsing in CI ([7d3eb66](https://github.com/ExaDev/markmv/commit/7d3eb66a93ebf7f96a33cd915d8bfd27b3943173))
+* resolve YAML syntax error in consolidated workflow ([d467976](https://github.com/ExaDev/markmv/commit/d467976feb566eca4ad38f46dda2f97c74e966dd))
+
 ## [1.12.1](https://github.com/ExaDev/markmv/compare/v1.12.0...v1.12.1) (2025-06-10)
 
 ### Bug Fixes
