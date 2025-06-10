@@ -28,7 +28,10 @@ program
   .argument('<source>', 'Source markdown file to split')
   .option('-s, --strategy <strategy>', 'Split strategy: headers|size|manual', 'headers')
   .option('-o, --output <dir>', 'Output directory for split files')
+  .option('-l, --header-level <level>', 'Header level to split on (1-6)', '2')
+  .option('-m, --max-size <kb>', 'Maximum size per section in KB', '100')
   .option('-d, --dry-run', 'Show what would be changed without making changes')
+  .option('-v, --verbose', 'Show detailed output')
   .action(splitCommand);
 
 program
