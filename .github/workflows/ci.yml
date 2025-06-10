@@ -32,13 +32,18 @@ jobs:
       - name: Check for fixable linting issues
         id: check-fixes
         run: |
-          # Check if biome can fix any issues by using dry-run equivalent
-          if npx @biomejs/biome check src/ --write --staged --dry 2>/dev/null; then
-            echo "fixes-available=false" >> $GITHUB_OUTPUT
-          else
-            # If dry-run fails, there are likely fixable issues
+          # Run npm run check and capture if it makes any changes
+          git status --porcelain > before.txt
+          npm run check || true
+          git status --porcelain > after.txt
+          if ! diff before.txt after.txt >/dev/null; then
             echo "fixes-available=true" >> $GITHUB_OUTPUT
+            # Reset changes for the actual fix step
+            git checkout -- .
+          else
+            echo "fixes-available=false" >> $GITHUB_OUTPUT
           fi
+          rm -f before.txt after.txt
           
       - name: Auto-fix linting issues
         if: steps.check-fixes.outputs.fixes-available == 'true'
