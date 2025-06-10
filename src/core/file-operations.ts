@@ -16,36 +16,38 @@ import { LinkValidator } from './link-validator.js';
 /**
  * Core class for performing markdown file operations with intelligent link refactoring.
  *
- * This class provides the main functionality for moving, splitting, joining, and merging
- * markdown files while maintaining the integrity of cross-references and links.
+ * This class provides the main functionality for moving, splitting, joining, and merging markdown
+ * files while maintaining the integrity of cross-references and links.
  *
  * @category Core
  *
- * @example Basic file move
- * ```typescript
- * const fileOps = new FileOperations();
- * const result = await fileOps.moveFile('old.md', 'new.md');
+ * @example
+ *   Basic file move
+ *   ```typescript
+ *   const fileOps = new FileOperations();
+ *   const result = await fileOps.moveFile('old.md', 'new.md');
  *
- * if (result.success) {
+ *   if (result.success) {
  *   console.log(`Successfully moved file and updated ${result.modifiedFiles.length} references`);
- * } else {
+ *   } else {
  *   console.error('Move failed:', result.errors);
- * }
- * ```
+ *   }
+ *   ```
  *
- * @example Dry run with verbose output
- * ```typescript
- * const fileOps = new FileOperations();
- * const result = await fileOps.moveFile('docs/guide.md', 'tutorials/guide.md', {
+ * @example
+ *   Dry run with verbose output
+ *   ```typescript
+ *   const fileOps = new FileOperations();
+ *   const result = await fileOps.moveFile('docs/guide.md', 'tutorials/guide.md', {
  *   dryRun: true,
  *   verbose: true
- * });
+ *   });
  *
- * // Preview changes without actually modifying files
- * result.changes.forEach(change => {
+ *   // Preview changes without actually modifying files
+ *   result.changes.forEach(change => {
  *   console.log(`${change.type}: ${change.filePath} - ${change.description}`);
- * });
- * ```
+ *   });
+ *   ```
  */
 export class FileOperations {
   private linkParser = new LinkParser();
@@ -56,32 +58,34 @@ export class FileOperations {
    * Move a markdown file and update all links that reference it.
    *
    * This method performs an intelligent move operation that:
+   *
    * 1. Validates the source and destination paths
    * 2. Discovers all files that link to the source file
    * 3. Updates all cross-references to maintain link integrity
    * 4. Optionally performs a dry run to preview changes
    *
+   * @example
+   *   ```typescript
+   *   const fileOps = new FileOperations();
+   *
+   *   // Simple move
+   *   await fileOps.moveFile('docs/old.md', 'docs/new.md');
+   *
+   *   // Move to directory (filename preserved)
+   *   await fileOps.moveFile('guide.md', './docs/');
+   *
+   *   // Dry run with verbose output
+   *   const result = await fileOps.moveFile('api.md', 'reference/api.md', {
+   *     dryRun: true,
+   *     verbose: true
+   *   });
+   *   ```;
+   *
    * @param sourcePath - The current path of the markdown file to move
    * @param destinationPath - The target path (can be a directory)
    * @param options - Configuration options for the move operation
+   *
    * @returns Promise resolving to detailed operation results
-   *
-   * @example
-   * ```typescript
-   * const fileOps = new FileOperations();
-   *
-   * // Simple move
-   * await fileOps.moveFile('docs/old.md', 'docs/new.md');
-   *
-   * // Move to directory (filename preserved)
-   * await fileOps.moveFile('guide.md', './docs/');
-   *
-   * // Dry run with verbose output
-   * const result = await fileOps.moveFile('api.md', 'reference/api.md', {
-   *   dryRun: true,
-   *   verbose: true
-   * });
-   * ```
    */
   async moveFile(
     sourcePath: string,
@@ -259,9 +263,7 @@ export class FileOperations {
     }
   }
 
-  /**
-   * Move multiple files in a single operation
-   */
+  /** Move multiple files in a single operation */
   async moveFiles(
     moves: Array<{ source: string; destination: string }>,
     options: MoveOperationOptions = {}
@@ -555,9 +557,7 @@ export class FileOperations {
     }
   }
 
-  /**
-   * Validate the integrity of links after an operation
-   */
+  /** Validate the integrity of links after an operation */
   async validateOperation(result: OperationResult): Promise<{
     valid: boolean;
     brokenLinks: number;

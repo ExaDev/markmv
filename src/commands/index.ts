@@ -8,8 +8,8 @@ import { FileUtils } from '../utils/file-utils';
 /**
  * Configuration options for index generation operations.
  *
- * Controls how documentation indexes are created, including content type,
- * organization strategy, and output locations.
+ * Controls how documentation indexes are created, including content type, organization strategy,
+ * and output locations.
  *
  * @category Commands
  */
@@ -55,8 +55,7 @@ export interface FileMetadata {
 /**
  * Represents a markdown file that can be included in an index.
  *
- * Contains file path information, extracted metadata, and content
- * for use in index generation.
+ * Contains file path information, extracted metadata, and content for use in index generation.
  *
  * @category Commands
  */
@@ -74,13 +73,13 @@ export interface IndexableFile {
 /**
  * Execute the index command to generate documentation indexes.
  *
- * This is the main entry point for the index command functionality.
- * It processes CLI options and delegates to the core index generation logic.
+ * This is the main entry point for the index command functionality. It processes CLI options and
+ * delegates to the core index generation logic.
+ *
+ * @category Commands
  *
  * @param directory - Target directory for index generation (defaults to current directory)
  * @param cliOptions - Raw CLI options object
- *
- * @category Commands
  *
  * @internal This is a CLI wrapper - use generateIndexFiles for programmatic access
  */
@@ -99,9 +98,7 @@ export async function indexCommand(directory: string | undefined, cliOptions: an
   return generateIndexFiles(options, directory || '.');
 }
 
-/**
- * Generate index files for markdown documentation
- */
+/** Generate index files for markdown documentation */
 async function generateIndexFiles(options: IndexOptions, directory: string): Promise<void> {
   const targetDir = resolve(directory);
 
@@ -153,9 +150,7 @@ async function generateIndexFiles(options: IndexOptions, directory: string): Pro
   }
 }
 
-/**
- * Discover all markdown files in the target directory
- */
+/** Discover all markdown files in the target directory */
 async function discoverMarkdownFiles(
   targetDir: string,
   options: IndexOptions
@@ -192,9 +187,7 @@ async function discoverMarkdownFiles(
   return files;
 }
 
-/**
- * Extract frontmatter metadata from markdown content
- */
+/** Extract frontmatter metadata from markdown content */
 function extractFrontmatter(content: string): FileMetadata {
   const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
   if (!frontmatterMatch) {
@@ -239,14 +232,12 @@ function extractFrontmatter(content: string): FileMetadata {
     }
 
     return metadata;
-  } catch (error) {
+  } catch {
     return {};
   }
 }
 
-/**
- * Organize files based on the specified strategy
- */
+/** Organize files based on the specified strategy */
 function organizeFiles(
   files: IndexableFile[],
   options: IndexOptions
@@ -303,9 +294,7 @@ function organizeFiles(
   return organized;
 }
 
-/**
- * Determine where index files should be created based on location strategy
- */
+/** Determine where index files should be created based on location strategy */
 function determineIndexLocations(
   targetDir: string,
   files: IndexableFile[],
@@ -375,9 +364,7 @@ function determineIndexLocations(
   return [...new Set(locations)]; // Remove duplicates
 }
 
-/**
- * Get files relevant to a specific index location
- */
+/** Get files relevant to a specific index location */
 function getRelevantFilesForIndex(
   _indexPath: string,
   organizedFiles: Map<string, IndexableFile[]>,
@@ -388,9 +375,7 @@ function getRelevantFilesForIndex(
   return organizedFiles;
 }
 
-/**
- * Generate the content for an index file
- */
+/** Generate the content for an index file */
 function generateIndexContent(
   indexPath: string,
   organizedFiles: Map<string, IndexableFile[]>,
@@ -468,9 +453,7 @@ updated: ${now}
   return content;
 }
 
-/**
- * Write the index file to disk
- */
+/** Write the index file to disk */
 async function writeIndexFile(
   indexPath: string,
   content: string,

@@ -1,36 +1,38 @@
 /**
  * Markmv - TypeScript library for markdown file operations with intelligent link refactoring
  *
- * This library provides programmatic access to all markmv functionality for use in scripts,
- * build processes, and other Node.js applications.
+ * This library provides programmatic access to all markmv functionality for use in scripts, build
+ * processes, and other Node.js applications.
  *
- * @example Basic usage
- * ```typescript
- * import { FileOperations } from 'markmv';
+ * @example
+ *   Basic usage
+ *   ```typescript
+ *   import { FileOperations } from 'markmv';
  *
- * const fileOps = new FileOperations();
- * const result = await fileOps.moveFile('old.md', 'new.md');
- * console.log(`Moved file successfully: ${result.success}`);
- * ```
+ *   const fileOps = new FileOperations();
+ *   const result = await fileOps.moveFile('old.md', 'new.md');
+ *   console.log(`Moved file successfully: ${result.success}`);
+ *   ```
  *
- * @example Advanced usage with options
- * ```typescript
- * import { FileOperations, type MoveOperationOptions } from 'markmv';
+ * @example
+ *   Advanced usage with options
+ *   ```typescript
+ *   import { FileOperations, type MoveOperationOptions } from 'markmv';
  *
- * const fileOps = new FileOperations();
- * const options: MoveOperationOptions = {
+ *   const fileOps = new FileOperations();
+ *   const options: MoveOperationOptions = {
  *   dryRun: true,
  *   verbose: true
- * };
+ *   };
  *
- * const result = await fileOps.moveFile('docs/old.md', 'docs/new.md', options);
- * if (result.success) {
+ *   const result = await fileOps.moveFile('docs/old.md', 'docs/new.md', options);
+ *   if (result.success) {
  *   console.log(`Would modify ${result.modifiedFiles.length} files`);
  *   result.changes.forEach(change => {
- *     console.log(`${change.type}: ${change.filePath}`);
+ *   console.log(`${change.type}: ${change.filePath}`);
  *   });
- * }
- * ```
+ *   }
+ *   ```
  */
 
 // Core library classes
@@ -95,11 +97,7 @@ export type {
   MergeOperationOptions,
 } from './types/operations.js';
 
-export type {
-  IndexOptions,
-  FileMetadata,
-  IndexableFile,
-} from './commands/index.js';
+export type { IndexOptions, FileMetadata, IndexableFile } from './commands/index.js';
 
 // Re-export specific strategy types that might be useful
 export type {
@@ -125,18 +123,18 @@ export type {
 /**
  * Main entry point for the markmv library
  *
- * Creates a new FileOperations instance for performing markdown file operations.
- * This is the recommended way to get started with the library.
- *
- * @returns A new FileOperations instance
+ * Creates a new FileOperations instance for performing markdown file operations. This is the
+ * recommended way to get started with the library.
  *
  * @example
- * ```typescript
- * import { createMarkMv } from 'markmv';
+ *   ```typescript
+ *   import { createMarkMv } from 'markmv';
  *
- * const markmv = createMarkMv();
- * const result = await markmv.moveFile('old.md', 'new.md');
- * ```
+ *   const markmv = createMarkMv();
+ *   const result = await markmv.moveFile('old.md', 'new.md');
+ *   ```;
+ *
+ * @returns A new FileOperations instance
  */
 export function createMarkMv(): FileOperations {
   return new FileOperations();
@@ -145,19 +143,20 @@ export function createMarkMv(): FileOperations {
 /**
  * Convenience function for moving a single markdown file
  *
+ * @example
+ *   ```typescript
+ *   import { moveFile } from 'markmv';
+ *
+ *   const result = await moveFile('docs/old.md', 'docs/new.md', {
+ *     dryRun: true
+ *   });
+ *   ```;
+ *
  * @param sourcePath - The current file path
  * @param destinationPath - The target file path
  * @param options - Optional configuration
+ *
  * @returns Promise resolving to operation result
- *
- * @example
- * ```typescript
- * import { moveFile } from 'markmv';
- *
- * const result = await moveFile('docs/old.md', 'docs/new.md', {
- *   dryRun: true
- * });
- * ```
  */
 export async function moveFile(
   sourcePath: string,
@@ -171,19 +170,20 @@ export async function moveFile(
 /**
  * Convenience function for moving multiple markdown files
  *
+ * @example
+ *   ```typescript
+ *   import { moveFiles } from 'markmv';
+ *
+ *   const result = await moveFiles([
+ *     { source: 'old1.md', destination: 'new1.md' },
+ *     { source: 'old2.md', destination: 'new2.md' }
+ *   ]);
+ *   ```;
+ *
  * @param moves - Array of source/destination pairs
  * @param options - Optional configuration
+ *
  * @returns Promise resolving to operation result
- *
- * @example
- * ```typescript
- * import { moveFiles } from 'markmv';
- *
- * const result = await moveFiles([
- *   { source: 'old1.md', destination: 'new1.md' },
- *   { source: 'old2.md', destination: 'new2.md' }
- * ]);
- * ```
  */
 export async function moveFiles(
   moves: Array<{ source: string; destination: string }>,
@@ -196,20 +196,21 @@ export async function moveFiles(
 /**
  * Convenience function for validating markdown file operations
  *
- * @param result - The operation result to validate
- * @returns Promise resolving to validation result
- *
  * @example
- * ```typescript
- * import { moveFile, validateOperation } from 'markmv';
+ *   ```typescript
+ *   import { moveFile, validateOperation } from 'markmv';
  *
- * const result = await moveFile('old.md', 'new.md');
- * const validation = await validateOperation(result);
+ *   const result = await moveFile('old.md', 'new.md');
+ *   const validation = await validateOperation(result);
  *
- * if (!validation.valid) {
+ *   if (!validation.valid) {
  *   console.error(`Found ${validation.brokenLinks} broken links`);
- * }
- * ```
+ *   }
+ *   ```
+ *
+ * @param result - The operation result to validate
+ *
+ * @returns Promise resolving to validation result
  */
 export async function validateOperation(result: OperationResult): Promise<{
   valid: boolean;

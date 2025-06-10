@@ -4,8 +4,8 @@ import { FileUtils } from './file-utils.js';
 /**
  * Represents a single atomic operation within a transaction.
  *
- * Each step can be executed and rolled back independently, providing
- * the foundation for transactional file operations with full rollback capability.
+ * Each step can be executed and rolled back independently, providing the foundation for
+ * transactional file operations with full rollback capability.
  *
  * @category Utilities
  */
@@ -21,8 +21,8 @@ export interface TransactionStep {
 /**
  * Configuration options for transaction management.
  *
- * Controls transaction behavior including backup creation, error handling,
- * and retry logic for robust file operations.
+ * Controls transaction behavior including backup creation, error handling, and retry logic for
+ * robust file operations.
  *
  * @category Utilities
  */
@@ -38,34 +38,35 @@ export interface TransactionOptions {
 /**
  * Manages atomic file operations with full rollback capability.
  *
- * Provides transactional semantics for file system operations, ensuring
- * that either all operations complete successfully or all changes are
- * rolled back. Supports automatic backups and retry logic.
+ * Provides transactional semantics for file system operations, ensuring that either all operations
+ * complete successfully or all changes are rolled back. Supports automatic backups and retry
+ * logic.
  *
  * @category Utilities
  *
- * @example Transactional file operations
- * ```typescript
- * const transaction = new TransactionManager({
+ * @example
+ *   Transactional file operations
+ *   ```typescript
+ *   const transaction = new TransactionManager({
  *   createBackups: true,
  *   continueOnError: false
- * });
- * 
- * // Add operations to the transaction
- * transaction.addFileMove('old.md', 'new.md');
- * transaction.addContentUpdate('target.md', newContent);
- * 
- * try {
+ *   });
+ *
+ *   // Add operations to the transaction
+ *   transaction.addFileMove('old.md', 'new.md');
+ *   transaction.addContentUpdate('target.md', newContent);
+ *
+ *   try {
  *   const result = await transaction.execute();
  *   if (result.success) {
- *     console.log('All operations completed successfully');
+ *   console.log('All operations completed successfully');
  *   } else {
- *     console.log('Transaction failed, all changes rolled back');
+ *   console.log('Transaction failed, all changes rolled back');
  *   }
- * } catch (error) {
+ *   } catch (error) {
  *   console.error('Transaction error:', error);
- * }
- * ```
+ *   }
+ *   ```
  */
 export class TransactionManager {
   private steps: TransactionStep[] = [];
@@ -81,9 +82,7 @@ export class TransactionManager {
     };
   }
 
-  /**
-   * Add a file move operation to the transaction
-   */
+  /** Add a file move operation to the transaction */
   addFileMove(sourcePath: string, destinationPath: string, description?: string): void {
     const stepId = `move-${this.steps.length}`;
 
@@ -126,9 +125,7 @@ export class TransactionManager {
     });
   }
 
-  /**
-   * Add a content update operation to the transaction
-   */
+  /** Add a content update operation to the transaction */
   addContentUpdate(filePath: string, newContent: string, description?: string): void {
     const stepId = `update-${this.steps.length}`;
     let originalContent: string | null = null;
@@ -165,9 +162,7 @@ export class TransactionManager {
     });
   }
 
-  /**
-   * Add a file creation operation to the transaction
-   */
+  /** Add a file creation operation to the transaction */
   addFileCreate(filePath: string, content: string, description?: string): void {
     const stepId = `create-${this.steps.length}`;
 
@@ -197,9 +192,7 @@ export class TransactionManager {
     });
   }
 
-  /**
-   * Add a file deletion operation to the transaction
-   */
+  /** Add a file deletion operation to the transaction */
   addFileDelete(filePath: string, description?: string): void {
     const stepId = `delete-${this.steps.length}`;
     let originalContent: string | null = null;
@@ -232,9 +225,7 @@ export class TransactionManager {
     });
   }
 
-  /**
-   * Execute all steps in the transaction
-   */
+  /** Execute all steps in the transaction */
   async execute(): Promise<{
     success: boolean;
     completedSteps: number;
@@ -310,9 +301,7 @@ export class TransactionManager {
     }
   }
 
-  /**
-   * Rollback all executed steps
-   */
+  /** Rollback all executed steps */
   async rollback(): Promise<void> {
     const rollbackErrors: string[] = [];
 
@@ -334,9 +323,7 @@ export class TransactionManager {
     }
   }
 
-  /**
-   * Get a preview of all planned operations
-   */
+  /** Get a preview of all planned operations */
   getPreview(): Array<{ description: string; type: string }> {
     return this.steps.map((step) => ({
       description: step.description,
@@ -344,18 +331,14 @@ export class TransactionManager {
     }));
   }
 
-  /**
-   * Clear all planned operations
-   */
+  /** Clear all planned operations */
   clear(): void {
     this.steps = [];
     this.executedSteps = [];
     this.backups.clear();
   }
 
-  /**
-   * Get the number of planned operations
-   */
+  /** Get the number of planned operations */
   getStepCount(): number {
     return this.steps.length;
   }

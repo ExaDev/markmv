@@ -5,47 +5,50 @@ import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } 
 /**
  * Utility class for path manipulation and resolution operations.
  *
- * Provides comprehensive path handling for markdown file operations including
- * relative path updates, home directory resolution, and cross-platform compatibility.
+ * Provides comprehensive path handling for markdown file operations including relative path
+ * updates, home directory resolution, and cross-platform compatibility.
  *
  * @category Utilities
  *
- * @example Path resolution
- * ```typescript
- * // Resolve various path formats
- * PathUtils.resolvePath('~/docs/file.md');     // Home directory
- * PathUtils.resolvePath('../guide.md', '/current/dir');  // Relative
- * PathUtils.resolvePath('/absolute/path.md');  // Absolute
- * ```
+ * @example
+ *   Path resolution
+ *   ```typescript
+ *   // Resolve various path formats
+ *   PathUtils.resolvePath('~/docs/file.md');     // Home directory
+ *   PathUtils.resolvePath('../guide.md', '/current/dir');  // Relative
+ *   PathUtils.resolvePath('/absolute/path.md');  // Absolute
+ *   ```
  *
- * @example Relative path updates for moved files
- * ```typescript
- * // When moving a file, update its relative links
- * const originalLink = '../images/diagram.png';
- * const updatedLink = PathUtils.updateRelativePath(
+ * @example
+ *   Relative path updates for moved files
+ *   ```typescript
+ *   // When moving a file, update its relative links
+ *   const originalLink = '../images/diagram.png';
+ *   const updatedLink = PathUtils.updateRelativePath(
  *   originalLink,
  *   'docs/guide.md',      // old file location
  *   'tutorials/guide.md'  // new file location
- * );
- * // Result: '../../docs/images/diagram.png'
- * ```
+ *   );
+ *   // Result: '../../docs/images/diagram.png'
+ *   ```
  */
 export class PathUtils {
   /**
    * Resolve a path that may be relative, absolute, or use home directory notation.
    *
+   * @example
+   *   ```typescript
+   *   PathUtils.resolvePath('~/docs/file.md');
+   *   // Returns: '/Users/username/docs/file.md'
+   *
+   *   PathUtils.resolvePath('../file.md', '/current/working/dir');
+   *   // Returns: '/current/working/file.md'
+   *   ```;
+   *
    * @param path - The path to resolve (supports ~/, relative, and absolute paths)
    * @param basePath - Optional base directory for relative path resolution
+   *
    * @returns Resolved absolute path
-   *
-   * @example
-   * ```typescript
-   * PathUtils.resolvePath('~/docs/file.md');
-   * // Returns: '/Users/username/docs/file.md'
-   *
-   * PathUtils.resolvePath('../file.md', '/current/working/dir');
-   * // Returns: '/current/working/file.md'
-   * ```
    */
   static resolvePath(path: string, basePath?: string): string {
     if (path.startsWith('~/')) {
@@ -63,16 +66,12 @@ export class PathUtils {
     return resolve(path);
   }
 
-  /**
-   * Convert an absolute path back to a relative path from a base directory
-   */
+  /** Convert an absolute path back to a relative path from a base directory */
   static makeRelative(absolutePath: string, fromDir: string): string {
     return relative(fromDir, absolutePath);
   }
 
-  /**
-   * Update a relative path when a file is moved
-   */
+  /** Update a relative path when a file is moved */
   static updateRelativePath(
     originalLinkPath: string,
     sourceFilePath: string,
@@ -92,9 +91,7 @@ export class PathUtils {
     return PathUtils.makeRelative(targetPath, newSourceDir);
   }
 
-  /**
-   * Update a Claude import path when a file is moved
-   */
+  /** Update a Claude import path when a file is moved */
   static updateClaudeImportPath(
     originalImportPath: string,
     sourceFilePath: string,
@@ -113,24 +110,18 @@ export class PathUtils {
     return PathUtils.makeRelative(targetPath, newSourceDir);
   }
 
-  /**
-   * Normalize path separators for cross-platform compatibility
-   */
+  /** Normalize path separators for cross-platform compatibility */
   static normalizePath(path: string): string {
     return path.split(/[/\\]/).join(sep);
   }
 
-  /**
-   * Check if a path is within a given directory
-   */
+  /** Check if a path is within a given directory */
   static isWithinDirectory(filePath: string, directoryPath: string): boolean {
     const relativePath = relative(directoryPath, filePath);
     return !relativePath.startsWith('..') && !isAbsolute(relativePath);
   }
 
-  /**
-   * Generate a unique filename if a file already exists
-   */
+  /** Generate a unique filename if a file already exists */
   static generateUniqueFilename(desiredPath: string): string {
     const dir = dirname(desiredPath);
     const name = basename(desiredPath, extname(desiredPath));
@@ -148,9 +139,7 @@ export class PathUtils {
     return uniquePath;
   }
 
-  /**
-   * Validate that a path is safe for file operations
-   */
+  /** Validate that a path is safe for file operations */
   static validatePath(path: string): { valid: boolean; reason?: string } {
     if (!path || path.trim() === '') {
       return { valid: false, reason: 'Path cannot be empty' };
@@ -169,17 +158,13 @@ export class PathUtils {
     return { valid: true };
   }
 
-  /**
-   * Extract directory depth from a path
-   */
+  /** Extract directory depth from a path */
   static getDirectoryDepth(path: string): number {
     const normalized = resolve(path);
     return normalized.split(sep).filter((part) => part !== '').length;
   }
 
-  /**
-   * Find common base directory for multiple paths
-   */
+  /** Find common base directory for multiple paths */
   static findCommonBase(paths: string[]): string {
     if (paths.length === 0) return '';
     if (paths.length === 1) return dirname(paths[0]);
@@ -202,32 +187,24 @@ export class PathUtils {
     return commonParts.join(sep) || sep;
   }
 
-  /**
-   * Convert Windows paths to Unix-style for markdown links
-   */
+  /** Convert Windows paths to Unix-style for markdown links */
   static toUnixPath(path: string): string {
     return path.replace(/\\/g, '/');
   }
 
-  /**
-   * Get file extension with fallback handling
-   */
+  /** Get file extension with fallback handling */
   static getExtension(path: string): string {
     const ext = extname(path);
     return ext || '';
   }
 
-  /**
-   * Check if path represents a markdown file
-   */
+  /** Check if path represents a markdown file */
   static isMarkdownFile(path: string): boolean {
     const ext = PathUtils.getExtension(path).toLowerCase();
     return ['.md', '.markdown', '.mdown', '.mkd', '.mdx'].includes(ext);
   }
 
-  /**
-   * Safely join paths, handling edge cases
-   */
+  /** Safely join paths, handling edge cases */
   static safejoin(...parts: string[]): string {
     const filteredParts = parts.filter((part) => part && part.trim() !== '');
     if (filteredParts.length === 0) return '';
@@ -235,9 +212,7 @@ export class PathUtils {
     return resolve(join(...filteredParts));
   }
 
-  /**
-   * Check if a path is a directory
-   */
+  /** Check if a path is a directory */
   static isDirectory(path: string): boolean {
     try {
       const resolvedPath = PathUtils.resolvePath(path);
@@ -247,16 +222,14 @@ export class PathUtils {
     }
   }
 
-  /**
-   * Check if a path looks like a directory (ends with / or \)
-   */
+  /** Check if a path looks like a directory (ends with / or ) */
   static looksLikeDirectory(path: string): boolean {
     return path.endsWith('/') || path.endsWith('\\');
   }
 
   /**
-   * Resolve destination path when target might be a directory
-   * If destination is a directory, preserves the source filename
+   * Resolve destination path when target might be a directory If destination is a directory,
+   * preserves the source filename
    */
   static resolveDestination(sourcePath: string, destinationPath: string): string {
     const resolvedDest = PathUtils.resolvePath(destinationPath);

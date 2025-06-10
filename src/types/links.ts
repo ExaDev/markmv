@@ -1,41 +1,41 @@
 /**
  * Types of markdown links that can be parsed and validated.
  *
- * Covers all common link formats including standard markdown links,
- * images, Claude imports, and Obsidian-style transclusions.
+ * Covers all common link formats including standard markdown links, images, Claude imports, and
+ * Obsidian-style transclusions.
  *
  * @category Types
  */
 export type LinkType =
-  | 'internal'           // Links to other files in the project
-  | 'external'           // HTTP/HTTPS URLs
-  | 'anchor'             // Same-file section links (#heading)
-  | 'image'              // Image references
-  | 'reference'          // Reference-style links [text][ref]
-  | 'claude-import'      // Claude @import syntax
+  | 'internal' // Links to other files in the project
+  | 'external' // HTTP/HTTPS URLs
+  | 'anchor' // Same-file section links (#heading)
+  | 'image' // Image references
+  | 'reference' // Reference-style links [text][ref]
+  | 'claude-import' // Claude @import syntax
   | 'obsidian-transclusion'; // Obsidian [[file]] or ![[file]] syntax
 
 /**
  * Represents a parsed markdown link with comprehensive metadata.
  *
- * Contains all information needed for link validation, path resolution,
- * and cross-reference tracking. Used throughout the system for link
- * analysis and manipulation.
+ * Contains all information needed for link validation, path resolution, and cross-reference
+ * tracking. Used throughout the system for link analysis and manipulation.
  *
  * @category Types
  *
- * @example Accessing link information
- * ```typescript
- * const links: MarkdownLink[] = parsedFile.links;
- * 
- * links.forEach(link => {
+ * @example
+ *   Accessing link information
+ *   ```typescript
+ *   const links: MarkdownLink[] = parsedFile.links;
+ *
+ *   links.forEach(link => {
  *   console.log(`${link.type} link: ${link.href}`);
  *   if (link.resolvedPath) {
- *     console.log(`  Resolves to: ${link.resolvedPath}`);
+ *   console.log(`  Resolves to: ${link.resolvedPath}`);
  *   }
  *   console.log(`  Location: line ${link.line}, column ${link.column}`);
- * });
- * ```
+ *   });
+ *   ```
  */
 export interface MarkdownLink {
   /** Type of link */
@@ -63,22 +63,23 @@ export interface MarkdownLink {
 /**
  * Represents a reference-style link definition.
  *
- * Reference links are defined separately from their usage (e.g., [1]: https://example.com)
- * and can be referenced multiple times throughout the document.
+ * Reference links are defined separately from their usage (e.g., [1]: https://example.com) and can
+ * be referenced multiple times throughout the document.
  *
  * @category Types
  *
- * @example Working with reference links
- * ```typescript
- * const references: LinkReference[] = parsedFile.references;
- * 
- * references.forEach(ref => {
+ * @example
+ *   Working with reference links
+ *   ```typescript
+ *   const references: LinkReference[] = parsedFile.references;
+ *
+ *   references.forEach(ref => {
  *   console.log(`Reference [${ref.id}]: ${ref.url}`);
  *   if (ref.title) {
- *     console.log(`  Title: ${ref.title}`);
+ *   console.log(`  Title: ${ref.title}`);
  *   }
- * });
- * ```
+ *   });
+ *   ```
  */
 export interface LinkReference {
   /** Reference ID */
@@ -94,20 +95,21 @@ export interface LinkReference {
 /**
  * Represents a completely parsed markdown file with all extracted metadata.
  *
- * Contains all links, references, and dependency information needed for
- * intelligent file operations and cross-reference management.
+ * Contains all links, references, and dependency information needed for intelligent file operations
+ * and cross-reference management.
  *
  * @category Types
  *
- * @example Using parsed file data
- * ```typescript
- * const parsedFile: ParsedMarkdownFile = await parser.parseFile('document.md');
- * 
- * console.log(`File: ${parsedFile.filePath}`);
- * console.log(`Links: ${parsedFile.links.length}`);
- * console.log(`Dependencies: ${parsedFile.dependencies.length}`);
- * console.log(`Dependents: ${parsedFile.dependents.length}`);
- * ```
+ * @example
+ *   Using parsed file data
+ *   ```typescript
+ *   const parsedFile: ParsedMarkdownFile = await parser.parseFile('document.md');
+ *
+ *   console.log(`File: ${parsedFile.filePath}`);
+ *   console.log(`Links: ${parsedFile.links.length}`);
+ *   console.log(`Dependencies: ${parsedFile.dependencies.length}`);
+ *   console.log(`Dependents: ${parsedFile.dependents.length}`);
+ *   ```
  */
 export interface ParsedMarkdownFile {
   /** Absolute file path */

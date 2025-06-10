@@ -16,8 +16,8 @@ import { PathUtils } from './path-utils.js';
 /**
  * File system statistics and metadata.
  *
- * Provides comprehensive information about a file or directory
- * including size, type, and timestamp information.
+ * Provides comprehensive information about a file or directory including size, type, and timestamp
+ * information.
  *
  * @category Utilities
  */
@@ -33,8 +33,8 @@ export interface FileStats {
 /**
  * Configuration options for file copy operations.
  *
- * Controls behavior during file copying including overwrite handling,
- * timestamp preservation, and directory creation.
+ * Controls behavior during file copying including overwrite handling, timestamp preservation, and
+ * directory creation.
  *
  * @category Utilities
  */
@@ -47,8 +47,8 @@ export interface CopyOptions {
 /**
  * Configuration options for file move operations.
  *
- * Extends copy options with move-specific features like backup creation.
- * Move operations are typically implemented as copy-then-delete.
+ * Extends copy options with move-specific features like backup creation. Move operations are
+ * typically implemented as copy-then-delete.
  *
  * @category Utilities
  */
@@ -59,33 +59,32 @@ export interface MoveOptions extends CopyOptions {
 /**
  * Utility class for common file system operations.
  *
- * Provides a comprehensive set of static methods for file and directory
- * manipulation, with proper error handling and cross-platform compatibility.
- * All methods are async and use Node.js promises-based file system APIs.
+ * Provides a comprehensive set of static methods for file and directory manipulation, with proper
+ * error handling and cross-platform compatibility. All methods are async and use Node.js
+ * promises-based file system APIs.
  *
  * @category Utilities
  *
- * @example Basic file operations
- * ```typescript
- * // Check if file exists
- * const exists = await FileUtils.exists('document.md');
- * 
- * // Read file content
- * const content = await FileUtils.readTextFile('document.md');
- * 
- * // Write new content
- * await FileUtils.writeTextFile('output.md', content, {
+ * @example
+ *   Basic file operations
+ *   ```typescript
+ *   // Check if file exists
+ *   const exists = await FileUtils.exists('document.md');
+ *
+ *   // Read file content
+ *   const content = await FileUtils.readTextFile('document.md');
+ *
+ *   // Write new content
+ *   await FileUtils.writeTextFile('output.md', content, {
  *   createDirectories: true
- * });
- * 
- * // Find markdown files
- * const files = await FileUtils.findMarkdownFiles('./docs', true);
- * ```
+ *   });
+ *
+ *   // Find markdown files
+ *   const files = await FileUtils.findMarkdownFiles('./docs', true);
+ *   ```
  */
 export class FileUtils {
-  /**
-   * Check if a file or directory exists
-   */
+  /** Check if a file or directory exists */
   static async exists(path: string): Promise<boolean> {
     try {
       await access(path, constants.F_OK);
@@ -95,9 +94,7 @@ export class FileUtils {
     }
   }
 
-  /**
-   * Check if a path is readable
-   */
+  /** Check if a path is readable */
   static async isReadable(path: string): Promise<boolean> {
     try {
       await access(path, constants.R_OK);
@@ -107,9 +104,7 @@ export class FileUtils {
     }
   }
 
-  /**
-   * Check if a path is writable
-   */
+  /** Check if a path is writable */
   static async isWritable(path: string): Promise<boolean> {
     try {
       await access(path, constants.W_OK);
@@ -119,9 +114,7 @@ export class FileUtils {
     }
   }
 
-  /**
-   * Get file statistics
-   */
+  /** Get file statistics */
   static async getStats(path: string): Promise<FileStats> {
     const stats = await stat(path);
     return {
@@ -134,9 +127,7 @@ export class FileUtils {
     };
   }
 
-  /**
-   * Ensure directory exists, creating it if necessary
-   */
+  /** Ensure directory exists, creating it if necessary */
   static async ensureDirectory(dirPath: string): Promise<void> {
     try {
       await mkdir(dirPath, { recursive: true });
@@ -148,9 +139,7 @@ export class FileUtils {
     }
   }
 
-  /**
-   * Safely read a file with encoding detection
-   */
+  /** Safely read a file with encoding detection */
   static async readTextFile(filePath: string): Promise<string> {
     const buffer = await readFile(filePath);
 
@@ -159,9 +148,7 @@ export class FileUtils {
     return buffer.toString('utf-8');
   }
 
-  /**
-   * Safely write a file with directory creation
-   */
+  /** Safely write a file with directory creation */
   static async writeTextFile(
     filePath: string,
     content: string,
@@ -174,9 +161,7 @@ export class FileUtils {
     await writeFile(filePath, content, 'utf-8');
   }
 
-  /**
-   * Copy a file with options
-   */
+  /** Copy a file with options */
   static async copyFile(
     sourcePath: string,
     destinationPath: string,
@@ -205,9 +190,7 @@ export class FileUtils {
     }
   }
 
-  /**
-   * Move a file with options
-   */
+  /** Move a file with options */
   static async moveFile(
     sourcePath: string,
     destinationPath: string,
@@ -262,18 +245,14 @@ export class FileUtils {
     }
   }
 
-  /**
-   * Delete a file safely
-   */
+  /** Delete a file safely */
   static async deleteFile(filePath: string): Promise<void> {
     if (await FileUtils.exists(filePath)) {
       await unlink(filePath);
     }
   }
 
-  /**
-   * List files in a directory with filtering
-   */
+  /** List files in a directory with filtering */
   static async listFiles(
     dirPath: string,
     options: {
@@ -317,9 +296,7 @@ export class FileUtils {
     return files;
   }
 
-  /**
-   * Find markdown files in a directory
-   */
+  /** Find markdown files in a directory */
   static async findMarkdownFiles(dirPath: string, recursive = true): Promise<string[]> {
     return FileUtils.listFiles(dirPath, {
       recursive,
@@ -327,26 +304,20 @@ export class FileUtils {
     });
   }
 
-  /**
-   * Create a backup of a file
-   */
+  /** Create a backup of a file */
   static async createBackup(filePath: string, suffix = '.backup'): Promise<string> {
     const backupPath = `${filePath}${suffix}`;
     await FileUtils.copyFile(filePath, backupPath);
     return backupPath;
   }
 
-  /**
-   * Get file size in bytes
-   */
+  /** Get file size in bytes */
   static async getFileSize(filePath: string): Promise<number> {
     const stats = await FileUtils.getStats(filePath);
     return stats.size;
   }
 
-  /**
-   * Check if two files have the same content
-   */
+  /** Check if two files have the same content */
   static async filesEqual(path1: string, path2: string): Promise<boolean> {
     try {
       const [content1, content2] = await Promise.all([
@@ -359,9 +330,7 @@ export class FileUtils {
     }
   }
 
-  /**
-   * Generate a safe filename by removing invalid characters
-   */
+  /** Generate a safe filename by removing invalid characters */
   static sanitizeFilename(filename: string): string {
     // Remove or replace invalid characters
     return filename
@@ -371,9 +340,7 @@ export class FileUtils {
       .replace(/^-|-$/g, '');
   }
 
-  /**
-   * Get relative path between two files
-   */
+  /** Get relative path between two files */
   static getRelativePath(fromFile: string, toFile: string): string {
     return PathUtils.makeRelative(toFile, dirname(fromFile));
   }

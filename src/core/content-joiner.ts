@@ -15,42 +15,44 @@ import { LinkParser } from './link-parser.js';
 /**
  * Combines multiple markdown files into a single file using configurable strategies.
  *
- * The ContentJoiner provides intelligent merging of markdown content with support for
- * different ordering strategies, header management, and frontmatter handling. It can
- * handle complex scenarios like dependency resolution and conflicting content.
+ * The ContentJoiner provides intelligent merging of markdown content with support for different
+ * ordering strategies, header management, and frontmatter handling. It can handle complex scenarios
+ * like dependency resolution and conflicting content.
  *
  * @category Core
  *
- * @example Basic file joining
- * ```typescript
- * const joiner = new ContentJoiner();
- * const result = await joiner.joinFiles(
+ * @example
+ *   Basic file joining
+ *   ```typescript
+ *   const joiner = new ContentJoiner();
+ *   const result = await joiner.joinFiles(
  *   ['intro.md', 'setup.md', 'usage.md'],
  *   {
- *     outputPath: 'complete-guide.md',
- *     strategy: 'alphabetical',
- *     dryRun: false
+ *   outputPath: 'complete-guide.md',
+ *   strategy: 'alphabetical',
+ *   dryRun: false
  *   }
- * );
+ *   );
  *
- * if (result.success) {
+ *   if (result.success) {
  *   console.log(`Created ${result.createdFiles[0]}`);
- * }
- * ```
+ *   }
+ *   ```
  *
- * @example Advanced joining with dependency ordering
- * ```typescript
- * const joiner = new ContentJoiner();
- * const result = await joiner.joinFiles(
+ * @example
+ *   Advanced joining with dependency ordering
+ *   ```typescript
+ *   const joiner = new ContentJoiner();
+ *   const result = await joiner.joinFiles(
  *   ['api.md', 'examples.md', 'getting-started.md'],
  *   {
- *     outputPath: 'documentation.md',
- *     strategy: 'dependency',
- *     preserveHeaders: true,
- *     handleFrontmatter: 'merge'
+ *   outputPath: 'documentation.md',
+ *   strategy: 'dependency',
+ *   preserveHeaders: true,
+ *   handleFrontmatter: 'merge'
  *   }
- * );
- * ```
+ *   );
+ *   ```
  */
 export class ContentJoiner {
   private linkParser: LinkParser;
@@ -62,28 +64,28 @@ export class ContentJoiner {
   /**
    * Joins multiple markdown files into a single output file.
    *
-   * This method processes the input files according to the specified strategy,
-   * handles header levels, manages frontmatter, and ensures proper link resolution.
-   * It supports various joining strategies including alphabetical, dependency-based,
-   * chronological, and manual ordering.
+   * This method processes the input files according to the specified strategy, handles header
+   * levels, manages frontmatter, and ensures proper link resolution. It supports various joining
+   * strategies including alphabetical, dependency-based, chronological, and manual ordering.
+   *
+   * @example
+   *   ```typescript
+   *   const result = await joiner.joinFiles(
+   *     ['chapter1.md', 'chapter2.md', 'chapter3.md'],
+   *     {
+   *       outputPath: 'book.md',
+   *       strategy: 'manual', // Preserve input order
+   *       headerLevelOffset: 1, // Shift headers down one level
+   *       preserveHeaders: true,
+   *       handleFrontmatter: 'first' // Use first file's frontmatter
+   *     }
+   *   );
+   *   ```;
    *
    * @param filePaths - Array of file paths to join together
    * @param options - Configuration options for the join operation
-   * @returns Promise resolving to operation result with success status and file changes
    *
-   * @example
-   * ```typescript
-   * const result = await joiner.joinFiles(
-   *   ['chapter1.md', 'chapter2.md', 'chapter3.md'],
-   *   {
-   *     outputPath: 'book.md',
-   *     strategy: 'manual', // Preserve input order
-   *     headerLevelOffset: 1, // Shift headers down one level
-   *     preserveHeaders: true,
-   *     handleFrontmatter: 'first' // Use first file's frontmatter
-   *   }
-   * );
-   * ```
+   * @returns Promise resolving to operation result with success status and file changes
    */
   async joinFiles(filePaths: string[], options: JoinOperationOptions): Promise<OperationResult> {
     const result: OperationResult = {

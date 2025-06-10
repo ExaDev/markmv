@@ -5,8 +5,8 @@ import type { MarkdownLink, ParsedMarkdownFile } from '../types/links.js';
 /**
  * Configuration options for link validation operations.
  *
- * Controls which types of links are validated and how validation is performed,
- * including external link checking, timeout settings, and strictness levels.
+ * Controls which types of links are validated and how validation is performed, including external
+ * link checking, timeout settings, and strictness levels.
  *
  * @category Core
  */
@@ -24,39 +24,41 @@ export interface LinkValidatorOptions {
 /**
  * Validates markdown links and identifies broken or problematic references.
  *
- * The LinkValidator checks various types of links including internal file references,
- * external URLs, and Claude import syntax. It provides comprehensive reporting of
- * validation issues and supports different validation modes for different use cases.
+ * The LinkValidator checks various types of links including internal file references, external
+ * URLs, and Claude import syntax. It provides comprehensive reporting of validation issues and
+ * supports different validation modes for different use cases.
  *
  * @category Core
  *
- * @example Basic link validation
- * ```typescript
- * const validator = new LinkValidator({
+ * @example
+ *   Basic link validation
+ *   ```typescript
+ *   const validator = new LinkValidator({
  *   checkExternal: true,
  *   strictInternal: true,
  *   externalTimeout: 10000
- * });
+ *   });
  *
- * const result = await validator.validateFile('docs/api.md');
+ *   const result = await validator.validateFile('docs/api.md');
  *
- * if (!result.isValid) {
+ *   if (!result.isValid) {
  *   console.log(`Found ${result.brokenLinks.length} broken links`);
  *   result.brokenLinks.forEach(link => {
- *     console.log(`- ${link.href} (line ${link.line}): ${link.reason}`);
+ *   console.log(`- ${link.href} (line ${link.line}): ${link.reason}`);
  *   });
- * }
- * ```
+ *   }
+ *   ```
  *
- * @example Batch validation
- * ```typescript
- * const validator = new LinkValidator();
- * const files = ['docs/guide.md', 'docs/api.md', 'docs/examples.md'];
+ * @example
+ *   Batch validation
+ *   ```typescript
+ *   const validator = new LinkValidator();
+ *   const files = ['docs/guide.md', 'docs/api.md', 'docs/examples.md'];
  *
- * const results = await validator.validateFiles(files);
- * const totalBroken = results.reduce((sum, r) => sum + r.brokenLinks.length, 0);
- * console.log(`Found ${totalBroken} broken links across ${files.length} files`);
- * ```
+ *   const results = await validator.validateFiles(files);
+ *   const totalBroken = results.reduce((sum, r) => sum + r.brokenLinks.length, 0);
+ *   console.log(`Found ${totalBroken} broken links across ${files.length} files`);
+ *   ```
  */
 export class LinkValidator {
   private options: Required<LinkValidatorOptions>;

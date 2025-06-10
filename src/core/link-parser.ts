@@ -32,39 +32,40 @@ interface LinkNode extends Node {
 /**
  * Parser for extracting and analyzing markdown links and references.
  *
- * This class uses the unified/remark ecosystem to parse markdown files and
- * extract comprehensive link information including inline links, images,
- * reference-style links, and link definitions.
+ * This class uses the unified/remark ecosystem to parse markdown files and extract comprehensive
+ * link information including inline links, images, reference-style links, and link definitions.
  *
  * @category Core
  *
- * @example Basic usage
- * ```typescript
- * const parser = new LinkParser();
- * const parsed = await parser.parseFile('docs/readme.md');
+ * @example
+ *   Basic usage
+ *   ```typescript
+ *   const parser = new LinkParser();
+ *   const parsed = await parser.parseFile('docs/readme.md');
  *
- * console.log(`Found ${parsed.links.length} links`);
- * parsed.links.forEach(link => {
+ *   console.log(`Found ${parsed.links.length} links`);
+ *   parsed.links.forEach(link => {
  *   console.log(`${link.type}: ${link.href} (line ${link.line})`);
- * });
- * ```
+ *   });
+ *   ```
  *
- * @example Link validation
- * ```typescript
- * const parser = new LinkParser();
- * const parsed = await parser.parseFile('guide.md');
+ * @example
+ *   Link validation
+ *   ```typescript
+ *   const parser = new LinkParser();
+ *   const parsed = await parser.parseFile('guide.md');
  *
- * const localLinks = parsed.links.filter(link =>
+ *   const localLinks = parsed.links.filter(link =>
  *   link.type === 'internal' && !link.href.startsWith('http')
- * );
+ *   );
  *
- * for (const link of localLinks) {
+ *   for (const link of localLinks) {
  *   const exists = await parser.validateInternalLink(link, parsed.filePath);
  *   if (!exists) {
- *     console.warn(`Broken link: ${link.href} at line ${link.line}`);
+ *   console.warn(`Broken link: ${link.href} at line ${link.line}`);
  *   }
- * }
- * ```
+ *   }
+ *   ```
  */
 export class LinkParser {
   private processor = unified().use(remarkParse);
@@ -72,18 +73,19 @@ export class LinkParser {
   /**
    * Parse a markdown file and extract all links, references, and metadata.
    *
-   * @param filePath - Path to the markdown file to parse
-   * @returns Promise resolving to comprehensive file analysis
-   *
    * @example
-   * ```typescript
-   * const parser = new LinkParser();
-   * const result = await parser.parseFile('docs/api.md');
+   *   ```typescript
+   *   const parser = new LinkParser();
+   *   const result = await parser.parseFile('docs/api.md');
    *
-   * console.log(`File: ${result.filePath}`);
-   * console.log(`Links: ${result.links.length}`);
-   * console.log(`References: ${result.references.length}`);
-   * ```
+   *   console.log(`File: ${result.filePath}`);
+   *   console.log(`Links: ${result.links.length}`);
+   *   console.log(`References: ${result.references.length}`);
+   *   ```
+   *
+   * @param filePath - Path to the markdown file to parse
+   *
+   * @returns Promise resolving to comprehensive file analysis
    */
   async parseFile(filePath: string): Promise<ParsedMarkdownFile> {
     const absolutePath = resolve(filePath);

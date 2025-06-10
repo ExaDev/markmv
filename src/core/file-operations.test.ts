@@ -146,7 +146,7 @@ describe('FileOperations', () => {
       expect(result.deletedFiles).toEqual([file1, file2]);
 
       const content1 = await FileUtils.readTextFile(dest1);
-      const content2 = await FileUtils.readTextFile(dest2);
+      const _content2 = await FileUtils.readTextFile(dest2);
 
       // Check that at least one direction of the link update worked
       // TODO: Fix mutual dependency handling in bulk moves

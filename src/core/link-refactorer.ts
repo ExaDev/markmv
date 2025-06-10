@@ -7,8 +7,8 @@ import { PathUtils } from '../utils/path-utils.js';
 /**
  * Result of a link refactoring operation.
  *
- * Contains the updated content with refactored links and detailed information
- * about the changes made during the refactoring process.
+ * Contains the updated content with refactored links and detailed information about the changes
+ * made during the refactoring process.
  *
  * @category Core
  */
@@ -24,8 +24,8 @@ export interface LinkRefactorResult {
 /**
  * Configuration options for link refactoring operations.
  *
- * Controls how links are processed during refactoring, including path conversion,
- * formatting preservation, and special handling for different link types.
+ * Controls how links are processed during refactoring, including path conversion, formatting
+ * preservation, and special handling for different link types.
  *
  * @category Core
  */
@@ -41,40 +41,42 @@ export interface RefactorOptions {
 /**
  * Refactors and updates markdown links when files are moved or restructured.
  *
- * The LinkRefactorer automatically updates link paths, maintains referential integrity,
- * and handles various link types including relative paths, absolute paths, and Claude
- * import syntax. It ensures that links remain valid after file operations.
+ * The LinkRefactorer automatically updates link paths, maintains referential integrity, and handles
+ * various link types including relative paths, absolute paths, and Claude import syntax. It ensures
+ * that links remain valid after file operations.
  *
  * @category Core
  *
- * @example Basic link refactoring
- * ```typescript
- * const refactorer = new LinkRefactorer({
+ * @example
+ *   Basic link refactoring
+ *   ```typescript
+ *   const refactorer = new LinkRefactorer({
  *   preferRelativePaths: true,
  *   updateClaudeImports: true
- * });
+ *   });
  *
- * const result = await refactorer.refactorLinks(
+ *   const result = await refactorer.refactorLinks(
  *   parsedFile,
  *   'old/path/file.md',
  *   'new/path/file.md'
- * );
+ *   );
  *
- * console.log(`Updated ${result.changes.length} links`);
- * ```
+ *   console.log(`Updated ${result.changes.length} links`);
+ *   ```
  *
- * @example Bulk refactoring with path mapping
- * ```typescript
- * const pathMap = new Map([
+ * @example
+ *   Bulk refactoring with path mapping
+ *   ```typescript
+ *   const pathMap = new Map([
  *   ['docs/old.md', 'guides/new.md'],
  *   ['api/legacy.md', 'reference/current.md']
- * ]);
+ *   ]);
  *
- * const result = await refactorer.refactorLinksWithMapping(
+ *   const result = await refactorer.refactorLinksWithMapping(
  *   parsedFile,
  *   pathMap
- * );
- * ```
+ *   );
+ *   ```
  */
 export class LinkRefactorer {
   private options: Required<RefactorOptions>;
@@ -87,9 +89,7 @@ export class LinkRefactorer {
     };
   }
 
-  /**
-   * Update links in a file when another file has been moved
-   */
+  /** Update links in a file when another file has been moved */
   async refactorLinksForFileMove(
     file: ParsedMarkdownFile,
     movedFilePath: string,
@@ -99,9 +99,7 @@ export class LinkRefactorer {
     return this.refactorLinksForFileMoveWithContent(file, movedFilePath, newFilePath, content);
   }
 
-  /**
-   * Update links in a file when another file has been moved (with provided content)
-   */
+  /** Update links in a file when another file has been moved (with provided content) */
   async refactorLinksForFileMoveWithContent(
     file: ParsedMarkdownFile,
     movedFilePath: string,
@@ -181,9 +179,7 @@ export class LinkRefactorer {
     };
   }
 
-  /**
-   * Update links when the current file is being moved
-   */
+  /** Update links when the current file is being moved */
   async refactorLinksForCurrentFileMove(
     file: ParsedMarkdownFile,
     newFilePath: string
@@ -263,9 +259,7 @@ export class LinkRefactorer {
     };
   }
 
-  /**
-   * Update links when the current file is being moved (with provided content)
-   */
+  /** Update links when the current file is being moved (with provided content) */
   async refactorLinksForCurrentFileMoveWithContent(
     file: ParsedMarkdownFile,
     newFilePath: string,
@@ -345,9 +339,7 @@ export class LinkRefactorer {
     };
   }
 
-  /**
-   * Update a single link when a target file has been moved
-   */
+  /** Update a single link when a target file has been moved */
   private updateLinkForMovedFile(
     link: MarkdownLink,
     sourceFilePath: string,
@@ -370,9 +362,7 @@ export class LinkRefactorer {
     return link.href;
   }
 
-  /**
-   * Update a link when the source file (containing the link) is being moved
-   */
+  /** Update a link when the source file (containing the link) is being moved */
   private updateLinkForSourceFileMove(
     link: MarkdownLink,
     oldSourceFilePath: string,
@@ -445,9 +435,7 @@ export class LinkRefactorer {
     return newPath + anchorSuffix;
   }
 
-  /**
-   * Replace a link in a line of text while preserving formatting
-   */
+  /** Replace a link in a line of text while preserving formatting */
   private replaceLinkInLine(line: string, link: MarkdownLink, newHref: string): string {
     if (link.type === 'claude-import') {
       // Replace Claude import: @old-path with @new-path
@@ -481,16 +469,12 @@ export class LinkRefactorer {
     return line.replace(linkRegex, `[$1](${newHref}$2)`);
   }
 
-  /**
-   * Escape special regex characters in a string
-   */
+  /** Escape special regex characters in a string */
   private escapeRegex(str: string): string {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
-  /**
-   * Update reference-style link definitions
-   */
+  /** Update reference-style link definitions */
   async refactorReferenceDefinitions(
     file: ParsedMarkdownFile,
     movedFilePath: string,

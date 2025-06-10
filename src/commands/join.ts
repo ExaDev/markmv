@@ -4,8 +4,8 @@ import type { JoinOperationOptions } from '../types/operations.js';
 /**
  * Configuration options for join command operations.
  *
- * Controls how multiple markdown files are combined into a single file,
- * including ordering strategy, output location, and preview mode.
+ * Controls how multiple markdown files are combined into a single file, including ordering
+ * strategy, output location, and preview mode.
  *
  * @category Commands
  */
@@ -23,41 +23,44 @@ export interface JoinOptions {
 /**
  * Execute the join command to combine multiple markdown files into a single file.
  *
- * This command provides intelligent joining of markdown files with configurable
- * ordering strategies and automatic link refactoring. It supports:
+ * This command provides intelligent joining of markdown files with configurable ordering strategies
+ * and automatic link refactoring. It supports:
+ *
  * - Multiple ordering strategies (dependency, alphabetical, chronological, manual)
  * - Custom output file specification
  * - Dry run mode for previewing changes
  * - Automatic link updates and integrity validation
  * - Header conflict resolution and frontmatter merging
  *
- * The join operation automatically updates all cross-references to reflect the
- * new unified file structure and maintains link integrity throughout the project.
+ * The join operation automatically updates all cross-references to reflect the new unified file
+ * structure and maintains link integrity throughout the project.
+ *
+ * @category Commands
+ *
+ * @example
+ *   Basic file joining
+ *   ```typescript
+ *   await joinCommand(['intro.md', 'content.md', 'conclusion.md'], {
+ *   output: 'complete-guide.md',
+ *   orderStrategy: 'dependency'
+ *   });
+ *   ```
+ *
+ * @example
+ *   Dry run with verbose output
+ *   ```typescript
+ *   await joinCommand(['docs/*.md'], {
+ *   output: 'handbook.md',
+ *   dryRun: true,
+ *   verbose: true,
+ *   orderStrategy: 'alphabetical'
+ *   });
+ *   ```
  *
  * @param files - Array of markdown file paths to join together
  * @param options - Configuration options for the join operation
  *
  * @throws Will exit the process with code 1 if the operation fails
- *
- * @category Commands
- *
- * @example Basic file joining
- * ```typescript
- * await joinCommand(['intro.md', 'content.md', 'conclusion.md'], {
- *   output: 'complete-guide.md',
- *   orderStrategy: 'dependency'
- * });
- * ```
- *
- * @example Dry run with verbose output
- * ```typescript
- * await joinCommand(['docs/*.md'], {
- *   output: 'handbook.md',
- *   dryRun: true,
- *   verbose: true,
- *   orderStrategy: 'alphabetical'
- * });
- * ```
  */
 export async function joinCommand(files: string[], options: JoinOptions): Promise<void> {
   const joiner = new ContentJoiner();
