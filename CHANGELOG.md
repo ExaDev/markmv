@@ -1,3 +1,17 @@
+## [1.5.0](https://github.com/ExaDev/markmv/compare/v1.4.0...v1.5.0) (2025-06-10)
+
+### Features
+
+* add automatic linting fix job to CI workflow ([2dcebad](https://github.com/ExaDev/markmv/commit/2dcebadd3a06b7638a87f4566b543212d7722c67))
+
+### Bug Fixes
+
+* improve linting fix detection in CI workflow ([266aca4](https://github.com/ExaDev/markmv/commit/266aca4bc437a6f0d4801dba5b846e9016277684))
+
+### Tests
+
+* add trailing whitespace to test auto-fix CI ([d6fbadd](https://github.com/ExaDev/markmv/commit/d6fbadd3d73dba4cec06ffc86c5787711c88b09e))
+
 ## [1.4.0](https://github.com/ExaDev/markmv/compare/v1.3.2...v1.4.0) (2025-06-10)
 
 ### Features
