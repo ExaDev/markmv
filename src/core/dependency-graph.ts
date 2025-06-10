@@ -215,7 +215,7 @@ export class DependencyGraph {
     }
 
     // Update all references to this file in other nodes
-    for (const [filePath, deps] of this.edges) {
+    for (const [, deps] of this.edges) {
       if (deps.has(oldPath)) {
         deps.delete(oldPath);
         deps.add(newPath);

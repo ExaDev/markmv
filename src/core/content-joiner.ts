@@ -112,8 +112,8 @@ export class ContentJoiner {
         const content = await fs.readFile(filePath, 'utf8');
 
         // Parse links to find dependencies
-        const parsedFile = await this.linkParser.parseFile(filePath, content);
-        const dependencies = parsedFile.outgoingLinks.map((link) => link.target);
+        const parsedFile = await this.linkParser.parseFile(filePath);
+        const dependencies = parsedFile.dependencies;
 
         // Extract frontmatter
         const { frontmatter, content: mainContent } = this.extractFrontmatter(content);
@@ -124,8 +124,8 @@ export class ContentJoiner {
         sections.push({
           filePath,
           content,
-          frontmatter,
-          title,
+          frontmatter: frontmatter || undefined,
+          title: title || undefined,
           dependencies,
           order: i, // Default order based on input order
         });

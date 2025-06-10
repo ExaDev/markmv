@@ -223,7 +223,7 @@ export class LinkRefactorer {
     const sourceDir = PathUtils.resolvePath('', sourceFilePath).replace(/[^/\\]+$/, '');
 
     // Extract anchor if present
-    const [pathPart, anchor] = link.href.split('#');
+    const [, anchor] = link.href.split('#');
     const anchorSuffix = anchor ? `#${anchor}` : '';
 
     let newPath: string;
@@ -312,6 +312,8 @@ export class LinkRefactorer {
               ...reference,
               href: reference.url,
               type: 'internal',
+              text: undefined,
+              referenceId: undefined,
               line: reference.line,
               column: 1,
               absolute: false,

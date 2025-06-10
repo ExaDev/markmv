@@ -1,4 +1,3 @@
-import { existsSync } from 'node:fs';
 import { constants, access } from 'node:fs/promises';
 import type { BrokenLink, ValidationResult } from '../types/config.js';
 import type { MarkdownLink, ParsedMarkdownFile } from '../types/links.js';

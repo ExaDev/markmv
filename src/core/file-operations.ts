@@ -25,7 +25,7 @@ export class FileOperations {
     destinationPath: string,
     options: MoveOperationOptions = {}
   ): Promise<OperationResult> {
-    const { dryRun = false, verbose = false, force = false, createDirectories = true } = options;
+    const { dryRun = false, verbose = false } = options;
 
     try {
       // Validate inputs
@@ -199,7 +199,7 @@ export class FileOperations {
     moves: Array<{ source: string; destination: string }>,
     options: MoveOperationOptions = {}
   ): Promise<OperationResult> {
-    const { dryRun = false, verbose = false } = options;
+    const { dryRun = false } = options;
 
     try {
       // Validate all moves first

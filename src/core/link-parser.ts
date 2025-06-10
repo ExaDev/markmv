@@ -1,33 +1,32 @@
-import { readFile } from 'node:fs/promises';
-import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { readFile, readdir } from 'node:fs/promises';
+import { dirname, isAbsolute, join, resolve, extname } from 'node:path';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
-import type { Node } from 'unist';
 import { visit } from 'unist-util-visit';
+import type { Node } from 'unist';
 import type { LinkReference, LinkType, MarkdownLink, ParsedMarkdownFile } from '../types/links.js';
 
-interface LinkNode extends Node {
-  type: 'link' | 'image' | 'linkReference' | 'imageReference';
-  url?: string;
-  title?: string;
-  alt?: string;
-  identifier?: string;
-  referenceType?: 'full' | 'collapsed' | 'shortcut';
-  children?: Array<{ type: string; value?: string }>;
-  position?: {
-    start: { line: number; column: number };
-    end: { line: number; column: number };
-  };
-}
-
+// Define the MDAST node types we need to avoid import issues
 interface DefinitionNode extends Node {
   type: 'definition';
   identifier: string;
   url: string;
-  title?: string;
-  position?: {
-    start: { line: number; column: number };
-  };
+  title?: string | null | undefined;
+}
+
+interface TextNode extends Node {
+  type: 'text';
+  value: string;
+}
+
+interface LinkNode extends Node {
+  type: 'link' | 'image' | 'linkReference' | 'imageReference';
+  url?: string;
+  title?: string | null | undefined;
+  alt?: string | null | undefined;
+  identifier?: string;
+  referenceType?: 'full' | 'collapsed' | 'shortcut';
+  children?: Array<{ type: string; value?: string }>;
 }
 
 export class LinkParser {
@@ -47,43 +46,40 @@ export class LinkParser {
         references.push({
           id: node.identifier,
           url: node.url,
-          title: node.title,
+          title: node.title || undefined,
           line: node.position.start.line,
         });
       }
     });
 
     // Extract Claude import links from text nodes
-    visit(
-      tree,
-      'text',
-      (node: { value: string; position?: { start: { line: number; column: number } } }) => {
-        if (!node.position) return;
+    visit(tree, 'text', (node: TextNode) => {
+      if (!node.position) return;
 
-        const claudeImportRegex = /@([^\s\n]+)/g;
-        let match;
+      const claudeImportRegex = /@([^\s\n]+)/g;
+      let match;
 
-        while ((match = claudeImportRegex.exec(node.value)) !== null) {
-          const importPath = match[1];
-          const link: MarkdownLink = {
-            type: 'claude-import',
-            href: importPath,
-            text: match[0], // Full "@path" text
-            line: node.position.start.line,
-            column: node.position.start.column + match.index,
-            absolute: importPath.startsWith('/') || importPath.startsWith('~'),
-          };
+      while ((match = claudeImportRegex.exec(node.value)) !== null) {
+        const importPath = match[1];
+        const link: MarkdownLink = {
+          type: 'claude-import',
+          href: importPath,
+          text: match[0], // Full "@path" text
+          referenceId: undefined,
+          line: node.position.start.line,
+          column: node.position.start.column + match.index,
+          absolute: importPath.startsWith('/') || importPath.startsWith('~'),
+        };
 
-          // Resolve Claude import paths
-          link.resolvedPath = this.resolveClaudeImportPath(importPath, dirname(absolutePath));
+        // Resolve Claude import paths
+        link.resolvedPath = this.resolveClaudeImportPath(importPath, dirname(absolutePath));
 
-          links.push(link);
-        }
+        links.push(link);
       }
-    );
+    });
 
     // Extract links and images
-    visit(tree, ['link', 'image', 'linkReference', 'imageReference'], (node: LinkNode) => {
+    const processLinkNode = (node: LinkNode) => {
       if (!node.position) return;
 
       let href: string;
@@ -96,11 +92,11 @@ export class LinkParser {
         linkType = node.type === 'image' ? 'image' : this.determineLinkType(href);
 
         if (node.type === 'image') {
-          text = node.alt;
+          text = node.alt || undefined;
         } else if (node.children) {
           text = node.children
-            .filter((child) => child.type === 'text')
-            .map((child) => child.value)
+            .filter((child: any) => child.type === 'text')
+            .map((child: any) => child.value)
             .join('');
         }
       } else {
@@ -111,11 +107,11 @@ export class LinkParser {
         linkType = node.type === 'imageReference' ? 'image' : 'reference';
 
         if (node.type === 'imageReference') {
-          text = node.alt;
+          text = node.alt || undefined;
         } else if (node.children) {
           text = node.children
-            .filter((child) => child.type === 'text')
-            .map((child) => child.value)
+            .filter((child: any) => child.type === 'text')
+            .map((child: any) => child.value)
             .join('');
         }
       }
@@ -124,7 +120,7 @@ export class LinkParser {
         type: linkType,
         href,
         text,
-        referenceId,
+        referenceId: referenceId || undefined,
         line: node.position.start.line,
         column: node.position.start.column,
         absolute: isAbsolute(href),
@@ -136,7 +132,12 @@ export class LinkParser {
       }
 
       links.push(link);
-    });
+    };
+
+    visit(tree, 'link', processLinkNode);
+    visit(tree, 'image', processLinkNode);
+    visit(tree, 'linkReference', processLinkNode);
+    visit(tree, 'imageReference', processLinkNode);
 
     const dependencies = this.extractDependencies(links);
 
@@ -206,18 +207,8 @@ export class LinkParser {
     dirPath: string,
     extensions = ['.md', '.markdown', '.mdx']
   ): Promise<ParsedMarkdownFile[]> {
-    const { glob } = await import('node:fs');
-    const { promisify } = await import('node:util');
-    const globAsync = promisify(glob);
-
-    const pattern =
-      extensions.length === 1
-        ? `**/*${extensions[0]}`
-        : `**/*.{${extensions.map((ext) => ext.slice(1)).join(',')}}`;
-
-    const files = await globAsync(pattern, { cwd: dirPath, absolute: true });
-
-    const results = await Promise.allSettled(files.map((file) => this.parseFile(file)));
+    const files = await this.findMarkdownFiles(dirPath, extensions);
+    const results = await Promise.allSettled(files.map((file: string) => this.parseFile(file)));
 
     return results
       .filter(
@@ -225,5 +216,26 @@ export class LinkParser {
           result.status === 'fulfilled'
       )
       .map((result) => result.value);
+  }
+
+  private async findMarkdownFiles(dirPath: string, extensions: string[]): Promise<string[]> {
+    const files: string[] = [];
+    
+    const processDirectory = async (currentDir: string): Promise<void> => {
+      const entries = await readdir(currentDir, { withFileTypes: true });
+      
+      for (const entry of entries) {
+        const fullPath = join(currentDir, entry.name);
+        
+        if (entry.isDirectory()) {
+          await processDirectory(fullPath);
+        } else if (entry.isFile() && extensions.includes(extname(entry.name))) {
+          files.push(fullPath);
+        }
+      }
+    };
+    
+    await processDirectory(resolve(dirPath));
+    return files;
   }
 }

@@ -19,7 +19,7 @@ import { FileUtils } from '../utils/file-utils.js';
 import { PathUtils } from '../utils/path-utils.js';
 import { TransactionManager } from '../utils/transaction-manager.js';
 import { LinkParser } from './link-parser.js';
-import { LinkRefactorer } from './link-refactorer.js';
+// import { LinkRefactorer } from './link-refactorer.js';
 
 export interface LinkRedistributionResult {
   /** Updated sections with redistributed links */
@@ -37,7 +37,7 @@ export interface LinkRedistributionResult {
 
 export class ContentSplitter {
   private linkParser = new LinkParser();
-  private linkRefactorer = new LinkRefactorer();
+  // private linkRefactorer = new LinkRefactorer();
 
   /**
    * Split a markdown file into multiple files
