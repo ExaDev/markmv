@@ -10,7 +10,8 @@ on:
 jobs:
   update-badges:
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
+    # Run regardless of CI outcome to at least update docs coverage
+    # But test coverage will only update if CI succeeded
     permissions:
       contents: write
       pull-requests: write
@@ -43,17 +44,37 @@ jobs:
       - name: Generate test coverage
         id: test-coverage
         run: |
-          # Run test coverage and extract percentage
-          npm run test:coverage 2>/dev/null | tee coverage-output.txt
-          
-          # Extract overall coverage percentage
-          COVERAGE=$(grep "All files" coverage-output.txt | awk '{print $4}' | head -1)
-          
-          if [ -z "$COVERAGE" ]; then
-            echo "⚠️ Could not extract test coverage percentage"
-            COVERAGE="unknown"
+          # Only update test coverage if CI succeeded (tests passed)
+          if [ "${{ github.event.workflow_run.conclusion }}" = "success" ]; then
+            echo "CI succeeded - generating fresh test coverage"
+            
+            # Try to use coverage from artifacts first
+            if [ -f "coverage-output.txt" ]; then
+              echo "Using coverage from CI artifacts"
+              COVERAGE=$(grep "All files" coverage-output.txt | awk '{print $4}' | head -1)
+            else
+              echo "No coverage artifacts - running fresh coverage"
+              npm run test:coverage 2>/dev/null | tee coverage-output.txt
+              COVERAGE=$(grep "All files" coverage-output.txt | awk '{print $4}' | head -1)
+            fi
+            
+            if [ -z "$COVERAGE" ]; then
+              echo "⚠️ Could not extract test coverage percentage"
+              COVERAGE="unknown"
+            else
+              echo "✅ Test coverage: $COVERAGE%"
+            fi
           else
-            echo "✅ Test coverage: $COVERAGE%"
+            echo "CI failed - keeping existing test coverage badge unchanged"
+            # Extract current coverage from README to avoid changing it
+            CURRENT_BADGE=$(grep "Test Coverage" README.md || echo "")
+            if echo "$CURRENT_BADGE" | grep -o '[0-9]\+\(\.[0-9]\+\)\?%' >/dev/null; then
+              COVERAGE=$(echo "$CURRENT_BADGE" | grep -o '[0-9]\+\(\.[0-9]\+\)\?%' | head -1)
+              echo "Keeping existing test coverage: $COVERAGE"
+            else
+              COVERAGE="unknown"
+              echo "Could not extract existing coverage, using unknown"
+            fi
           fi
           
           echo "test-coverage=$COVERAGE" >> $GITHUB_OUTPUT

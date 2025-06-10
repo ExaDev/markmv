@@ -1,8 +1,13 @@
 name: Deploy Documentation
 
 on:
-  push:
-    branches: [ main ]
+  # Primary trigger: after badge updates complete
+  workflow_run:
+    workflows: ["Update Coverage Badges"]
+    types:
+      - completed
+    branches: [main]
+  # Secondary trigger: PRs (for preview)
   pull_request:
     branches: [ main ]
 
@@ -15,9 +20,15 @@ jobs:
   # Build job
   build:
     runs-on: ubuntu-latest
+    # Build docs after badge updates (regardless of outcome) or for PRs
+    if: ${{ github.event_name == 'workflow_run' || github.event_name == 'pull_request' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Always get the latest main branch for up-to-date badges
+          ref: main
+          fetch-depth: 1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -27,6 +38,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Show current badge status
+        run: |
+          echo "## 📊 Current Badge Status" >> $GITHUB_STEP_SUMMARY
+          echo "Including the following badges in documentation:" >> $GITHUB_STEP_SUMMARY
+          grep -E "(Test Coverage|Documentation Coverage)" README.md >> $GITHUB_STEP_SUMMARY || echo "No coverage badges found" >> $GITHUB_STEP_SUMMARY
 
       - name: Build project
         run: npm run build
