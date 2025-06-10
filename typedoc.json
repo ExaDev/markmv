@@ -34,9 +34,9 @@
   "validation": {
     "notExported": true,
     "invalidLink": true,
-    "notDocumented": false
+    "notDocumented": true
   },
-  "treatWarningsAsErrors": false,
+  "treatWarningsAsErrors": true,
   "logLevel": "Info",
   "exclude": [
     "**/*.test.ts",
@@ -48,6 +48,7 @@
     "**/node_modules/**"
   ],
   "plugin": [
-    "typedoc-plugin-missing-exports"
+    "typedoc-plugin-missing-exports",
+    "typedoc-plugin-coverage"
   ]
 }
