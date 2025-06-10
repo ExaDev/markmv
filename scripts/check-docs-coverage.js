@@ -172,6 +172,8 @@ class DocCoverageChecker {
    * Generate coverage report
    */
   generateReport() {
+    const isJsonOutput = process.env.OUTPUT_JSON === 'true';
+    
     const exportCoverage = this.stats.totalExports > 0 ? 
       (this.stats.documentedExports / this.stats.totalExports * 100).toFixed(1) : 0;
     
@@ -188,48 +190,50 @@ class DocCoverageChecker {
     const totalDocumented = this.stats.documentedExports + this.stats.documentedMethods + this.stats.documentedProperties;
     const overallCoverage = totalItems > 0 ? (totalDocumented / totalItems * 100).toFixed(1) : 0;
 
-    console.log('\n📊 TypeDoc Documentation Coverage Report');
-    console.log('=' .repeat(50));
-    console.log(`📁 Files analyzed: ${this.stats.totalFiles}`);
-    console.log(`📈 Overall coverage: ${overallCoverage}%`);
-    console.log();
-    console.log('📋 Detailed Coverage:');
-    console.log(`   📤 Exports: ${this.stats.documentedExports}/${this.stats.totalExports} (${exportCoverage}%)`);
-    console.log(`   🏗️  Classes: ${this.stats.documentedClasses}/${this.stats.totalClasses} (${classCoverage}%)`);
-    console.log(`   ⚙️  Methods: ${this.stats.documentedMethods}/${this.stats.totalMethods} (${methodCoverage}%)`);
-    console.log(`   🔧 Properties: ${this.stats.documentedProperties}/${this.stats.totalProperties} (${propertyCoverage}%)`);
+    if (!isJsonOutput) {
+      console.log('\n📊 TypeDoc Documentation Coverage Report');
+      console.log('=' .repeat(50));
+      console.log(`📁 Files analyzed: ${this.stats.totalFiles}`);
+      console.log(`📈 Overall coverage: ${overallCoverage}%`);
+      console.log();
+      console.log('📋 Detailed Coverage:');
+      console.log(`   📤 Exports: ${this.stats.documentedExports}/${this.stats.totalExports} (${exportCoverage}%)`);
+      console.log(`   🏗️  Classes: ${this.stats.documentedClasses}/${this.stats.totalClasses} (${classCoverage}%)`);
+      console.log(`   ⚙️  Methods: ${this.stats.documentedMethods}/${this.stats.totalMethods} (${methodCoverage}%)`);
+      console.log(`   🔧 Properties: ${this.stats.documentedProperties}/${this.stats.totalProperties} (${propertyCoverage}%)`);
 
-    if (this.stats.issues.length > 0) {
-      console.log('\n⚠️  Missing Documentation:');
-      console.log('-'.repeat(50));
-      
-      // Group issues by file
-      const issuesByFile = {};
-      for (const issue of this.stats.issues) {
-        if (!issuesByFile[issue.file]) {
-          issuesByFile[issue.file] = [];
+      if (this.stats.issues.length > 0) {
+        console.log('\n⚠️  Missing Documentation:');
+        console.log('-'.repeat(50));
+        
+        // Group issues by file
+        const issuesByFile = {};
+        for (const issue of this.stats.issues) {
+          if (!issuesByFile[issue.file]) {
+            issuesByFile[issue.file] = [];
+          }
+          issuesByFile[issue.file].push(issue);
         }
-        issuesByFile[issue.file].push(issue);
+
+        for (const [file, issues] of Object.entries(issuesByFile)) {
+          console.log(`\n📄 ${file}:`);
+          for (const issue of issues) {
+            const icon = {
+              'missing-export-doc': '📤',
+              'missing-class-doc': '🏗️',
+              'missing-method-doc': '⚙️',
+              'missing-property-doc': '🔧'
+            }[issue.type] || '❓';
+            
+            console.log(`   ${icon} Line ${issue.line}: ${issue.construct} '${issue.name}'`);
+          }
+        }
+      } else {
+        console.log('\n✅ All public APIs are documented!');
       }
 
-      for (const [file, issues] of Object.entries(issuesByFile)) {
-        console.log(`\n📄 ${file}:`);
-        for (const issue of issues) {
-          const icon = {
-            'missing-export-doc': '📤',
-            'missing-class-doc': '🏗️',
-            'missing-method-doc': '⚙️',
-            'missing-property-doc': '🔧'
-          }[issue.type] || '❓';
-          
-          console.log(`   ${icon} Line ${issue.line}: ${issue.construct} '${issue.name}'`);
-        }
-      }
-    } else {
-      console.log('\n✅ All public APIs are documented!');
+      console.log('\n' + '='.repeat(50));
     }
-
-    console.log('\n' + '='.repeat(50));
     
     const result = {
       overallCoverage: parseFloat(overallCoverage),
@@ -241,8 +245,8 @@ class DocCoverageChecker {
     
     // Output JSON for CI integration if requested
     if (process.env.OUTPUT_JSON === 'true') {
-      console.log('\n📊 JSON Output:');
       console.log(JSON.stringify(result, null, 2));
+      return result;
     }
     
     return result;
@@ -252,7 +256,11 @@ class DocCoverageChecker {
    * Run the documentation coverage check
    */
   run() {
-    console.log('🔍 Analyzing TypeScript files for documentation coverage...\n');
+    const isJsonOutput = process.env.OUTPUT_JSON === 'true';
+    
+    if (!isJsonOutput) {
+      console.log('🔍 Analyzing TypeScript files for documentation coverage...\n');
+    }
     
     const files = this.findTSFiles('./src');
     this.stats.totalFiles = files.length;
@@ -269,16 +277,20 @@ class DocCoverageChecker {
 const checker = new DocCoverageChecker();
 const result = checker.run();
 
-// Report threshold status
+// Report threshold status (unless in JSON mode)
 const threshold = 80; // 80% coverage threshold
-if (result.overallCoverage < threshold) {
-  console.log(`\n⚠️  Documentation coverage ${result.overallCoverage}% is below threshold ${threshold}%`);
-  console.log(`📈 Goal: Improve coverage by documenting ${threshold - result.overallCoverage}% more APIs`);
-  
-  // Only exit with error code if we're in strict mode (CI can set NODE_ENV=test)
-  if (process.env.NODE_ENV === 'test' || process.env.CI_STRICT_DOCS === 'true') {
-    process.exit(1);
+const isJsonOutput = process.env.OUTPUT_JSON === 'true';
+
+if (!isJsonOutput) {
+  if (result.overallCoverage < threshold) {
+    console.log(`\n⚠️  Documentation coverage ${result.overallCoverage}% is below threshold ${threshold}%`);
+    console.log(`📈 Goal: Improve coverage by documenting ${threshold - result.overallCoverage}% more APIs`);
+    
+    // Only exit with error code if we're in strict mode (CI can set NODE_ENV=test)
+    if (process.env.NODE_ENV === 'test' || process.env.CI_STRICT_DOCS === 'true') {
+      process.exit(1);
+    }
+  } else {
+    console.log(`\n✅ Documentation coverage ${result.overallCoverage}% meets threshold ${threshold}%`);
   }
-} else {
-  console.log(`\n✅ Documentation coverage ${result.overallCoverage}% meets threshold ${threshold}%`);
 }
