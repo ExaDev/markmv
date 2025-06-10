@@ -1,3 +1,18 @@
+## [1.12.0](https://github.com/ExaDev/markmv/compare/v1.11.0...v1.12.0) (2025-06-10)
+
+### Features
+
+* add Dependabot configuration for automated dependency updates ([b5e98de](https://github.com/ExaDev/markmv/commit/b5e98de797e84158865aa809fb4c1fc0819f3d6c))
+* add dynamic coverage badge updates via CI ([7c6d8c5](https://github.com/ExaDev/markmv/commit/7c6d8c5fea91a5defa44deffc41aa63ea1a6afd2))
+
+### Bug Fixes
+
+* ensure docs build after coverage badges update ([5f135a9](https://github.com/ExaDev/markmv/commit/5f135a94ef507c6e56283ae69e82b8fb054bc94f))
+
+### Documentation
+
+* add static coverage badges for commit 1e91f84 ([3c1a066](https://github.com/ExaDev/markmv/commit/3c1a066723dbeae81d329987ad00e952fa7959ed))
+
 ## [1.11.0](https://github.com/ExaDev/markmv/compare/v1.10.0...v1.11.0) (2025-06-10)
 
 ### Features
