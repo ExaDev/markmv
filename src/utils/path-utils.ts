@@ -1,15 +1,15 @@
+import { existsSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
-import { existsSync, statSync } from 'node:fs';
 
 /**
  * Utility class for path manipulation and resolution operations.
- * 
+ *
  * Provides comprehensive path handling for markdown file operations including
  * relative path updates, home directory resolution, and cross-platform compatibility.
- * 
+ *
  * @category Utilities
- * 
+ *
  * @example Path resolution
  * ```typescript
  * // Resolve various path formats
@@ -17,7 +17,7 @@ import { existsSync, statSync } from 'node:fs';
  * PathUtils.resolvePath('../guide.md', '/current/dir');  // Relative
  * PathUtils.resolvePath('/absolute/path.md');  // Absolute
  * ```
- * 
+ *
  * @example Relative path updates for moved files
  * ```typescript
  * // When moving a file, update its relative links
@@ -33,16 +33,16 @@ import { existsSync, statSync } from 'node:fs';
 export class PathUtils {
   /**
    * Resolve a path that may be relative, absolute, or use home directory notation.
-   * 
+   *
    * @param path - The path to resolve (supports ~/, relative, and absolute paths)
    * @param basePath - Optional base directory for relative path resolution
    * @returns Resolved absolute path
-   * 
+   *
    * @example
    * ```typescript
    * PathUtils.resolvePath('~/docs/file.md');
    * // Returns: '/Users/username/docs/file.md'
-   * 
+   *
    * PathUtils.resolvePath('../file.md', '/current/working/dir');
    * // Returns: '/current/working/file.md'
    * ```
@@ -260,13 +260,13 @@ export class PathUtils {
    */
   static resolveDestination(sourcePath: string, destinationPath: string): string {
     const resolvedDest = PathUtils.resolvePath(destinationPath);
-    
+
     // If destination looks like a directory or exists as a directory
     if (PathUtils.looksLikeDirectory(destinationPath) || PathUtils.isDirectory(resolvedDest)) {
       const sourceFileName = basename(sourcePath);
       return join(resolvedDest, sourceFileName);
     }
-    
+
     return resolvedDest;
   }
 }

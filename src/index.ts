@@ -1,28 +1,28 @@
 /**
  * Markmv - TypeScript library for markdown file operations with intelligent link refactoring
- * 
+ *
  * This library provides programmatic access to all markmv functionality for use in scripts,
  * build processes, and other Node.js applications.
- * 
+ *
  * @example Basic usage
  * ```typescript
  * import { FileOperations } from 'markmv';
- * 
+ *
  * const fileOps = new FileOperations();
  * const result = await fileOps.moveFile('old.md', 'new.md');
  * console.log(`Moved file successfully: ${result.success}`);
  * ```
- * 
+ *
  * @example Advanced usage with options
  * ```typescript
  * import { FileOperations, type MoveOperationOptions } from 'markmv';
- * 
+ *
  * const fileOps = new FileOperations();
  * const options: MoveOperationOptions = {
  *   dryRun: true,
  *   verbose: true
  * };
- * 
+ *
  * const result = await fileOps.moveFile('docs/old.md', 'docs/new.md', options);
  * if (result.success) {
  *   console.log(`Would modify ${result.modifiedFiles.length} files`);
@@ -51,27 +51,27 @@ export { PathUtils } from './utils/path-utils.js';
 export { TransactionManager } from './utils/transaction-manager.js';
 
 // Strategy classes
-export { 
+export {
   BaseJoinStrategy,
   DependencyOrderJoinStrategy,
   AlphabeticalJoinStrategy,
   ManualOrderJoinStrategy,
-  ChronologicalJoinStrategy
+  ChronologicalJoinStrategy,
 } from './strategies/join-strategies.js';
 
-export { 
+export {
   BaseMergeStrategy,
   AppendMergeStrategy,
   PrependMergeStrategy,
-  InteractiveMergeStrategy
+  InteractiveMergeStrategy,
 } from './strategies/merge-strategies.js';
 
-export { 
+export {
   BaseSplitStrategy,
   HeaderBasedSplitStrategy,
   SizeBasedSplitStrategy,
   ManualSplitStrategy,
-  LineBasedSplitStrategy
+  LineBasedSplitStrategy,
 } from './strategies/split-strategies.js';
 
 // Command functions for programmatic access
@@ -82,7 +82,7 @@ export type {
   // Core types
   MarkdownLink,
   ParsedMarkdownFile,
-  LinkType
+  LinkType,
 } from './types/links.js';
 
 export type {
@@ -92,13 +92,13 @@ export type {
   OperationOptions,
   SplitOperationOptions,
   JoinOperationOptions,
-  MergeOperationOptions
+  MergeOperationOptions,
 } from './types/operations.js';
 
 export type {
   IndexOptions,
   FileMetadata,
-  IndexableFile
+  IndexableFile,
 } from './commands/index.js';
 
 // Re-export specific strategy types that might be useful
@@ -106,34 +106,34 @@ export type {
   JoinSection,
   JoinResult,
   JoinConflict,
-  JoinStrategyOptions
+  JoinStrategyOptions,
 } from './strategies/join-strategies.js';
 
 export type {
   MergeSection,
   MergeResult,
   MergeConflict,
-  MergeStrategyOptions
+  MergeStrategyOptions,
 } from './strategies/merge-strategies.js';
 
 export type {
   SplitSection,
   SplitResult,
-  SplitStrategyOptions
+  SplitStrategyOptions,
 } from './strategies/split-strategies.js';
 
 /**
  * Main entry point for the markmv library
- * 
+ *
  * Creates a new FileOperations instance for performing markdown file operations.
  * This is the recommended way to get started with the library.
- * 
+ *
  * @returns A new FileOperations instance
- * 
+ *
  * @example
  * ```typescript
  * import { createMarkMv } from 'markmv';
- * 
+ *
  * const markmv = createMarkMv();
  * const result = await markmv.moveFile('old.md', 'new.md');
  * ```
@@ -144,24 +144,24 @@ export function createMarkMv(): FileOperations {
 
 /**
  * Convenience function for moving a single markdown file
- * 
+ *
  * @param sourcePath - The current file path
  * @param destinationPath - The target file path
  * @param options - Optional configuration
  * @returns Promise resolving to operation result
- * 
+ *
  * @example
  * ```typescript
  * import { moveFile } from 'markmv';
- * 
- * const result = await moveFile('docs/old.md', 'docs/new.md', { 
- *   dryRun: true 
+ *
+ * const result = await moveFile('docs/old.md', 'docs/new.md', {
+ *   dryRun: true
  * });
  * ```
  */
 export async function moveFile(
-  sourcePath: string, 
-  destinationPath: string, 
+  sourcePath: string,
+  destinationPath: string,
   options: MoveOperationOptions = {}
 ): Promise<OperationResult> {
   const fileOps = new FileOperations();
@@ -170,15 +170,15 @@ export async function moveFile(
 
 /**
  * Convenience function for moving multiple markdown files
- * 
+ *
  * @param moves - Array of source/destination pairs
- * @param options - Optional configuration  
+ * @param options - Optional configuration
  * @returns Promise resolving to operation result
- * 
+ *
  * @example
  * ```typescript
  * import { moveFiles } from 'markmv';
- * 
+ *
  * const result = await moveFiles([
  *   { source: 'old1.md', destination: 'new1.md' },
  *   { source: 'old2.md', destination: 'new2.md' }
@@ -195,17 +195,17 @@ export async function moveFiles(
 
 /**
  * Convenience function for validating markdown file operations
- * 
+ *
  * @param result - The operation result to validate
  * @returns Promise resolving to validation result
- * 
+ *
  * @example
  * ```typescript
  * import { moveFile, validateOperation } from 'markmv';
- * 
+ *
  * const result = await moveFile('old.md', 'new.md');
  * const validation = await validateOperation(result);
- * 
+ *
  * if (!validation.valid) {
  *   console.error(`Found ${validation.brokenLinks} broken links`);
  * }
