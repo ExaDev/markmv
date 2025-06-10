@@ -80,7 +80,7 @@ export class FileOperations {
         if (!dependentFile) continue;
 
         try {
-          const refactorResult = await this.linkRefactorer.refactorLinksForFileMove(
+          const refactorResult: LinkRefactorResult = await this.linkRefactorer.refactorLinksForFileMove(
             dependentFile,
             sourcePath,
             destinationPath
@@ -236,9 +236,9 @@ export class FileOperations {
       const projectFiles = await this.discoverProjectFiles(moves[0].source);
       const dependencyGraph = new DependencyGraph([...allFiles, ...projectFiles]);
       
-      // Store content for all files that might be affected (including potential dependents)
-      const allFilePaths = new Set([...moves.map(m => m.source), ...moves.map(m => m.destination)]);
-      for (const filePath of allFilePaths) {
+      // Store content for additional files that might be affected (excluding destination files that don't exist yet)
+      const sourceFilePaths = new Set(moves.map(m => m.source));
+      for (const filePath of sourceFilePaths) {
         if (!fileContents.has(filePath) && await FileUtils.exists(filePath)) {
           const content = await FileUtils.readTextFile(filePath);
           fileContents.set(filePath, content);
@@ -254,17 +254,19 @@ export class FileOperations {
       const modifiedFiles = new Set<string>();
       const warnings: string[] = [];
 
-      // Process each move
+      // First pass: Add all file moves to the transaction
       for (const { source, destination } of moves) {
-        // Plan file move
         if (!dryRun) {
           transaction.addFileMove(source, destination);
         }
-
-        // Update dependency graph for this move
+        // Update dependency graph immediately
         dependencyGraph.updateFilePath(source, destination);
+      }
 
-        // Find dependent files
+      // Second pass: Process content updates for dependent files and moved files
+      for (const { source, destination } of moves) {
+        // Find dependent files (files that depend on the source file being moved)
+        // Note: use destination since we've already updated the dependency graph
         const dependentFiles = dependencyGraph.getDependents(destination);
 
         // Process dependent files
@@ -272,33 +274,59 @@ export class FileOperations {
           const dependentFile = dependencyGraph.getNode(dependentFilePath)?.data;
           if (!dependentFile) continue;
 
-          let refactorResult: LinkRefactorResult;
-          const storedContent = fileContents.get(dependentFilePath);
-          if (storedContent) {
-            refactorResult = await this.linkRefactorer.refactorLinksForFileMoveWithContent(
-              dependentFile,
-              source,
-              destination,
-              storedContent
-            );
-          } else {
-            refactorResult = await this.linkRefactorer.refactorLinksForFileMove(
-              dependentFile,
+          // For files being moved in this batch, use stored content and update the destination
+          const moveInfo = moves.find(move => move.destination === dependentFilePath);
+          const actualDependentFile = dependentFile;
+          let actualDependentPath = dependentFilePath;
+          let contentToUse = fileContents.get(dependentFile.filePath);
+
+          if (moveInfo) {
+            // This dependent file is also being moved
+            actualDependentPath = moveInfo.destination;
+            contentToUse = fileContents.get(moveInfo.source);
+          }
+
+          if (!contentToUse) {
+            // Fallback to reading from file system
+            const refactorResult = await this.linkRefactorer.refactorLinksForFileMove(
+              actualDependentFile,
               source,
               destination
             );
-          }
 
-          if (refactorResult.changes.length > 0) {
-            modifiedFiles.add(dependentFilePath);
-            allChanges.push(...refactorResult.changes);
+            if (refactorResult.changes.length > 0) {
+              modifiedFiles.add(actualDependentPath);
+              allChanges.push(...refactorResult.changes);
 
-            if (!dryRun) {
-              transaction.addContentUpdate(dependentFilePath, refactorResult.updatedContent);
+              if (!dryRun) {
+                transaction.addContentUpdate(actualDependentPath, refactorResult.updatedContent);
+              }
             }
-          }
 
-          warnings.push(...refactorResult.errors);
+            warnings.push(...refactorResult.errors);
+          } else {
+            // Use stored content
+            const refactorResult = await this.linkRefactorer.refactorLinksForFileMoveWithContent(
+              actualDependentFile,
+              source,
+              destination,
+              contentToUse
+            );
+
+            if (refactorResult.changes.length > 0) {
+              modifiedFiles.add(actualDependentPath);
+              allChanges.push(...refactorResult.changes);
+
+              if (!dryRun) {
+                transaction.addContentUpdate(actualDependentPath, refactorResult.updatedContent);
+              }
+
+              // Update stored content for subsequent processing
+              fileContents.set(actualDependentPath, refactorResult.updatedContent);
+            }
+
+            warnings.push(...refactorResult.errors);
+          }
         }
 
         // Update the moved file itself
