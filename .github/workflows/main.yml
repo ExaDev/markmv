@@ -137,13 +137,19 @@ jobs:
           # Generate regular report for summary
           npm run docs:coverage
           
-          # Generate JSON report for programmatic access
-          OUTPUT_JSON=true npm run docs:coverage-json 2>/dev/null > docs-coverage.json
+          # Generate JSON report for programmatic access (suppress all output to avoid warnings in JSON)
+          DOCS_COVERAGE=$(OUTPUT_JSON=true node scripts/check-docs-coverage.js 2>/dev/null | jq -r '.overallCoverage')
           
-          # Extract coverage percentage
-          DOCS_COVERAGE=$(jq -r '.overallCoverage' docs-coverage.json)
+          # If jq failed, try to extract directly from the script output
+          if [ -z "$DOCS_COVERAGE" ] || [ "$DOCS_COVERAGE" = "null" ]; then
+            DOCS_COVERAGE=$(OUTPUT_JSON=true node scripts/check-docs-coverage.js 2>/dev/null | grep -o '"overallCoverage":[0-9.]*' | cut -d':' -f2)
+          fi
+          
           echo "DOCS_COVERAGE=$DOCS_COVERAGE" >> $GITHUB_ENV
           echo "📚 Documentation coverage: $DOCS_COVERAGE%" >> $GITHUB_STEP_SUMMARY
+          
+          # Save JSON for artifacts (optional)
+          OUTPUT_JSON=true node scripts/check-docs-coverage.js 2>/dev/null > docs-coverage.json || echo '{"overallCoverage": 0}' > docs-coverage.json
           
       - name: Upload coverage artifacts
         if: matrix.node-version == '20.x'
