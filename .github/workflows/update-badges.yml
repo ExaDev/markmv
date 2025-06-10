@@ -1,0 +1,207 @@
+name: Update Coverage Badges
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches: [main]
+
+jobs:
+  update-badges:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-reports
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+        continue-on-error: true
+        
+      - name: Generate test coverage
+        id: test-coverage
+        run: |
+          # Run test coverage and extract percentage
+          npm run test:coverage 2>/dev/null | tee coverage-output.txt
+          
+          # Extract overall coverage percentage
+          COVERAGE=$(grep "All files" coverage-output.txt | awk '{print $4}' | head -1)
+          
+          if [ -z "$COVERAGE" ]; then
+            echo "⚠️ Could not extract test coverage percentage"
+            COVERAGE="unknown"
+          else
+            echo "✅ Test coverage: $COVERAGE%"
+          fi
+          
+          echo "test-coverage=$COVERAGE" >> $GITHUB_OUTPUT
+          
+      - name: Get documentation coverage
+        id: docs-coverage
+        run: |
+          # Generate fresh documentation coverage
+          OUTPUT_JSON=true npm run docs:coverage-json > docs-coverage.json 2>/dev/null || true
+          
+          if [ -f "docs-coverage.json" ]; then
+            # Extract coverage from JSON output (look for the JSON block)
+            COVERAGE=$(node -e "
+              const fs = require('fs');
+              const content = fs.readFileSync('docs-coverage.json', 'utf8');
+              const lines = content.split('\n');
+              for (const line of lines) {
+                try {
+                  const data = JSON.parse(line);
+                  if (data.overallCoverage !== undefined) {
+                    console.log(data.overallCoverage);
+                    break;
+                  }
+                } catch (e) {
+                  // Continue to next line
+                }
+              }
+            " 2>/dev/null || echo "")
+            
+            if [ -z "$COVERAGE" ]; then
+              # Fallback: run fresh coverage check
+              COVERAGE=$(OUTPUT_JSON=true node scripts/check-docs-coverage.js 2>/dev/null | grep '"overallCoverage"' | grep -o '[0-9]\+\(\.[0-9]\+\)\?' | head -1)
+            fi
+          else
+            # Generate fresh coverage
+            COVERAGE=$(OUTPUT_JSON=true node scripts/check-docs-coverage.js 2>/dev/null | grep '"overallCoverage"' | grep -o '[0-9]\+\(\.[0-9]\+\)\?' | head -1)
+          fi
+          
+          if [ -z "$COVERAGE" ]; then
+            echo "⚠️ Could not extract documentation coverage percentage"
+            COVERAGE="unknown"
+          else
+            echo "✅ Documentation coverage: $COVERAGE%"
+          fi
+          
+          echo "docs-coverage=$COVERAGE" >> $GITHUB_OUTPUT
+          
+      - name: Determine badge colors
+        id: badge-colors
+        run: |
+          # Test coverage color logic
+          TEST_COV="${{ steps.test-coverage.outputs.test-coverage }}"
+          if [ "$TEST_COV" = "unknown" ]; then
+            TEST_COLOR="lightgrey"
+          else
+            TEST_NUM=$(echo "$TEST_COV" | sed 's/%//' | cut -d'.' -f1)
+            if [ "$TEST_NUM" -ge 90 ]; then
+              TEST_COLOR="brightgreen"
+            elif [ "$TEST_NUM" -ge 80 ]; then
+              TEST_COLOR="green"
+            elif [ "$TEST_NUM" -ge 70 ]; then
+              TEST_COLOR="yellow"
+            elif [ "$TEST_NUM" -ge 60 ]; then
+              TEST_COLOR="orange"
+            else
+              TEST_COLOR="red"
+            fi
+          fi
+          
+          # Documentation coverage color logic
+          DOCS_COV="${{ steps.docs-coverage.outputs.docs-coverage }}"
+          if [ "$DOCS_COV" = "unknown" ]; then
+            DOCS_COLOR="lightgrey"
+          else
+            DOCS_NUM=$(echo "$DOCS_COV" | sed 's/%//' | cut -d'.' -f1)
+            if [ "$DOCS_NUM" -ge 95 ]; then
+              DOCS_COLOR="brightgreen"
+            elif [ "$DOCS_NUM" -ge 90 ]; then
+              DOCS_COLOR="green"
+            elif [ "$DOCS_NUM" -ge 80 ]; then
+              DOCS_COLOR="yellow"
+            elif [ "$DOCS_NUM" -ge 70 ]; then
+              DOCS_COLOR="orange"
+            else
+              DOCS_COLOR="red"
+            fi
+          fi
+          
+          echo "test-color=$TEST_COLOR" >> $GITHUB_OUTPUT
+          echo "docs-color=$DOCS_COLOR" >> $GITHUB_OUTPUT
+          
+      - name: Update README badges
+        run: |
+          # Get current commit hash
+          COMMIT_HASH=$(git rev-parse HEAD)
+          
+          # Format coverage values
+          TEST_COV="${{ steps.test-coverage.outputs.test-coverage }}"
+          DOCS_COV="${{ steps.docs-coverage.outputs.docs-coverage }}"
+          TEST_COLOR="${{ steps.badge-colors.outputs.test-color }}"
+          DOCS_COLOR="${{ steps.badge-colors.outputs.docs-color }}"
+          
+          # URL encode the percentage signs
+          TEST_COV_ENCODED=$(echo "$TEST_COV" | sed 's/%/%25/g')
+          DOCS_COV_ENCODED=$(echo "$DOCS_COV" | sed 's/%/%25/g')
+          
+          # Create new badge URLs
+          TEST_BADGE="[![Test Coverage](https://img.shields.io/badge/coverage-${TEST_COV_ENCODED}-${TEST_COLOR}.svg)](https://github.com/ExaDev/markmv/commit/${COMMIT_HASH})"
+          DOCS_BADGE="[![Documentation Coverage](https://img.shields.io/badge/docs-${DOCS_COV_ENCODED}-${DOCS_COLOR}.svg)](https://github.com/ExaDev/markmv/commit/${COMMIT_HASH})"
+          
+          echo "Updating badges with:"
+          echo "  Test Coverage: $TEST_COV ($TEST_COLOR)"
+          echo "  Docs Coverage: $DOCS_COV ($DOCS_COLOR)"
+          echo "  Commit: $COMMIT_HASH"
+          
+          # Update README.md using a more reliable approach
+          # Create temporary file with updated badges
+          awk -v test_badge="$TEST_BADGE" -v docs_badge="$DOCS_BADGE" '
+          /\[\!\[Test Coverage\]/ { print test_badge; next }
+          /\[\!\[Documentation Coverage\]/ { print docs_badge; next }
+          { print }
+          ' README.md > README.md.tmp && mv README.md.tmp README.md
+          
+          # Check if there were any changes
+          if ! git diff --quiet README.md; then
+            echo "README.md updated with new coverage badges"
+            cat README.md | grep -E "(Test Coverage|Documentation Coverage)"
+          else
+            echo "No changes needed to README.md badges"
+          fi
+          
+      - name: Commit badge updates
+        run: |
+          # Check if there are changes to commit
+          if ! git diff --quiet README.md; then
+            git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            
+            git add README.md
+            git commit -m "ci: update coverage badges
+
+Test Coverage: ${{ steps.test-coverage.outputs.test-coverage }}
+Documentation Coverage: ${{ steps.docs-coverage.outputs.docs-coverage }}
+
+Auto-generated by coverage badge workflow"
+            
+            git push
+            echo "✅ Coverage badges updated and committed"
+          else
+            echo "ℹ️ No badge updates needed"
+          fi

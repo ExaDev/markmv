@@ -181,7 +181,13 @@ jobs:
         
       - name: Generate coverage report
         if: matrix.node-version == '20.x'
-        run: npm run test:coverage
+        run: |
+          npm run test:coverage | tee coverage-output.txt
+          
+          # Extract overall coverage percentage for badges
+          COVERAGE=$(grep "All files" coverage-output.txt | awk '{print $4}' | head -1)
+          echo "TEST_COVERAGE=$COVERAGE" >> $GITHUB_ENV
+          echo "📊 Current test coverage: $COVERAGE%" >> $GITHUB_STEP_SUMMARY
         
       - name: Check documentation coverage
         if: matrix.node-version == '20.x'
@@ -198,14 +204,16 @@ jobs:
           echo "DOCS_COVERAGE=$COVERAGE" >> $GITHUB_ENV
           echo "📊 Current documentation coverage: $COVERAGE%" >> $GITHUB_STEP_SUMMARY
           
-      - name: Upload documentation coverage reports
+      - name: Upload coverage reports
         if: matrix.node-version == '20.x'
         uses: actions/upload-artifact@v4
         with:
-          name: docs-coverage-reports
+          name: coverage-reports
           path: |
+            coverage-output.txt
             docs-coverage.txt
             docs-coverage.json
+            coverage/
           retention-days: 90
           
       # Generate SBOM and build attestation only for Node.js 20.x
