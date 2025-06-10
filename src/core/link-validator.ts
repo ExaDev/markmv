@@ -230,12 +230,8 @@ export class LinkValidator {
       const graph = new Map<string, string[]>();
 
       for (const file of files) {
-        const dependencies = file.links
-          .filter((link) => link.type === 'internal' || link.type === 'claude-import')
-          .map((link) => link.resolvedPath!)
-          .filter((path) => path); // Remove empty paths
-
-        graph.set(file.filePath, dependencies);
+        // Use the dependencies array which should already contain resolved paths
+        graph.set(file.filePath, file.dependencies || []);
       }
 
       return graph;
