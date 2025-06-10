@@ -1,3 +1,9 @@
+## [1.6.1](https://github.com/ExaDev/markmv/compare/v1.6.0...v1.6.1) (2025-06-10)
+
+### Bug Fixes
+
+* remove non-existent labels from auto-fix PR creation ([8662702](https://github.com/ExaDev/markmv/commit/86627027e2cab8ceb391e41d61b6f05265eae2e6))
+
 ## [1.6.0](https://github.com/ExaDev/markmv/compare/v1.5.2...v1.6.0) (2025-06-10)
 
 ### Features
