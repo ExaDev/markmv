@@ -9,6 +9,8 @@ npx markmv --help
 [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
+[![Test Coverage](https://img.shields.io/badge/coverage-78.29%25-orange.svg)](https://github.com/ExaDev/markmv/commit/1e91f84329f2362f76ff705366b84000ccbcdaf0)
+[![Documentation Coverage](https://img.shields.io/badge/docs-100%25-brightgreen.svg)](https://github.com/ExaDev/markmv/commit/1e91f84329f2362f76ff705366b84000ccbcdaf0)
 
 > A powerful TypeScript CLI tool for intelligent markdown file operations with automatic link refactoring
 
@@ -352,8 +354,8 @@ npm run test:coverage # Run tests with coverage
 
 # Code Quality
 npm run lint         # ESLint checking
-npm run format       # Format code with Biome
-npm run check        # Lint + format
+npm run format       # Format code with Prettier
+npm run check        # Lint + format + typecheck
 npm run typecheck    # TypeScript type checking
 
 # Release
