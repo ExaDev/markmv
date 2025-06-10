@@ -283,64 +283,9 @@ jobs:
             echo "ℹ️ No badge updates needed"
           fi
 
-  # Documentation Deployment - Only after successful quality checks and badge updates
-  documentation:
-    needs: [quality, update-badges]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          # Get the latest commit (including badge updates)
-          ref: main
-          fetch-depth: 1
-          
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-          cache: 'npm'
-          
-      - name: Install dependencies
-        run: npm ci
-        
-      - name: Build project
-        run: npm run build
-        
-      - name: Show current badge status
-        run: |
-          echo "## 📊 Documentation Build Status" >> $GITHUB_STEP_SUMMARY
-          echo "Including the following badges in documentation:" >> $GITHUB_STEP_SUMMARY
-          grep -E "(Test Coverage|Documentation Coverage)" README.md >> $GITHUB_STEP_SUMMARY || echo "No coverage badges found" >> $GITHUB_STEP_SUMMARY
-        
-      - name: Generate documentation
-        run: npm run docs
-        
-      - name: Setup Pages
-        id: pages
-        uses: actions/configure-pages@v4
-        
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./docs
-          
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-  # Release - Only after ALL quality checks pass and docs are updated
+  # Release - Only after ALL quality checks pass and badges are updated
   release:
-    needs: [quality, update-badges, documentation]
+    needs: [quality, update-badges]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
@@ -419,3 +364,60 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm run release
+
+  # Documentation Deployment - Only after successful release with updated version
+  documentation:
+    needs: [quality, update-badges, release]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Get the latest commit (including version updates from release)
+          ref: main
+          fetch-depth: 1
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build project
+        run: npm run build
+        
+      - name: Show current project status
+        run: |
+          echo "## 📊 Documentation Build Status" >> $GITHUB_STEP_SUMMARY
+          echo "**Current Version:** $(node -p "require('./package.json').version")" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Coverage Badges:**" >> $GITHUB_STEP_SUMMARY
+          grep -E "(Test Coverage|Documentation Coverage)" README.md >> $GITHUB_STEP_SUMMARY || echo "No coverage badges found" >> $GITHUB_STEP_SUMMARY
+        
+      - name: Generate documentation
+        run: npm run docs
+        
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v4
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./docs
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
