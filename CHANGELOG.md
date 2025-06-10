@@ -1,3 +1,9 @@
+## [1.8.3](https://github.com/ExaDev/markmv/compare/v1.8.2...v1.8.3) (2025-06-10)
+
+### Bug Fixes
+
+* add cache busting to TypeDoc configuration to prevent CSS caching issues ([76dd588](https://github.com/ExaDev/markmv/commit/76dd588cb9e3168d61d69b8a74723f2b86a73988))
+
 ## [1.8.2](https://github.com/ExaDev/markmv/compare/v1.8.1...v1.8.2) (2025-06-10)
 
 ### Bug Fixes
