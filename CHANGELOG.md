@@ -1,3 +1,10 @@
+## [1.8.4](https://github.com/ExaDev/markmv/compare/v1.8.3...v1.8.4) (2025-06-10)
+
+### Bug Fixes
+
+* correct GitHub username link in README ([4ba5b10](https://github.com/ExaDev/markmv/commit/4ba5b102794ae7789ffbcca63afbd70f31f3ccde))
+* improve TypeDoc theme for proper light/dark/OS mode support ([4408c7d](https://github.com/ExaDev/markmv/commit/4408c7d9df667596a47830255a75269c143fa9ee))
+
 ## [1.8.3](https://github.com/ExaDev/markmv/compare/v1.8.2...v1.8.3) (2025-06-10)
 
 ### Bug Fixes
