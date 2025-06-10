@@ -64,12 +64,13 @@ export abstract class BaseSplitStrategy {
     const pattern = this.options.filenamePattern!;
     const baseName = this.sanitizeFilename(title) || `section-${index + 1}`;
     const extension = originalFilename.match(/\.[^.]+$/)?.[0] || '.md';
-    
-    return pattern
-      .replace('{title}', baseName)
-      .replace('{index}', String(index + 1))
-      .replace('{original}', originalFilename.replace(/\.[^.]+$/, ''))
-      + extension;
+
+    return (
+      pattern
+        .replace('{title}', baseName)
+        .replace('{index}', String(index + 1))
+        .replace('{original}', originalFilename.replace(/\.[^.]+$/, '')) + extension
+    );
   }
 
   /**
@@ -90,7 +91,7 @@ export abstract class BaseSplitStrategy {
    */
   protected extractFrontmatter(content: string): { frontmatter: string; content: string } {
     const frontmatterMatch = content.match(/^---\n(.*?)\n---\n/s);
-    
+
     if (frontmatterMatch) {
       return {
         frontmatter: frontmatterMatch[0],
@@ -143,7 +144,7 @@ export class HeaderBasedSplitStrategy extends BaseSplitStrategy {
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      
+
       if (this.isTargetHeader(line, targetLevel)) {
         // Save previous section
         if (currentSection) {
@@ -153,14 +154,18 @@ export class HeaderBasedSplitStrategy extends BaseSplitStrategy {
             startLine: currentSection.startLine,
             endLine: i - 1,
             headerLevel: currentSection.headerLevel,
-            filename: this.generateFilename(currentSection.title, sections.length, originalFilename),
+            filename: this.generateFilename(
+              currentSection.title,
+              sections.length,
+              originalFilename
+            ),
           });
         }
 
         // Start new section
         const title = this.extractTitleFromHeader(line);
         const headerLevel = this.getHeaderLevel(line);
-        
+
         if (!title) {
           warnings.push(`Empty header found at line ${i + 1}`);
         }
@@ -316,13 +321,15 @@ export class ManualSplitStrategy extends BaseSplitStrategy {
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
-      if (markers.some(marker => line.includes(marker))) {
+      if (markers.some((marker) => line.includes(marker))) {
         splitPositions.push(i);
       }
     }
 
     if (splitPositions.length === 0) {
-      warnings.push('No split markers found. Use <!-- split --> or ---split--- to mark split points.');
+      warnings.push(
+        'No split markers found. Use <!-- split --> or ---split--- to mark split points.'
+      );
       return {
         sections: [],
         remainingContent: content,
@@ -333,17 +340,17 @@ export class ManualSplitStrategy extends BaseSplitStrategy {
 
     // Split content at markers
     let startLine = 0;
-    
+
     for (let i = 0; i <= splitPositions.length; i++) {
       const endLine = i < splitPositions.length ? splitPositions[i] : lines.length;
-      
+
       if (endLine > startLine) {
         const sectionLines = lines.slice(startLine, endLine);
         const sectionContent = sectionLines.join('\n');
-        
+
         // Find title for this section
         const title = this.findSectionTitle(sectionLines) || `Section ${i + 1}`;
-        
+
         sections.push({
           title,
           content: sectionContent,
@@ -393,7 +400,9 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
     const warnings: string[] = [];
 
     if (splitLines.length === 0) {
-      errors.push('No split lines specified. Use --split-lines option with comma-separated line numbers.');
+      errors.push(
+        'No split lines specified. Use --split-lines option with comma-separated line numbers.'
+      );
       return {
         sections: [],
         remainingContent: content,
@@ -407,7 +416,7 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
 
     // Validate and sort split lines
     const validSplitLines = splitLines
-      .filter(lineNum => {
+      .filter((lineNum) => {
         if (lineNum < 1 || lineNum > totalLines) {
           warnings.push(`Invalid line number ${lineNum}: file has ${totalLines} lines`);
           return false;
@@ -428,20 +437,24 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
 
     // Split content at specified lines
     let startLine = 0;
-    
+
     for (let i = 0; i <= validSplitLines.length; i++) {
-      const endLine = i < validSplitLines.length 
-        ? validSplitLines[i] - 1  // Convert to 0-based and split before the line
-        : lines.length;
-      
+      const endLine =
+        i < validSplitLines.length
+          ? validSplitLines[i] - 1 // Convert to 0-based and split before the line
+          : lines.length;
+
       if (endLine > startLine) {
         const sectionLines = lines.slice(startLine, endLine);
         const sectionContent = sectionLines.join('\n');
-        
-        if (sectionContent.trim()) { // Only create section if it has content
+
+        if (sectionContent.trim()) {
+          // Only create section if it has content
           // Find title for this section
-          const title = this.findLineSectionTitle(sectionLines, startLine + 1) || `Lines ${startLine + 1}-${endLine}`;
-          
+          const title =
+            this.findLineSectionTitle(sectionLines, startLine + 1) ||
+            `Lines ${startLine + 1}-${endLine}`;
+
           sections.push({
             title,
             content: sectionContent,

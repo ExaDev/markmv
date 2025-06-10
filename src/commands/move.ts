@@ -6,9 +6,13 @@ export interface MoveOptions {
   verbose?: boolean;
 }
 
-export async function moveCommand(source: string, destination: string, options: MoveOptions): Promise<void> {
+export async function moveCommand(
+  source: string,
+  destination: string,
+  options: MoveOptions
+): Promise<void> {
   const fileOps = new FileOperations();
-  
+
   const moveOptions: MoveOperationOptions = {
     dryRun: options.dryRun || false,
     verbose: options.verbose || false,
@@ -36,7 +40,7 @@ export async function moveCommand(source: string, destination: string, options: 
     // Display results
     if (options.dryRun) {
       console.log('\n📋 Changes that would be made:');
-      
+
       if (result.createdFiles.length > 0) {
         console.log('\n✅ Files that would be created:');
         for (const file of result.createdFiles) {
@@ -62,18 +66,24 @@ export async function moveCommand(source: string, destination: string, options: 
         console.log('\n🔗 Link changes:');
         for (const change of result.changes) {
           if (change.type === 'link-updated') {
-            console.log(`  ${change.filePath}:${change.line} ${change.oldValue} → ${change.newValue}`);
+            console.log(
+              `  ${change.filePath}:${change.line} ${change.oldValue} → ${change.newValue}`
+            );
           }
         }
       }
 
-      console.log(`\n📊 Summary: ${result.changes.length} link(s) would be updated in ${result.modifiedFiles.length} file(s)`);
+      console.log(
+        `\n📊 Summary: ${result.changes.length} link(s) would be updated in ${result.modifiedFiles.length} file(s)`
+      );
     } else {
       console.log('✅ Move operation completed successfully!');
-      
+
       if (result.modifiedFiles.length > 0) {
-        console.log(`📝 Updated ${result.changes.length} link(s) in ${result.modifiedFiles.length} file(s)`);
-        
+        console.log(
+          `📝 Updated ${result.changes.length} link(s) in ${result.modifiedFiles.length} file(s)`
+        );
+
         if (options.verbose) {
           console.log('\nModified files:');
           for (const file of result.modifiedFiles) {
@@ -95,7 +105,7 @@ export async function moveCommand(source: string, destination: string, options: 
     if (!options.dryRun && options.verbose) {
       console.log('\n🔍 Validating link integrity...');
       const validation = await fileOps.validateOperation(result);
-      
+
       if (validation.valid) {
         console.log('✅ All links are valid');
       } else {
@@ -105,7 +115,6 @@ export async function moveCommand(source: string, destination: string, options: 
         }
       }
     }
-
   } catch (error) {
     console.error(`❌ Unexpected error: ${error}`);
     process.exit(1);

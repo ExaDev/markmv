@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TransactionManager } from './transaction-manager.js';
 
 describe('TransactionManager', () => {
@@ -37,7 +37,7 @@ describe('TransactionManager', () => {
       expect(result.success).toBe(true);
       expect(result.completedSteps).toBe(1);
       expect(result.errors).toHaveLength(0);
-      
+
       const savedContent = await fs.readFile(filePath, 'utf8');
       expect(savedContent).toBe(content);
     });
@@ -54,7 +54,7 @@ describe('TransactionManager', () => {
 
       expect(result.success).toBe(true);
       expect(result.completedSteps).toBe(2);
-      
+
       const savedContent1 = await fs.readFile(file1, 'utf8');
       const savedContent2 = await fs.readFile(file2, 'utf8');
       expect(savedContent1).toBe(content1);
@@ -65,15 +65,15 @@ describe('TransactionManager', () => {
       const manager = new TransactionManager({ maxRetries: 0 });
       const validFile = join(testDir, 'valid.txt');
       const existingFile = await createTestFile('existing.txt', 'existing');
-      
+
       manager.addFileCreate(validFile, 'valid content');
       manager.addFileCreate(existingFile, 'duplicate content'); // This will fail
-      
+
       const result = await manager.execute();
-      
+
       expect(result.success).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
-      
+
       // Valid file should not exist due to rollback
       let fileExists = true;
       try {
@@ -87,13 +87,13 @@ describe('TransactionManager', () => {
     it('should fail when creating file that already exists', async () => {
       const manager = new TransactionManager({ maxRetries: 0 });
       const filePath = await createTestFile('existing.txt', 'existing content');
-      
+
       manager.addFileCreate(filePath, 'new content');
       const result = await manager.execute();
-      
+
       expect(result.success).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
-      
+
       // Original content should remain
       const content = await fs.readFile(filePath, 'utf8');
       expect(content).toBe('existing content');
@@ -146,7 +146,7 @@ describe('TransactionManager', () => {
       const result = await manager.execute();
 
       expect(result.success).toBe(true);
-      
+
       let fileExists = true;
       try {
         await fs.access(filePath);
@@ -234,7 +234,7 @@ describe('TransactionManager', () => {
 
       expect(result.success).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
-      
+
       // Target should not exist since source didn't exist
       let targetExists = true;
       try {
@@ -287,12 +287,12 @@ describe('TransactionManager', () => {
     it('should get preview of planned operations', async () => {
       const file1 = join(testDir, 'file1.txt');
       const file2 = join(testDir, 'file2.txt');
-      
+
       manager.addFileCreate(file1, 'content');
       manager.addContentUpdate(file2, 'updated content');
-      
+
       const preview = manager.getPreview();
-      
+
       expect(preview).toHaveLength(2);
       expect(preview[0].type).toBe('file-create');
       expect(preview[1].type).toBe('content-update');
@@ -300,10 +300,10 @@ describe('TransactionManager', () => {
 
     it('should get step count', async () => {
       expect(manager.getStepCount()).toBe(0);
-      
+
       manager.addFileCreate(join(testDir, 'file.txt'), 'content');
       expect(manager.getStepCount()).toBe(1);
-      
+
       manager.addFileDelete(join(testDir, 'other.txt'));
       expect(manager.getStepCount()).toBe(2);
     });
@@ -311,7 +311,7 @@ describe('TransactionManager', () => {
     it('should clear all operations', async () => {
       manager.addFileCreate(join(testDir, 'file.txt'), 'content');
       expect(manager.getStepCount()).toBe(1);
-      
+
       manager.clear();
       expect(manager.getStepCount()).toBe(0);
     });
@@ -320,19 +320,19 @@ describe('TransactionManager', () => {
   describe('transaction options', () => {
     it('should continue on error when configured', async () => {
       const manager = new TransactionManager({ continueOnError: true, maxRetries: 0 });
-      
+
       const validFile = join(testDir, 'valid.txt');
       const existingFile = await createTestFile('existing.txt', 'existing');
-      
+
       manager.addFileCreate(validFile, 'valid content');
       manager.addFileCreate(existingFile, 'duplicate content'); // This will fail
-      
+
       const result = await manager.execute();
-      
+
       expect(result.success).toBe(false); // Overall failure due to one error
       expect(result.completedSteps).toBe(1); // But one step completed
       expect(result.errors.length).toBeGreaterThan(0);
-      
+
       // Valid file should exist since we continued on error
       const content = await fs.readFile(validFile, 'utf8');
       expect(content).toBe('valid content');
@@ -340,13 +340,13 @@ describe('TransactionManager', () => {
 
     it('should create backups when enabled', async () => {
       const manager = new TransactionManager({ createBackups: true });
-      
+
       const filePath = await createTestFile('backup-test.txt', 'original');
       const newContent = 'updated content';
-      
+
       manager.addContentUpdate(filePath, newContent);
       const result = await manager.execute();
-      
+
       expect(result.success).toBe(true);
       const content = await fs.readFile(filePath, 'utf8');
       expect(content).toBe(newContent);
@@ -354,12 +354,12 @@ describe('TransactionManager', () => {
 
     it('should respect max retries', async () => {
       const manager = new TransactionManager({ maxRetries: 0 });
-      
+
       const invalidFile = join('/invalid/path/file.txt');
       manager.addFileCreate(invalidFile, 'content');
-      
+
       const result = await manager.execute();
-      
+
       expect(result.success).toBe(false);
       expect(result.completedSteps).toBe(0);
     });
@@ -369,20 +369,20 @@ describe('TransactionManager', () => {
     it('should handle permission errors gracefully', async () => {
       const manager = new TransactionManager({ maxRetries: 0 });
       const existingFile = await createTestFile('existing.txt', 'existing');
-      
+
       manager.addFileCreate(existingFile, 'content'); // Try to create existing file
       const result = await manager.execute();
-      
+
       expect(result.success).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
     });
 
     it('should generate operation changes', async () => {
       const filePath = join(testDir, 'changes-test.txt');
-      
+
       manager.addFileCreate(filePath, 'content');
       const result = await manager.execute();
-      
+
       expect(result.success).toBe(true);
       expect(result.changes).toHaveLength(1);
       expect(result.changes[0].type).toBe('file-created');
@@ -390,10 +390,10 @@ describe('TransactionManager', () => {
 
     it('should handle nested directory creation', async () => {
       const nestedPath = join(testDir, 'deep', 'nested', 'file.txt');
-      
+
       manager.addFileCreate(nestedPath, 'nested content');
       const result = await manager.execute();
-      
+
       expect(result.success).toBe(true);
       const content = await fs.readFile(nestedPath, 'utf8');
       expect(content).toBe('nested content');

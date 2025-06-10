@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { writeFile, mkdir, rm } from 'node:fs/promises';
-import { join } from 'node:path';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { FileUtils } from './file-utils.js';
 
 describe('FileUtils', () => {
@@ -20,7 +20,7 @@ describe('FileUtils', () => {
     it('should return true for existing files', async () => {
       const filePath = join(testDir, 'test.md');
       await writeFile(filePath, 'content');
-      
+
       const result = await FileUtils.exists(filePath);
       expect(result).toBe(true);
     });
@@ -117,7 +117,7 @@ describe('FileUtils', () => {
       await writeFile(join(testDir, 'subdir', 'file3.md'), '');
 
       const files = await FileUtils.listFiles(testDir);
-      const fileNames = files.map(f => f.split('/').pop());
+      const fileNames = files.map((f) => f.split('/').pop());
 
       expect(fileNames).toContain('file1.md');
       expect(fileNames).toContain('file2.txt');
@@ -130,7 +130,7 @@ describe('FileUtils', () => {
       await writeFile(join(testDir, 'subdir', 'file2.md'), '');
 
       const files = await FileUtils.listFiles(testDir, { recursive: true });
-      const fileNames = files.map(f => f.split('/').pop());
+      const fileNames = files.map((f) => f.split('/').pop());
 
       expect(fileNames).toContain('file1.md');
       expect(fileNames).toContain('file2.md');
@@ -141,7 +141,7 @@ describe('FileUtils', () => {
       await writeFile(join(testDir, 'file2.txt'), '');
 
       const files = await FileUtils.listFiles(testDir, { extensions: ['.md'] });
-      const fileNames = files.map(f => f.split('/').pop());
+      const fileNames = files.map((f) => f.split('/').pop());
 
       expect(fileNames).toContain('file1.md');
       expect(fileNames).not.toContain('file2.txt');
@@ -157,7 +157,7 @@ describe('FileUtils', () => {
       await writeFile(join(testDir, 'subdir', 'doc4.mdx'), '');
 
       const files = await FileUtils.findMarkdownFiles(testDir);
-      const fileNames = files.map(f => f.split('/').pop());
+      const fileNames = files.map((f) => f.split('/').pop());
 
       expect(fileNames).toContain('doc1.md');
       expect(fileNames).toContain('doc2.markdown');

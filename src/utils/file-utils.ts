@@ -1,15 +1,15 @@
-import { 
-  readFile, 
-  writeFile, 
-  mkdir, 
-  stat, 
-  access, 
-  rename, 
-  copyFile, 
-  unlink,
-  readdir
-} from 'node:fs/promises';
 import { constants } from 'node:fs';
+import {
+  access,
+  copyFile,
+  mkdir,
+  readFile,
+  readdir,
+  rename,
+  stat,
+  unlink,
+  writeFile,
+} from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { PathUtils } from './path-utils.js';
 
@@ -103,7 +103,7 @@ export class FileUtils {
    */
   static async readTextFile(filePath: string): Promise<string> {
     const buffer = await readFile(filePath);
-    
+
     // Simple encoding detection - assume UTF-8 for now
     // Could be enhanced with proper encoding detection library
     return buffer.toString('utf-8');
@@ -113,14 +113,14 @@ export class FileUtils {
    * Safely write a file with directory creation
    */
   static async writeTextFile(
-    filePath: string, 
-    content: string, 
+    filePath: string,
+    content: string,
     options: { createDirectories?: boolean } = {}
   ): Promise<void> {
     if (options.createDirectories) {
       await this.ensureDirectory(dirname(filePath));
     }
-    
+
     await writeFile(filePath, content, 'utf-8');
   }
 
@@ -128,14 +128,14 @@ export class FileUtils {
    * Copy a file with options
    */
   static async copyFile(
-    sourcePath: string, 
-    destinationPath: string, 
+    sourcePath: string,
+    destinationPath: string,
     options: CopyOptions = {}
   ): Promise<void> {
     const { overwrite = false, createDirectories = true } = options;
 
     // Check if destination exists
-    if (!overwrite && await this.exists(destinationPath)) {
+    if (!overwrite && (await this.exists(destinationPath))) {
       throw new Error(`Destination file already exists: ${destinationPath}`);
     }
 
@@ -159,8 +159,8 @@ export class FileUtils {
    * Move a file with options
    */
   static async moveFile(
-    sourcePath: string, 
-    destinationPath: string, 
+    sourcePath: string,
+    destinationPath: string,
     options: MoveOptions = {}
   ): Promise<void> {
     const { overwrite = false, createDirectories = true, backup = false } = options;
@@ -177,7 +177,7 @@ export class FileUtils {
     }
 
     // Check if source exists
-    if (!await this.exists(sourcePath)) {
+    if (!(await this.exists(sourcePath))) {
       throw new Error(`Source file does not exist: ${sourcePath}`);
     }
 
@@ -186,7 +186,7 @@ export class FileUtils {
       if (!overwrite) {
         throw new Error(`Destination file already exists: ${destinationPath}`);
       }
-      
+
       if (backup) {
         const backupPath = `${destinationPath}.backup`;
         await this.copyFile(destinationPath, backupPath);
@@ -225,7 +225,7 @@ export class FileUtils {
    * List files in a directory with filtering
    */
   static async listFiles(
-    dirPath: string, 
+    dirPath: string,
     options: {
       recursive?: boolean;
       extensions?: string[];
@@ -237,11 +237,11 @@ export class FileUtils {
 
     const processDirectory = async (currentDir: string): Promise<void> => {
       const entries = await readdir(currentDir);
-      
+
       for (const entry of entries) {
         const fullPath = join(currentDir, entry);
         const stats = await this.getStats(fullPath);
-        
+
         if (stats.isDirectory) {
           if (includeDirectories) {
             files.push(fullPath);

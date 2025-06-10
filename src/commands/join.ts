@@ -53,7 +53,7 @@ export async function joinCommand(files: string[], options: JoinOptions): Promis
     // Display results
     if (options.dryRun) {
       console.log('\\n📋 Changes that would be made:');
-      
+
       if (result.createdFiles.length > 0) {
         console.log('\\n📄 Files that would be created:');
         for (const file of result.createdFiles) {
@@ -79,11 +79,12 @@ export async function joinCommand(files: string[], options: JoinOptions): Promis
         }
       }
 
-      console.log(`\\n📊 Summary: Would create ${result.createdFiles.length} file(s) and modify ${result.modifiedFiles.length} file(s)`);
-      
+      console.log(
+        `\\n📊 Summary: Would create ${result.createdFiles.length} file(s) and modify ${result.modifiedFiles.length} file(s)`
+      );
     } else {
       console.log('✅ Join operation completed successfully!');
-      
+
       if (result.createdFiles.length > 0) {
         console.log(`📄 Created file: ${result.createdFiles[0]}`);
       }
@@ -96,7 +97,7 @@ export async function joinCommand(files: string[], options: JoinOptions): Promis
       }
 
       if (options.verbose && result.changes.length > 0) {
-        const linkUpdates = result.changes.filter(c => c.type === 'link-updated').length;
+        const linkUpdates = result.changes.filter((c) => c.type === 'link-updated').length;
         if (linkUpdates > 0) {
           console.log(`\\n🔗 Updated links in ${linkUpdates} file(s)`);
         }
@@ -124,7 +125,6 @@ export async function joinCommand(files: string[], options: JoinOptions): Promis
         console.log('  • Files are ordered by date (from frontmatter or filename)');
       }
     }
-
   } catch (error) {
     console.error(`❌ Unexpected error: ${error}`);
     process.exit(1);

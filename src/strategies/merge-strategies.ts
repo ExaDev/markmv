@@ -82,12 +82,19 @@ export abstract class BaseMergeStrategy {
     };
   }
 
-  abstract merge(targetContent: string, sourceContent: string, targetFile: string, sourceFile: string): Promise<MergeResult>;
+  abstract merge(
+    targetContent: string,
+    sourceContent: string,
+    targetFile: string,
+    sourceFile: string
+  ): Promise<MergeResult>;
 
   /**
    * Extract Obsidian transclusions from content
    */
-  protected extractTransclusions(content: string): Array<{ ref: string; file: string; section?: string; line: number }> {
+  protected extractTransclusions(
+    content: string
+  ): Array<{ ref: string; file: string; section?: string; line: number }> {
     const transclusions: Array<{ ref: string; file: string; section?: string; line: number }> = [];
     const lines = content.split('\n');
 
@@ -95,12 +102,12 @@ export abstract class BaseMergeStrategy {
       const line = lines[i];
       // Match Obsidian transclusion syntax: ![[file]] or ![[file#section]]
       const matches = line.matchAll(/!\[\[([^#\]]+)(?:#([^\]]+))?\]\]/g);
-      
+
       for (const match of matches) {
         const fullRef = match[0];
         const file = match[1];
         const section = match[2];
-        
+
         transclusions.push({
           ref: fullRef,
           file: file.endsWith('.md') ? file : `${file}.md`,
@@ -119,7 +126,7 @@ export abstract class BaseMergeStrategy {
   protected createTransclusion(file: string, section?: string): string {
     const template = this.options.transclusionTemplate!;
     const cleanFile = file.replace(/\.md$/, '');
-    
+
     if (section) {
       return template.replace('{file}', cleanFile).replace('{section}', section);
     } else {
@@ -131,12 +138,12 @@ export abstract class BaseMergeStrategy {
    * Detect potential transclusion loops
    */
   protected detectTransclusionLoops(
-    targetFile: string, 
-    sourceFile: string, 
+    targetFile: string,
+    sourceFile: string,
     existingTransclusions: string[]
   ): boolean {
     // Check if source file already references target file
-    if (existingTransclusions.some(t => t.includes(targetFile.replace(/\.md$/, '')))) {
+    if (existingTransclusions.some((t) => t.includes(targetFile.replace(/\.md$/, '')))) {
       return true;
     }
 
@@ -177,7 +184,10 @@ export abstract class BaseMergeStrategy {
 
   private parseFrontmatter(frontmatter: string): Record<string, any> {
     const data: Record<string, any> = {};
-    const lines = frontmatter.replace(/^---\n/, '').replace(/\n---$/, '').split('\n');
+    const lines = frontmatter
+      .replace(/^---\n/, '')
+      .replace(/\n---$/, '')
+      .split('\n');
 
     for (const line of lines) {
       const match = line.match(/^([^:]+):\s*(.*)$/);
@@ -187,7 +197,10 @@ export abstract class BaseMergeStrategy {
 
         if (value.startsWith('[') && value.endsWith(']')) {
           // Parse array
-          data[key] = value.slice(1, -1).split(',').map(item => item.trim().replace(/['"]/g, ''));
+          data[key] = value
+            .slice(1, -1)
+            .split(',')
+            .map((item) => item.trim().replace(/['"]/g, ''));
         } else {
           data[key] = value.replace(/['"]/g, '');
         }
@@ -205,7 +218,7 @@ export abstract class BaseMergeStrategy {
     let result = '---\n';
     for (const [key, value] of Object.entries(data)) {
       if (Array.isArray(value)) {
-        result += `${key}: [${value.map(v => `"${v}"`).join(', ')}]\n`;
+        result += `${key}: [${value.map((v) => `"${v}"`).join(', ')}]\n`;
       } else {
         result += `${key}: "${value}"\n`;
       }
@@ -241,7 +254,7 @@ export abstract class BaseMergeStrategy {
    * Find potential header conflicts between target and source
    */
   protected findHeaderConflicts(
-    targetContent: string, 
+    targetContent: string,
     sourceContent: string
   ): Array<{ header: string; targetLine: number; sourceLine: number }> {
     const targetHeaders = this.extractHeaders(targetContent);
@@ -249,11 +262,12 @@ export abstract class BaseMergeStrategy {
     const conflicts: Array<{ header: string; targetLine: number; sourceLine: number }> = [];
 
     for (const sourceHeader of sourceHeaders) {
-      const conflict = targetHeaders.find(th => 
-        th.text.toLowerCase() === sourceHeader.text.toLowerCase() && 
-        th.level === sourceHeader.level
+      const conflict = targetHeaders.find(
+        (th) =>
+          th.text.toLowerCase() === sourceHeader.text.toLowerCase() &&
+          th.level === sourceHeader.level
       );
-      
+
       if (conflict) {
         conflicts.push({
           header: sourceHeader.text,
@@ -268,7 +282,12 @@ export abstract class BaseMergeStrategy {
 }
 
 export class AppendMergeStrategy extends BaseMergeStrategy {
-  async merge(targetContent: string, sourceContent: string, targetFile: string, sourceFile: string): Promise<MergeResult> {
+  async merge(
+    targetContent: string,
+    sourceContent: string,
+    targetFile: string,
+    sourceFile: string
+  ): Promise<MergeResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
     const conflicts: MergeConflict[] = [];
@@ -297,8 +316,8 @@ export class AppendMergeStrategy extends BaseMergeStrategy {
       // Check for transclusion loops if creating transclusions
       if (this.options.createTransclusions) {
         const existingTransclusions = this.extractTransclusions(targetMainContent);
-        const transclusionRefs = existingTransclusions.map(t => t.ref);
-        
+        const transclusionRefs = existingTransclusions.map((t) => t.ref);
+
         if (this.detectTransclusionLoops(targetFile, sourceFile, transclusionRefs)) {
           warnings.push('Transclusion loop detected - not creating transclusion reference');
         } else {
@@ -306,12 +325,13 @@ export class AppendMergeStrategy extends BaseMergeStrategy {
           const transclusionRef = this.createTransclusion(sourceFile);
           const finalContent = targetMainContent + this.options.separator + transclusionRef;
           transclusions.push(transclusionRef);
-          
+
           return {
             success: true,
             content: finalContent,
-            frontmatter: this.options.mergeFrontmatter ? 
-              this.mergeFrontmatter(targetFrontmatter, sourceFrontmatter) : targetFrontmatter,
+            frontmatter: this.options.mergeFrontmatter
+              ? this.mergeFrontmatter(targetFrontmatter, sourceFrontmatter)
+              : targetFrontmatter,
             sourceFiles: [targetFile, sourceFile],
             conflicts,
             warnings,
@@ -328,15 +348,15 @@ export class AppendMergeStrategy extends BaseMergeStrategy {
       return {
         success: true,
         content: mergedContent,
-        frontmatter: this.options.mergeFrontmatter ? 
-          this.mergeFrontmatter(targetFrontmatter, sourceFrontmatter) : targetFrontmatter,
+        frontmatter: this.options.mergeFrontmatter
+          ? this.mergeFrontmatter(targetFrontmatter, sourceFrontmatter)
+          : targetFrontmatter,
         sourceFiles: [targetFile, sourceFile],
         conflicts,
         warnings,
         errors,
         transclusions,
       };
-
     } catch (error) {
       errors.push(`Failed to merge files: ${error}`);
       return {
@@ -362,7 +382,12 @@ export class AppendMergeStrategy extends BaseMergeStrategy {
 }
 
 export class PrependMergeStrategy extends BaseMergeStrategy {
-  async merge(targetContent: string, sourceContent: string, targetFile: string, sourceFile: string): Promise<MergeResult> {
+  async merge(
+    targetContent: string,
+    sourceContent: string,
+    targetFile: string,
+    sourceFile: string
+  ): Promise<MergeResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
     const conflicts: MergeConflict[] = [];
@@ -395,15 +420,15 @@ export class PrependMergeStrategy extends BaseMergeStrategy {
       return {
         success: true,
         content: mergedContent,
-        frontmatter: this.options.mergeFrontmatter ? 
-          this.mergeFrontmatter(targetFrontmatter, sourceFrontmatter) : targetFrontmatter,
+        frontmatter: this.options.mergeFrontmatter
+          ? this.mergeFrontmatter(targetFrontmatter, sourceFrontmatter)
+          : targetFrontmatter,
         sourceFiles: [targetFile, sourceFile],
         conflicts,
         warnings,
         errors,
         transclusions,
       };
-
     } catch (error) {
       errors.push(`Failed to merge files: ${error}`);
       return {
@@ -429,7 +454,12 @@ export class PrependMergeStrategy extends BaseMergeStrategy {
 }
 
 export class InteractiveMergeStrategy extends BaseMergeStrategy {
-  async merge(targetContent: string, sourceContent: string, targetFile: string, sourceFile: string): Promise<MergeResult> {
+  async merge(
+    targetContent: string,
+    sourceContent: string,
+    targetFile: string,
+    sourceFile: string
+  ): Promise<MergeResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
     const conflicts: MergeConflict[] = [];
@@ -477,20 +507,25 @@ export class InteractiveMergeStrategy extends BaseMergeStrategy {
 
       // Create a basic append merge as fallback
       const separator = this.options.separator || '\n\n---\n\n';
-      const mergedContent = targetMainContent + separator + '<!-- MERGE CONFLICT: Review and resolve manually -->' + separator + sourceMainContent;
+      const mergedContent =
+        targetMainContent +
+        separator +
+        '<!-- MERGE CONFLICT: Review and resolve manually -->' +
+        separator +
+        sourceMainContent;
 
       return {
         success: true,
         content: mergedContent,
-        frontmatter: this.options.mergeFrontmatter ? 
-          this.mergeFrontmatter(targetFrontmatter, sourceFrontmatter) : targetFrontmatter,
+        frontmatter: this.options.mergeFrontmatter
+          ? this.mergeFrontmatter(targetFrontmatter, sourceFrontmatter)
+          : targetFrontmatter,
         sourceFiles: [targetFile, sourceFile],
         conflicts,
         warnings,
         errors,
         transclusions,
       };
-
     } catch (error) {
       errors.push(`Failed to perform interactive merge: ${error}`);
       return {
@@ -514,7 +549,10 @@ export class InteractiveMergeStrategy extends BaseMergeStrategy {
     return content.replace(/^---\n.*?\n---\n/s, '').trim();
   }
 
-  private extractSectionContent(content: string, header: { text: string; level: number; line: number }): string {
+  private extractSectionContent(
+    content: string,
+    header: { text: string; level: number; line: number }
+  ): string {
     const lines = content.split('\n');
     const startLine = header.line - 1; // Convert to 0-based
     let endLine = lines.length;

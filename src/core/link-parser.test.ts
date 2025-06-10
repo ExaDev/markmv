@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { writeFile, mkdir, rm } from 'node:fs/promises';
-import { join } from 'node:path';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { LinkParser } from '../link-parser.js';
 
 describe('LinkParser', () => {
@@ -32,8 +32,8 @@ And here's an [external link](https://example.com).
       const result = await parser.parseFile(filePath);
 
       expect(result.links).toHaveLength(2);
-      
-      const internalLink = result.links.find(l => l.href === './other.md');
+
+      const internalLink = result.links.find((l) => l.href === './other.md');
       expect(internalLink).toEqual({
         type: 'internal',
         href: './other.md',
@@ -44,7 +44,7 @@ And here's an [external link](https://example.com).
         resolvedPath: join(testDir, 'other.md'),
       });
 
-      const externalLink = result.links.find(l => l.href === 'https://example.com');
+      const externalLink = result.links.find((l) => l.href === 'https://example.com');
       expect(externalLink).toEqual({
         type: 'external',
         href: 'https://example.com',
@@ -70,10 +70,10 @@ Some text with @inline-import.md in the middle.
 
       const result = await parser.parseFile(filePath);
 
-      const claudeImports = result.links.filter(l => l.type === 'claude-import');
+      const claudeImports = result.links.filter((l) => l.type === 'claude-import');
       expect(claudeImports).toHaveLength(4);
 
-      const relativeImport = claudeImports.find(l => l.href === './local-file.md');
+      const relativeImport = claudeImports.find((l) => l.href === './local-file.md');
       expect(relativeImport).toEqual({
         type: 'claude-import',
         href: './local-file.md',
@@ -84,7 +84,7 @@ Some text with @inline-import.md in the middle.
         resolvedPath: join(testDir, 'local-file.md'),
       });
 
-      const absoluteImport = claudeImports.find(l => l.href === '/absolute/path/file.md');
+      const absoluteImport = claudeImports.find((l) => l.href === '/absolute/path/file.md');
       expect(absoluteImport).toEqual({
         type: 'claude-import',
         href: '/absolute/path/file.md',
@@ -95,7 +95,7 @@ Some text with @inline-import.md in the middle.
         resolvedPath: '/absolute/path/file.md',
       });
 
-      const homeImport = claudeImports.find(l => l.href === '~/home/file.md');
+      const homeImport = claudeImports.find((l) => l.href === '~/home/file.md');
       expect(homeImport?.type).toBe('claude-import');
       expect(homeImport?.absolute).toBe(true);
       expect(homeImport?.resolvedPath).toMatch(/\/home\/file\.md$/);
@@ -113,10 +113,10 @@ Some text with @inline-import.md in the middle.
 
       const result = await parser.parseFile(filePath);
 
-      const images = result.links.filter(l => l.type === 'image');
+      const images = result.links.filter((l) => l.type === 'image');
       expect(images).toHaveLength(2);
 
-      const localImage = images.find(l => l.href === './image.png');
+      const localImage = images.find((l) => l.href === './image.png');
       expect(localImage).toEqual({
         type: 'image',
         href: './image.png',
@@ -150,7 +150,7 @@ This is a [reference link][ref1] and another [reference][ref2].
         line: 5,
       });
 
-      const referenceLinks = result.links.filter(l => l.type === 'reference');
+      const referenceLinks = result.links.filter((l) => l.type === 'reference');
       expect(referenceLinks).toHaveLength(2);
     });
 
@@ -166,10 +166,10 @@ This is a [reference link][ref1] and another [reference][ref2].
 
       const result = await parser.parseFile(filePath);
 
-      const anchorLink = result.links.find(l => l.href === '#section');
+      const anchorLink = result.links.find((l) => l.href === '#section');
       expect(anchorLink?.type).toBe('anchor');
 
-      const externalWithAnchor = result.links.find(l => l.href === 'https://example.com#anchor');
+      const externalWithAnchor = result.links.find((l) => l.href === 'https://example.com#anchor');
       expect(externalWithAnchor?.type).toBe('external');
     });
 
@@ -204,10 +204,9 @@ This is a [reference link][ref1] and another [reference][ref2].
       const results = await parser.parseDirectory(testDir);
 
       expect(results).toHaveLength(2);
-      expect(results.map(r => r.filePath).sort()).toEqual([
-        join(testDir, 'file1.md'),
-        join(testDir, 'file2.md'),
-      ].sort());
+      expect(results.map((r) => r.filePath).sort()).toEqual(
+        [join(testDir, 'file1.md'), join(testDir, 'file2.md')].sort()
+      );
     });
   });
 });

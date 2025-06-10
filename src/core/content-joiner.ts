@@ -1,16 +1,16 @@
 import { promises as fs } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import type { OperationResult, JoinOperationOptions } from '../types/operations.js';
-import { LinkParser } from './link-parser.js';
-import { 
-  DependencyOrderJoinStrategy,
+import {
   AlphabeticalJoinStrategy,
-  ManualOrderJoinStrategy,
   ChronologicalJoinStrategy,
-  type JoinSection,
+  DependencyOrderJoinStrategy,
   type JoinResult,
-  type JoinStrategyOptions
+  type JoinSection,
+  type JoinStrategyOptions,
+  ManualOrderJoinStrategy,
 } from '../strategies/join-strategies.js';
+import type { JoinOperationOptions, OperationResult } from '../types/operations.js';
+import { LinkParser } from './link-parser.js';
 
 export class ContentJoiner {
   private linkParser: LinkParser;
@@ -33,7 +33,7 @@ export class ContentJoiner {
     try {
       // Prepare sections from input files
       const sections = await this.prepareSections(filePaths, result);
-      
+
       if (sections.length === 0) {
         result.errors.push('No valid files to join');
         return result;
@@ -41,32 +41,32 @@ export class ContentJoiner {
 
       // Choose join strategy
       const strategy = this.createJoinStrategy(options);
-      
+
       // Perform the join
       const joinResult = await strategy.join(sections);
-      
+
       // Handle join result
       result.errors.push(...joinResult.errors);
       result.warnings.push(...joinResult.warnings);
-      
+
       if (joinResult.errors.length > 0) {
         return result;
       }
 
       // Generate output file path
       const outputPath = this.generateOutputPath(filePaths, options);
-      
+
       // Create the joined content
       const finalContent = this.buildFinalContent(joinResult);
-      
+
       if (!options.dryRun) {
         // Create output directory if needed
         await fs.mkdir(dirname(outputPath), { recursive: true });
-        
+
         // Write the joined file
         await fs.writeFile(outputPath, finalContent, 'utf8');
         result.createdFiles.push(outputPath);
-        
+
         result.changes.push({
           type: 'file-created',
           filePath: outputPath,
@@ -89,36 +89,38 @@ export class ContentJoiner {
 
       result.success = true;
       return result;
-
     } catch (error) {
       result.errors.push(`Failed to join files: ${error}`);
       return result;
     }
   }
 
-  private async prepareSections(filePaths: string[], result: OperationResult): Promise<JoinSection[]> {
+  private async prepareSections(
+    filePaths: string[],
+    result: OperationResult
+  ): Promise<JoinSection[]> {
     const sections: JoinSection[] = [];
 
     for (let i = 0; i < filePaths.length; i++) {
       const filePath = filePaths[i];
-      
+
       try {
         // Check if file exists
         await fs.access(filePath);
-        
+
         // Read file content
         const content = await fs.readFile(filePath, 'utf8');
-        
+
         // Parse links to find dependencies
         const parsedFile = await this.linkParser.parseFile(filePath, content);
-        const dependencies = parsedFile.outgoingLinks.map(link => link.target);
-        
+        const dependencies = parsedFile.outgoingLinks.map((link) => link.target);
+
         // Extract frontmatter
         const { frontmatter, content: mainContent } = this.extractFrontmatter(content);
-        
+
         // Extract title
         const title = this.extractTitle(mainContent, frontmatter);
-        
+
         sections.push({
           filePath,
           content,
@@ -127,7 +129,6 @@ export class ContentJoiner {
           dependencies,
           order: i, // Default order based on input order
         });
-        
       } catch (error) {
         result.warnings.push(`Failed to read file ${filePath}: ${error}`);
       }
@@ -138,7 +139,7 @@ export class ContentJoiner {
 
   private extractFrontmatter(content: string): { frontmatter?: string; content: string } {
     const frontmatterMatch = content.match(/^---\n(.*?)\n---\n/s);
-    
+
     if (frontmatterMatch) {
       return {
         frontmatter: frontmatterMatch[0],

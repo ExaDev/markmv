@@ -1,16 +1,16 @@
-import { LinkParser } from './link-parser.js';
-import { DependencyGraph } from './dependency-graph.js';
-import { LinkRefactorer } from './link-refactorer.js';
-import { LinkValidator } from './link-validator.js';
-import { TransactionManager } from '../utils/transaction-manager.js';
+import type { ParsedMarkdownFile } from '../types/links.js';
+import type {
+  MoveOperationOptions,
+  OperationChange,
+  OperationResult,
+} from '../types/operations.js';
 import { FileUtils } from '../utils/file-utils.js';
 import { PathUtils } from '../utils/path-utils.js';
-import type { 
-  MoveOperationOptions, 
-  OperationResult, 
-  OperationChange 
-} from '../types/operations.js';
-import type { ParsedMarkdownFile } from '../types/links.js';
+import { TransactionManager } from '../utils/transaction-manager.js';
+import { DependencyGraph } from './dependency-graph.js';
+import { LinkParser } from './link-parser.js';
+import { LinkRefactorer } from './link-refactorer.js';
+import { LinkValidator } from './link-validator.js';
 
 export class FileOperations {
   private linkParser = new LinkParser();
@@ -25,12 +25,7 @@ export class FileOperations {
     destinationPath: string,
     options: MoveOperationOptions = {}
   ): Promise<OperationResult> {
-    const {
-      dryRun = false,
-      verbose = false,
-      force = false,
-      createDirectories = true,
-    } = options;
+    const { dryRun = false, verbose = false, force = false, createDirectories = true } = options;
 
     try {
       // Validate inputs
@@ -184,7 +179,6 @@ export class FileOperations {
         warnings,
         changes,
       };
-
     } catch (error) {
       return {
         success: false,
@@ -273,10 +267,7 @@ export class FileOperations {
             allChanges.push(...refactorResult.changes);
 
             if (!dryRun) {
-              transaction.addContentUpdate(
-                dependentFilePath,
-                refactorResult.updatedContent
-              );
+              transaction.addContentUpdate(dependentFilePath, refactorResult.updatedContent);
             }
           }
 
@@ -284,7 +275,7 @@ export class FileOperations {
         }
 
         // Update the moved file itself
-        const sourceFile = allFiles.find(f => f.filePath === source);
+        const sourceFile = allFiles.find((f) => f.filePath === source);
         if (sourceFile) {
           const selfRefactorResult = await this.linkRefactorer.refactorLinksForCurrentFileMove(
             sourceFile,
@@ -295,10 +286,7 @@ export class FileOperations {
             allChanges.push(...selfRefactorResult.changes);
 
             if (!dryRun) {
-              transaction.addContentUpdate(
-                destination,
-                selfRefactorResult.updatedContent
-              );
+              transaction.addContentUpdate(destination, selfRefactorResult.updatedContent);
             }
           }
 
@@ -311,8 +299,8 @@ export class FileOperations {
         return {
           success: true,
           modifiedFiles: Array.from(modifiedFiles),
-          createdFiles: moves.map(m => m.destination),
-          deletedFiles: moves.map(m => m.source),
+          createdFiles: moves.map((m) => m.destination),
+          deletedFiles: moves.map((m) => m.source),
           errors: [],
           warnings,
           changes: allChanges,
@@ -324,13 +312,12 @@ export class FileOperations {
       return {
         success: executionResult.success,
         modifiedFiles: Array.from(modifiedFiles),
-        createdFiles: executionResult.success ? moves.map(m => m.destination) : [],
-        deletedFiles: executionResult.success ? moves.map(m => m.source) : [],
+        createdFiles: executionResult.success ? moves.map((m) => m.destination) : [],
+        deletedFiles: executionResult.success ? moves.map((m) => m.source) : [],
         errors: executionResult.errors,
         warnings,
         changes: allChanges,
       };
-
     } catch (error) {
       return {
         success: false,
@@ -344,7 +331,10 @@ export class FileOperations {
     }
   }
 
-  private validateMoveOperation(sourcePath: string, destinationPath: string): {
+  private validateMoveOperation(
+    sourcePath: string,
+    destinationPath: string
+  ): {
     valid: boolean;
     error?: string;
   } {
@@ -382,10 +372,10 @@ export class FileOperations {
     try {
       // Find the project root (directory containing the seed file)
       const projectRoot = PathUtils.findCommonBase([seedPath]);
-      
+
       // Find all markdown files in the project
       const markdownFiles = await FileUtils.findMarkdownFiles(projectRoot, true);
-      
+
       // Parse all files
       const parsedFiles: ParsedMarkdownFile[] = [];
       for (const filePath of markdownFiles) {
@@ -413,10 +403,7 @@ export class FileOperations {
     errors: string[];
   }> {
     try {
-      const allFiles = [
-        ...result.modifiedFiles,
-        ...result.createdFiles,
-      ];
+      const allFiles = [...result.modifiedFiles, ...result.createdFiles];
 
       const parsedFiles: ParsedMarkdownFile[] = [];
       for (const filePath of allFiles) {
@@ -431,8 +418,8 @@ export class FileOperations {
       return {
         valid: validationResult.valid,
         brokenLinks: validationResult.brokenLinks.length,
-        errors: validationResult.brokenLinks.map(bl => 
-          `${bl.sourceFile}: ${bl.reason} - ${bl.details || bl.link.href}`
+        errors: validationResult.brokenLinks.map(
+          (bl) => `${bl.sourceFile}: ${bl.reason} - ${bl.details || bl.link.href}`
         ),
       };
     } catch (error) {

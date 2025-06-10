@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import { 
-  DependencyOrderJoinStrategy,
+import { describe, expect, it } from 'vitest';
+import {
   AlphabeticalJoinStrategy,
+  ChronologicalJoinStrategy,
+  DependencyOrderJoinStrategy,
   ManualOrderJoinStrategy,
-  ChronologicalJoinStrategy
 } from './join-strategies.js';
 import type { JoinSection } from './join-strategies.js';
 
@@ -45,12 +45,12 @@ describe('Join Strategies', () => {
       expect(result.content).toContain('# Advanced Topics');
       expect(result.content).toContain('# Basics');
       expect(result.content).toContain('# Introduction');
-      
+
       // Should be ordered so dependencies come first
       const advancedIndex = result.content.indexOf('# Advanced Topics');
       const basicsIndex = result.content.indexOf('# Basics');
       const introIndex = result.content.indexOf('# Introduction');
-      
+
       expect(advancedIndex).toBeLessThan(basicsIndex);
       expect(basicsIndex).toBeLessThan(introIndex);
     });
@@ -130,7 +130,9 @@ describe('Join Strategies', () => {
       const result = await strategy.join(circularSections);
 
       expect(result.success).toBe(true);
-      expect(result.warnings).toContain('Circular dependency detected, falling back to manual order');
+      expect(result.warnings).toContain(
+        'Circular dependency detected, falling back to manual order'
+      );
     });
   });
 
@@ -140,11 +142,11 @@ describe('Join Strategies', () => {
       const result = await strategy.join(mockSections);
 
       expect(result.sourceFiles).toEqual(['advanced.md', 'basics.md', 'intro.md']);
-      
+
       const advancedIndex = result.content.indexOf('# Advanced Topics');
       const basicsIndex = result.content.indexOf('# Basics');
       const introIndex = result.content.indexOf('# Introduction');
-      
+
       expect(advancedIndex).toBeLessThan(basicsIndex);
       expect(basicsIndex).toBeLessThan(introIndex);
     });
@@ -174,34 +176,36 @@ describe('Join Strategies', () => {
 
   describe('ManualOrderJoinStrategy', () => {
     it('should join sections in specified manual order', async () => {
-      const strategy = new ManualOrderJoinStrategy({ 
-        customOrder: ['basics.md', 'advanced.md', 'intro.md'] 
+      const strategy = new ManualOrderJoinStrategy({
+        customOrder: ['basics.md', 'advanced.md', 'intro.md'],
       });
       const result = await strategy.join(mockSections);
 
       expect(result.sourceFiles).toEqual(['basics.md', 'advanced.md', 'intro.md']);
-      
+
       const basicsIndex = result.content.indexOf('# Basics');
       const advancedIndex = result.content.indexOf('# Advanced Topics');
       const introIndex = result.content.indexOf('# Introduction');
-      
+
       expect(basicsIndex).toBeLessThan(advancedIndex);
       expect(advancedIndex).toBeLessThan(introIndex);
     });
 
     it('should handle missing files in custom order', async () => {
-      const strategy = new ManualOrderJoinStrategy({ 
-        customOrder: ['missing.md', 'basics.md', 'intro.md'] 
+      const strategy = new ManualOrderJoinStrategy({
+        customOrder: ['missing.md', 'basics.md', 'intro.md'],
       });
       const result = await strategy.join(mockSections);
 
-      expect(result.warnings).toContain('File missing.md specified in custom order but not found in sections');
+      expect(result.warnings).toContain(
+        'File missing.md specified in custom order but not found in sections'
+      );
       expect(result.sourceFiles).toEqual(['basics.md', 'intro.md', 'advanced.md']);
     });
 
     it('should fall back to alphabetical for unspecified files', async () => {
-      const strategy = new ManualOrderJoinStrategy({ 
-        customOrder: ['intro.md'] 
+      const strategy = new ManualOrderJoinStrategy({
+        customOrder: ['intro.md'],
       });
       const result = await strategy.join(mockSections);
 
@@ -273,16 +277,17 @@ describe('Join Strategies', () => {
 
     it('should extract titles correctly', () => {
       const extractTitle = (strategy as any).extractTitle.bind(strategy);
-      
+
       expect(extractTitle('# Main Title\n\nContent', '')).toBe('Main Title');
-      expect(extractTitle('Content without header', '---\ntitle: "From Frontmatter"\n---\n'))
-        .toBe('From Frontmatter');
+      expect(extractTitle('Content without header', '---\ntitle: "From Frontmatter"\n---\n')).toBe(
+        'From Frontmatter'
+      );
       expect(extractTitle('## Second Level\n\nContent', '')).toBe('Second Level');
     });
 
     it('should merge frontmatter correctly', () => {
       const mergeFrontmatter = (strategy as any).mergeFrontmatter.bind(strategy);
-      
+
       const sections = [
         {
           frontmatter: '---\ntitle: "First"\ntags: ["tag1", "tag2"]\n---\n',
@@ -301,7 +306,7 @@ describe('Join Strategies', () => {
       ];
 
       const result = mergeFrontmatter(sections);
-      
+
       expect(result).toContain('title: "First & Second"');
       expect(result).toContain('tags: ["tag1", "tag2", "tag3"]');
       expect(result).toContain('author: "Test"');
@@ -309,7 +314,7 @@ describe('Join Strategies', () => {
 
     it('should detect header conflicts', () => {
       const detectConflicts = (strategy as any).detectConflicts.bind(strategy);
-      
+
       const sections = [
         {
           filePath: 'file1.md',
@@ -326,7 +331,7 @@ describe('Join Strategies', () => {
       ];
 
       const conflicts = detectConflicts(sections);
-      
+
       expect(conflicts.length).toBe(1);
       expect(conflicts[0].type).toBe('duplicate-headers');
       expect(conflicts[0].files).toEqual(['file1.md', 'file2.md']);

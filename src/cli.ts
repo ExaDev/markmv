@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { moveCommand } from './commands/move';
-import { splitCommand } from './commands/split';
 import { joinCommand } from './commands/join';
 import { mergeCommand } from './commands/merge';
+import { moveCommand } from './commands/move';
+import { splitCommand } from './commands/split';
 
 const program = new Command();
 
@@ -40,7 +40,11 @@ program
   .description('Join multiple markdown files resolving conflicts')
   .argument('<files...>', 'Markdown files to join')
   .option('-o, --output <file>', 'Output file name')
-  .option('--order-strategy <strategy>', 'Order strategy: alphabetical|manual|dependency|chronological', 'dependency')
+  .option(
+    '--order-strategy <strategy>',
+    'Order strategy: alphabetical|manual|dependency|chronological',
+    'dependency'
+  )
   .option('-d, --dry-run', 'Show what would be changed without making changes')
   .option('-v, --verbose', 'Show detailed output')
   .action(joinCommand);

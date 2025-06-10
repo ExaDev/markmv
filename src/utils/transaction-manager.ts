@@ -1,6 +1,6 @@
+import type { OperationChange } from '../types/operations.js';
 import { FileUtils } from './file-utils.js';
 import { PathUtils } from './path-utils.js';
-import type { OperationChange } from '../types/operations.js';
 
 export interface TransactionStep {
   id: string;
@@ -37,22 +37,18 @@ export class TransactionManager {
   /**
    * Add a file move operation to the transaction
    */
-  addFileMove(
-    sourcePath: string, 
-    destinationPath: string, 
-    description?: string
-  ): void {
+  addFileMove(sourcePath: string, destinationPath: string, description?: string): void {
     const stepId = `move-${this.steps.length}`;
-    
+
     this.steps.push({
       id: stepId,
       type: 'file-move',
       description: description || `Move ${sourcePath} to ${destinationPath}`,
       completed: false,
-      
+
       execute: async () => {
         // Create backup if enabled
-        if (this.options.createBackups && await FileUtils.exists(sourcePath)) {
+        if (this.options.createBackups && (await FileUtils.exists(sourcePath))) {
           const backupPath = await FileUtils.createBackup(sourcePath);
           this.backups.set(stepId, backupPath);
         }
@@ -72,7 +68,7 @@ export class TransactionManager {
 
           // Restore from backup if available
           const backupPath = this.backups.get(stepId);
-          if (backupPath && await FileUtils.exists(backupPath)) {
+          if (backupPath && (await FileUtils.exists(backupPath))) {
             await FileUtils.moveFile(backupPath, sourcePath);
             this.backups.delete(stepId);
           }
@@ -86,11 +82,7 @@ export class TransactionManager {
   /**
    * Add a content update operation to the transaction
    */
-  addContentUpdate(
-    filePath: string, 
-    newContent: string, 
-    description?: string
-  ): void {
+  addContentUpdate(filePath: string, newContent: string, description?: string): void {
     const stepId = `update-${this.steps.length}`;
     let originalContent: string | null = null;
 
@@ -129,11 +121,7 @@ export class TransactionManager {
   /**
    * Add a file creation operation to the transaction
    */
-  addFileCreate(
-    filePath: string, 
-    content: string, 
-    description?: string
-  ): void {
+  addFileCreate(filePath: string, content: string, description?: string): void {
     const stepId = `create-${this.steps.length}`;
 
     this.steps.push({
@@ -230,14 +218,13 @@ export class TransactionManager {
               oldValue: undefined, // Could be enhanced to track old values
               newValue: undefined,
             });
-
           } catch (error) {
             retries++;
             const errorMessage = `Step "${step.description}" failed (attempt ${retries}): ${error}`;
-            
+
             if (retries > this.options.maxRetries) {
               errors.push(errorMessage);
-              
+
               if (!this.options.continueOnError) {
                 // Rollback all executed steps
                 await this.rollback();
@@ -250,7 +237,7 @@ export class TransactionManager {
               }
             } else {
               // Wait before retry (exponential backoff)
-              await new Promise(resolve => setTimeout(resolve, Math.pow(2, retries - 1) * 1000));
+              await new Promise((resolve) => setTimeout(resolve, Math.pow(2, retries - 1) * 1000));
             }
           }
         }
@@ -265,11 +252,10 @@ export class TransactionManager {
         errors,
         changes,
       };
-
     } catch (error) {
       errors.push(`Transaction execution failed: ${error}`);
       await this.rollback();
-      
+
       return {
         success: false,
         completedSteps,
@@ -307,7 +293,7 @@ export class TransactionManager {
    * Get a preview of all planned operations
    */
   getPreview(): Array<{ description: string; type: string }> {
-    return this.steps.map(step => ({
+    return this.steps.map((step) => ({
       description: step.description,
       type: step.type,
     }));

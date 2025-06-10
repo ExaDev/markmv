@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { join, resolve } from 'node:path';
 import { homedir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { describe, expect, it } from 'vitest';
 import { PathUtils } from './path-utils.js';
 
 describe('PathUtils', () => {
@@ -122,11 +122,7 @@ describe('PathUtils', () => {
 
   describe('findCommonBase', () => {
     it('should find common base directory', () => {
-      const paths = [
-        '/project/docs/file1.md',
-        '/project/docs/file2.md',
-        '/project/src/file3.md',
-      ];
+      const paths = ['/project/docs/file1.md', '/project/docs/file2.md', '/project/src/file3.md'];
       const result = PathUtils.findCommonBase(paths);
       expect(result).toBe('/project');
     });

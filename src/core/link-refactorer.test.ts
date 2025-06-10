@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type { MarkdownLink, ParsedMarkdownFile, ReferenceDefinition } from '../types/links.js';
 import { LinkRefactorer } from './link-refactorer.js';
-import type { ParsedMarkdownFile, MarkdownLink, ReferenceDefinition } from '../types/links.js';
 
 describe('LinkRefactorer', () => {
   const testDir = join(process.cwd(), 'test-temp-refactorer');
@@ -304,7 +304,7 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
     it('should handle error during link refactoring', async () => {
       // Create a file with invalid content that might cause parsing issues
       const sourceFile = await createTestFile('source.md', '[Invalid link]()');
-      
+
       const mockParsedFile = createMockParsedFile(sourceFile, [
         {
           text: 'Invalid link',
@@ -540,7 +540,7 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
 
     it('should handle error during reference refactoring', async () => {
       const sourceFile = await createTestFile('source.md', '[ref1]: ./target.md');
-      
+
       const mockParsedFile = createMockParsedFile(
         sourceFile,
         [],

@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
-import { access, constants } from 'node:fs/promises';
+import { constants, access } from 'node:fs/promises';
+import type { BrokenLink, ValidationResult } from '../types/config.js';
 import type { MarkdownLink, ParsedMarkdownFile } from '../types/links.js';
-import type { ValidationResult, BrokenLink } from '../types/config.js';
 
 export interface LinkValidatorOptions {
   /** Check external links (http/https) */
@@ -64,28 +64,28 @@ export class LinkValidator {
       switch (link.type) {
         case 'internal':
           return await this.validateInternalLink(link, sourceFile);
-        
+
         case 'claude-import':
-          return this.options.checkClaudeImports 
+          return this.options.checkClaudeImports
             ? await this.validateClaudeImportLink(link, sourceFile)
             : null;
-        
+
         case 'external':
-          return this.options.checkExternal 
+          return this.options.checkExternal
             ? await this.validateExternalLink(link, sourceFile)
             : null;
-        
+
         case 'anchor':
           // Anchor links are always valid (they reference sections within the same file)
           return null;
-        
+
         case 'image':
           return await this.validateImageLink(link, sourceFile);
-        
+
         case 'reference':
           // Reference links are validated if they resolve to an internal/external link
           return null;
-        
+
         default:
           return null;
       }
@@ -99,7 +99,10 @@ export class LinkValidator {
     }
   }
 
-  private async validateInternalLink(link: MarkdownLink, sourceFile: string): Promise<BrokenLink | null> {
+  private async validateInternalLink(
+    link: MarkdownLink,
+    sourceFile: string
+  ): Promise<BrokenLink | null> {
     if (!link.resolvedPath) {
       return {
         sourceFile,
@@ -125,7 +128,10 @@ export class LinkValidator {
     }
   }
 
-  private async validateClaudeImportLink(link: MarkdownLink, sourceFile: string): Promise<BrokenLink | null> {
+  private async validateClaudeImportLink(
+    link: MarkdownLink,
+    sourceFile: string
+  ): Promise<BrokenLink | null> {
     if (!link.resolvedPath) {
       return {
         sourceFile,
@@ -149,7 +155,10 @@ export class LinkValidator {
     }
   }
 
-  private async validateExternalLink(link: MarkdownLink, sourceFile: string): Promise<BrokenLink | null> {
+  private async validateExternalLink(
+    link: MarkdownLink,
+    sourceFile: string
+  ): Promise<BrokenLink | null> {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.options.externalTimeout);
@@ -181,12 +190,13 @@ export class LinkValidator {
     }
   }
 
-  private async validateImageLink(link: MarkdownLink, sourceFile: string): Promise<BrokenLink | null> {
+  private async validateImageLink(
+    link: MarkdownLink,
+    sourceFile: string
+  ): Promise<BrokenLink | null> {
     // For external images, use external validation if enabled
     if (link.href.startsWith('http')) {
-      return this.options.checkExternal 
-        ? await this.validateExternalLink(link, sourceFile)
-        : null;
+      return this.options.checkExternal ? await this.validateExternalLink(link, sourceFile) : null;
     }
 
     // For internal images, check if file exists
@@ -219,16 +229,16 @@ export class LinkValidator {
 
     const buildGraph = () => {
       const graph = new Map<string, string[]>();
-      
+
       for (const file of files) {
         const dependencies = file.links
-          .filter(link => link.type === 'internal' || link.type === 'claude-import')
-          .map(link => link.resolvedPath!)
-          .filter(path => path); // Remove empty paths
-        
+          .filter((link) => link.type === 'internal' || link.type === 'claude-import')
+          .map((link) => link.resolvedPath!)
+          .filter((path) => path); // Remove empty paths
+
         graph.set(file.filePath, dependencies);
       }
-      
+
       return graph;
     };
 
@@ -276,7 +286,7 @@ export class LinkValidator {
     ]);
 
     const warnings = [...validationResult.warnings];
-    
+
     if (circularReferences.length > 0) {
       warnings.push(`Found ${circularReferences.length} circular reference(s)`);
     }

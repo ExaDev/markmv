@@ -1,11 +1,11 @@
 import { promises as fs } from 'node:fs';
 import { dirname } from 'node:path';
-import type { MergeOperationOptions } from '../types/operations.js';
-import { 
+import {
   AppendMergeStrategy,
+  InteractiveMergeStrategy,
   PrependMergeStrategy,
-  InteractiveMergeStrategy
 } from '../strategies/merge-strategies.js';
+import type { MergeOperationOptions } from '../types/operations.js';
 
 export interface MergeOptions {
   strategy?: 'append' | 'prepend' | 'interactive';
@@ -14,7 +14,11 @@ export interface MergeOptions {
   createTransclusions?: boolean;
 }
 
-export async function mergeCommand(source: string, target: string, options: MergeOptions): Promise<void> {
+export async function mergeCommand(
+  source: string,
+  target: string,
+  options: MergeOptions
+): Promise<void> {
   const strategy = options.strategy || 'interactive';
 
   if (options.verbose) {
@@ -97,12 +101,11 @@ export async function mergeCommand(source: string, target: string, options: Merg
       }
 
       console.log(`\\n📊 Summary: Would modify 1 file`);
-      
     } else {
       // Write the merged content
       await fs.mkdir(dirname(target), { recursive: true });
       await fs.writeFile(target, finalContent, 'utf8');
-      
+
       console.log('✅ Merge operation completed successfully!');
       console.log(`📝 Modified: ${target}`);
 
@@ -148,9 +151,10 @@ export async function mergeCommand(source: string, target: string, options: Merg
       } else if (strategy === 'interactive') {
         console.log('  • Review merge conflicts and resolve manually if needed');
       }
-      console.log('  • Use --create-transclusions to create Obsidian-style references instead of copying content');
+      console.log(
+        '  • Use --create-transclusions to create Obsidian-style references instead of copying content'
+      );
     }
-
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       console.error(`❌ File not found: ${(error as NodeJS.ErrnoException).path}`);

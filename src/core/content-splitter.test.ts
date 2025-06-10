@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { writeFile, mkdir, rm } from 'node:fs/promises';
-import { join } from 'node:path';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { ContentSplitter } from './content-splitter.js';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { FileUtils } from '../utils/file-utils.js';
+import { ContentSplitter } from './content-splitter.js';
 
 describe('ContentSplitter', () => {
   let splitter: ContentSplitter;
@@ -97,7 +97,7 @@ Content 2.`;
       await mkdir(join(testDir, 'docs'));
       const sourceFile = join(testDir, 'docs', 'source.md');
       const targetFile = join(testDir, 'target.md');
-      
+
       const content = `## Section 1
 
 Link to [target](../target.md) file.
@@ -214,19 +214,25 @@ More content.`;
     it('should handle files with external references', async () => {
       const sourceFile = join(testDir, 'source.md');
       const referenceFile = join(testDir, 'reference.md');
-      
-      await writeFile(sourceFile, `## Section A
+
+      await writeFile(
+        sourceFile,
+        `## Section A
 
 Content for A.
 
 ## Section B
 
-Content for B.`);
+Content for B.`
+      );
 
-      await writeFile(referenceFile, `# Reference
+      await writeFile(
+        referenceFile,
+        `# Reference
 
 This links to [source](./source.md).
-@./source.md`);
+@./source.md`
+      );
 
       const result = await splitter.splitFile(sourceFile, {
         strategy: 'headers',

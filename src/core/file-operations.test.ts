@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { writeFile, mkdir, rm } from 'node:fs/promises';
-import { join } from 'node:path';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { FileOperations } from './file-operations.js';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { FileUtils } from '../utils/file-utils.js';
+import { FileOperations } from './file-operations.js';
 
 describe('FileOperations', () => {
   let fileOps: FileOperations;
@@ -23,7 +23,7 @@ describe('FileOperations', () => {
     it('should move a single markdown file', async () => {
       const sourcePath = join(testDir, 'source.md');
       const destPath = join(testDir, 'dest.md');
-      
+
       await writeFile(sourcePath, '# Source File\n\nThis is content.');
 
       const result = await fileOps.moveFile(sourcePath, destPath);
@@ -41,7 +41,10 @@ describe('FileOperations', () => {
       const dependentPath = join(testDir, 'dependent.md');
 
       await writeFile(sourcePath, '# Target File');
-      await writeFile(dependentPath, `# Dependent File\n\n[Link to target](./target.md)\n@./target.md`);
+      await writeFile(
+        dependentPath,
+        `# Dependent File\n\n[Link to target](./target.md)\n@./target.md`
+      );
 
       const result = await fileOps.moveFile(sourcePath, destPath);
 
@@ -57,7 +60,7 @@ describe('FileOperations', () => {
     it('should handle dry-run mode', async () => {
       const sourcePath = join(testDir, 'source.md');
       const destPath = join(testDir, 'dest.md');
-      
+
       await writeFile(sourcePath, '# Source File');
 
       const result = await fileOps.moveFile(sourcePath, destPath, { dryRun: true });
@@ -65,7 +68,7 @@ describe('FileOperations', () => {
       expect(result.success).toBe(true);
       expect(result.createdFiles).toContain(destPath);
       expect(result.deletedFiles).toContain(sourcePath);
-      
+
       // Files should not actually be moved in dry-run
       expect(await FileUtils.exists(sourcePath)).toBe(true);
       expect(await FileUtils.exists(destPath)).toBe(false);
@@ -73,16 +76,16 @@ describe('FileOperations', () => {
 
     it('should handle relative links when moving files', async () => {
       await mkdir(join(testDir, 'docs'));
-      
+
       const sourcePath = join(testDir, 'source.md');
       const destPath = join(testDir, 'docs', 'source.md');
-      
+
       await writeFile(sourcePath, '# Source\n\n[Link](./other.md)\n@./config.md');
 
       const result = await fileOps.moveFile(sourcePath, destPath);
 
       expect(result.success).toBe(true);
-      
+
       const updatedContent = await FileUtils.readTextFile(destPath);
       expect(updatedContent).toContain('../other.md');
       expect(updatedContent).toContain('@../config.md');
@@ -90,7 +93,7 @@ describe('FileOperations', () => {
 
     it('should validate invalid moves', async () => {
       const result = await fileOps.moveFile('/nonexistent.txt', '/dest.txt');
-      
+
       expect(result.success).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
     });
@@ -177,7 +180,7 @@ describe('FileOperations', () => {
     it('should validate successful operations', async () => {
       const sourcePath = join(testDir, 'source.md');
       const destPath = join(testDir, 'dest.md');
-      
+
       await writeFile(sourcePath, '# Source File');
 
       const result = await fileOps.moveFile(sourcePath, destPath);

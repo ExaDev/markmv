@@ -1,10 +1,10 @@
 import { readFile } from 'node:fs/promises';
-import { resolve, dirname, isAbsolute, join } from 'node:path';
-import { unified } from 'unified';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 import remarkParse from 'remark-parse';
-import { visit } from 'unist-util-visit';
+import { unified } from 'unified';
 import type { Node } from 'unist';
-import type { MarkdownLink, LinkReference, ParsedMarkdownFile, LinkType } from '../types/links.js';
+import { visit } from 'unist-util-visit';
+import type { LinkReference, LinkType, MarkdownLink, ParsedMarkdownFile } from '../types/links.js';
 
 interface LinkNode extends Node {
   type: 'link' | 'image' | 'linkReference' | 'imageReference';
@@ -54,29 +54,33 @@ export class LinkParser {
     });
 
     // Extract Claude import links from text nodes
-    visit(tree, 'text', (node: { value: string; position?: { start: { line: number; column: number } } }) => {
-      if (!node.position) return;
-      
-      const claudeImportRegex = /@([^\s\n]+)/g;
-      let match;
-      
-      while ((match = claudeImportRegex.exec(node.value)) !== null) {
-        const importPath = match[1];
-        const link: MarkdownLink = {
-          type: 'claude-import',
-          href: importPath,
-          text: match[0], // Full "@path" text
-          line: node.position.start.line,
-          column: node.position.start.column + match.index,
-          absolute: importPath.startsWith('/') || importPath.startsWith('~'),
-        };
+    visit(
+      tree,
+      'text',
+      (node: { value: string; position?: { start: { line: number; column: number } } }) => {
+        if (!node.position) return;
 
-        // Resolve Claude import paths
-        link.resolvedPath = this.resolveClaudeImportPath(importPath, dirname(absolutePath));
-        
-        links.push(link);
+        const claudeImportRegex = /@([^\s\n]+)/g;
+        let match;
+
+        while ((match = claudeImportRegex.exec(node.value)) !== null) {
+          const importPath = match[1];
+          const link: MarkdownLink = {
+            type: 'claude-import',
+            href: importPath,
+            text: match[0], // Full "@path" text
+            line: node.position.start.line,
+            column: node.position.start.column + match.index,
+            absolute: importPath.startsWith('/') || importPath.startsWith('~'),
+          };
+
+          // Resolve Claude import paths
+          link.resolvedPath = this.resolveClaudeImportPath(importPath, dirname(absolutePath));
+
+          links.push(link);
+        }
       }
-    });
+    );
 
     // Extract links and images
     visit(tree, ['link', 'image', 'linkReference', 'imageReference'], (node: LinkNode) => {
@@ -90,28 +94,28 @@ export class LinkParser {
       if (node.type === 'link' || node.type === 'image') {
         href = node.url || '';
         linkType = node.type === 'image' ? 'image' : this.determineLinkType(href);
-        
+
         if (node.type === 'image') {
           text = node.alt;
         } else if (node.children) {
           text = node.children
-            .filter(child => child.type === 'text')
-            .map(child => child.value)
+            .filter((child) => child.type === 'text')
+            .map((child) => child.value)
             .join('');
         }
       } else {
         // Reference-style links
         referenceId = node.identifier;
-        const reference = references.find(ref => ref.id === referenceId);
+        const reference = references.find((ref) => ref.id === referenceId);
         href = reference?.url || '';
         linkType = node.type === 'imageReference' ? 'image' : 'reference';
-        
+
         if (node.type === 'imageReference') {
           text = node.alt;
         } else if (node.children) {
           text = node.children
-            .filter(child => child.type === 'text')
-            .map(child => child.value)
+            .filter((child) => child.type === 'text')
+            .map((child) => child.value)
             .join('');
         }
       }
@@ -147,17 +151,17 @@ export class LinkParser {
 
   private determineLinkType(href: string): LinkType {
     if (!href) return 'internal';
-    
+
     // External links (http/https/ftp/mailto)
     if (/^(https?|ftp|mailto):/i.test(href)) {
       return 'external';
     }
-    
+
     // Anchor links (starting with #)
     if (href.startsWith('#')) {
       return 'anchor';
     }
-    
+
     // Internal links (relative or absolute file paths)
     return 'internal';
   }
@@ -165,11 +169,11 @@ export class LinkParser {
   private resolveInternalPath(href: string, baseDir: string): string {
     // Remove anchor fragments
     const pathPart = href.split('#')[0];
-    
+
     if (isAbsolute(pathPart)) {
       return pathPart;
     }
-    
+
     return resolve(join(baseDir, pathPart));
   }
 
@@ -179,42 +183,47 @@ export class LinkParser {
       const { homedir } = require('node:os');
       return resolve(join(homedir(), importPath.slice(2)));
     }
-    
+
     // Handle absolute paths
     if (isAbsolute(importPath)) {
       return importPath;
     }
-    
+
     // Handle relative paths
     return resolve(join(baseDir, importPath));
   }
 
   private extractDependencies(links: MarkdownLink[]): string[] {
     return links
-      .filter(link => (link.type === 'internal' || link.type === 'claude-import') && link.resolvedPath)
-      .map(link => link.resolvedPath!)
+      .filter(
+        (link) => (link.type === 'internal' || link.type === 'claude-import') && link.resolvedPath
+      )
+      .map((link) => link.resolvedPath!)
       .filter((path, index, arr) => arr.indexOf(path) === index); // Remove duplicates
   }
 
-  async parseDirectory(dirPath: string, extensions = ['.md', '.markdown', '.mdx']): Promise<ParsedMarkdownFile[]> {
+  async parseDirectory(
+    dirPath: string,
+    extensions = ['.md', '.markdown', '.mdx']
+  ): Promise<ParsedMarkdownFile[]> {
     const { glob } = await import('node:fs');
     const { promisify } = await import('node:util');
     const globAsync = promisify(glob);
 
-    const pattern = extensions.length === 1 
-      ? `**/*${extensions[0]}`
-      : `**/*.{${extensions.map(ext => ext.slice(1)).join(',')}}`;
+    const pattern =
+      extensions.length === 1
+        ? `**/*${extensions[0]}`
+        : `**/*.{${extensions.map((ext) => ext.slice(1)).join(',')}}`;
 
     const files = await globAsync(pattern, { cwd: dirPath, absolute: true });
-    
-    const results = await Promise.allSettled(
-      files.map(file => this.parseFile(file))
-    );
+
+    const results = await Promise.allSettled(files.map((file) => this.parseFile(file)));
 
     return results
-      .filter((result): result is PromiseFulfilledResult<ParsedMarkdownFile> => 
-        result.status === 'fulfilled'
+      .filter(
+        (result): result is PromiseFulfilledResult<ParsedMarkdownFile> =>
+          result.status === 'fulfilled'
       )
-      .map(result => result.value);
+      .map((result) => result.value);
   }
 }

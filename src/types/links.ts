@@ -1,4 +1,11 @@
-export type LinkType = 'internal' | 'external' | 'anchor' | 'image' | 'reference' | 'claude-import' | 'obsidian-transclusion';
+export type LinkType =
+  | 'internal'
+  | 'external'
+  | 'anchor'
+  | 'image'
+  | 'reference'
+  | 'claude-import'
+  | 'obsidian-transclusion';
 
 export interface MarkdownLink {
   /** Type of link */

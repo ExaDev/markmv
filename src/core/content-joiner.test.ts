@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
-import { ContentJoiner } from './content-joiner.js';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { JoinOperationOptions } from '../types/operations.js';
+import { ContentJoiner } from './content-joiner.js';
 
 describe('ContentJoiner', () => {
   const testDir = join(process.cwd(), 'test-temp');
@@ -29,29 +29,38 @@ describe('ContentJoiner', () => {
 
   describe('joinFiles', () => {
     it('should join files with dependency ordering', async () => {
-      const file1 = await createTestFile('intro.md', `---
+      const file1 = await createTestFile(
+        'intro.md',
+        `---
 title: "Introduction"
 ---
 
 # Introduction
 
-This is the introduction. See [basics](basics.md) for more.`);
+This is the introduction. See [basics](basics.md) for more.`
+      );
 
-      const file2 = await createTestFile('basics.md', `---
+      const file2 = await createTestFile(
+        'basics.md',
+        `---
 title: "Basics"
 ---
 
 # Basics
 
-This covers basics. Check [advanced](advanced.md) next.`);
+This covers basics. Check [advanced](advanced.md) next.`
+      );
 
-      const file3 = await createTestFile('advanced.md', `---
+      const file3 = await createTestFile(
+        'advanced.md',
+        `---
 title: "Advanced"
 ---
 
 # Advanced Topics
 
-Advanced concepts here.`);
+Advanced concepts here.`
+      );
 
       const options: JoinOperationOptions = {
         orderStrategy: 'dependency',
@@ -91,7 +100,7 @@ Advanced concepts here.`);
       const result = await joiner.joinFiles([file1, file2], options);
 
       expect(result.success).toBe(true);
-      
+
       const joinedContent = await fs.readFile(join(testDir, 'alpha-joined.md'), 'utf8');
       const alphaIndex = joinedContent.indexOf('# Alpha File');
       const zebraIndex = joinedContent.indexOf('# Zebra File');
@@ -111,7 +120,7 @@ Advanced concepts here.`);
 
       expect(result.success).toBe(true);
       expect(result.createdFiles).toContain(join(testDir, 'dry-run.md'));
-      
+
       // File should not actually exist
       let fileExists = true;
       try {
@@ -137,21 +146,27 @@ Advanced concepts here.`);
     });
 
     it('should handle files with frontmatter conflicts', async () => {
-      const file1 = await createTestFile('conflict1.md', `---
+      const file1 = await createTestFile(
+        'conflict1.md',
+        `---
 title: "First Title"
 author: "Author 1"
 tags: ["tag1", "tag2"]
 ---
 
-# Content 1`);
+# Content 1`
+      );
 
-      const file2 = await createTestFile('conflict2.md', `---
+      const file2 = await createTestFile(
+        'conflict2.md',
+        `---
 title: "Second Title"
 author: "Author 2"
 tags: ["tag2", "tag3"]
 ---
 
-# Content 2`);
+# Content 2`
+      );
 
       const options: JoinOperationOptions = {
         output: join(testDir, 'conflict-joined.md'),
@@ -162,7 +177,7 @@ tags: ["tag2", "tag3"]
 
       expect(result.success).toBe(true);
       expect(result.warnings.length).toBeGreaterThan(0);
-      
+
       // Check merged frontmatter
       const joinedContent = await fs.readFile(join(testDir, 'conflict-joined.md'), 'utf8');
       expect(joinedContent).toContain('title: "First Title & Second Title"');
@@ -182,12 +197,18 @@ tags: ["tag2", "tag3"]
       const result = await joiner.joinFiles([file1, file2], options);
 
       expect(result.success).toBe(true);
-      expect(result.warnings.some(w => w.includes('duplicate-headers'))).toBe(true);
+      expect(result.warnings.some((w) => w.includes('duplicate-headers'))).toBe(true);
     });
 
     it('should deduplicate links', async () => {
-      const file1 = await createTestFile('link1.md', `# File 1\n\n[Common Link](shared.md)\n\nContent 1`);
-      const file2 = await createTestFile('link2.md', `# File 2\n\n[Common Link](shared.md)\n\nContent 2`);
+      const file1 = await createTestFile(
+        'link1.md',
+        `# File 1\n\n[Common Link](shared.md)\n\nContent 1`
+      );
+      const file2 = await createTestFile(
+        'link2.md',
+        `# File 2\n\n[Common Link](shared.md)\n\nContent 2`
+      );
 
       const options: JoinOperationOptions = {
         output: join(testDir, 'dedup-joined.md'),
@@ -197,7 +218,7 @@ tags: ["tag2", "tag3"]
       const result = await joiner.joinFiles([file1, file2], options);
 
       expect(result.success).toBe(true);
-      
+
       const joinedContent = await fs.readFile(join(testDir, 'dedup-joined.md'), 'utf8');
       const linkMatches = joinedContent.match(/\[Common Link\]\(shared\.md\)/g);
       expect(linkMatches?.length).toBe(1); // Should only appear once after deduplication
@@ -215,8 +236,8 @@ tags: ["tag2", "tag3"]
       const result = await joiner.joinFiles([file1, missingFile], options);
 
       expect(result.success).toBe(true);
-      expect(result.warnings.some(w => w.includes('missing.md'))).toBe(true);
-      
+      expect(result.warnings.some((w) => w.includes('missing.md'))).toBe(true);
+
       // Should still create output with available files
       const joinedContent = await fs.readFile(join(testDir, 'partial-joined.md'), 'utf8');
       expect(joinedContent).toContain('# Exists');
@@ -235,7 +256,9 @@ tags: ["tag2", "tag3"]
     });
 
     it('should preserve file structure when requested', async () => {
-      const file1 = await createTestFile('structured.md', `---
+      const file1 = await createTestFile(
+        'structured.md',
+        `---
 title: "Structured Content"
 ---
 
@@ -247,7 +270,8 @@ Content of section 1.
 
 ## Section 2
 
-Content of section 2.`);
+Content of section 2.`
+      );
 
       const file2 = await createTestFile('simple.md', `# Simple Content\n\nJust simple content.`);
 
@@ -259,7 +283,7 @@ Content of section 2.`);
       const result = await joiner.joinFiles([file1, file2], options);
 
       expect(result.success).toBe(true);
-      
+
       const joinedContent = await fs.readFile(join(testDir, 'structured-joined.md'), 'utf8');
       expect(joinedContent).toContain('## Section 1');
       expect(joinedContent).toContain('## Section 2');

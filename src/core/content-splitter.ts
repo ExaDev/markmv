@@ -1,25 +1,25 @@
-import { dirname, join, basename } from 'node:path';
-import { LinkParser } from './link-parser.js';
-import { LinkRefactorer } from './link-refactorer.js';
-import { FileUtils } from '../utils/file-utils.js';
-import { PathUtils } from '../utils/path-utils.js';
-import { TransactionManager } from '../utils/transaction-manager.js';
+import { basename, dirname, join } from 'node:path';
 import {
-  BaseSplitStrategy,
+  type BaseSplitStrategy,
   HeaderBasedSplitStrategy,
-  SizeBasedSplitStrategy,
-  ManualSplitStrategy,
   LineBasedSplitStrategy,
+  ManualSplitStrategy,
+  SizeBasedSplitStrategy,
   type SplitResult,
   type SplitSection,
   type SplitStrategyOptions,
 } from '../strategies/split-strategies.js';
-import type { 
-  SplitOperationOptions, 
-  OperationResult, 
-  OperationChange 
+import type { MarkdownLink, ParsedMarkdownFile } from '../types/links.js';
+import type {
+  OperationChange,
+  OperationResult,
+  SplitOperationOptions,
 } from '../types/operations.js';
-import type { ParsedMarkdownFile, MarkdownLink } from '../types/links.js';
+import { FileUtils } from '../utils/file-utils.js';
+import { PathUtils } from '../utils/path-utils.js';
+import { TransactionManager } from '../utils/transaction-manager.js';
+import { LinkParser } from './link-parser.js';
+import { LinkRefactorer } from './link-refactorer.js';
 
 export interface LinkRedistributionResult {
   /** Updated sections with redistributed links */
@@ -46,16 +46,11 @@ export class ContentSplitter {
     sourceFilePath: string,
     options: SplitOperationOptions
   ): Promise<OperationResult> {
-    const {
-      strategy = 'headers',
-      outputDir,
-      dryRun = false,
-      verbose = false,
-    } = options;
+    const { strategy = 'headers', outputDir, dryRun = false, verbose = false } = options;
 
     try {
       // Validate input
-      if (!await FileUtils.exists(sourceFilePath)) {
+      if (!(await FileUtils.exists(sourceFilePath))) {
         return {
           success: false,
           modifiedFiles: [],
@@ -134,7 +129,9 @@ export class ContentSplitter {
 
       if (verbose) {
         console.log(`Split into ${redistributionResult.updatedSections.length} sections`);
-        console.log(`${redistributionResult.externalLinkUpdates.length} external links need updating`);
+        console.log(
+          `${redistributionResult.externalLinkUpdates.length} external links need updating`
+        );
       }
 
       // Prepare transaction
@@ -196,7 +193,7 @@ export class ContentSplitter {
           outputDirectory
         );
 
-        if (updatedContent !== await FileUtils.readTextFile(externalFile)) {
+        if (updatedContent !== (await FileUtils.readTextFile(externalFile))) {
           modifiedFiles.push(externalFile);
           changes.push({
             type: 'link-updated',
@@ -250,7 +247,6 @@ export class ContentSplitter {
         warnings,
         changes,
       };
-
     } catch (error) {
       return {
         success: false,
@@ -264,10 +260,7 @@ export class ContentSplitter {
     }
   }
 
-  private createSplitStrategy(
-    strategy: string, 
-    options: SplitStrategyOptions
-  ): BaseSplitStrategy {
+  private createSplitStrategy(strategy: string, options: SplitStrategyOptions): BaseSplitStrategy {
     switch (strategy) {
       case 'headers':
         return new HeaderBasedSplitStrategy(options);
@@ -303,14 +296,14 @@ export class ContentSplitter {
     for (const section of splitResult.sections) {
       try {
         const sectionFilePath = join(outputDirectory, section.filename);
-        
+
         // Find links that are within this section's line range
-        const sectionLinks = originalFile.links.filter(link => 
-          link.line >= section.startLine + 1 && link.line <= section.endLine + 1
+        const sectionLinks = originalFile.links.filter(
+          (link) => link.line >= section.startLine + 1 && link.line <= section.endLine + 1
         );
 
         // Update internal links within the section to account for new file location
-        let updatedContent = section.content;
+        const updatedContent = section.content;
         const lines = updatedContent.split('\n');
 
         for (const link of sectionLinks) {
@@ -325,11 +318,7 @@ export class ContentSplitter {
               if (newHref !== link.href) {
                 const relativeLine = link.line - section.startLine - 1;
                 if (relativeLine >= 0 && relativeLine < lines.length) {
-                  lines[relativeLine] = this.replaceLinkInLine(
-                    lines[relativeLine],
-                    link,
-                    newHref
-                  );
+                  lines[relativeLine] = this.replaceLinkInLine(lines[relativeLine], link, newHref);
                 }
               }
             } catch (error) {
@@ -342,7 +331,6 @@ export class ContentSplitter {
           ...section,
           content: lines.join('\n'),
         });
-
       } catch (error) {
         errors.push(`Failed to process section ${section.title}: ${error}`);
         updatedSections.push(section);
@@ -362,19 +350,11 @@ export class ContentSplitter {
     newFilePath: string
   ): string {
     if (link.type === 'claude-import') {
-      return PathUtils.updateClaudeImportPath(
-        link.href,
-        originalFilePath,
-        newFilePath
-      );
+      return PathUtils.updateClaudeImportPath(link.href, originalFilePath, newFilePath);
     }
 
     if (link.type === 'internal') {
-      return PathUtils.updateRelativePath(
-        link.href,
-        originalFilePath,
-        newFilePath
-      );
+      return PathUtils.updateRelativePath(link.href, originalFilePath, newFilePath);
     }
 
     return link.href;
@@ -389,11 +369,8 @@ export class ContentSplitter {
 
     // For regular markdown links
     const escapedHref = link.href.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const linkRegex = new RegExp(
-      `\\[([^\\]]*)\\]\\(\\s*${escapedHref}(\\s+"[^"]*")?\\s*\\)`,
-      'g'
-    );
-    
+    const linkRegex = new RegExp(`\\[([^\\]]*)\\]\\(\\s*${escapedHref}(\\s+"[^"]*")?\\s*\\)`, 'g');
+
     return line.replace(linkRegex, `[$1](${newHref}$2)`);
   }
 
@@ -412,7 +389,7 @@ export class ContentSplitter {
         try {
           const parsedFile = await this.linkParser.parseFile(filePath);
           const hasReference = parsedFile.dependencies.includes(sourceFilePath);
-          
+
           if (hasReference) {
             referencingFiles.push(filePath);
           }
@@ -441,13 +418,13 @@ export class ContentSplitter {
     try {
       const content = await FileUtils.readTextFile(externalFilePath);
       const parsedFile = await this.linkParser.parseFile(externalFilePath);
-      
+
       let updatedContent = content;
       const lines = updatedContent.split('\n');
 
       // Find links that point to the original file
-      const linksToUpdate = parsedFile.links.filter(link => 
-        link.resolvedPath === originalFilePath
+      const linksToUpdate = parsedFile.links.filter(
+        (link) => link.resolvedPath === originalFilePath
       );
 
       // For now, update all links to point to the first section
@@ -455,22 +432,14 @@ export class ContentSplitter {
       // to determine which section it should point to
       if (sections.length > 0 && linksToUpdate.length > 0) {
         const firstSectionPath = join(outputDirectory, sections[0].filename);
-        
+
         for (const link of linksToUpdate) {
-          const newHref = this.updateLinkForNewLocation(
-            link,
-            externalFilePath,
-            firstSectionPath
-          );
+          const newHref = this.updateLinkForNewLocation(link, externalFilePath, firstSectionPath);
 
           if (newHref !== link.href) {
             const lineIndex = link.line - 1;
             if (lineIndex >= 0 && lineIndex < lines.length) {
-              lines[lineIndex] = this.replaceLinkInLine(
-                lines[lineIndex],
-                link,
-                newHref
-              );
+              lines[lineIndex] = this.replaceLinkInLine(lines[lineIndex], link, newHref);
             }
           }
         }

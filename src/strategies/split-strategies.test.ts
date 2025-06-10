@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import { 
-  HeaderBasedSplitStrategy, 
-  SizeBasedSplitStrategy, 
+import { describe, expect, it } from 'vitest';
+import {
+  HeaderBasedSplitStrategy,
+  LineBasedSplitStrategy,
   ManualSplitStrategy,
-  LineBasedSplitStrategy 
+  SizeBasedSplitStrategy,
 } from './split-strategies.js';
 
 describe('Split Strategies', () => {
@@ -41,9 +41,9 @@ Final section content.`;
     });
 
     it('should handle frontmatter preservation', async () => {
-      const strategy = new HeaderBasedSplitStrategy({ 
+      const strategy = new HeaderBasedSplitStrategy({
         headerLevel: 2,
-        preserveFrontmatter: true 
+        preserveFrontmatter: true,
       });
       const content = `---
 title: Test Document
@@ -163,8 +163,8 @@ Third section content.`;
     });
 
     it('should handle custom split markers', async () => {
-      const strategy = new ManualSplitStrategy({ 
-        splitMarkers: ['<!-- break -->', '===SPLIT==='] 
+      const strategy = new ManualSplitStrategy({
+        splitMarkers: ['<!-- break -->', '===SPLIT==='],
       });
       const content = `Content 1
 
@@ -188,7 +188,9 @@ Content 3`;
       const result = await strategy.split(content, 'test.md');
 
       expect(result.sections).toHaveLength(0);
-      expect(result.warnings).toContain('No split markers found. Use <!-- split --> or ---split--- to mark split points.');
+      expect(result.warnings).toContain(
+        'No split markers found. Use <!-- split --> or ---split--- to mark split points.'
+      );
       expect(result.remainingContent).toBe(content);
     });
 
@@ -289,14 +291,16 @@ Line 4`;
 
       const result = await strategy.split(content, 'test.md');
 
-      expect(result.errors).toContain('No split lines specified. Use --split-lines option with comma-separated line numbers.');
+      expect(result.errors).toContain(
+        'No split lines specified. Use --split-lines option with comma-separated line numbers.'
+      );
       expect(result.sections).toHaveLength(0);
     });
 
     it('should handle frontmatter correctly', async () => {
-      const strategy = new LineBasedSplitStrategy({ 
+      const strategy = new LineBasedSplitStrategy({
         splitLines: [3],
-        preserveFrontmatter: true 
+        preserveFrontmatter: true,
       });
       const content = `---
 title: Test
@@ -322,7 +326,7 @@ Content 2`;
     it('should sanitize filenames correctly', () => {
       // Access protected method for testing
       const sanitize = (strategy as any).sanitizeFilename.bind(strategy);
-      
+
       expect(sanitize('Hello World!')).toBe('hello-world');
       expect(sanitize('Special@#$%Characters')).toBe('specialcharacters');
       expect(sanitize('Multiple   Spaces')).toBe('multiple-spaces');
@@ -331,7 +335,7 @@ Content 2`;
 
     it('should extract header levels correctly', () => {
       const getLevel = (strategy as any).getHeaderLevel.bind(strategy);
-      
+
       expect(getLevel('# Header 1')).toBe(1);
       expect(getLevel('## Header 2')).toBe(2);
       expect(getLevel('### Header 3')).toBe(3);
@@ -344,7 +348,7 @@ Content 2`;
 
     it('should extract titles from headers', () => {
       const extractTitle = (strategy as any).extractTitleFromHeader.bind(strategy);
-      
+
       expect(extractTitle('# Main Title')).toBe('Main Title');
       expect(extractTitle('## Section Title')).toBe('Section Title');
       expect(extractTitle('### Title with Extra   Spaces   ')).toBe('Title with Extra   Spaces');

@@ -1,5 +1,5 @@
-import { resolve, relative, dirname, basename, extname, isAbsolute, join, sep } from 'node:path';
 import { homedir } from 'node:os';
+import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 export class PathUtils {
   /**
@@ -9,15 +9,15 @@ export class PathUtils {
     if (path.startsWith('~/')) {
       return resolve(join(homedir(), path.slice(2)));
     }
-    
+
     if (isAbsolute(path)) {
       return resolve(path);
     }
-    
+
     if (basePath) {
       return resolve(join(basePath, path));
     }
-    
+
     return resolve(path);
   }
 
@@ -32,8 +32,8 @@ export class PathUtils {
    * Update a relative path when a file is moved
    */
   static updateRelativePath(
-    originalLinkPath: string, 
-    sourceFilePath: string, 
+    originalLinkPath: string,
+    sourceFilePath: string,
     newSourceFilePath: string
   ): string {
     // If it's not a relative path, return as-is
@@ -44,7 +44,7 @@ export class PathUtils {
     // Resolve the original target
     const sourceDir = dirname(sourceFilePath);
     const targetPath = this.resolvePath(originalLinkPath, sourceDir);
-    
+
     // Create new relative path from new location
     const newSourceDir = dirname(newSourceFilePath);
     return this.makeRelative(targetPath, newSourceDir);
@@ -67,7 +67,7 @@ export class PathUtils {
     const sourceDir = dirname(sourceFilePath);
     const targetPath = this.resolvePath(originalImportPath, sourceDir);
     const newSourceDir = dirname(newSourceFilePath);
-    
+
     return this.makeRelative(targetPath, newSourceDir);
   }
 
@@ -93,16 +93,16 @@ export class PathUtils {
     const dir = dirname(desiredPath);
     const name = basename(desiredPath, extname(desiredPath));
     const ext = extname(desiredPath);
-    
+
     let counter = 1;
     let uniquePath = desiredPath;
-    
+
     const fs = require('node:fs');
     while (fs.existsSync(uniquePath)) {
       uniquePath = join(dir, `${name}-${counter}${ext}`);
       counter++;
     }
-    
+
     return uniquePath;
   }
 
@@ -132,7 +132,7 @@ export class PathUtils {
    */
   static getDirectoryDepth(path: string): number {
     const normalized = resolve(path);
-    return normalized.split(sep).filter(part => part !== '').length;
+    return normalized.split(sep).filter((part) => part !== '').length;
   }
 
   /**
@@ -142,21 +142,21 @@ export class PathUtils {
     if (paths.length === 0) return '';
     if (paths.length === 1) return dirname(paths[0]);
 
-    const resolvedPaths = paths.map(p => resolve(p));
-    const splitPaths = resolvedPaths.map(p => p.split(sep));
-    
-    let commonParts: string[] = [];
-    const minLength = Math.min(...splitPaths.map(p => p.length));
-    
+    const resolvedPaths = paths.map((p) => resolve(p));
+    const splitPaths = resolvedPaths.map((p) => p.split(sep));
+
+    const commonParts: string[] = [];
+    const minLength = Math.min(...splitPaths.map((p) => p.length));
+
     for (let i = 0; i < minLength; i++) {
       const part = splitPaths[0][i];
-      if (splitPaths.every(splitPath => splitPath[i] === part)) {
+      if (splitPaths.every((splitPath) => splitPath[i] === part)) {
         commonParts.push(part);
       } else {
         break;
       }
     }
-    
+
     return commonParts.join(sep) || sep;
   }
 
@@ -187,9 +187,9 @@ export class PathUtils {
    * Safely join paths, handling edge cases
    */
   static safejoin(...parts: string[]): string {
-    const filteredParts = parts.filter(part => part && part.trim() !== '');
+    const filteredParts = parts.filter((part) => part && part.trim() !== '');
     if (filteredParts.length === 0) return '';
-    
+
     return resolve(join(...filteredParts));
   }
 }

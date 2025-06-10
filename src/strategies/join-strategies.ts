@@ -133,7 +133,10 @@ export abstract class BaseJoinStrategy {
             if (!arrays[key]) arrays[key] = [];
             if (value.startsWith('[') && value.endsWith(']')) {
               // Parse array format
-              const items = value.slice(1, -1).split(',').map(item => item.trim().replace(/['"]/g, ''));
+              const items = value
+                .slice(1, -1)
+                .split(',')
+                .map((item) => item.trim().replace(/['"]/g, ''));
               arrays[key].push(...items);
             } else {
               arrays[key].push(value.replace(/['"]/g, ''));
@@ -148,10 +151,10 @@ export abstract class BaseJoinStrategy {
           } else {
             // Simple key-value pairs - use first found
             if (!frontmatterData[key]) {
-              let cleanValue = value.replace(/['"]/g, '');
+              const cleanValue = value.replace(/['"]/g, '');
               // Try to parse as number if it looks like one
               if (/^\d+$/.test(cleanValue)) {
-                frontmatterData[key] = parseInt(cleanValue, 10);
+                frontmatterData[key] = Number.parseInt(cleanValue, 10);
               } else {
                 frontmatterData[key] = cleanValue;
               }
@@ -174,7 +177,7 @@ export abstract class BaseJoinStrategy {
     let result = '---\n';
     for (const [key, value] of Object.entries(frontmatterData)) {
       if (Array.isArray(value)) {
-        result += `${key}: [${value.map(v => `"${v}"`).join(', ')}]\n`;
+        result += `${key}: [${value.map((v) => `"${v}"`).join(', ')}]\n`;
       } else if (typeof value === 'number') {
         result += `${key}: ${value}\n`;
       } else {
@@ -290,10 +293,10 @@ export abstract class BaseJoinStrategy {
 
     for (const line of lines) {
       let processedLine = line;
-      
+
       // Find all markdown links in the line
       const linkMatches = line.matchAll(/\[([^\]]*)\]\(([^)]+)\)/g);
-      
+
       for (const match of linkMatches) {
         const fullLink = match[0];
         const linkText = match[1];
@@ -340,7 +343,7 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
     try {
       // Sort sections by dependency order (topological sort)
       const orderedSections = this.topologicalSort(sections);
-      
+
       if (!orderedSections) {
         warnings.push('Circular dependency detected, falling back to manual order');
         const fallbackSections = [...sections].sort((a, b) => a.order - b.order);
@@ -421,17 +424,17 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
   }
 
   private buildResult(
-    orderedSections: JoinSection[], 
-    conflicts: JoinConflict[], 
-    warnings: string[], 
+    orderedSections: JoinSection[],
+    conflicts: JoinConflict[],
+    warnings: string[],
     errors: string[]
   ): JoinResult {
-    const sourceFiles = orderedSections.map(s => s.filePath);
+    const sourceFiles = orderedSections.map((s) => s.filePath);
     const separator = this.options.separator || '\n\n---\n\n';
 
     // Combine content
     let combinedContent = orderedSections
-      .map(section => section.content.replace(/^---\n.*?\n---\n/s, '').trim())
+      .map((section) => section.content.replace(/^---\n.*?\n---\n/s, '').trim())
       .join(separator);
 
     let deduplicatedLinks: string[] = [];
@@ -492,16 +495,16 @@ export class AlphabeticalJoinStrategy extends BaseJoinStrategy {
   }
 
   private buildResult(
-    orderedSections: JoinSection[], 
-    conflicts: JoinConflict[], 
-    warnings: string[], 
+    orderedSections: JoinSection[],
+    conflicts: JoinConflict[],
+    warnings: string[],
     errors: string[]
   ): JoinResult {
-    const sourceFiles = orderedSections.map(s => s.filePath);
+    const sourceFiles = orderedSections.map((s) => s.filePath);
     const separator = this.options.separator || '\n\n---\n\n';
 
     let combinedContent = orderedSections
-      .map(section => section.content.replace(/^---\n.*?\n---\n/s, '').trim())
+      .map((section) => section.content.replace(/^---\n.*?\n---\n/s, '').trim())
       .join(separator);
 
     let deduplicatedLinks: string[] = [];
@@ -543,7 +546,7 @@ export class ManualOrderJoinStrategy extends BaseJoinStrategy {
 
       // Add sections in custom order
       for (const filePath of customOrder) {
-        const section = sections.find(s => s.filePath === filePath);
+        const section = sections.find((s) => s.filePath === filePath);
         if (section) {
           orderedSections.push(section);
           usedSections.add(filePath);
@@ -554,7 +557,7 @@ export class ManualOrderJoinStrategy extends BaseJoinStrategy {
 
       // Add remaining sections in alphabetical order
       const remainingSections = sections
-        .filter(s => !usedSections.has(s.filePath))
+        .filter((s) => !usedSections.has(s.filePath))
         .sort((a, b) => {
           const titleA = a.title || a.filePath;
           const titleB = b.title || b.filePath;
@@ -579,16 +582,16 @@ export class ManualOrderJoinStrategy extends BaseJoinStrategy {
   }
 
   private buildResult(
-    orderedSections: JoinSection[], 
-    conflicts: JoinConflict[], 
-    warnings: string[], 
+    orderedSections: JoinSection[],
+    conflicts: JoinConflict[],
+    warnings: string[],
     errors: string[]
   ): JoinResult {
-    const sourceFiles = orderedSections.map(s => s.filePath);
+    const sourceFiles = orderedSections.map((s) => s.filePath);
     const separator = this.options.separator || '\n\n---\n\n';
 
     let combinedContent = orderedSections
-      .map(section => section.content.replace(/^---\n.*?\n---\n/s, '').trim())
+      .map((section) => section.content.replace(/^---\n.*?\n---\n/s, '').trim())
       .join(separator);
 
     let deduplicatedLinks: string[] = [];
@@ -628,11 +631,11 @@ export class ChronologicalJoinStrategy extends BaseJoinStrategy {
       const orderedSections = [...sections].sort((a, b) => {
         const dateA = this.extractDate(a);
         const dateB = this.extractDate(b);
-        
+
         if (!dateA && !dateB) return 0;
         if (!dateA) return 1; // Put undated items last
         if (!dateB) return -1; // Put undated items last
-        
+
         return dateA.getTime() - dateB.getTime();
       });
 
@@ -676,16 +679,16 @@ export class ChronologicalJoinStrategy extends BaseJoinStrategy {
   }
 
   private buildResult(
-    orderedSections: JoinSection[], 
-    conflicts: JoinConflict[], 
-    warnings: string[], 
+    orderedSections: JoinSection[],
+    conflicts: JoinConflict[],
+    warnings: string[],
     errors: string[]
   ): JoinResult {
-    const sourceFiles = orderedSections.map(s => s.filePath);
+    const sourceFiles = orderedSections.map((s) => s.filePath);
     const separator = this.options.separator || '\n\n---\n\n';
 
     let combinedContent = orderedSections
-      .map(section => section.content.replace(/^---\n.*?\n---\n/s, '').trim())
+      .map((section) => section.content.replace(/^---\n.*?\n---\n/s, '').trim())
       .join(separator);
 
     let deduplicatedLinks: string[] = [];

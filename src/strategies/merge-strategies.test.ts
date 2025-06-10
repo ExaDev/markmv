@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest';
-import { 
+import { describe, expect, it } from 'vitest';
+import {
   AppendMergeStrategy,
+  InteractiveMergeStrategy,
   PrependMergeStrategy,
-  InteractiveMergeStrategy
 } from './merge-strategies.js';
 
 describe('Merge Strategies', () => {
@@ -49,7 +49,7 @@ Different content for section A.`;
       expect(result.success).toBe(true);
       expect(result.content).toContain('This is the target document.');
       expect(result.content).toContain('This is the source document.');
-      
+
       // Target content should come first
       const targetIndex = result.content.indexOf('This is the target document.');
       const sourceIndex = result.content.indexOf('This is the source document.');
@@ -74,8 +74,8 @@ Different content for section A.`;
       const result = await strategy.merge(targetContent, sourceContent, 'target.md', 'source.md');
 
       expect(result.conflicts.length).toBeGreaterThan(0);
-      expect(result.conflicts.some(c => c.type === 'header-collision')).toBe(true);
-      expect(result.conflicts.some(c => c.description.includes('Section A'))).toBe(true);
+      expect(result.conflicts.some((c) => c.type === 'header-collision')).toBe(true);
+      expect(result.conflicts.some((c) => c.description.includes('Section A'))).toBe(true);
     });
 
     it('should create transclusions when requested', async () => {
@@ -99,7 +99,7 @@ More content.`;
       const strategy = new AppendMergeStrategy({ createTransclusions: true });
       const result = await strategy.merge(loopContent, sourceContent, 'target.md', 'source.md');
 
-      expect(result.warnings.some(w => w.includes('loop detected'))).toBe(true);
+      expect(result.warnings.some((w) => w.includes('loop detected'))).toBe(true);
     });
 
     it('should handle files without frontmatter', async () => {
@@ -130,7 +130,7 @@ More content.`;
       expect(result.success).toBe(true);
       expect(result.content).toContain('This is the target document.');
       expect(result.content).toContain('This is the source document.');
-      
+
       // Source content should come first
       const targetIndex = result.content.indexOf('This is the target document.');
       const sourceIndex = result.content.indexOf('This is the source document.');
@@ -155,8 +155,8 @@ More content.`;
 
       expect(result.success).toBe(true);
       expect(result.conflicts.length).toBeGreaterThan(0);
-      expect(result.conflicts.some(c => !c.autoResolved)).toBe(true);
-      expect(result.warnings.some(w => w.includes('Interactive merge'))).toBe(true);
+      expect(result.conflicts.some((c) => !c.autoResolved)).toBe(true);
+      expect(result.warnings.some((w) => w.includes('Interactive merge'))).toBe(true);
     });
 
     it('should mark content for manual review', async () => {
@@ -172,9 +172,9 @@ More content.`;
       const result = await strategy.merge(targetContent, sourceContent, 'target.md', 'source.md');
 
       // Should have conflicts for header collisions AND section placements
-      const headerConflicts = result.conflicts.filter(c => c.type === 'header-collision');
-      const placementConflicts = result.conflicts.filter(c => c.type === 'content-overlap');
-      
+      const headerConflicts = result.conflicts.filter((c) => c.type === 'header-collision');
+      const placementConflicts = result.conflicts.filter((c) => c.type === 'content-overlap');
+
       expect(headerConflicts.length).toBeGreaterThan(0);
       expect(placementConflicts.length).toBeGreaterThan(0);
     });
@@ -183,7 +183,9 @@ More content.`;
       const strategy = new InteractiveMergeStrategy();
       const result = await strategy.merge(targetContent, sourceContent, 'target.md', 'source.md');
 
-      const hasResolutionGuidance = result.conflicts.every(c => c.resolution && c.resolution.length > 0);
+      const hasResolutionGuidance = result.conflicts.every(
+        (c) => c.resolution && c.resolution.length > 0
+      );
       expect(hasResolutionGuidance).toBe(true);
     });
   });
@@ -193,7 +195,7 @@ More content.`;
 
     it('should extract transclusions correctly', () => {
       const extractTransclusions = (strategy as any).extractTransclusions.bind(strategy);
-      
+
       const content = `# Test Document
 
 Some content.
@@ -207,7 +209,7 @@ More content.
 End.`;
 
       const transclusions = extractTransclusions(content);
-      
+
       expect(transclusions).toHaveLength(2);
       expect(transclusions[0].file).toBe('other-file.md');
       expect(transclusions[0].section).toBeUndefined();
@@ -217,16 +219,16 @@ End.`;
 
     it('should create transclusion references', () => {
       const createTransclusion = (strategy as any).createTransclusion.bind(strategy);
-      
+
       expect(createTransclusion('test-file.md')).toBe('![[test-file]]');
       expect(createTransclusion('test-file.md', 'section')).toBe('![[test-file#section]]');
     });
 
     it('should detect transclusion loops', () => {
       const detectLoops = (strategy as any).detectTransclusionLoops.bind(strategy);
-      
+
       const existingRefs = ['![[file-a]]', '![[file-b#section]]'];
-      
+
       expect(detectLoops('file-a.md', 'file-c.md', existingRefs)).toBe(true);
       expect(detectLoops('file-d.md', 'file-c.md', existingRefs)).toBe(false);
       expect(detectLoops('same.md', 'same.md', [])).toBe(true);
@@ -234,7 +236,7 @@ End.`;
 
     it('should extract headers with levels and positions', () => {
       const extractHeaders = (strategy as any).extractHeaders.bind(strategy);
-      
+
       const content = `# Main Header
 Some content.
 
@@ -245,12 +247,12 @@ More content.
 Even more content.`;
 
       const headers = extractHeaders(content);
-      
+
       expect(headers).toHaveLength(3);
       expect(headers[0].text).toBe('Main Header');
       expect(headers[0].level).toBe(1);
       expect(headers[0].line).toBe(1);
-      
+
       expect(headers[1].text).toBe('Section Header');
       expect(headers[1].level).toBe(2);
       expect(headers[1].line).toBe(4);
@@ -258,19 +260,19 @@ Even more content.`;
 
     it('should find header conflicts', () => {
       const findConflicts = (strategy as any).findHeaderConflicts.bind(strategy);
-      
+
       const target = '# Same Header\n\n## Different Header\n\n### Same Header';
       const source = '# Same Header\n\n## Another Header\n\n### Same Header';
-      
+
       const conflicts = findConflicts(target, source);
-      
+
       expect(conflicts).toHaveLength(2); // Both "Same Header" instances
       expect(conflicts[0].header).toBe('Same Header');
     });
 
     it('should merge frontmatter with array deduplication', () => {
       const mergeFrontmatter = (strategy as any).mergeFrontmatter.bind(strategy);
-      
+
       const target = `---
 title: "Target"
 tags: ["tag1", "tag2"]
@@ -284,12 +286,12 @@ category: "Source Category"
 ---`;
 
       const merged = mergeFrontmatter(target, source);
-      
+
       expect(merged).toContain('title: "Target"'); // Target wins
       expect(merged).toContain('author: "Target Author"'); // Target only
       expect(merged).toContain('category: "Source Category"'); // Source only
       expect(merged).toContain('"tag1"'); // All tags included
-      expect(merged).toContain('"tag2"'); 
+      expect(merged).toContain('"tag2"');
       expect(merged).toContain('"tag3"');
     });
   });
