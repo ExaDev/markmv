@@ -1,6 +1,5 @@
 import type { OperationChange } from '../types/operations.js';
 import { FileUtils } from './file-utils.js';
-import { PathUtils } from './path-utils.js';
 
 export interface TransactionStep {
   id: string;
@@ -215,8 +214,6 @@ export class TransactionManager {
             changes.push({
               type: this.mapStepTypeToChangeType(step.type),
               filePath: this.extractFilePathFromDescription(step.description),
-              oldValue: undefined, // Could be enhanced to track old values
-              newValue: undefined,
             });
           } catch (error) {
             retries++;
@@ -237,7 +234,7 @@ export class TransactionManager {
               }
             } else {
               // Wait before retry (exponential backoff)
-              await new Promise((resolve) => setTimeout(resolve, Math.pow(2, retries - 1) * 1000));
+              await new Promise((resolve) => setTimeout(resolve, 2 ** (retries - 1) * 1000));
             }
           }
         }
