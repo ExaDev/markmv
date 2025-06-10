@@ -1,3 +1,13 @@
+## [1.13.2](https://github.com/ExaDev/markmv/compare/v1.13.1...v1.13.2) (2025-06-10)
+
+### Bug Fixes
+
+* disable treatWarningsAsErrors in TypeDoc config ([4f52a46](https://github.com/ExaDev/markmv/commit/4f52a4691e2cb8be93b0b45b919d8a29d6477e95))
+
+### Continuous Integration
+
+* update coverage badges ([dc5b8aa](https://github.com/ExaDev/markmv/commit/dc5b8aab18055e20cf74e01ec4bc5c6514158a0b))
+
 ## [1.13.1](https://github.com/ExaDev/markmv/compare/v1.13.0...v1.13.1) (2025-06-10)
 
 ### Bug Fixes
