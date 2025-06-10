@@ -1,7 +1,7 @@
-// @ts-check
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
+import type { Linter } from 'eslint';
 
 export default tseslint.config(
   {
@@ -49,4 +49,4 @@ export default tseslint.config(
     },
   },
   prettier,
-);
+) satisfies Linter.Config[];
