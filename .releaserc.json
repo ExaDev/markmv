@@ -43,7 +43,25 @@
       }
     ],
     "@semantic-release/changelog",
-    "@semantic-release/npm",
+    [
+      "@semantic-release/npm",
+      {
+        "npmPublish": true,
+        "tarballDir": "dist"
+      }
+    ],
+    [
+      "@semantic-release/github",
+      {
+        "assets": [
+          {
+            "path": "dist/*.tgz",
+            "label": "Distribution tarball"
+          }
+        ],
+        "successComment": "🎉 This ${issue.pull_request ? 'PR is included' : 'issue has been resolved'} in version ${nextRelease.version} 🎉\n\nThe release is available on:\n- [GitHub Releases](${releases.filter(release => release.name === 'GitHub')[0].url})\n- [npm package (@latest dist-tag)](https://www.npmjs.com/package/markmv)\n\nYour **[semantic-release](https://github.com/semantic-release/semantic-release)** bot 📦🚀"
+      }
+    ],
     [
       "@semantic-release/git",
       {

@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/joe-mearman/markmv/actions/workflows/ci.yml/badge.svg)](https://github.com/joe-mearman/markmv/actions/workflows/ci.yml)
 [![npm version](https://badge.fury.io/js/markmv.svg)](https://badge.fury.io/js/markmv)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 
 > A powerful TypeScript CLI tool for intelligent markdown file operations with automatic link refactoring
 
@@ -370,7 +370,9 @@ This project uses [semantic versioning](https://semver.org/) with [conventional 
 
 ## 📄 License
 
-[MIT License](LICENSE) - see the [LICENSE](LICENSE) file for details.
+[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) - see the [LICENSE](LICENSE) file for details.
+
+This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
 
 ---
 
