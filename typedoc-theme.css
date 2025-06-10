@@ -1,26 +1,29 @@
-/* Custom TypeDoc theme for markmv */
+/* Custom TypeDoc theme for markmv - supports light, dark, and OS modes */
 
+/* Light mode theme variables */
 :root {
   --color-accent: #0070f3;
   --color-accent-light: #3291ff;
-  --color-background: #ffffff;
-  --color-background-secondary: #f8f9fa;
-  --color-text: #212529;
-  --color-text-aside: #6c757d;
-  --color-link: #0070f3;
-  --color-link-hover: #0051a2;
+  --color-accent-hover: #0051a2;
 }
 
-/* Enhanced header styling */
+/* Dark mode theme variables */
+[data-theme="dark"] {
+  --color-accent: #3291ff;
+  --color-accent-light: #5aa5ff;
+  --color-accent-hover: #0070f3;
+}
+
+/* Enhanced header styling - works with TypeDoc's color system */
 .tsd-page-title h1 {
-  color: var(--color-accent);
+  color: var(--color-accent) !important;
   font-weight: 600;
   border-bottom: 2px solid var(--color-accent);
   padding-bottom: 0.5rem;
   margin-bottom: 1.5rem;
 }
 
-/* Improved code block styling */
+/* Improved code block styling - adapts to theme */
 .tsd-signature {
   background: var(--color-background-secondary);
   border-left: 4px solid var(--color-accent);
@@ -29,26 +32,30 @@
   border-radius: 4px;
 }
 
-/* Enhanced navigation */
+/* Enhanced navigation - uses TypeDoc variables */
 .tsd-navigation .current {
   font-weight: 600;
-  color: var(--color-accent);
+  color: var(--color-accent) !important;
 }
 
-/* Better category headers */
+.tsd-navigation a:hover {
+  color: var(--color-accent-hover) !important;
+}
+
+/* Better category headers - adapts to theme */
 .tsd-index-group h3 {
-  color: var(--color-accent);
+  color: var(--color-accent) !important;
   font-size: 1.1rem;
   font-weight: 600;
   margin-top: 2rem;
   margin-bottom: 1rem;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--color-accent-secondary);
   padding-bottom: 0.5rem;
 }
 
-/* Improved member styling */
+/* Improved member styling - uses theme border colors */
 .tsd-member {
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--color-accent-secondary);
   padding-bottom: 1.5rem;
   margin-bottom: 1.5rem;
 }
@@ -57,7 +64,7 @@
   border-bottom: none;
 }
 
-/* Enhanced parameter tables */
+/* Enhanced parameter tables - adapts to theme */
 .tsd-parameters {
   border-collapse: collapse;
   width: 100%;
@@ -66,7 +73,7 @@
 
 .tsd-parameters th,
 .tsd-parameters td {
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--color-accent-secondary);
   padding: 0.75rem;
   text-align: left;
 }
@@ -74,12 +81,13 @@
 .tsd-parameters th {
   background: var(--color-background-secondary);
   font-weight: 600;
+  color: var(--color-accent);
 }
 
-/* Better example code styling */
+/* Better example code styling - theme aware */
 .tsd-example {
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
+  background: var(--color-background-secondary);
+  border: 1px solid var(--color-accent-secondary);
   border-radius: 4px;
   padding: 1rem;
   margin: 1rem 0;
@@ -87,7 +95,66 @@
 
 .tsd-example h4 {
   margin-top: 0;
-  color: var(--color-accent);
+  color: var(--color-accent) !important;
   font-size: 1rem;
   font-weight: 600;
+}
+
+/* Enhanced link styling */
+.tsd-panel-group a,
+.tsd-typography a {
+  color: var(--color-accent) !important;
+}
+
+.tsd-panel-group a:hover,
+.tsd-typography a:hover {
+  color: var(--color-accent-hover) !important;
+}
+
+/* Accent borders for sections */
+.tsd-panel {
+  border-left: 3px solid var(--color-accent);
+  padding-left: 1rem;
+}
+
+/* Enhanced breadcrumb styling */
+.tsd-breadcrumb a {
+  color: var(--color-accent) !important;
+}
+
+.tsd-breadcrumb a:hover {
+  color: var(--color-accent-hover) !important;
+}
+
+/* Theme-aware accent colors for compatibility */
+:root {
+  --color-accent-secondary: rgba(0, 112, 243, 0.1);
+}
+
+[data-theme="dark"] {
+  --color-accent-secondary: rgba(50, 145, 255, 0.2);
+}
+
+/* Improve dark mode contrast */
+[data-theme="dark"] .tsd-signature {
+  background: var(--color-background-secondary);
+  border-left-color: var(--color-accent);
+}
+
+[data-theme="dark"] .tsd-example {
+  background: var(--color-background-secondary);
+  border-color: var(--color-accent-secondary);
+}
+
+/* Button and interactive element styling */
+.tsd-widget:hover,
+.tsd-widget.selected {
+  background: var(--color-accent-secondary) !important;
+  color: var(--color-accent) !important;
+}
+
+/* Search highlighting */
+.tsd-search-results .search-match {
+  background: var(--color-accent-secondary);
+  color: var(--color-accent);
 }
