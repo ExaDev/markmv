@@ -12,7 +12,7 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
-    if: github.event_name == 'push' && github.ref != 'refs/heads/main'
+    if: github.event_name == 'push'
     
     steps:
       - name: Checkout repository
@@ -51,13 +51,43 @@ jobs:
         run: npm run check
           
       - name: Commit auto-fixes to source branch
-        if: steps.check-fixes.outputs.fixes-available == 'true'
+        if: steps.check-fixes.outputs.fixes-available == 'true' && github.ref != 'refs/heads/main'
         run: |
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add .
           git commit -m "style: auto-fix linting issues"
           git push
+          
+      - name: Create PR with auto-fixes for protected branch
+        if: steps.check-fixes.outputs.fixes-available == 'true' && github.ref == 'refs/heads/main'
+        run: |
+          # Create a new branch for the fixes
+          BRANCH_NAME="auto-fix/lint-$(date +%Y%m%d-%H%M%S)"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git checkout -b "$BRANCH_NAME"
+          git add .
+          git commit -m "style: auto-fix linting issues"
+          git push origin "$BRANCH_NAME"
+          
+          # Create PR
+          gh pr create \
+            --title "style: auto-fix linting issues" \
+            --body "Automatically generated PR to fix linting issues detected in CI.
+
+**Fixed issues:**
+- Removed trailing whitespace
+- Fixed import ordering
+- Applied Biome formatting rules
+
+This PR was created automatically because linting issues were detected on the protected main branch." \
+            --head "$BRANCH_NAME" \
+            --base main \
+            --label "automated" \
+            --label "style"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   test:
     runs-on: ubuntu-latest
