@@ -220,14 +220,29 @@ export class FileOperations {
 
       // Parse all files and build comprehensive dependency graph
       const allFiles: ParsedMarkdownFile[] = [];
+      const fileContents = new Map<string, string>(); // Store original file contents
+      
       for (const { source } of moves) {
         const sourceFile = await this.linkParser.parseFile(source);
         allFiles.push(sourceFile);
+        
+        // Store the original content before any moves
+        const content = await FileUtils.readTextFile(source);
+        fileContents.set(source, content);
       }
 
       // Discover additional project files
       const projectFiles = await this.discoverProjectFiles(moves[0].source);
       const dependencyGraph = new DependencyGraph([...allFiles, ...projectFiles]);
+      
+      // Store content for all files that might be affected (including potential dependents)
+      const allFilePaths = new Set([...moves.map(m => m.source), ...moves.map(m => m.destination)]);
+      for (const filePath of allFilePaths) {
+        if (!fileContents.has(filePath) && await FileUtils.exists(filePath)) {
+          const content = await FileUtils.readTextFile(filePath);
+          fileContents.set(filePath, content);
+        }
+      }
 
       const transaction = new TransactionManager({
         createBackups: !dryRun,
@@ -256,11 +271,22 @@ export class FileOperations {
           const dependentFile = dependencyGraph.getNode(dependentFilePath)?.data;
           if (!dependentFile) continue;
 
-          const refactorResult = await this.linkRefactorer.refactorLinksForFileMove(
-            dependentFile,
-            source,
-            destination
-          );
+          let refactorResult;
+          const storedContent = fileContents.get(dependentFilePath);
+          if (storedContent) {
+            refactorResult = await this.linkRefactorer.refactorLinksForFileMoveWithContent(
+              dependentFile,
+              source,
+              destination,
+              storedContent
+            );
+          } else {
+            refactorResult = await this.linkRefactorer.refactorLinksForFileMove(
+              dependentFile,
+              source,
+              destination
+            );
+          }
 
           if (refactorResult.changes.length > 0) {
             modifiedFiles.add(dependentFilePath);
@@ -277,6 +303,27 @@ export class FileOperations {
         // Update the moved file itself
         const sourceFile = allFiles.find((f) => f.filePath === source);
         if (sourceFile) {
+          // Use stored content instead of reading from file system
+          const originalContent = fileContents.get(source);
+          if (originalContent) {
+            const selfRefactorResult = await this.linkRefactorer.refactorLinksForCurrentFileMoveWithContent(
+              sourceFile,
+              destination,
+              originalContent
+            );
+
+            if (selfRefactorResult.changes.length > 0) {
+              allChanges.push(...selfRefactorResult.changes);
+
+              if (!dryRun) {
+                transaction.addContentUpdate(destination, selfRefactorResult.updatedContent);
+              }
+            }
+
+            warnings.push(...selfRefactorResult.errors);
+          }
+        } else if (sourceFile) {
+          // Fallback to the original method if content not found
           const selfRefactorResult = await this.linkRefactorer.refactorLinksForCurrentFileMove(
             sourceFile,
             destination
