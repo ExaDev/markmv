@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
+import { indexCommand } from './commands/index';
 import { joinCommand } from './commands/join';
 import { mergeCommand } from './commands/merge';
 import { moveCommand } from './commands/move';
@@ -59,5 +60,18 @@ program
   .option('-d, --dry-run', 'Show what would be changed without making changes')
   .option('-v, --verbose', 'Show detailed output')
   .action(mergeCommand);
+
+program
+  .command('index')
+  .description('Generate index files for markdown documentation')
+  .argument('[directory]', 'Directory to generate indexes for', '.')
+  .option('-t, --type <type>', 'Index type: links|include|hybrid', 'links')
+  .option('-s, --strategy <strategy>', 'Organization strategy: directory|metadata|manual', 'directory')
+  .option('-l, --location <location>', 'Index placement: all|root|branch|existing', 'root')
+  .option('-n, --name <name>', 'Index filename', 'index.md')
+  .option('--template <file>', 'Custom template file')
+  .option('-d, --dry-run', 'Show what would be generated without creating files')
+  .option('-v, --verbose', 'Show detailed output')
+  .action(indexCommand);
 
 program.parse();

@@ -1,0 +1,395 @@
+import { existsSync, statSync } from 'fs';
+import { join, relative, resolve } from 'path';
+import { glob } from 'glob';
+import { FileUtils } from '../utils/file-utils';
+
+export interface IndexOptions {
+  type: 'links' | 'include' | 'hybrid';
+  strategy: 'directory' | 'metadata' | 'manual';
+  location: 'all' | 'root' | 'branch' | 'existing';
+  name: string;
+  template?: string;
+  dryRun: boolean;
+  verbose: boolean;
+}
+
+export interface FileMetadata {
+  title?: string;
+  description?: string;
+  category?: string;
+  order?: number;
+  tags?: string[];
+}
+
+export interface IndexableFile {
+  path: string;
+  relativePath: string;
+  metadata: FileMetadata;
+  content: string;
+}
+
+/**
+ * Generate index files for markdown documentation
+ */
+export async function indexCommand(
+  directory: string = '.',
+  options: IndexOptions
+): Promise<void> {
+  const targetDir = resolve(directory);
+  
+  if (!existsSync(targetDir)) {
+    throw new Error(`Directory not found: ${targetDir}`);
+  }
+
+  if (!statSync(targetDir).isDirectory()) {
+    throw new Error(`Path is not a directory: ${targetDir}`);
+  }
+
+  if (options.verbose) {
+    console.log(`Generating indexes in: ${targetDir}`);
+    console.log(`Type: ${options.type}, Strategy: ${options.strategy}, Location: ${options.location}`);
+  }
+
+  try {
+    // Discover markdown files
+    const files = await discoverMarkdownFiles(targetDir, options);
+    
+    // Organize files based on strategy
+    const organizedFiles = organizeFiles(files, options);
+    
+    // Generate index files based on location strategy
+    const indexPaths = determineIndexLocations(targetDir, files, options);
+    
+    // Generate each index file
+    for (const indexPath of indexPaths) {
+      const relevantFiles = getRelevantFilesForIndex(indexPath, organizedFiles, options);
+      const indexContent = generateIndexContent(indexPath, relevantFiles, options);
+      
+      if (options.dryRun) {
+        console.log(`Would create: ${indexPath}`);
+        if (options.verbose) {
+          console.log('Content:');
+          console.log(indexContent);
+          console.log('---');
+        }
+      } else {
+        await writeIndexFile(indexPath, indexContent, options);
+        console.log(`Generated: ${relative(process.cwd(), indexPath)}`);
+      }
+    }
+    
+  } catch (error) {
+    console.error('Error generating indexes:', error);
+    throw error;
+  }
+}
+
+/**
+ * Discover all markdown files in the target directory
+ */
+async function discoverMarkdownFiles(
+  targetDir: string, 
+  options: IndexOptions
+): Promise<IndexableFile[]> {
+  const pattern = join(targetDir, '**/*.md');
+  const filePaths = await glob(pattern, { ignore: ['**/node_modules/**'] });
+  
+  const files: IndexableFile[] = [];
+  
+  for (const filePath of filePaths) {
+    // Skip existing index files if they match our naming pattern
+    const fileName = filePath.split('/').pop() || '';
+    if (fileName === options.name) {
+      continue;
+    }
+    
+    try {
+      const content = await FileUtils.readTextFile(filePath);
+      const metadata = extractFrontmatter(content);
+      
+      files.push({
+        path: filePath,
+        relativePath: relative(targetDir, filePath),
+        metadata,
+        content
+      });
+    } catch (error) {
+      if (options.verbose) {
+        console.warn(`Warning: Could not read file ${filePath}:`, error);
+      }
+    }
+  }
+  
+  return files;
+}
+
+/**
+ * Extract frontmatter metadata from markdown content
+ */
+function extractFrontmatter(content: string): FileMetadata {
+  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  if (!frontmatterMatch) {
+    return {};
+  }
+  
+  try {
+    const frontmatter = frontmatterMatch[1];
+    const metadata: FileMetadata = {};
+    
+    // Simple YAML parsing for common fields
+    const lines = frontmatter.split('\n');
+    for (const line of lines) {
+      const match = line.match(/^(\w+):\s*(.+)$/);
+      if (match) {
+        const [, key, value] = match;
+        switch (key) {
+          case 'title':
+            metadata.title = value.replace(/['"]/g, '');
+            break;
+          case 'description':
+            metadata.description = value.replace(/['"]/g, '');
+            break;
+          case 'category':
+            metadata.category = value.replace(/['"]/g, '');
+            break;
+          case 'order':
+            metadata.order = parseInt(value, 10);
+            break;
+          case 'tags':
+            // Handle array format: [tag1, tag2] or simple string
+            const tagMatch = value.match(/\[(.*)\]/);
+            if (tagMatch) {
+              metadata.tags = tagMatch[1].split(',').map(t => t.trim().replace(/['"]/g, ''));
+            } else {
+              metadata.tags = [value.replace(/['"]/g, '')];
+            }
+            break;
+        }
+      }
+    }
+    
+    return metadata;
+  } catch (error) {
+    return {};
+  }
+}
+
+/**
+ * Organize files based on the specified strategy
+ */
+function organizeFiles(
+  files: IndexableFile[], 
+  options: IndexOptions
+): Map<string, IndexableFile[]> {
+  const organized = new Map<string, IndexableFile[]>();
+  
+  for (const file of files) {
+    let groupKey: string;
+    
+    switch (options.strategy) {
+      case 'directory':
+        // Group by immediate parent directory
+        const pathParts = file.relativePath.split('/');
+        groupKey = pathParts.length > 1 ? pathParts[0] : 'root';
+        break;
+        
+      case 'metadata':
+        // Group by category from frontmatter
+        groupKey = file.metadata.category || 'uncategorized';
+        break;
+        
+      case 'manual':
+        // For now, treat as directory-based, but this could be extended
+        // to read configuration from a special file
+        groupKey = file.relativePath.split('/')[0] || 'root';
+        break;
+        
+      default:
+        groupKey = 'all';
+    }
+    
+    if (!organized.has(groupKey)) {
+      organized.set(groupKey, []);
+    }
+    organized.get(groupKey)!.push(file);
+  }
+  
+  // Sort files within each group
+  for (const [_groupKey, groupFiles] of organized) {
+    groupFiles.sort((a, b) => {
+      // Sort by order if specified in metadata
+      if (a.metadata.order !== undefined && b.metadata.order !== undefined) {
+        return a.metadata.order - b.metadata.order;
+      }
+      
+      // Fall back to alphabetical by title or filename
+      const aTitle = a.metadata.title || a.relativePath;
+      const bTitle = b.metadata.title || b.relativePath;
+      return aTitle.localeCompare(bTitle);
+    });
+  }
+  
+  return organized;
+}
+
+/**
+ * Determine where index files should be created based on location strategy
+ */
+function determineIndexLocations(
+  targetDir: string,
+  files: IndexableFile[],
+  options: IndexOptions
+): string[] {
+  const locations: string[] = [];
+  
+  switch (options.location) {
+    case 'root':
+      locations.push(join(targetDir, options.name));
+      break;
+      
+    case 'all':
+      // Get all unique directories
+      const directories = new Set<string>();
+      directories.add(targetDir); // Root directory
+      
+      for (const file of files) {
+        const fileDir = join(targetDir, file.relativePath.split('/').slice(0, -1).join('/'));
+        directories.add(fileDir);
+      }
+      
+      for (const dir of directories) {
+        locations.push(join(dir, options.name));
+      }
+      break;
+      
+    case 'branch':
+      // Only directories that contain subdirectories
+      const branchDirs = new Set<string>();
+      branchDirs.add(targetDir); // Always include root
+      
+      for (const file of files) {
+        const pathParts = file.relativePath.split('/');
+        if (pathParts.length > 2) { // Has subdirectories
+          const branchDir = join(targetDir, pathParts[0]);
+          branchDirs.add(branchDir);
+        }
+      }
+      
+      for (const dir of branchDirs) {
+        locations.push(join(dir, options.name));
+      }
+      break;
+      
+    case 'existing':
+      // Only where index files already exist
+      for (const file of files) {
+        const dir = join(targetDir, file.relativePath.split('/').slice(0, -1).join('/'));
+        const potentialIndex = join(dir, options.name);
+        if (existsSync(potentialIndex)) {
+          locations.push(potentialIndex);
+        }
+      }
+      // Always check root
+      const rootIndex = join(targetDir, options.name);
+      if (existsSync(rootIndex)) {
+        locations.push(rootIndex);
+      }
+      break;
+  }
+  
+  return [...new Set(locations)]; // Remove duplicates
+}
+
+/**
+ * Get files relevant to a specific index location
+ */
+function getRelevantFilesForIndex(
+  _indexPath: string,
+  organizedFiles: Map<string, IndexableFile[]>,
+  _options: IndexOptions
+): Map<string, IndexableFile[]> {
+  // For now, return all organized files
+  // This could be refined to only include files in the same directory tree
+  return organizedFiles;
+}
+
+/**
+ * Generate the content for an index file
+ */
+function generateIndexContent(
+  indexPath: string,
+  organizedFiles: Map<string, IndexableFile[]>,
+  options: IndexOptions
+): string {
+  const now = new Date().toISOString();
+  const indexDir = indexPath.split('/').slice(0, -1).join('/');
+  
+  let content = `---
+generated: true
+generator: markmv-index
+type: ${options.type}
+strategy: ${options.strategy}
+updated: ${now}
+---
+
+# Documentation Index
+
+`;
+
+  for (const [groupName, files] of organizedFiles) {
+    if (files.length === 0) continue;
+    
+    // Capitalize and format group name
+    const displayName = groupName
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+    
+    content += `## ${displayName}\n\n`;
+    
+    for (const file of files) {
+      const relativePath = relative(indexDir, file.path);
+      const title = file.metadata.title || file.relativePath.split('/').pop()?.replace('.md', '') || 'Untitled';
+      const description = file.metadata.description;
+      
+      switch (options.type) {
+        case 'links':
+          content += `- [${title}](${relativePath})`;
+          if (description) {
+            content += ` - ${description}`;
+          }
+          content += '\n';
+          break;
+          
+        case 'include':
+          content += `### ${title}\n`;
+          content += `@${relativePath}\n\n`;
+          break;
+          
+        case 'hybrid':
+          content += `### [${title}](${relativePath})\n`;
+          if (description) {
+            content += `> ${description}\n\n`;
+          } else {
+            content += '\n';
+          }
+          break;
+      }
+    }
+    
+    content += '\n';
+  }
+  
+  return content;
+}
+
+/**
+ * Write the index file to disk
+ */
+async function writeIndexFile(
+  indexPath: string,
+  content: string,
+  _options: IndexOptions
+): Promise<void> {
+  await FileUtils.writeTextFile(indexPath, content, { createDirectories: true });
+}
