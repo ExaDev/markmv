@@ -57,7 +57,7 @@ export class LinkParser {
       if (!node.position) return;
 
       const claudeImportRegex = /@([^\s\n]+)/g;
-      let match;
+      let match: RegExpExecArray | null;
 
       while ((match = claudeImportRegex.exec(node.value)) !== null) {
         const importPath = match[1];
