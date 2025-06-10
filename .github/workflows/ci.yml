@@ -86,9 +86,7 @@ jobs:
           EOF
           )" \
             --head "$BRANCH_NAME" \
-            --base main \
-            --label "automated" \
-            --label "style"
+            --base main
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
