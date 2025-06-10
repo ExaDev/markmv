@@ -113,7 +113,7 @@ export class LinkRefactorer {
     });
 
     for (const link of sortedLinks) {
-      if (link.type === 'internal' || 
+      if (link.type === 'internal' || link.type === 'image' ||
           (link.type === 'claude-import' && this.options.updateClaudeImports)) {
         try {
           const newLink = this.updateLinkForSourceFileMove(
@@ -171,7 +171,7 @@ export class LinkRefactorer {
       return this.updateClaudeImportPath(link, sourceFilePath, newFilePath);
     }
 
-    if (link.type === 'internal') {
+    if (link.type === 'internal' || link.type === 'image') {
       return this.updateInternalLinkPath(link, sourceFilePath, newFilePath);
     }
 
@@ -194,7 +194,7 @@ export class LinkRefactorer {
       );
     }
 
-    if (link.type === 'internal') {
+    if (link.type === 'internal' || link.type === 'image') {
       return PathUtils.updateRelativePath(
         link.href,
         oldSourceFilePath,
