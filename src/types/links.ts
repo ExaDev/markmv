@@ -13,9 +13,9 @@ export interface MarkdownLink {
   /** The href/src attribute value */
   href: string;
   /** Link text (for regular links) or alt text (for images) */
-  text?: string;
+  text: string | undefined;
   /** Reference ID for reference-style links */
-  referenceId?: string;
+  referenceId: string | undefined;
   /** Block/section reference for transclusions (e.g., #section or ^block-id) */
   blockReference?: string;
   /** Line number in source file (1-based) */
@@ -36,7 +36,7 @@ export interface LinkReference {
   /** URL/path */
   url: string;
   /** Optional title */
-  title?: string;
+  title: string | undefined;
   /** Line number where reference is defined */
   line: number;
 }
