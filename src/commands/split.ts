@@ -2,17 +2,37 @@ import { ContentSplitter } from '../core/content-splitter.js';
 import type { SplitOperationOptions } from '../types/operations.js';
 
 export interface SplitOptions {
-  strategy?: 'headers' | 'size' | 'manual';
+  strategy?: 'headers' | 'size' | 'manual' | 'lines';
   output?: string;
   dryRun?: boolean;
   headerLevel?: number;
   maxSize?: number;
+  splitLines?: string; // Comma-separated line numbers
   verbose?: boolean;
 }
 
 export async function splitCommand(source: string, options: SplitOptions): Promise<void> {
   const splitter = new ContentSplitter();
   
+  // Parse split lines if provided
+  let splitLines: number[] | undefined;
+  if (options.splitLines) {
+    try {
+      splitLines = options.splitLines
+        .split(',')
+        .map(line => parseInt(line.trim(), 10))
+        .filter(line => !isNaN(line));
+      
+      if (splitLines.length === 0) {
+        console.error('❌ Invalid split lines format. Use comma-separated numbers like: 10,25,50');
+        process.exit(1);
+      }
+    } catch (error) {
+      console.error('❌ Failed to parse split lines:', error);
+      process.exit(1);
+    }
+  }
+
   const splitOptions: SplitOperationOptions = {
     strategy: options.strategy || 'headers',
     outputDir: options.output,
@@ -20,6 +40,7 @@ export async function splitCommand(source: string, options: SplitOptions): Promi
     verbose: options.verbose || false,
     headerLevel: options.headerLevel || 2,
     maxSize: options.maxSize || 100,
+    splitLines,
   };
 
   if (options.verbose) {
@@ -32,6 +53,9 @@ export async function splitCommand(source: string, options: SplitOptions): Promi
     }
     if (splitOptions.strategy === 'size') {
       console.log(`📏 Maximum size per section: ${splitOptions.maxSize}KB`);
+    }
+    if (splitOptions.strategy === 'lines' && splitOptions.splitLines) {
+      console.log(`📍 Split at lines: ${splitOptions.splitLines.join(', ')}`);
     }
   }
 
@@ -118,6 +142,9 @@ export async function splitCommand(source: string, options: SplitOptions): Promi
       }
       if (splitOptions.strategy === 'size') {
         console.log('  • Use --max-size to adjust the maximum file size (in KB)');
+      }
+      if (splitOptions.strategy === 'lines') {
+        console.log('  • Use --split-lines with comma-separated line numbers (e.g., --split-lines 10,25,50)');
       }
     }
 

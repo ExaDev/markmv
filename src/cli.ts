@@ -26,10 +26,11 @@ program
   .command('split')
   .description('Split large markdown files maintaining link integrity')
   .argument('<source>', 'Source markdown file to split')
-  .option('-s, --strategy <strategy>', 'Split strategy: headers|size|manual', 'headers')
+  .option('-s, --strategy <strategy>', 'Split strategy: headers|size|manual|lines', 'headers')
   .option('-o, --output <dir>', 'Output directory for split files')
   .option('-l, --header-level <level>', 'Header level to split on (1-6)', '2')
   .option('-m, --max-size <kb>', 'Maximum size per section in KB', '100')
+  .option('--split-lines <lines>', 'Comma-separated line numbers to split on (for lines strategy)')
   .option('-d, --dry-run', 'Show what would be changed without making changes')
   .option('-v, --verbose', 'Show detailed output')
   .action(splitCommand);

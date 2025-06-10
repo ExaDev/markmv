@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { 
   HeaderBasedSplitStrategy, 
   SizeBasedSplitStrategy, 
-  ManualSplitStrategy 
+  ManualSplitStrategy,
+  LineBasedSplitStrategy 
 } from './split-strategies.js';
 
 describe('Split Strategies', () => {
@@ -212,6 +213,106 @@ Regular text without header as title.`;
       expect(result.sections[0].title).toBe('First Title');
       expect(result.sections[1].title).toBe('Second Title');
       expect(result.sections[2].title).toBe('Regular text without header as title.');
+    });
+  });
+
+  describe('LineBasedSplitStrategy', () => {
+    it('should split content at specified line numbers', async () => {
+      const strategy = new LineBasedSplitStrategy({ splitLines: [3, 6] });
+      const content = `Line 1
+Line 2
+Line 3
+Line 4
+Line 5
+Line 6
+Line 7
+Line 8`;
+
+      const result = await strategy.split(content, 'test.md');
+
+      expect(result.sections).toHaveLength(3);
+      expect(result.sections[0].content).toBe('Line 1\nLine 2');
+      expect(result.sections[1].content).toBe('Line 3\nLine 4\nLine 5');
+      expect(result.sections[2].content).toBe('Line 6\nLine 7\nLine 8');
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it('should generate titles from headers when available', async () => {
+      const strategy = new LineBasedSplitStrategy({ splitLines: [4] });
+      const content = `## First Section
+Content for first section.
+More content here.
+
+## Second Section
+Content for second section.`;
+
+      const result = await strategy.split(content, 'test.md');
+
+      expect(result.sections).toHaveLength(2);
+      expect(result.sections[0].title).toBe('First Section');
+      expect(result.sections[1].title).toBe('Second Section');
+    });
+
+    it('should generate titles from content when no headers', async () => {
+      const strategy = new LineBasedSplitStrategy({ splitLines: [3] });
+      const content = `This is the first line of content
+that will become the title for
+the first section.
+
+This is the second section
+with different content.`;
+
+      const result = await strategy.split(content, 'test.md');
+
+      expect(result.sections).toHaveLength(2);
+      expect(result.sections[0].title).toBe('This is the first line');
+      expect(result.sections[1].title).toBe('This is the second section');
+    });
+
+    it('should handle invalid line numbers', async () => {
+      const strategy = new LineBasedSplitStrategy({ splitLines: [0, 5, 100] });
+      const content = `Line 1
+Line 2
+Line 3
+Line 4`;
+
+      const result = await strategy.split(content, 'test.md');
+
+      expect(result.warnings).toContain('Invalid line number 0: file has 4 lines');
+      expect(result.warnings).toContain('Invalid line number 100: file has 4 lines');
+      expect(result.sections).toHaveLength(2); // Split at line 5 only (but adjusted)
+    });
+
+    it('should require split lines to be specified', async () => {
+      const strategy = new LineBasedSplitStrategy({ splitLines: [] });
+      const content = `Some content here`;
+
+      const result = await strategy.split(content, 'test.md');
+
+      expect(result.errors).toContain('No split lines specified. Use --split-lines option with comma-separated line numbers.');
+      expect(result.sections).toHaveLength(0);
+    });
+
+    it('should handle frontmatter correctly', async () => {
+      const strategy = new LineBasedSplitStrategy({ 
+        splitLines: [3],
+        preserveFrontmatter: true 
+      });
+      const content = `---
+title: Test
+---
+
+## Section 1
+Content 1
+
+## Section 2
+Content 2`;
+
+      const result = await strategy.split(content, 'test.md');
+
+      expect(result.remainingContent).toContain('title: Test');
+      expect(result.sections[0].content).not.toContain('title: Test');
+      expect(result.sections[0].content).toContain('## Section 1');
     });
   });
 

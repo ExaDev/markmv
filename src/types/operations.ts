@@ -14,13 +14,15 @@ export interface MoveOperationOptions extends OperationOptions {
 
 export interface SplitOperationOptions extends OperationOptions {
   /** Strategy for splitting the file */
-  strategy: 'headers' | 'size' | 'manual';
+  strategy: 'headers' | 'size' | 'manual' | 'lines';
   /** Output directory for split files */
   outputDir?: string;
   /** Maximum file size in KB (for size strategy) */
   maxSize?: number;
   /** Header level to split on (for headers strategy) */
   headerLevel?: number;
+  /** Line numbers to split on (for lines strategy) */
+  splitLines?: number[];
 }
 
 export interface JoinOperationOptions extends OperationOptions {

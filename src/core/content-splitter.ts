@@ -9,6 +9,7 @@ import {
   HeaderBasedSplitStrategy,
   SizeBasedSplitStrategy,
   ManualSplitStrategy,
+  LineBasedSplitStrategy,
   type SplitResult,
   type SplitSection,
   type SplitStrategyOptions,
@@ -274,6 +275,8 @@ export class ContentSplitter {
         return new SizeBasedSplitStrategy(options);
       case 'manual':
         return new ManualSplitStrategy(options);
+      case 'lines':
+        return new LineBasedSplitStrategy(options);
       default:
         throw new Error(`Unknown split strategy: ${strategy}`);
     }

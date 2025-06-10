@@ -35,6 +35,8 @@ export interface SplitStrategyOptions {
   headerLevel?: number;
   /** Custom split markers (for manual strategy) */
   splitMarkers?: string[];
+  /** Line numbers to split on (for line-based strategy) */
+  splitLines?: number[];
   /** Whether to preserve frontmatter in original file */
   preserveFrontmatter?: boolean;
   /** Filename pattern for generated files */
@@ -379,5 +381,110 @@ export class ManualSplitStrategy extends BaseSplitStrategy {
     }
 
     return null;
+  }
+}
+
+export class LineBasedSplitStrategy extends BaseSplitStrategy {
+  async split(content: string, originalFilename: string): Promise<SplitResult> {
+    const { frontmatter, content: mainContent } = this.extractFrontmatter(content);
+    const splitLines = this.options.splitLines || [];
+    const sections: SplitSection[] = [];
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    if (splitLines.length === 0) {
+      errors.push('No split lines specified. Use --split-lines option with comma-separated line numbers.');
+      return {
+        sections: [],
+        remainingContent: content,
+        errors,
+        warnings,
+      };
+    }
+
+    const lines = mainContent.split('\n');
+    const totalLines = lines.length;
+
+    // Validate and sort split lines
+    const validSplitLines = splitLines
+      .filter(lineNum => {
+        if (lineNum < 1 || lineNum > totalLines) {
+          warnings.push(`Invalid line number ${lineNum}: file has ${totalLines} lines`);
+          return false;
+        }
+        return true;
+      })
+      .sort((a, b) => a - b);
+
+    if (validSplitLines.length === 0) {
+      errors.push('No valid split lines after validation');
+      return {
+        sections: [],
+        remainingContent: content,
+        errors,
+        warnings,
+      };
+    }
+
+    // Split content at specified lines
+    let startLine = 0;
+    
+    for (let i = 0; i <= validSplitLines.length; i++) {
+      const endLine = i < validSplitLines.length 
+        ? validSplitLines[i] - 1  // Convert to 0-based and split before the line
+        : lines.length;
+      
+      if (endLine > startLine) {
+        const sectionLines = lines.slice(startLine, endLine);
+        const sectionContent = sectionLines.join('\n');
+        
+        if (sectionContent.trim()) { // Only create section if it has content
+          // Find title for this section
+          const title = this.findLineSectionTitle(sectionLines, startLine + 1) || `Lines ${startLine + 1}-${endLine}`;
+          
+          sections.push({
+            title,
+            content: sectionContent,
+            startLine,
+            endLine: endLine - 1,
+            filename: this.generateFilename(title, sections.length, originalFilename),
+          });
+        }
+      }
+
+      startLine = endLine;
+    }
+
+    if (sections.length === 0) {
+      errors.push('No sections were created from the specified line splits');
+    }
+
+    return {
+      sections,
+      remainingContent: this.options.preserveFrontmatter ? frontmatter : undefined,
+      errors,
+      warnings,
+    };
+  }
+
+  private findLineSectionTitle(lines: string[], actualStartLine: number): string | null {
+    // Look for the first header in the section
+    for (const line of lines) {
+      if (this.getHeaderLevel(line) > 0) {
+        return this.extractTitleFromHeader(line);
+      }
+    }
+
+    // If no header, try to extract from first meaningful line
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('<!--') && !trimmed.startsWith('---')) {
+        // Use first few words as title
+        const words = trimmed.split(/\s+/).slice(0, 5).join(' ');
+        return words.length > 50 ? words.substring(0, 47) + '...' : words;
+      }
+    }
+
+    return `Section starting at line ${actualStartLine}`;
   }
 }
