@@ -1,3 +1,15 @@
+## [1.10.0](https://github.com/ExaDev/markmv/compare/v1.9.0...v1.10.0) (2025-06-10)
+
+### Features
+
+* integrate documentation coverage reporting with GitHub CI ([f39973a](https://github.com/ExaDev/markmv/commit/f39973a0e6b9c7ad067885481b9d2d47b0e62563))
+
+### Documentation
+
+* add comprehensive TypeDoc documentation for ContentJoiner class ([c2efa8b](https://github.com/ExaDev/markmv/commit/c2efa8b5d2a786711e2daf742a4475ad0c27f28f))
+* add comprehensive TypeDoc documentation for ContentSplitter and DependencyGraph ([757c385](https://github.com/ExaDev/markmv/commit/757c385ce4be2c489201b1c56ae1ab14dc64efeb))
+* add comprehensive TypeDoc documentation for LinkRefactorer and LinkValidator ([a607243](https://github.com/ExaDev/markmv/commit/a60724301f82d2c8e6cd557cb2ad2f21af4ae537))
+
 ## [1.9.0](https://github.com/ExaDev/markmv/compare/v1.8.4...v1.9.0) (2025-06-10)
 
 ### Features
