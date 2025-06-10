@@ -1,9 +1,9 @@
-import { glob } from 'glob';
 import { existsSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { glob } from 'glob';
 import { FileOperations } from '../core/file-operations.js';
-import { PathUtils } from '../utils/path-utils.js';
 import type { MoveOperationOptions } from '../types/operations.js';
+import { PathUtils } from '../utils/path-utils.js';
 
 export interface MoveOptions {
   dryRun?: boolean;
@@ -13,14 +13,14 @@ export interface MoveOptions {
 /**
  * Expand source patterns (which may include globs) to actual markdown file paths
  */
-async function expandSourcePatterns(patterns: string[], verbose: boolean = false): Promise<string[]> {
+async function expandSourcePatterns(patterns: string[], verbose = false): Promise<string[]> {
   const allFiles = new Set<string>();
-  
+
   for (const pattern of patterns) {
     if (verbose) {
       console.log(`🔍 Expanding pattern: ${pattern}`);
     }
-    
+
     // Check if pattern is a direct file path first
     if (existsSync(pattern) && statSync(pattern).isFile()) {
       if (PathUtils.isMarkdownFile(pattern)) {
@@ -33,19 +33,19 @@ async function expandSourcePatterns(patterns: string[], verbose: boolean = false
       }
       continue;
     }
-    
+
     // Expand glob pattern
     try {
       const globResults = await glob(pattern, {
         ignore: ['node_modules/**', '.git/**', 'dist/**'],
         absolute: true,
-        nodir: true  // Only return files, not directories
+        nodir: true, // Only return files, not directories
       });
-      
+
       if (verbose && globResults.length > 0) {
         console.log(`   📁 Found ${globResults.length} file(s) matching pattern`);
       }
-      
+
       // Filter to only markdown files
       for (const file of globResults) {
         if (PathUtils.isMarkdownFile(file)) {
@@ -57,7 +57,7 @@ async function expandSourcePatterns(patterns: string[], verbose: boolean = false
           console.log(`   ⚠️  Skipping non-markdown: ${file}`);
         }
       }
-      
+
       if (globResults.length === 0 && verbose) {
         console.log(`   ❌ No files found for pattern: ${pattern}`);
       }
@@ -65,14 +65,11 @@ async function expandSourcePatterns(patterns: string[], verbose: boolean = false
       console.error(`   ❌ Error expanding pattern "${pattern}": ${error}`);
     }
   }
-  
+
   return Array.from(allFiles).sort();
 }
 
-export async function moveCommand(
-  sources: string[],
-  options: MoveOptions
-): Promise<void> {
+export async function moveCommand(sources: string[], options: MoveOptions): Promise<void> {
   if (sources.length < 2) {
     console.error('❌ Error: At least 2 arguments required (source(s) and destination)');
     console.error('Usage: markmv move <sources...> <destination>');
@@ -91,7 +88,7 @@ export async function moveCommand(
   try {
     // Expand glob patterns to actual file paths
     const sourceFiles = await expandSourcePatterns(sourcePatterns, options.verbose);
-    
+
     if (sourceFiles.length === 0) {
       console.error('❌ No markdown files found matching the specified patterns');
       process.exit(1);
@@ -99,8 +96,9 @@ export async function moveCommand(
 
     // Validate destination
     const resolvedDestination = resolve(destination);
-    const isDestDirectory = PathUtils.isDirectory(resolvedDestination) || PathUtils.looksLikeDirectory(destination);
-    
+    const isDestDirectory =
+      PathUtils.isDirectory(resolvedDestination) || PathUtils.looksLikeDirectory(destination);
+
     if (sourceFiles.length > 1 && !isDestDirectory) {
       console.error('❌ Error: When moving multiple files, destination must be a directory');
       console.error(`   Destination: ${destination}`);
@@ -111,8 +109,10 @@ export async function moveCommand(
     if (options.verbose) {
       console.log(`🎯 Destination: ${destination} ${isDestDirectory ? '(directory)' : '(file)'}`);
       console.log(`📁 Found ${sourceFiles.length} source file(s):`);
-      sourceFiles.forEach(file => console.log(`   • ${file}`));
-      
+      for (const file of sourceFiles) {
+        console.log(`   • ${file}`);
+      }
+
       if (options.dryRun) {
         console.log('🔍 Dry run mode - no changes will be made');
       }
@@ -125,16 +125,16 @@ export async function moveCommand(
       createDirectories: true,
     };
 
-    let result;
-    
+    let result: OperationResult;
+
     if (sourceFiles.length === 1) {
       // Single file move
       result = await fileOps.moveFile(sourceFiles[0], destination, moveOptions);
     } else {
       // Batch move
-      const moves = sourceFiles.map(source => ({
+      const moves = sourceFiles.map((source) => ({
         source,
-        destination
+        destination,
       }));
       result = await fileOps.moveFiles(moves, moveOptions);
     }
