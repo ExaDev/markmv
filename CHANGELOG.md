@@ -1,3 +1,10 @@
+## [1.12.1](https://github.com/ExaDev/markmv/compare/v1.12.0...v1.12.1) (2025-06-10)
+
+### Bug Fixes
+
+* implement proper TypeScript configuration support ([244bd4e](https://github.com/ExaDev/markmv/commit/244bd4e8543666e3b7e142a7fa813e6006014853))
+* resolve JSON output format for docs coverage CI ([7489094](https://github.com/ExaDev/markmv/commit/74890940b6d633729ac93fa323712dc1d12baa33))
+
 ## [1.12.0](https://github.com/ExaDev/markmv/compare/v1.11.0...v1.12.0) (2025-06-10)
 
 ### Features
