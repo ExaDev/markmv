@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { ParsedMarkdownFile } from '../../types/links.js';
-import { DependencyGraph } from '../dependency-graph.js';
+import { DependencyGraph } from './dependency-graph.js';
 
 describe('DependencyGraph', () => {
   let graph: DependencyGraph;

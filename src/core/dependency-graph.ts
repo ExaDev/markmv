@@ -172,7 +172,7 @@ export class DependencyGraph {
 
   topologicalSort(): string[] {
     const visited = new Set<string>();
-    const stack: string[] = [];
+    const result: string[] = [];
 
     const dfs = (path: string): void => {
       if (visited.has(path)) return;
@@ -183,7 +183,7 @@ export class DependencyGraph {
         dfs(dep);
       }
 
-      stack.push(path);
+      result.push(path);
     };
 
     for (const filePath of this.nodes.keys()) {
@@ -192,7 +192,7 @@ export class DependencyGraph {
       }
     }
 
-    return stack.reverse();
+    return result;
   }
 
   updateFilePath(oldPath: string, newPath: string): void {
