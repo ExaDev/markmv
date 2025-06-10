@@ -2,7 +2,7 @@ import { existsSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { glob } from 'glob';
 import { FileOperations } from '../core/file-operations.js';
-import type { MoveOperationOptions } from '../types/operations.js';
+import type { MoveOperationOptions, OperationResult } from '../types/operations.js';
 import { PathUtils } from '../utils/path-utils.js';
 
 export interface MoveOptions {
