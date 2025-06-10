@@ -40,7 +40,9 @@ program
   .description('Join multiple markdown files resolving conflicts')
   .argument('<files...>', 'Markdown files to join')
   .option('-o, --output <file>', 'Output file name')
+  .option('--order-strategy <strategy>', 'Order strategy: alphabetical|manual|dependency|chronological', 'dependency')
   .option('-d, --dry-run', 'Show what would be changed without making changes')
+  .option('-v, --verbose', 'Show detailed output')
   .action(joinCommand);
 
 program
@@ -49,7 +51,9 @@ program
   .argument('<source>', 'Source markdown file')
   .argument('<target>', 'Target markdown file to merge into')
   .option('-s, --strategy <strategy>', 'Merge strategy: append|prepend|interactive', 'interactive')
+  .option('--create-transclusions', 'Create Obsidian transclusions instead of copying content')
   .option('-d, --dry-run', 'Show what would be changed without making changes')
+  .option('-v, --verbose', 'Show detailed output')
   .action(mergeCommand);
 
 program.parse();
