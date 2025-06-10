@@ -1,3 +1,4 @@
+import { dirname } from 'node:path';
 import type { MarkdownLink, ParsedMarkdownFile } from '../types/links.js';
 import type { OperationChange } from '../types/operations.js';
 import { FileUtils } from '../utils/file-utils.js';
@@ -41,6 +42,18 @@ export class LinkRefactorer {
     newFilePath: string
   ): Promise<LinkRefactorResult> {
     const content = await FileUtils.readTextFile(file.filePath);
+    return this.refactorLinksForFileMoveWithContent(file, movedFilePath, newFilePath, content);
+  }
+
+  /**
+   * Update links in a file when another file has been moved (with provided content)
+   */
+  async refactorLinksForFileMoveWithContent(
+    file: ParsedMarkdownFile,
+    movedFilePath: string,
+    newFilePath: string,
+    content: string
+  ): Promise<LinkRefactorResult> {
     const changes: OperationChange[] = [];
     const errors: string[] = [];
 
@@ -63,18 +76,36 @@ export class LinkRefactorer {
         );
 
         if (newLink !== link.href) {
-          const oldLine = lines[link.line - 1];
+          let lineIndex = link.line - 1;
+          let oldLine = lines[lineIndex];
+          
+          // For Claude imports, if the import is not found on the expected line,
+          // search for it in nearby lines (this handles parsing edge cases)
+          if (link.type === 'claude-import') {
+            const expectedImport = `@${link.href}`;
+            if (!oldLine.includes(expectedImport)) {
+              // Search in nearby lines
+              for (let i = Math.max(0, lineIndex - 2); i < Math.min(lines.length, lineIndex + 3); i++) {
+                if (lines[i].includes(expectedImport)) {
+                  lineIndex = i;
+                  oldLine = lines[i];
+                  break;
+                }
+              }
+            }
+          }
+          
           const newLine = this.replaceLinkInLine(oldLine, link, newLink);
 
           if (newLine !== oldLine) {
-            lines[link.line - 1] = newLine;
+            lines[lineIndex] = newLine;
 
             changes.push({
               type: 'link-updated',
               filePath: file.filePath,
               oldValue: link.href,
               newValue: newLink,
-              line: link.line,
+              line: lineIndex + 1,
             });
           }
         }
@@ -122,18 +153,114 @@ export class LinkRefactorer {
           const newLink = this.updateLinkForSourceFileMove(link, file.filePath, newFilePath);
 
           if (newLink !== link.href) {
-            const oldLine = lines[link.line - 1];
+            let lineIndex = link.line - 1;
+            let oldLine = lines[lineIndex];
+            
+            // For Claude imports, if the import is not found on the expected line,
+            // search for it in nearby lines (this handles parsing edge cases)
+            if (link.type === 'claude-import') {
+              const expectedImport = `@${link.href}`;
+              if (!oldLine.includes(expectedImport)) {
+                // Search in nearby lines
+                for (let i = Math.max(0, lineIndex - 2); i < Math.min(lines.length, lineIndex + 3); i++) {
+                  if (lines[i].includes(expectedImport)) {
+                    lineIndex = i;
+                    oldLine = lines[i];
+                    break;
+                  }
+                }
+              }
+            }
+            
             const newLine = this.replaceLinkInLine(oldLine, link, newLink);
 
             if (newLine !== oldLine) {
-              lines[link.line - 1] = newLine;
+              lines[lineIndex] = newLine;
 
               changes.push({
                 type: 'link-updated',
                 filePath: newFilePath, // Note: using new file path
                 oldValue: link.href,
                 newValue: newLink,
-                line: link.line,
+                line: lineIndex + 1,
+              });
+            }
+          }
+        } catch (error) {
+          errors.push(`Failed to update link at line ${link.line}: ${error}`);
+        }
+      }
+    }
+
+    updatedContent = lines.join('\n');
+
+    return {
+      updatedContent,
+      changes,
+      errors,
+    };
+  }
+
+  /**
+   * Update links when the current file is being moved (with provided content)
+   */
+  async refactorLinksForCurrentFileMoveWithContent(
+    file: ParsedMarkdownFile,
+    newFilePath: string,
+    content: string
+  ): Promise<LinkRefactorResult> {
+    const changes: OperationChange[] = [];
+    const errors: string[] = [];
+
+    let updatedContent = content;
+    const lines = content.split('\n');
+
+    // Sort links by line and column in reverse order
+    const sortedLinks = [...file.links].sort((a, b) => {
+      if (a.line !== b.line) return b.line - a.line;
+      return b.column - a.column;
+    });
+
+    for (const link of sortedLinks) {
+      if (
+        link.type === 'internal' ||
+        link.type === 'image' ||
+        (link.type === 'claude-import' && this.options.updateClaudeImports)
+      ) {
+        try {
+          const newLink = this.updateLinkForSourceFileMove(link, file.filePath, newFilePath);
+
+          if (newLink !== link.href) {
+            let lineIndex = link.line - 1;
+            let oldLine = lines[lineIndex];
+            
+            // For Claude imports, if the import is not found on the expected line,
+            // search for it in nearby lines (this handles parsing edge cases)
+            if (link.type === 'claude-import') {
+              const expectedImport = `@${link.href}`;
+              if (!oldLine.includes(expectedImport)) {
+                // Search in nearby lines
+                for (let i = Math.max(0, lineIndex - 2); i < Math.min(lines.length, lineIndex + 3); i++) {
+                  if (lines[i].includes(expectedImport)) {
+                    lineIndex = i;
+                    oldLine = lines[i];
+                    break;
+                  }
+                }
+              }
+            }
+            
+            const newLine = this.replaceLinkInLine(oldLine, link, newLink);
+
+            if (newLine !== oldLine) {
+              lines[lineIndex] = newLine;
+
+              changes.push({
+                type: 'link-updated',
+                filePath: newFilePath, // Note: using new file path
+                oldValue: link.href,
+                newValue: newLink,
+                line: lineIndex + 1,
               });
             }
           }
@@ -202,14 +329,21 @@ export class LinkRefactorer {
     newTargetFilePath: string
   ): string {
     // For Claude imports, we need to maintain the correct path
-    const sourceDir = PathUtils.resolvePath('', sourceFilePath).replace(/[^/\\]+$/, '');
+    const sourceDir = dirname(sourceFilePath);
 
     if (
       this.options.preferRelativePaths &&
       !link.href.startsWith('/') &&
       !link.href.startsWith('~/')
     ) {
-      return PathUtils.makeRelative(newTargetFilePath, sourceDir);
+      let newPath = PathUtils.makeRelative(newTargetFilePath, sourceDir);
+      
+      // Ensure relative paths start with ./ for markdown compatibility
+      if (!newPath.startsWith('./') && !newPath.startsWith('../') && !newPath.startsWith('/')) {
+        newPath = './' + newPath;
+      }
+      
+      return newPath;
     }
 
     return newTargetFilePath;
@@ -220,7 +354,7 @@ export class LinkRefactorer {
     sourceFilePath: string,
     newTargetFilePath: string
   ): string {
-    const sourceDir = PathUtils.resolvePath('', sourceFilePath).replace(/[^/\\]+$/, '');
+    const sourceDir = dirname(sourceFilePath);
 
     // Extract anchor if present
     const [, anchor] = link.href.split('#');
@@ -230,6 +364,11 @@ export class LinkRefactorer {
 
     if (this.options.preferRelativePaths && !link.absolute) {
       newPath = PathUtils.makeRelative(newTargetFilePath, sourceDir);
+      
+      // Ensure relative paths start with ./ for markdown compatibility
+      if (!newPath.startsWith('./') && !newPath.startsWith('../') && !newPath.startsWith('/')) {
+        newPath = './' + newPath;
+      }
     } else {
       newPath = newTargetFilePath;
     }
@@ -302,7 +441,7 @@ export class LinkRefactorer {
     for (const reference of file.references) {
       const resolvedPath = PathUtils.resolvePath(
         reference.url,
-        PathUtils.resolvePath('', file.filePath).replace(/[^/\\]+$/, '')
+        dirname(file.filePath)
       );
 
       if (resolvedPath === movedFilePath) {
