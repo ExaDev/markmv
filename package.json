@@ -14,9 +14,12 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "lint": "biome lint src/",
-    "format": "biome format src/ --write", 
+    "format": "biome format src/ --write",
     "check": "biome check src/ --write",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "release": "semantic-release",
+    "release:dry": "semantic-release --dry-run",
+    "commit": "cz"
   },
   "keywords": [
     "markdown",
@@ -30,8 +33,16 @@
   "license": "MIT",
   "devDependencies": {
     "@biomejs/biome": "^1.4.0",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
     "@types/node": "^20.0.0",
     "@types/unist": "^3.0.0",
+    "commitizen": "^4.3.1",
+    "conventional-changelog-conventionalcommits": "^9.0.0",
+    "cz-conventional-changelog": "^3.3.0",
+    "semantic-release": "^24.2.5",
     "typescript": "^5.0.0",
     "vitest": "^1.0.0"
   },
@@ -44,5 +55,14 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/joe-mearman/markmv.git"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
   }
 }
