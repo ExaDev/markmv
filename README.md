@@ -40,6 +40,12 @@ npx markmv --help
 - Interactive conflict resolution
 - Maintains formatting and structure
 
+### 📚 **Documentation Index Generation**
+- Automatically create organized documentation indexes
+- Multiple types: links, imports, embeds, hybrid
+- Frontmatter-aware organization and sorting
+- Support for Obsidian and Claude syntax
+
 ### 🛡️ **Robust Operations**
 - Transactional operations with automatic rollback
 - Comprehensive error handling and validation
@@ -84,6 +90,9 @@ npx markmv join intro.md setup.md usage.md --output complete-guide.md
 
 # Interactive merge with conflict resolution
 npx markmv merge draft.md master.md --interactive
+
+# Generate documentation index
+npx markmv index --type links --strategy directory
 ```
 
 ## 📖 Usage Guide
@@ -187,6 +196,44 @@ npx markmv merge source.md target.md --create-transclusions
 - **prepend**: Add source content to beginning of target
 - **interactive**: Manual conflict resolution
 
+### Generating Documentation Indexes
+
+Automatically create organized indexes for markdown documentation:
+
+```bash
+# Generate basic link index
+npx markmv index
+
+# Generate in all directories with imports
+npx markmv index --location all --type import
+
+# Generate with Obsidian embeds
+npx markmv index --type embed --embed-style obsidian
+
+# Organize by frontmatter metadata
+npx markmv index --strategy metadata --type hybrid
+
+# Preview without creating files
+npx markmv index --dry-run --verbose
+```
+
+**Index Types:**
+- **links**: Standard markdown links with descriptions
+- **import**: Claude-style imports (`@./file.md`)
+- **embed**: Content embedding (`![[file.md]]` or `![title](file.md)`)
+- **hybrid**: Links with descriptions and summaries
+
+**Organization Strategies:**
+- **directory**: Group by folder structure
+- **metadata**: Group by frontmatter categories
+- **manual**: Custom organization (future feature)
+
+**Placement Options:**
+- **root**: Single index in target directory
+- **all**: Index in every directory
+- **branch**: Index in directories with subdirectories
+- **existing**: Only update existing index files
+
 ## ⚙️ Configuration
 
 Configuration options can be passed via command line flags. See each command's `--help` for available options.
@@ -229,6 +276,10 @@ npx markmv split knowledge-base/large-article.md --strategy headers
 # Create topic-specific guides
 npx markmv join kb/auth/*.md --output guides/authentication.md
 npx markmv join kb/deploy/*.md --output guides/deployment.md
+
+# Generate comprehensive indexes
+npx markmv index knowledge-base/ --location all --type hybrid
+npx markmv index guides/ --type import --strategy metadata
 ```
 
 ## 🛠️ Development
