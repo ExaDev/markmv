@@ -4,6 +4,7 @@ import type {
   OperationChange,
   OperationResult,
 } from '../types/operations.js';
+import type { LinkRefactorResult } from './link-refactorer.js';
 import { FileUtils } from '../utils/file-utils.js';
 import { PathUtils } from '../utils/path-utils.js';
 import { TransactionManager } from '../utils/transaction-manager.js';
@@ -271,7 +272,7 @@ export class FileOperations {
           const dependentFile = dependencyGraph.getNode(dependentFilePath)?.data;
           if (!dependentFile) continue;
 
-          let refactorResult;
+          let refactorResult: LinkRefactorResult;
           const storedContent = fileContents.get(dependentFilePath);
           if (storedContent) {
             refactorResult = await this.linkRefactorer.refactorLinksForFileMoveWithContent(

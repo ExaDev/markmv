@@ -436,7 +436,7 @@ export class ContentSplitter {
           
           // Ensure relative paths start with ./ for markdown compatibility
           if (!newHref.startsWith('./') && !newHref.startsWith('../') && !newHref.startsWith('/')) {
-            newHref = './' + newHref;
+            newHref = `./${newHref}`;
           }
 
           if (newHref !== link.href) {

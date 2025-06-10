@@ -340,7 +340,7 @@ export class LinkRefactorer {
       
       // Ensure relative paths start with ./ for markdown compatibility
       if (!newPath.startsWith('./') && !newPath.startsWith('../') && !newPath.startsWith('/')) {
-        newPath = './' + newPath;
+        newPath = `./${newPath}`;
       }
       
       return newPath;
@@ -367,7 +367,7 @@ export class LinkRefactorer {
       
       // Ensure relative paths start with ./ for markdown compatibility
       if (!newPath.startsWith('./') && !newPath.startsWith('../') && !newPath.startsWith('/')) {
-        newPath = './' + newPath;
+        newPath = `./${newPath}`;
       }
     } else {
       newPath = newTargetFilePath;
