@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { join } from 'node:path';
-import { mkdtemp, rm, writeFile, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, readFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 
 // Import the programmatic API
@@ -178,6 +178,34 @@ describe('Programmatic API', () => {
       
       expect(options.dryRun).toBe(true);
       expect(options.verbose).toBe(false);
+    });
+  });
+
+  describe('Directory destination support', () => {
+    it('should move file to directory', async () => {
+      const sourceFile = join(testDir, 'source.md');
+      const targetDir = join(testDir, 'target');
+      
+      await writeFile(sourceFile, '# Source\n\nContent.');
+      await mkdir(targetDir);
+      
+      const result = await moveFile(sourceFile, targetDir, { dryRun: true });
+      
+      expect(result.success).toBe(true);
+      expect(result.createdFiles[0]).toBe(join(targetDir, 'source.md'));
+    });
+
+    it('should move file to directory with trailing slash', async () => {
+      const sourceFile = join(testDir, 'test.md');
+      const targetDir = join(testDir, 'docs');
+      
+      await writeFile(sourceFile, '# Test\n\nContent.');
+      await mkdir(targetDir);
+      
+      const result = await moveFile(sourceFile, `${targetDir}/`, { dryRun: true });
+      
+      expect(result.success).toBe(true);
+      expect(result.createdFiles[0]).toBe(join(targetDir, 'test.md'));
     });
   });
 

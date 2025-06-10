@@ -1,5 +1,6 @@
 import { homedir } from 'node:os';
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { existsSync, statSync } from 'node:fs';
 
 export class PathUtils {
   /**
@@ -191,5 +192,40 @@ export class PathUtils {
     if (filteredParts.length === 0) return '';
 
     return resolve(join(...filteredParts));
+  }
+
+  /**
+   * Check if a path is a directory
+   */
+  static isDirectory(path: string): boolean {
+    try {
+      const resolvedPath = PathUtils.resolvePath(path);
+      return existsSync(resolvedPath) && statSync(resolvedPath).isDirectory();
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Check if a path looks like a directory (ends with / or \)
+   */
+  static looksLikeDirectory(path: string): boolean {
+    return path.endsWith('/') || path.endsWith('\\');
+  }
+
+  /**
+   * Resolve destination path when target might be a directory
+   * If destination is a directory, preserves the source filename
+   */
+  static resolveDestination(sourcePath: string, destinationPath: string): string {
+    const resolvedDest = PathUtils.resolvePath(destinationPath);
+    
+    // If destination looks like a directory or exists as a directory
+    if (PathUtils.looksLikeDirectory(destinationPath) || PathUtils.isDirectory(resolvedDest)) {
+      const sourceFileName = basename(sourcePath);
+      return join(resolvedDest, sourceFileName);
+    }
+    
+    return resolvedDest;
   }
 }
