@@ -1,3 +1,31 @@
+## [1.11.0](https://github.com/ExaDev/markmv/compare/v1.10.0...v1.11.0) (2025-06-10)
+
+### Features
+
+* add ESLint and Prettier configuration with JSDoc support ([63737d5](https://github.com/ExaDev/markmv/commit/63737d5cdd376aedc55796e43c6acd35baf1973c))
+* implement TypeScript configuration for ESLint and Prettier ([1e91f84](https://github.com/ExaDev/markmv/commit/1e91f84329f2362f76ff705366b84000ccbcdaf0))
+* remove biome configuration and dependencies ([ae22bb6](https://github.com/ExaDev/markmv/commit/ae22bb6cf869f10adfbf76840049d43bf39ed521))
+
+### Bug Fixes
+
+* rename eslint config to .mjs for ES module compatibility ([afe1dc6](https://github.com/ExaDev/markmv/commit/afe1dc604661b0c17552ef433571e3b89c85cd52))
+
+### Documentation
+
+* add comprehensive TypeDoc documentation to command interfaces ([557c157](https://github.com/ExaDev/markmv/commit/557c157926f77ce32b6c0732397b584d9a97a5c1))
+* add comprehensive TypeDoc documentation to strategy classes ([ed4ddcb](https://github.com/ExaDev/markmv/commit/ed4ddcb3ae591938e1a80cd0f612e6f0c1a74dd9))
+* add comprehensive TypeDoc documentation to type definitions ([7107a66](https://github.com/ExaDev/markmv/commit/7107a66983fe2f55dac03a037ba1ef1f0d74ad03))
+* add comprehensive TypeDoc documentation to utility classes ([2d92950](https://github.com/ExaDev/markmv/commit/2d929502e1013bb092294a8396c0857fe19b398f))
+
+### Styles
+
+* apply ESLint and Prettier formatting to codebase ([1708b57](https://github.com/ExaDev/markmv/commit/1708b57d6c37ca953dafd569f86341bf08fa155f))
+* auto-fix linting issues ([#4](https://github.com/ExaDev/markmv/issues/4)) ([231eedd](https://github.com/ExaDev/markmv/commit/231eedd853c99d7b697ce2696a159a28267f2870))
+
+### Continuous Integration
+
+* update GitHub Actions workflow for ESLint and Prettier ([ea6ecf4](https://github.com/ExaDev/markmv/commit/ea6ecf4b1a603416aaa78d09ff59ab0a1629329a))
+
 ## [1.10.0](https://github.com/ExaDev/markmv/compare/v1.9.0...v1.10.0) (2025-06-10)
 
 ### Features
