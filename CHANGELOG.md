@@ -1,3 +1,9 @@
+## [1.7.0](https://github.com/ExaDev/markmv/compare/v1.6.1...v1.7.0) (2025-06-10)
+
+### Features
+
+* implement comprehensive programmatic API with TypeDoc documentation ([32a76c8](https://github.com/ExaDev/markmv/commit/32a76c8675185c7b38271ab092c53d68799f2a89))
+
 ## [1.6.1](https://github.com/ExaDev/markmv/compare/v1.6.0...v1.6.1) (2025-06-10)
 
 ### Bug Fixes
