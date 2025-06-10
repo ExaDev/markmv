@@ -4,6 +4,14 @@ import type { OperationChange } from '../types/operations.js';
 import { FileUtils } from '../utils/file-utils.js';
 import { PathUtils } from '../utils/path-utils.js';
 
+/**
+ * Result of a link refactoring operation.
+ *
+ * Contains the updated content with refactored links and detailed information
+ * about the changes made during the refactoring process.
+ *
+ * @category Core
+ */
 export interface LinkRefactorResult {
   /** Updated content with refactored links */
   updatedContent: string;
@@ -13,6 +21,14 @@ export interface LinkRefactorResult {
   errors: string[];
 }
 
+/**
+ * Configuration options for link refactoring operations.
+ *
+ * Controls how links are processed during refactoring, including path conversion,
+ * formatting preservation, and special handling for different link types.
+ *
+ * @category Core
+ */
 export interface RefactorOptions {
   /** Convert absolute paths to relative where possible */
   preferRelativePaths?: boolean;
@@ -22,6 +38,44 @@ export interface RefactorOptions {
   preserveFormatting?: boolean;
 }
 
+/**
+ * Refactors and updates markdown links when files are moved or restructured.
+ *
+ * The LinkRefactorer automatically updates link paths, maintains referential integrity,
+ * and handles various link types including relative paths, absolute paths, and Claude
+ * import syntax. It ensures that links remain valid after file operations.
+ *
+ * @category Core
+ *
+ * @example Basic link refactoring
+ * ```typescript
+ * const refactorer = new LinkRefactorer({
+ *   preferRelativePaths: true,
+ *   updateClaudeImports: true
+ * });
+ * 
+ * const result = await refactorer.refactorLinks(
+ *   parsedFile,
+ *   'old/path/file.md',
+ *   'new/path/file.md'
+ * );
+ * 
+ * console.log(`Updated ${result.changes.length} links`);
+ * ```
+ *
+ * @example Bulk refactoring with path mapping
+ * ```typescript
+ * const pathMap = new Map([
+ *   ['docs/old.md', 'guides/new.md'],
+ *   ['api/legacy.md', 'reference/current.md']
+ * ]);
+ * 
+ * const result = await refactorer.refactorLinksWithMapping(
+ *   parsedFile,
+ *   pathMap
+ * );
+ * ```
+ */
 export class LinkRefactorer {
   private options: Required<RefactorOptions>;
 
