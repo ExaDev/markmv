@@ -1,3 +1,17 @@
+## [1.13.1](https://github.com/ExaDev/markmv/compare/v1.13.0...v1.13.1) (2025-06-10)
+
+### Bug Fixes
+
+* remove unnecessary permissions from update-badges job ([7710b33](https://github.com/ExaDev/markmv/commit/7710b33ca477e0c5db87970ea7c4609aebe3da5e))
+
+### Continuous Integration
+
+* update coverage badges ([e2c9f41](https://github.com/ExaDev/markmv/commit/e2c9f4121b9ed2f10c6be7d97960b8d00d751009))
+
+### Reverts
+
+* simplify badge updates to direct push after branch protection removal ([aa3bd3d](https://github.com/ExaDev/markmv/commit/aa3bd3dfce256cd962f379a1927f33ddd3082db4))
+
 ## [1.13.0](https://github.com/ExaDev/markmv/compare/v1.12.1...v1.13.0) (2025-06-10)
 
 ### Features
