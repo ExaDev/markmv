@@ -204,6 +204,19 @@ export class FileOperations {
     const { dryRun = false } = options;
 
     try {
+      // Handle empty moves array
+      if (moves.length === 0) {
+        return {
+          success: true,
+          modifiedFiles: [],
+          createdFiles: [],
+          deletedFiles: [],
+          errors: [],
+          warnings: [],
+          changes: [],
+        };
+      }
+
       // Validate all moves first
       for (const { source, destination } of moves) {
         const validation = this.validateMoveOperation(source, destination);
