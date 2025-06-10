@@ -7,8 +7,56 @@ on:
     branches: [ main, develop ]
 
 jobs:
+  lint-fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Check for fixable linting issues
+        id: check-fixes
+        run: |
+          # Check if biome can fix any issues by using dry-run equivalent
+          if npx @biomejs/biome check src/ --write --staged --dry 2>/dev/null; then
+            echo "fixes-available=false" >> $GITHUB_OUTPUT
+          else
+            # If dry-run fails, there are likely fixable issues
+            echo "fixes-available=true" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Auto-fix linting issues
+        if: steps.check-fixes.outputs.fixes-available == 'true'
+        run: npm run check
+          
+      - name: Commit auto-fixes
+        if: steps.check-fixes.outputs.fixes-available == 'true'
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .
+          git commit -m "style: auto-fix linting issues"
+          git push
+
   test:
     runs-on: ubuntu-latest
+    needs: lint-fix
+    if: always()
     permissions:
       contents: read
       security-events: write
