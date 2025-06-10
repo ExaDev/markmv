@@ -10,6 +10,7 @@
   "readme": "README.md",
   "theme": "default",
   "customCss": "./typedoc-theme.css",
+  "cacheBust": true,
   "sort": ["source-order"],
   "categorizeByGroup": true,
   "defaultCategory": "Other",
