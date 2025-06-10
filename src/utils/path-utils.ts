@@ -2,9 +2,50 @@ import { homedir } from 'node:os';
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { existsSync, statSync } from 'node:fs';
 
+/**
+ * Utility class for path manipulation and resolution operations.
+ * 
+ * Provides comprehensive path handling for markdown file operations including
+ * relative path updates, home directory resolution, and cross-platform compatibility.
+ * 
+ * @category Utilities
+ * 
+ * @example Path resolution
+ * ```typescript
+ * // Resolve various path formats
+ * PathUtils.resolvePath('~/docs/file.md');     // Home directory
+ * PathUtils.resolvePath('../guide.md', '/current/dir');  // Relative
+ * PathUtils.resolvePath('/absolute/path.md');  // Absolute
+ * ```
+ * 
+ * @example Relative path updates for moved files
+ * ```typescript
+ * // When moving a file, update its relative links
+ * const originalLink = '../images/diagram.png';
+ * const updatedLink = PathUtils.updateRelativePath(
+ *   originalLink,
+ *   'docs/guide.md',      // old file location
+ *   'tutorials/guide.md'  // new file location
+ * );
+ * // Result: '../../docs/images/diagram.png'
+ * ```
+ */
 export class PathUtils {
   /**
-   * Resolve a path that may be relative, absolute, or use home directory notation
+   * Resolve a path that may be relative, absolute, or use home directory notation.
+   * 
+   * @param path - The path to resolve (supports ~/, relative, and absolute paths)
+   * @param basePath - Optional base directory for relative path resolution
+   * @returns Resolved absolute path
+   * 
+   * @example
+   * ```typescript
+   * PathUtils.resolvePath('~/docs/file.md');
+   * // Returns: '/Users/username/docs/file.md'
+   * 
+   * PathUtils.resolvePath('../file.md', '/current/working/dir');
+   * // Returns: '/current/working/file.md'
+   * ```
    */
   static resolvePath(path: string, basePath?: string): string {
     if (path.startsWith('~/')) {
