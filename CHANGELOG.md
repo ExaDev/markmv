@@ -1,3 +1,35 @@
+## [1.8.0](https://github.com/ExaDev/markmv/compare/v1.7.0...v1.8.0) (2025-06-10)
+
+### Features
+
+* add comprehensive glob support for CLI move command ([2530da1](https://github.com/ExaDev/markmv/commit/2530da10dd637543b7cd1ab36d4e69d55c145daa))
+* add support for moving files to directories ([1adbc6d](https://github.com/ExaDev/markmv/commit/1adbc6d2f7a517f81f5e6c1a786f1d56e231014f))
+* configure TypeDoc for comprehensive API documentation ([94e82a1](https://github.com/ExaDev/markmv/commit/94e82a101fb7784a6e3cf8b625afde1218089dbe))
+* implement comprehensive programmatic API ([edd5549](https://github.com/ExaDev/markmv/commit/edd55491f591eaac5acf888461a942855d63249a))
+* install TypeDoc for API documentation generation ([348ad30](https://github.com/ExaDev/markmv/commit/348ad309320803ffa0e387a3cd1bd1b6cd8176d2))
+
+### Bug Fixes
+
+* add missing OperationResult import in move command ([d7c98b3](https://github.com/ExaDev/markmv/commit/d7c98b3de234b6164a026c5e8cd382969d4077e0))
+* resolve linting issues in move command ([d80ff99](https://github.com/ExaDev/markmv/commit/d80ff99b1862aea5822a970e081747568f6ae5b0))
+
+### Documentation
+
+* add comprehensive JSDoc comments to core classes ([77a059f](https://github.com/ExaDev/markmv/commit/77a059f41eb47ee3d89958d457a7e19cdc3994b8))
+* enhance README with comprehensive API documentation and examples ([c4ef1b8](https://github.com/ExaDev/markmv/commit/c4ef1b85f2982ec19d59a5708368723f0de553cc))
+
+### Styles
+
+* auto-fix linting issues ([0050cb9](https://github.com/ExaDev/markmv/commit/0050cb9e0b768b93c7d113b0951999da03f3036f))
+
+### Continuous Integration
+
+* add GitHub Actions workflow for documentation deployment ([aa09cfa](https://github.com/ExaDev/markmv/commit/aa09cfa5717c53d3ee475858bcae202ad89d21f5))
+
+### Chores
+
+* add docs/ to .gitignore for generated documentation ([361ff1c](https://github.com/ExaDev/markmv/commit/361ff1ce127d5bdc2e623f80f93774ceb896e280))
+
 ## [1.7.0](https://github.com/ExaDev/markmv/compare/v1.6.1...v1.7.0) (2025-06-10)
 
 ### Features
