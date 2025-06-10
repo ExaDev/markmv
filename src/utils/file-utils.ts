@@ -13,6 +13,14 @@ import {
 import { dirname, join } from 'node:path';
 import { PathUtils } from './path-utils.js';
 
+/**
+ * File system statistics and metadata.
+ *
+ * Provides comprehensive information about a file or directory
+ * including size, type, and timestamp information.
+ *
+ * @category Utilities
+ */
 export interface FileStats {
   path: string;
   size: number;
@@ -22,16 +30,58 @@ export interface FileStats {
   created: Date;
 }
 
+/**
+ * Configuration options for file copy operations.
+ *
+ * Controls behavior during file copying including overwrite handling,
+ * timestamp preservation, and directory creation.
+ *
+ * @category Utilities
+ */
 export interface CopyOptions {
   overwrite?: boolean;
   preserveTimestamps?: boolean;
   createDirectories?: boolean;
 }
 
+/**
+ * Configuration options for file move operations.
+ *
+ * Extends copy options with move-specific features like backup creation.
+ * Move operations are typically implemented as copy-then-delete.
+ *
+ * @category Utilities
+ */
 export interface MoveOptions extends CopyOptions {
   backup?: boolean;
 }
 
+/**
+ * Utility class for common file system operations.
+ *
+ * Provides a comprehensive set of static methods for file and directory
+ * manipulation, with proper error handling and cross-platform compatibility.
+ * All methods are async and use Node.js promises-based file system APIs.
+ *
+ * @category Utilities
+ *
+ * @example Basic file operations
+ * ```typescript
+ * // Check if file exists
+ * const exists = await FileUtils.exists('document.md');
+ * 
+ * // Read file content
+ * const content = await FileUtils.readTextFile('document.md');
+ * 
+ * // Write new content
+ * await FileUtils.writeTextFile('output.md', content, {
+ *   createDirectories: true
+ * });
+ * 
+ * // Find markdown files
+ * const files = await FileUtils.findMarkdownFiles('./docs', true);
+ * ```
+ */
 export class FileUtils {
   /**
    * Check if a file or directory exists

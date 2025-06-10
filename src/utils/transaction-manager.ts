@@ -1,6 +1,14 @@
 import type { OperationChange } from '../types/operations.js';
 import { FileUtils } from './file-utils.js';
 
+/**
+ * Represents a single atomic operation within a transaction.
+ *
+ * Each step can be executed and rolled back independently, providing
+ * the foundation for transactional file operations with full rollback capability.
+ *
+ * @category Utilities
+ */
 export interface TransactionStep {
   id: string;
   type: 'file-move' | 'file-copy' | 'file-delete' | 'file-create' | 'content-update';
@@ -10,6 +18,14 @@ export interface TransactionStep {
   completed: boolean;
 }
 
+/**
+ * Configuration options for transaction management.
+ *
+ * Controls transaction behavior including backup creation, error handling,
+ * and retry logic for robust file operations.
+ *
+ * @category Utilities
+ */
 export interface TransactionOptions {
   /** Create backups before destructive operations */
   createBackups?: boolean;
@@ -19,6 +35,38 @@ export interface TransactionOptions {
   maxRetries?: number;
 }
 
+/**
+ * Manages atomic file operations with full rollback capability.
+ *
+ * Provides transactional semantics for file system operations, ensuring
+ * that either all operations complete successfully or all changes are
+ * rolled back. Supports automatic backups and retry logic.
+ *
+ * @category Utilities
+ *
+ * @example Transactional file operations
+ * ```typescript
+ * const transaction = new TransactionManager({
+ *   createBackups: true,
+ *   continueOnError: false
+ * });
+ * 
+ * // Add operations to the transaction
+ * transaction.addFileMove('old.md', 'new.md');
+ * transaction.addContentUpdate('target.md', newContent);
+ * 
+ * try {
+ *   const result = await transaction.execute();
+ *   if (result.success) {
+ *     console.log('All operations completed successfully');
+ *   } else {
+ *     console.log('Transaction failed, all changes rolled back');
+ *   }
+ * } catch (error) {
+ *   console.error('Transaction error:', error);
+ * }
+ * ```
+ */
 export class TransactionManager {
   private steps: TransactionStep[] = [];
   private executedSteps: TransactionStep[] = [];
