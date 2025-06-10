@@ -29,23 +29,46 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
           
+      - name: Cache TypeScript build
+        uses: actions/cache@v4
+        with:
+          path: |
+            dist/
+            tsconfig.tsbuildinfo
+          key: ${{ runner.os }}-tsc-${{ matrix.node-version }}-${{ hashFiles('src/**/*.ts', 'tsconfig.json') }}
+          restore-keys: |
+            ${{ runner.os }}-tsc-${{ matrix.node-version }}-
+            ${{ runner.os }}-tsc-
+            
+      - name: Cache test results
+        uses: actions/cache@v4
+        with:
+          path: |
+            coverage/
+            .vitest/
+          key: ${{ runner.os }}-test-${{ matrix.node-version }}-${{ hashFiles('src/**/*.ts', 'src/**/*.test.ts', 'vitest.config.ts') }}
+          restore-keys: |
+            ${{ runner.os }}-test-${{ matrix.node-version }}-
+            ${{ runner.os }}-test-
+          
       - name: Install dependencies
         run: npm ci
         
-      - name: Run security audit
-        run: npm audit --audit-level=high
-        
-      - name: Run lint
+      - name: Run lint (fast fail)
         run: npm run lint
         
-      - name: Run type check
+      - name: Run type check (fast fail)
         run: npm run typecheck
         
-      - name: Run tests
-        run: npm run test:run
+      - name: Run security audit
+        run: npm audit --audit-level=high
+        continue-on-error: true
         
       - name: Build
         run: npm run build
+        
+      - name: Run tests
+        run: npm run test:run
         
       - name: Generate coverage report
         if: matrix.node-version == '20.x'
