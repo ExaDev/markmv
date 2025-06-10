@@ -1,3 +1,14 @@
+## [1.9.0](https://github.com/ExaDev/markmv/compare/v1.8.4...v1.9.0) (2025-06-10)
+
+### Features
+
+* add comprehensive documentation coverage analysis tool ([5a89435](https://github.com/ExaDev/markmv/commit/5a89435e45c93b4d0ec92669fde4a874a7543326))
+* enable strict TypeDoc validation for better documentation quality ([02d97ba](https://github.com/ExaDev/markmv/commit/02d97ba1ed4600435d456fd8447b1ef21ba7ead8))
+
+### Chores
+
+* update package-lock.json for typedoc-plugin-coverage ([42278bf](https://github.com/ExaDev/markmv/commit/42278bf9ca91eb3b8c6e8f84d2d938711ad8efbb))
+
 ## [1.8.4](https://github.com/ExaDev/markmv/compare/v1.8.3...v1.8.4) (2025-06-10)
 
 ### Bug Fixes
