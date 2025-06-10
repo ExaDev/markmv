@@ -44,9 +44,16 @@
 
 ## 📦 Installation
 
-### Global Installation (Recommended)
+### Direct Usage with npx (Recommended)
+```bash
+npx markmv --help
+npx markmv move old-doc.md new-doc.md
+```
+
+### Global Installation
 ```bash
 npm install -g markmv
+markmv --help
 ```
 
 ### Local Installation
@@ -63,16 +70,16 @@ npx markmv --help
 
 ```bash
 # Move a file and update all references
-markmv move old-doc.md new-location/renamed-doc.md
+npx markmv move old-doc.md new-location/renamed-doc.md
 
 # Split a large file by headers
-markmv split large-guide.md --strategy headers --level 2
+npx markmv split large-guide.md --strategy headers --header-level 2
 
 # Join multiple files
-markmv join intro.md setup.md usage.md --output complete-guide.md
+npx markmv join intro.md setup.md usage.md --output complete-guide.md
 
 # Interactive merge with conflict resolution
-markmv merge draft.md master.md --interactive
+npx markmv merge draft.md master.md --interactive
 ```
 
 ## 📖 Usage Guide
@@ -83,16 +90,16 @@ Move individual files or entire directories while preserving link integrity:
 
 ```bash
 # Move a single file
-markmv move source.md destination.md
+npx markmv move source.md destination.md
 
 # Preview move operation
-markmv move source.md destination.md --dry-run
+npx markmv move source.md destination.md --dry-run
 
 # Move entire directory
-markmv move old-docs/ new-docs/
+npx markmv move old-docs/ new-docs/
 
-# Dry run to preview changes
-markmv move source.md destination.md --dry-run
+# Verbose output for detailed logging
+npx markmv move source.md destination.md --verbose
 ```
 
 **Options:**
@@ -105,13 +112,16 @@ Break large markdown files into manageable sections:
 
 ```bash
 # Split by header level
-markmv split large-file.md --strategy headers --level 2
+npx markmv split large-file.md --strategy headers --header-level 2
 
 # Split by file size
-markmv split large-file.md --strategy size --max-size 50KB
+npx markmv split large-file.md --strategy size --max-size 50KB
 
 # Split by manual markers
-markmv split manual-file.md --strategy manual
+npx markmv split manual-file.md --strategy manual
+
+# Split by number of lines
+npx markmv split large-file.md --strategy lines --split-lines 100
 ```
 
 **Splitting Strategies:**
@@ -135,13 +145,13 @@ Combine multiple markdown files intelligently:
 
 ```bash
 # Basic join
-markmv join file1.md file2.md file3.md --output combined.md
+npx markmv join file1.md file2.md file3.md --output combined.md
 
-# Join with header adjustment
-markmv join *.md --output master.md --adjust-headers
+# Join with custom ordering strategy
+npx markmv join *.md --output master.md --order-strategy alphabetical
 
-# Join with conflict resolution
-markmv join docs/*.md --output guide.md --resolve-conflicts
+# Preview join operation
+npx markmv join docs/*.md --output guide.md --dry-run
 ```
 
 **Options:**
@@ -156,16 +166,16 @@ Intelligently merge content from multiple sources:
 
 ```bash
 # Basic merge
-markmv merge source.md target.md
+npx markmv merge source.md target.md
 
 # Merge with specific strategy
-markmv merge source.md target.md --strategy append
+npx markmv merge source.md target.md --strategy append
 
 # Interactive merge
-markmv merge source.md target.md --interactive
+npx markmv merge source.md target.md --interactive
 
 # Merge with Obsidian transclusion
-markmv merge source.md target.md --create-transclusions
+npx markmv merge source.md target.md --create-transclusions
 ```
 
 **Merge Strategies:**
@@ -183,38 +193,38 @@ Configuration options can be passed via command line flags. See each command's `
 
 ```bash
 # Move all API docs to new structure
-markmv move api-docs/ docs/api/
+npx markmv move api-docs/ docs/api/
 
 # Split a large README into sections
-markmv split README.md --strategy headers --level 2 --output docs/
+npx markmv split README.md --strategy headers --header-level 2 --output docs/
 
 # Create a comprehensive guide from sections
-markmv join docs/intro.md docs/setup.md docs/usage.md --output GUIDE.md
+npx markmv join docs/intro.md docs/setup.md docs/usage.md --output GUIDE.md
 ```
 
 ### Blog Post Management
 
 ```bash
 # Split a long blog post into parts
-markmv split long-post.md --strategy size --max-size 5KB
+npx markmv split long-post.md --strategy size --max-size 5KB
 
 # Merge draft with main content
-markmv merge draft-additions.md main-post.md --strategy section
+npx markmv merge draft-additions.md main-post.md --strategy append
 
 # Combine series into single post
-markmv join part-1.md part-2.md part-3.md --output complete-series.md
+npx markmv join part-1.md part-2.md part-3.md --output complete-series.md
 ```
 
 ### Knowledge Base Maintenance
 
 ```bash
 # Reorganise knowledge base structure
-markmv move kb/ knowledge-base/
-markmv split knowledge-base/large-article.md --strategy headers
+npx markmv move kb/ knowledge-base/
+npx markmv split knowledge-base/large-article.md --strategy headers
 
 # Create topic-specific guides
-markmv join kb/auth/*.md --output guides/authentication.md
-markmv join kb/deploy/*.md --output guides/deployment.md
+npx markmv join kb/auth/*.md --output guides/authentication.md
+npx markmv join kb/deploy/*.md --output guides/deployment.md
 ```
 
 ## 🛠️ Development
