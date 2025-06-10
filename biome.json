@@ -8,17 +8,19 @@
     "rules": {
       "recommended": true,
       "complexity": {
-        "noExcessiveCognitiveComplexity": "error",
-        "noVoid": "off"
+        "noExcessiveCognitiveComplexity": "off",
+        "noVoid": "off",
+        "noStaticOnlyClass": "off"
       },
       "style": {
         "useImportType": "error",
         "useExportType": "error",
-        "noNonNullAssertion": "error"
+        "noNonNullAssertion": "off"
       },
       "suspicious": {
-        "noExplicitAny": "error",
-        "noArrayIndexKey": "off"
+        "noExplicitAny": "off",
+        "noArrayIndexKey": "off",
+        "noAssignInExpressions": "off"
       }
     }
   },

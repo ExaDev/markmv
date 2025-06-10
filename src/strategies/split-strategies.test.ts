@@ -99,7 +99,7 @@ Valid content.`;
   describe('SizeBasedSplitStrategy', () => {
     it('should split content by size', async () => {
       const strategy = new SizeBasedSplitStrategy({ maxSize: 1 }); // 1KB
-      const content = 'A'.repeat(2048) + '\n\n## Middle Header\n\n' + 'B'.repeat(2048);
+      const content = `${'A'.repeat(2048)}\n\n## Middle Header\n\n${'B'.repeat(2048)}`;
 
       const result = await strategy.split(content, 'test.md');
 
@@ -183,7 +183,7 @@ Content 3`;
 
     it('should warn when no markers found', async () => {
       const strategy = new ManualSplitStrategy();
-      const content = `Just regular content without any split markers.`;
+      const content = 'Just regular content without any split markers.';
 
       const result = await strategy.split(content, 'test.md');
 
@@ -287,7 +287,7 @@ Line 4`;
 
     it('should require split lines to be specified', async () => {
       const strategy = new LineBasedSplitStrategy({ splitLines: [] });
-      const content = `Some content here`;
+      const content = 'Some content here';
 
       const result = await strategy.split(content, 'test.md');
 

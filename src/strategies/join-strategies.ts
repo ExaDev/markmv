@@ -1,4 +1,3 @@
-
 export interface JoinSection {
   /** Original file path */
   filePath: string;
@@ -663,7 +662,7 @@ export class ChronologicalJoinStrategy extends BaseJoinStrategy {
       const dateMatch = section.frontmatter.match(/^date:\s*(.+)$/m);
       if (dateMatch) {
         const date = new Date(dateMatch[1].trim().replace(/['"]/g, ''));
-        if (!isNaN(date.getTime())) {
+        if (!Number.isNaN(date.getTime())) {
           return date;
         }
       }
@@ -673,7 +672,7 @@ export class ChronologicalJoinStrategy extends BaseJoinStrategy {
     const filenameDateMatch = section.filePath.match(/(\d{4}-\d{2}-\d{2})/);
     if (filenameDateMatch) {
       const date = new Date(filenameDateMatch[1]);
-      if (!isNaN(date.getTime())) {
+      if (!Number.isNaN(date.getTime())) {
         return date;
       }
     }

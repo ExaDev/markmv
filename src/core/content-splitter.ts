@@ -204,7 +204,7 @@ export class ContentSplitter {
             transaction.addContentUpdate(
               externalFile,
               updatedContent,
-              `Update links to split sections`
+              'Update links to split sections'
             );
           }
         }
@@ -393,10 +393,7 @@ export class ContentSplitter {
           if (hasReference) {
             referencingFiles.push(filePath);
           }
-        } catch (error) {
-          // Skip files that can't be parsed
-          continue;
-        }
+        } catch (error) {}
       }
 
       return referencingFiles;

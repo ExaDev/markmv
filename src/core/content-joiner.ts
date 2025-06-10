@@ -186,7 +186,6 @@ export class ContentJoiner {
         return new ManualOrderJoinStrategy(strategyOptions);
       case 'chronological':
         return new ChronologicalJoinStrategy(strategyOptions);
-      case 'dependency':
       default:
         return new DependencyOrderJoinStrategy(strategyOptions);
     }

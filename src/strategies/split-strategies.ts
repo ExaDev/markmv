@@ -1,4 +1,3 @@
-
 export interface SplitSection {
   /** Section title/identifier */
   title: string;
@@ -225,7 +224,7 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      const lineSize = Buffer.byteLength(line + '\n', 'utf8');
+      const lineSize = Buffer.byteLength(`${line}\n`, 'utf8');
 
       // Start new section if needed
       if (!currentSection) {
@@ -493,7 +492,7 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
       if (trimmed && !trimmed.startsWith('<!--') && !trimmed.startsWith('---')) {
         // Use first few words as title
         const words = trimmed.split(/\s+/).slice(0, 5).join(' ');
-        return words.length > 50 ? words.substring(0, 47) + '...' : words;
+        return words.length > 50 ? `${words.substring(0, 47)}...` : words;
       }
     }
 

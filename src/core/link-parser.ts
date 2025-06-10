@@ -1,9 +1,9 @@
 import { readFile, readdir } from 'node:fs/promises';
-import { dirname, isAbsolute, join, resolve, extname } from 'node:path';
+import { dirname, extname, isAbsolute, join, resolve } from 'node:path';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
-import { visit } from 'unist-util-visit';
 import type { Node } from 'unist';
+import { visit } from 'unist-util-visit';
 import type { LinkReference, LinkType, MarkdownLink, ParsedMarkdownFile } from '../types/links.js';
 
 // Define the MDAST node types we need to avoid import issues
@@ -220,13 +220,13 @@ export class LinkParser {
 
   private async findMarkdownFiles(dirPath: string, extensions: string[]): Promise<string[]> {
     const files: string[] = [];
-    
+
     const processDirectory = async (currentDir: string): Promise<void> => {
       const entries = await readdir(currentDir, { withFileTypes: true });
-      
+
       for (const entry of entries) {
         const fullPath = join(currentDir, entry.name);
-        
+
         if (entry.isDirectory()) {
           await processDirectory(fullPath);
         } else if (entry.isFile() && extensions.includes(extname(entry.name))) {
@@ -234,7 +234,7 @@ export class LinkParser {
         }
       }
     };
-    
+
     await processDirectory(resolve(dirPath));
     return files;
   }

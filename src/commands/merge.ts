@@ -84,7 +84,7 @@ export async function mergeCommand(
     // Display results
     if (options.dryRun) {
       console.log('\\n📋 Changes that would be made:');
-      console.log(`\\n📝 File that would be modified:`);
+      console.log('\\n📝 File that would be modified:');
       console.log(`  ~ ${target}`);
 
       if (options.verbose) {
@@ -98,7 +98,7 @@ export async function mergeCommand(
         }
       }
 
-      console.log(`\\n📊 Summary: Would modify 1 file`);
+      console.log('\\n📊 Summary: Would modify 1 file');
     } else {
       // Write the merged content
       await fs.mkdir(dirname(target), { recursive: true });
@@ -124,7 +124,7 @@ export async function mergeCommand(
           console.log(`    Resolution: ${conflict.resolution}`);
         }
         if (!conflict.autoResolved) {
-          console.log(`    ⚠️  Manual resolution required`);
+          console.log('    ⚠️  Manual resolution required');
         }
       }
     }

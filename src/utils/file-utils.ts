@@ -118,7 +118,7 @@ export class FileUtils {
     options: { createDirectories?: boolean } = {}
   ): Promise<void> {
     if (options.createDirectories) {
-      await this.ensureDirectory(dirname(filePath));
+      await FileUtils.ensureDirectory(dirname(filePath));
     }
 
     await writeFile(filePath, content, 'utf-8');
@@ -135,13 +135,13 @@ export class FileUtils {
     const { overwrite = false, createDirectories = true } = options;
 
     // Check if destination exists
-    if (!overwrite && (await this.exists(destinationPath))) {
+    if (!overwrite && (await FileUtils.exists(destinationPath))) {
       throw new Error(`Destination file already exists: ${destinationPath}`);
     }
 
     // Create destination directory if needed
     if (createDirectories) {
-      await this.ensureDirectory(dirname(destinationPath));
+      await FileUtils.ensureDirectory(dirname(destinationPath));
     }
 
     // Copy the file
@@ -177,25 +177,25 @@ export class FileUtils {
     }
 
     // Check if source exists
-    if (!(await this.exists(sourcePath))) {
+    if (!(await FileUtils.exists(sourcePath))) {
       throw new Error(`Source file does not exist: ${sourcePath}`);
     }
 
     // Handle destination conflicts
-    if (await this.exists(destinationPath)) {
+    if (await FileUtils.exists(destinationPath)) {
       if (!overwrite) {
         throw new Error(`Destination file already exists: ${destinationPath}`);
       }
 
       if (backup) {
         const backupPath = `${destinationPath}.backup`;
-        await this.copyFile(destinationPath, backupPath);
+        await FileUtils.copyFile(destinationPath, backupPath);
       }
     }
 
     // Create destination directory if needed
     if (createDirectories) {
-      await this.ensureDirectory(dirname(destinationPath));
+      await FileUtils.ensureDirectory(dirname(destinationPath));
     }
 
     // Try atomic rename first (works if on same filesystem)
@@ -204,7 +204,7 @@ export class FileUtils {
     } catch (error) {
       // If rename fails, fall back to copy + delete
       if ((error as NodeJS.ErrnoException).code === 'EXDEV') {
-        await this.copyFile(sourcePath, destinationPath, { overwrite: true });
+        await FileUtils.copyFile(sourcePath, destinationPath, { overwrite: true });
         await unlink(sourcePath);
       } else {
         throw error;
@@ -216,7 +216,7 @@ export class FileUtils {
    * Delete a file safely
    */
   static async deleteFile(filePath: string): Promise<void> {
-    if (await this.exists(filePath)) {
+    if (await FileUtils.exists(filePath)) {
       await unlink(filePath);
     }
   }
@@ -240,7 +240,7 @@ export class FileUtils {
 
       for (const entry of entries) {
         const fullPath = join(currentDir, entry);
-        const stats = await this.getStats(fullPath);
+        const stats = await FileUtils.getStats(fullPath);
 
         if (stats.isDirectory) {
           if (includeDirectories) {
@@ -271,7 +271,7 @@ export class FileUtils {
    * Find markdown files in a directory
    */
   static async findMarkdownFiles(dirPath: string, recursive = true): Promise<string[]> {
-    return this.listFiles(dirPath, {
+    return FileUtils.listFiles(dirPath, {
       recursive,
       extensions: ['.md', '.markdown', '.mdown', '.mkd', '.mdx'],
     });
@@ -282,7 +282,7 @@ export class FileUtils {
    */
   static async createBackup(filePath: string, suffix = '.backup'): Promise<string> {
     const backupPath = `${filePath}${suffix}`;
-    await this.copyFile(filePath, backupPath);
+    await FileUtils.copyFile(filePath, backupPath);
     return backupPath;
   }
 
@@ -290,7 +290,7 @@ export class FileUtils {
    * Get file size in bytes
    */
   static async getFileSize(filePath: string): Promise<number> {
-    const stats = await this.getStats(filePath);
+    const stats = await FileUtils.getStats(filePath);
     return stats.size;
   }
 
@@ -300,8 +300,8 @@ export class FileUtils {
   static async filesEqual(path1: string, path2: string): Promise<boolean> {
     try {
       const [content1, content2] = await Promise.all([
-        this.readTextFile(path1),
-        this.readTextFile(path2),
+        FileUtils.readTextFile(path1),
+        FileUtils.readTextFile(path2),
       ]);
       return content1 === content2;
     } catch {

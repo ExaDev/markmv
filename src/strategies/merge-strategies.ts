@@ -1,4 +1,3 @@
-
 export interface MergeSection {
   /** Content of the section */
   content: string;
@@ -128,9 +127,8 @@ export abstract class BaseMergeStrategy {
 
     if (section) {
       return template.replace('{file}', cleanFile).replace('{section}', section);
-    } else {
-      return template.replace('{file}', cleanFile).replace('#{section}', '');
     }
+    return template.replace('{file}', cleanFile).replace('#{section}', '');
   }
 
   /**
@@ -506,12 +504,9 @@ export class InteractiveMergeStrategy extends BaseMergeStrategy {
 
       // Create a basic append merge as fallback
       const separator = this.options.separator || '\n\n---\n\n';
-      const mergedContent =
-        targetMainContent +
-        separator +
-        '<!-- MERGE CONFLICT: Review and resolve manually -->' +
-        separator +
-        sourceMainContent;
+      const mergedContent = `${
+        targetMainContent + separator
+      }<!-- MERGE CONFLICT: Review and resolve manually -->${separator}${sourceMainContent}`;
 
       return {
         success: true,

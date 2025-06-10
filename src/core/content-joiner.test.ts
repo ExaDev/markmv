@@ -88,8 +88,8 @@ Advanced concepts here.`
     });
 
     it('should join files alphabetically when requested', async () => {
-      const file1 = await createTestFile('zebra.md', `# Zebra File\n\nContent about zebras.`);
-      const file2 = await createTestFile('alpha.md', `# Alpha File\n\nContent about alpha.`);
+      const file1 = await createTestFile('zebra.md', '# Zebra File\n\nContent about zebras.');
+      const file2 = await createTestFile('alpha.md', '# Alpha File\n\nContent about alpha.');
 
       const options: JoinOperationOptions = {
         orderStrategy: 'alphabetical',
@@ -108,8 +108,8 @@ Advanced concepts here.`
     });
 
     it('should handle dry run mode', async () => {
-      const file1 = await createTestFile('test1.md', `# Test 1\n\nContent 1`);
-      const file2 = await createTestFile('test2.md', `# Test 2\n\nContent 2`);
+      const file1 = await createTestFile('test1.md', '# Test 1\n\nContent 1');
+      const file2 = await createTestFile('test2.md', '# Test 2\n\nContent 2');
 
       const options: JoinOperationOptions = {
         output: join(testDir, 'dry-run.md'),
@@ -132,8 +132,8 @@ Advanced concepts here.`
     });
 
     it('should generate default output filename', async () => {
-      const file1 = await createTestFile('main.md', `# Main\n\nContent`);
-      const file2 = await createTestFile('other.md', `# Other\n\nContent`);
+      const file1 = await createTestFile('main.md', '# Main\n\nContent');
+      const file2 = await createTestFile('other.md', '# Other\n\nContent');
 
       const options: JoinOperationOptions = {
         dryRun: true, // Don't actually create the file
@@ -186,8 +186,8 @@ tags: ["tag2", "tag3"]
     });
 
     it('should handle duplicate headers', async () => {
-      const file1 = await createTestFile('dup1.md', `# Same Header\n\nContent from file 1`);
-      const file2 = await createTestFile('dup2.md', `# Same Header\n\nContent from file 2`);
+      const file1 = await createTestFile('dup1.md', '# Same Header\n\nContent from file 1');
+      const file2 = await createTestFile('dup2.md', '# Same Header\n\nContent from file 2');
 
       const options: JoinOperationOptions = {
         output: join(testDir, 'dup-joined.md'),
@@ -203,11 +203,11 @@ tags: ["tag2", "tag3"]
     it('should deduplicate links', async () => {
       const file1 = await createTestFile(
         'link1.md',
-        `# File 1\n\n[Common Link](shared.md)\n\nContent 1`
+        '# File 1\n\n[Common Link](shared.md)\n\nContent 1'
       );
       const file2 = await createTestFile(
         'link2.md',
-        `# File 2\n\n[Common Link](shared.md)\n\nContent 2`
+        '# File 2\n\n[Common Link](shared.md)\n\nContent 2'
       );
 
       const options: JoinOperationOptions = {
@@ -225,7 +225,7 @@ tags: ["tag2", "tag3"]
     });
 
     it('should handle missing files gracefully', async () => {
-      const file1 = await createTestFile('exists.md', `# Exists\n\nContent`);
+      const file1 = await createTestFile('exists.md', '# Exists\n\nContent');
       const missingFile = join(testDir, 'missing.md');
 
       const options: JoinOperationOptions = {
@@ -273,7 +273,7 @@ Content of section 1.
 Content of section 2.`
       );
 
-      const file2 = await createTestFile('simple.md', `# Simple Content\n\nJust simple content.`);
+      const file2 = await createTestFile('simple.md', '# Simple Content\n\nJust simple content.');
 
       const options: JoinOperationOptions = {
         output: join(testDir, 'structured-joined.md'),

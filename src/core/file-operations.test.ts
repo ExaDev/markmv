@@ -43,7 +43,7 @@ describe('FileOperations', () => {
       await writeFile(sourcePath, '# Target File');
       await writeFile(
         dependentPath,
-        `# Dependent File\n\n[Link to target](./target.md)\n@./target.md`
+        '# Dependent File\n\n[Link to target](./target.md)\n@./target.md'
       );
 
       const result = await fileOps.moveFile(sourcePath, destPath);

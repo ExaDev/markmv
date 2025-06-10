@@ -120,7 +120,7 @@ export class FileOperations {
             transaction.addContentUpdate(
               destinationPath,
               selfRefactorResult.updatedContent,
-              `Update internal links in moved file`
+              'Update internal links in moved file'
             );
           }
         }

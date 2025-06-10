@@ -43,11 +43,11 @@ export class PathUtils {
 
     // Resolve the original target
     const sourceDir = dirname(sourceFilePath);
-    const targetPath = this.resolvePath(originalLinkPath, sourceDir);
+    const targetPath = PathUtils.resolvePath(originalLinkPath, sourceDir);
 
     // Create new relative path from new location
     const newSourceDir = dirname(newSourceFilePath);
-    return this.makeRelative(targetPath, newSourceDir);
+    return PathUtils.makeRelative(targetPath, newSourceDir);
   }
 
   /**
@@ -65,10 +65,10 @@ export class PathUtils {
 
     // For relative imports, update the path
     const sourceDir = dirname(sourceFilePath);
-    const targetPath = this.resolvePath(originalImportPath, sourceDir);
+    const targetPath = PathUtils.resolvePath(originalImportPath, sourceDir);
     const newSourceDir = dirname(newSourceFilePath);
 
-    return this.makeRelative(targetPath, newSourceDir);
+    return PathUtils.makeRelative(targetPath, newSourceDir);
   }
 
   /**
@@ -120,7 +120,7 @@ export class PathUtils {
 
     // Check for dangerous path traversal patterns
     const normalized = resolve(path);
-    if (path.includes('..') && !this.isWithinDirectory(normalized, process.cwd())) {
+    if (path.includes('..') && !PathUtils.isWithinDirectory(normalized, process.cwd())) {
       return { valid: false, reason: 'Path traversal outside working directory is not allowed' };
     }
 
@@ -179,7 +179,7 @@ export class PathUtils {
    * Check if path represents a markdown file
    */
   static isMarkdownFile(path: string): boolean {
-    const ext = this.getExtension(path).toLowerCase();
+    const ext = PathUtils.getExtension(path).toLowerCase();
     return ['.md', '.markdown', '.mdown', '.mkd', '.mdx'].includes(ext);
   }
 
