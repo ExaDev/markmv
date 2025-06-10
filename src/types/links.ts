@@ -1,4 +1,4 @@
-export type LinkType = 'internal' | 'external' | 'anchor' | 'image' | 'reference' | 'claude-import';
+export type LinkType = 'internal' | 'external' | 'anchor' | 'image' | 'reference' | 'claude-import' | 'obsidian-transclusion';
 
 export interface MarkdownLink {
   /** Type of link */
@@ -9,6 +9,8 @@ export interface MarkdownLink {
   text?: string;
   /** Reference ID for reference-style links */
   referenceId?: string;
+  /** Block/section reference for transclusions (e.g., #section or ^block-id) */
+  blockReference?: string;
   /** Line number in source file (1-based) */
   line: number;
   /** Column number in source file (1-based) */
