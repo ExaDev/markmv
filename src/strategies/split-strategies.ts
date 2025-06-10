@@ -1,4 +1,3 @@
-import type { ParsedMarkdownFile } from '../types/links.js';
 
 export interface SplitSection {
   /** Section title/identifier */
@@ -19,7 +18,7 @@ export interface SplitResult {
   /** Array of sections to create as separate files */
   sections: SplitSection[];
   /** Any content that should remain in the original file */
-  remainingContent?: string;
+  remainingContent: string | undefined;
   /** Errors encountered during splitting */
   errors: string[];
   /** Warnings */
@@ -36,7 +35,7 @@ export interface SplitStrategyOptions {
   /** Custom split markers (for manual strategy) */
   splitMarkers?: string[];
   /** Line numbers to split on (for line-based strategy) */
-  splitLines?: number[];
+  splitLines?: number[] | undefined;
   /** Whether to preserve frontmatter in original file */
   preserveFrontmatter?: boolean;
   /** Filename pattern for generated files */

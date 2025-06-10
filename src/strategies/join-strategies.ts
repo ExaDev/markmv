@@ -1,4 +1,3 @@
-import type { ParsedMarkdownFile } from '../types/links.js';
 
 export interface JoinSection {
   /** Original file path */
@@ -6,9 +5,9 @@ export interface JoinSection {
   /** Content of the file */
   content: string;
   /** Frontmatter extracted from the file */
-  frontmatter?: string;
+  frontmatter: string | undefined;
   /** Title extracted from the file (from frontmatter or first header) */
-  title?: string;
+  title: string | undefined;
   /** Dependencies (files this content links to) */
   dependencies: string[];
   /** Order priority for this section */
@@ -21,7 +20,7 @@ export interface JoinResult {
   /** Combined content */
   content: string;
   /** Combined frontmatter */
-  frontmatter?: string;
+  frontmatter: string | undefined;
   /** List of files that were joined */
   sourceFiles: string[];
   /** Conflicts that need resolution */
@@ -356,6 +355,7 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
       return {
         success: false,
         content: '',
+        frontmatter: undefined,
         sourceFiles: [],
         conflicts,
         warnings,
@@ -485,6 +485,7 @@ export class AlphabeticalJoinStrategy extends BaseJoinStrategy {
       return {
         success: false,
         content: '',
+        frontmatter: undefined,
         sourceFiles: [],
         conflicts,
         warnings,
@@ -572,6 +573,7 @@ export class ManualOrderJoinStrategy extends BaseJoinStrategy {
       return {
         success: false,
         content: '',
+        frontmatter: undefined,
         sourceFiles: [],
         conflicts,
         warnings,
@@ -645,6 +647,7 @@ export class ChronologicalJoinStrategy extends BaseJoinStrategy {
       return {
         success: false,
         content: '',
+        frontmatter: undefined,
         sourceFiles: [],
         conflicts,
         warnings,

@@ -1,4 +1,3 @@
-import type { ParsedMarkdownFile } from '../types/links.js';
 
 export interface MergeSection {
   /** Content of the section */
@@ -490,7 +489,7 @@ export class InteractiveMergeStrategy extends BaseMergeStrategy {
 
       // Create sections for each source header to allow interactive placement
       for (const header of sourceHeaders) {
-        const sectionContent = this.extractSectionContent(sourceMainContent, header);
+        // const sectionContent = this.extractSectionContent(sourceMainContent, header);
         conflicts.push({
           type: 'content-overlap',
           description: `Place section "${header.text}" from ${sourceFile}`,
@@ -549,24 +548,24 @@ export class InteractiveMergeStrategy extends BaseMergeStrategy {
     return content.replace(/^---\n.*?\n---\n/s, '').trim();
   }
 
-  private extractSectionContent(
-    content: string,
-    header: { text: string; level: number; line: number }
-  ): string {
-    const lines = content.split('\n');
-    const startLine = header.line - 1; // Convert to 0-based
-    let endLine = lines.length;
+  // private extractSectionContent(
+  //   content: string,
+  //   header: { text: string; level: number; line: number }
+  // ): string {
+  //   const lines = content.split('\n');
+  //   const startLine = header.line - 1; // Convert to 0-based
+  //   let endLine = lines.length;
 
-    // Find the next header of the same or higher level
-    for (let i = startLine + 1; i < lines.length; i++) {
-      const line = lines[i];
-      const match = line.match(/^(#+)\s+(.+)$/);
-      if (match && match[1].length <= header.level) {
-        endLine = i;
-        break;
-      }
-    }
+  //   // Find the next header of the same or higher level
+  //   for (let i = startLine + 1; i < lines.length; i++) {
+  //     const line = lines[i];
+  //     const match = line.match(/^(#+)\s+(.+)$/);
+  //     if (match && match[1].length <= header.level) {
+  //       endLine = i;
+  //       break;
+  //     }
+  //   }
 
-    return lines.slice(startLine, endLine).join('\n');
-  }
+  //   return lines.slice(startLine, endLine).join('\n');
+  // }
 }
