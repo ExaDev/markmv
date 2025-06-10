@@ -29,6 +29,8 @@
     "docs": "typedoc",
     "docs:serve": "npx serve docs",
     "docs:watch": "typedoc --watch",
+    "docs:coverage": "node scripts/check-docs-coverage.js",
+    "docs:coverage-report": "node scripts/check-docs-coverage.js > docs-coverage.txt",
     "release": "semantic-release",
     "release:dry": "semantic-release --dry-run",
     "commit": "cz",
@@ -66,6 +68,7 @@
     "cz-conventional-changelog": "^3.3.0",
     "semantic-release": "^24.2.5",
     "typedoc": "^0.28.5",
+    "typedoc-plugin-coverage": "^4.0.1",
     "typedoc-plugin-missing-exports": "^4.0.0",
     "typescript": "^5.0.0",
     "vitest": "^1.0.0"
