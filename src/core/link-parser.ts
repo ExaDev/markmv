@@ -197,7 +197,9 @@ export class LinkParser {
   private extractDependencies(links: MarkdownLink[]): string[] {
     return links
       .filter(
-        (link) => (link.type === 'internal' || link.type === 'claude-import' || link.type === 'image') && link.resolvedPath
+        (link) =>
+          (link.type === 'internal' || link.type === 'claude-import' || link.type === 'image') &&
+          link.resolvedPath
       )
       .map((link) => link.resolvedPath!)
       .filter((path, index, arr) => arr.indexOf(path) === index); // Remove duplicates

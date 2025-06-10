@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { join } from 'path';
+import { join } from 'node:path';
 import { indexCommand } from './index';
 import { FileUtils } from '../utils/file-utils';
 
@@ -21,7 +21,7 @@ vi.mock('fs', () => ({
   statSync: vi.fn(),
 }));
 
-import { existsSync, statSync } from 'fs';
+import { existsSync, statSync } from 'node:fs';
 const mockExistsSync = vi.mocked(existsSync);
 const mockStatSync = vi.mocked(statSync);
 
@@ -66,10 +66,7 @@ describe('Index Command', () => {
   });
 
   describe('Index Generation Types', () => {
-    const sampleFiles = [
-      '/test/directory/file1.md',
-      '/test/directory/file2.md',
-    ];
+    const sampleFiles = ['/test/directory/file1.md', '/test/directory/file2.md'];
 
     const sampleContent1 = `---
 title: "First Document"
@@ -91,7 +88,8 @@ order: 2
 
     beforeEach(() => {
       mockGlob.mockResolvedValue(sampleFiles);
-      mockFileUtils.readTextFile = vi.fn()
+      mockFileUtils.readTextFile = vi
+        .fn()
         .mockResolvedValueOnce(sampleContent1)
         .mockResolvedValueOnce(sampleContent2);
       mockFileUtils.writeTextFile = vi.fn().mockResolvedValue(undefined);
@@ -111,15 +109,17 @@ order: 2
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentCall = logCalls.find(call => call[0] === 'Content:');
+      const contentCall = logCalls.find((call) => call[0] === 'Content:');
       expect(contentCall).toBeDefined();
 
       // Check the next call after "Content:" for the actual content
-      const contentIndex = logCalls.findIndex(call => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
       const actualContent = logCalls[contentIndex + 1][0];
 
       expect(actualContent).toContain('- [First Document](file1.md) - This is the first document');
-      expect(actualContent).toContain('- [Second Document](file2.md) - This is the second document');
+      expect(actualContent).toContain(
+        '- [Second Document](file2.md) - This is the second document'
+      );
 
       consoleSpy.mockRestore();
     });
@@ -138,7 +138,7 @@ order: 2
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex(call => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
       const actualContent = logCalls[contentIndex + 1][0];
 
       expect(actualContent).toContain('@file1.md');
@@ -164,7 +164,7 @@ order: 2
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex(call => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
       const actualContent = logCalls[contentIndex + 1][0];
 
       expect(actualContent).toContain('![[file1.md]]');
@@ -190,7 +190,7 @@ order: 2
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex(call => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
       const actualContent = logCalls[contentIndex + 1][0];
 
       expect(actualContent).toContain('![First Document](file1.md)');
@@ -213,7 +213,7 @@ order: 2
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex(call => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
       const actualContent = logCalls[contentIndex + 1][0];
 
       expect(actualContent).toContain('### [First Document](file1.md)');
@@ -252,7 +252,7 @@ order: 2
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex(call => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
       const actualContent = logCalls[contentIndex + 1][0];
 
       expect(actualContent).toContain('## Guides');
@@ -284,7 +284,7 @@ category: "API Documentation"
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex(call => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
       const actualContent = logCalls[contentIndex + 1][0];
 
       expect(actualContent).toContain('## API Documentation');
@@ -322,7 +322,7 @@ tags: [guide, documentation, help]
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex(call => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
       const actualContent = logCalls[contentIndex + 1][0];
 
       expect(actualContent).toContain('- [Complete Guide](guide.md) - A comprehensive guide');
@@ -353,7 +353,7 @@ Just plain content.`;
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex(call => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
       const actualContent = logCalls[contentIndex + 1][0];
 
       expect(actualContent).toContain('## Uncategorized');
@@ -369,9 +369,7 @@ Just plain content.`;
 
       const cliOptions = { type: 'links', dryRun: true };
 
-      await expect(indexCommand('/nonexistent', cliOptions))
-        .rejects
-        .toThrow('Directory not found');
+      await expect(indexCommand('/nonexistent', cliOptions)).rejects.toThrow('Directory not found');
     });
 
     it('should throw error for non-directory path', async () => {
@@ -380,9 +378,9 @@ Just plain content.`;
 
       const cliOptions = { type: 'links', dryRun: true };
 
-      await expect(indexCommand('/test/file.md', cliOptions))
-        .rejects
-        .toThrow('Path is not a directory');
+      await expect(indexCommand('/test/file.md', cliOptions)).rejects.toThrow(
+        'Path is not a directory'
+      );
     });
 
     it('should handle file read errors gracefully', async () => {

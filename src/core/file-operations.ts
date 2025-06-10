@@ -80,11 +80,12 @@ export class FileOperations {
         if (!dependentFile) continue;
 
         try {
-          const refactorResult: LinkRefactorResult = await this.linkRefactorer.refactorLinksForFileMove(
-            dependentFile,
-            sourcePath,
-            destinationPath
-          );
+          const refactorResult: LinkRefactorResult =
+            await this.linkRefactorer.refactorLinksForFileMove(
+              dependentFile,
+              sourcePath,
+              destinationPath
+            );
 
           if (refactorResult.changes.length > 0) {
             modifiedFiles.push(dependentFilePath);
@@ -222,11 +223,11 @@ export class FileOperations {
       // Parse all files and build comprehensive dependency graph
       const allFiles: ParsedMarkdownFile[] = [];
       const fileContents = new Map<string, string>(); // Store original file contents
-      
+
       for (const { source } of moves) {
         const sourceFile = await this.linkParser.parseFile(source);
         allFiles.push(sourceFile);
-        
+
         // Store the original content before any moves
         const content = await FileUtils.readTextFile(source);
         fileContents.set(source, content);
@@ -235,11 +236,11 @@ export class FileOperations {
       // Discover additional project files
       const projectFiles = await this.discoverProjectFiles(moves[0].source);
       const dependencyGraph = new DependencyGraph([...allFiles, ...projectFiles]);
-      
+
       // Store content for additional files that might be affected (excluding destination files that don't exist yet)
-      const sourceFilePaths = new Set(moves.map(m => m.source));
+      const sourceFilePaths = new Set(moves.map((m) => m.source));
       for (const filePath of sourceFilePaths) {
-        if (!fileContents.has(filePath) && await FileUtils.exists(filePath)) {
+        if (!fileContents.has(filePath) && (await FileUtils.exists(filePath))) {
           const content = await FileUtils.readTextFile(filePath);
           fileContents.set(filePath, content);
         }
@@ -275,7 +276,7 @@ export class FileOperations {
           if (!dependentFile) continue;
 
           // For files being moved in this batch, use stored content and update the destination
-          const moveInfo = moves.find(move => move.destination === dependentFilePath);
+          const moveInfo = moves.find((move) => move.destination === dependentFilePath);
           const actualDependentFile = dependentFile;
           let actualDependentPath = dependentFilePath;
           let contentToUse = fileContents.get(dependentFile.filePath);
@@ -335,11 +336,12 @@ export class FileOperations {
           // Use stored content instead of reading from file system
           const originalContent = fileContents.get(source);
           if (originalContent) {
-            const selfRefactorResult = await this.linkRefactorer.refactorLinksForCurrentFileMoveWithContent(
-              sourceFile,
-              destination,
-              originalContent
-            );
+            const selfRefactorResult =
+              await this.linkRefactorer.refactorLinksForCurrentFileMoveWithContent(
+                sourceFile,
+                destination,
+                originalContent
+              );
 
             if (selfRefactorResult.changes.length > 0) {
               allChanges.push(...selfRefactorResult.changes);

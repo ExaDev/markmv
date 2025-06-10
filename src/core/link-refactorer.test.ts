@@ -227,7 +227,9 @@ describe('LinkRefactorer', () => {
         newTargetFile
       );
 
-      expect(result.updatedContent).toContain('[Link with title](./renamed-target.md "Title here")');
+      expect(result.updatedContent).toContain(
+        '[Link with title](./renamed-target.md "Title here")'
+      );
     });
 
     it('should handle links with anchors', async () => {

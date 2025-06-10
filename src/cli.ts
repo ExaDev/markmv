@@ -66,7 +66,11 @@ program
   .description('Generate index files for markdown documentation')
   .argument('[directory]', 'Directory to generate indexes for', '.')
   .option('-t, --type <type>', 'Index type: links|import|embed|hybrid', 'links')
-  .option('-s, --strategy <strategy>', 'Organization strategy: directory|metadata|manual', 'directory')
+  .option(
+    '-s, --strategy <strategy>',
+    'Organization strategy: directory|metadata|manual',
+    'directory'
+  )
   .option('-l, --location <location>', 'Index placement: all|root|branch|existing', 'root')
   .option('-n, --name <name>', 'Index filename', 'index.md')
   .option('--embed-style <style>', 'Embed style for embed type: obsidian|markdown', 'obsidian')

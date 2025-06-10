@@ -433,7 +433,7 @@ export class ContentSplitter {
         for (const link of linksToUpdate) {
           // Calculate relative path from external file to the first section file
           let newHref = PathUtils.makeRelative(firstSectionPath, dirname(externalFilePath));
-          
+
           // Ensure relative paths start with ./ for markdown compatibility
           if (!newHref.startsWith('./') && !newHref.startsWith('../') && !newHref.startsWith('/')) {
             newHref = `./${newHref}`;

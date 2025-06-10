@@ -245,7 +245,11 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
           content: currentSection.content.join('\n'),
           startLine: currentSection.startLine,
           endLine: i - 1,
-          filename: this.generateSizeBasedFilename(currentSection.title, sections.length, originalFilename),
+          filename: this.generateSizeBasedFilename(
+            currentSection.title,
+            sections.length,
+            originalFilename
+          ),
         });
 
         // Start new section
@@ -270,7 +274,11 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
         content: currentSection.content.join('\n'),
         startLine: currentSection.startLine,
         endLine: lines.length - 1,
-        filename: this.generateSizeBasedFilename(currentSection.title, sections.length, originalFilename),
+        filename: this.generateSizeBasedFilename(
+          currentSection.title,
+          sections.length,
+          originalFilename
+        ),
       });
     }
 
@@ -307,7 +315,11 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
   /**
    * Generate filename for size-based sections, ensuring uniqueness
    */
-  private generateSizeBasedFilename(title: string, index: number, originalFilename: string): string {
+  private generateSizeBasedFilename(
+    title: string,
+    index: number,
+    originalFilename: string
+  ): string {
     const pattern = this.options.filenamePattern!;
     let baseName = this.sanitizeFilename(title) || `part-${index + 1}`;
     const extension = originalFilename.match(/\.[^.]+$/)?.[0] || '.md';
@@ -435,7 +447,7 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
 
     // Validate and sort split lines, adjusting invalid ones when possible
     const validSplitLines: number[] = [];
-    
+
     for (const lineNum of splitLines) {
       if (lineNum < 1) {
         warnings.push(`Invalid line number ${lineNum}: file has ${totalLines} lines`);
@@ -449,13 +461,13 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
         validSplitLines.push(lineNum);
       }
     }
-    
+
     // Remove duplicates and sort
     const uniqueSplitLines = [...new Set(validSplitLines)].sort((a, b) => a - b);
 
     if (uniqueSplitLines.length === 0) {
       // Still create sections from the content if there are valid sections to create
-      if (lines.length > 0 && lines.some(line => line.trim())) {
+      if (lines.length > 0 && lines.some((line) => line.trim())) {
         const title = this.findLineSectionTitle(lines, 1) || 'Content';
         sections.push({
           title,
@@ -535,7 +547,7 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
         if (trimmed.match(/^(the|that|and|or|but|with|for|in|on|at|to|of)\s/i)) {
           continue;
         }
-        
+
         // Use first few words as title, but limit to reasonable length
         const words = trimmed.split(/\s+/).slice(0, 5).join(' ');
         // If the line is long, truncate it

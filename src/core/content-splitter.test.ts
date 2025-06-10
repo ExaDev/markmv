@@ -140,7 +140,6 @@ ${'More content lines here for the middle section.\n'.repeat(50)}`;
         outputDir: testDir,
       });
 
-
       expect(result.success).toBe(true);
       expect(result.createdFiles.length).toBeGreaterThan(1);
     }, 10000);
