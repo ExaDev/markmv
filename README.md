@@ -456,6 +456,6 @@ This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAl
 **[🐛 Report Bug](https://github.com/ExaDev/markmv/issues)** •
 **[✨ Request Feature](https://github.com/ExaDev/markmv/issues)**
 
-Made by [Joseph Mearman](https://github.com/Mmearman)
+Made by [Joseph Mearman](https://github.com/Mearman)
 
 </div>
