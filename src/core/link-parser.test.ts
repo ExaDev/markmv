@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -10,8 +10,16 @@ describe('LinkParser', () => {
 
   beforeEach(async () => {
     parser = new LinkParser();
-    testDir = join(tmpdir(), `markmv-test-${Date.now()}`);
+    testDir = join(
+      tmpdir(),
+      `markmv-test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    );
     await mkdir(testDir, { recursive: true });
+    // Ensure directory exists before continuing
+    const dirStat = await stat(testDir);
+    if (!dirStat.isDirectory()) {
+      throw new Error(`Failed to create test directory: ${testDir}`);
+    }
   });
 
   afterEach(async () => {
