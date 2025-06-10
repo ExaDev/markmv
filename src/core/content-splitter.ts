@@ -63,7 +63,7 @@ export interface LinkRedistributionResult {
  *   outputDir: './split-guides/',
  *   preserveLinks: true
  * });
- * 
+ *
  * console.log(`Created ${result.createdFiles.length} files`);
  * ```
  *

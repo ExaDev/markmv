@@ -32,7 +32,7 @@ import { LinkParser } from './link-parser.js';
  *     dryRun: false
  *   }
  * );
- * 
+ *
  * if (result.success) {
  *   console.log(`Created ${result.createdFiles[0]}`);
  * }

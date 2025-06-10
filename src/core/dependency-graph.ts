@@ -32,16 +32,16 @@ export interface FileNode {
  * @example Building a dependency graph
  * ```typescript
  * const graph = new DependencyGraph();
- * 
+ *
  * // Add files to the graph
  * await graph.addFile('intro.md');
  * await graph.addFile('setup.md');
  * await graph.addFile('usage.md');
- * 
+ *
  * // Analyze dependencies
  * const order = graph.getTopologicalOrder();
  * console.log('Processing order:', order);
- * 
+ *
  * // Check for circular dependencies
  * const cycles = graph.detectCycles();
  * if (cycles.length > 0) {
@@ -52,7 +52,7 @@ export interface FileNode {
  * @example Impact analysis
  * ```typescript
  * const graph = new DependencyGraph(parsedFiles);
- * 
+ *
  * // Find all files affected by changing api.md
  * const impacted = graph.getImpactedFiles('api.md');
  * console.log(`${impacted.length} files will be affected`);

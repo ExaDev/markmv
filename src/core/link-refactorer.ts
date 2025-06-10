@@ -53,13 +53,13 @@ export interface RefactorOptions {
  *   preferRelativePaths: true,
  *   updateClaudeImports: true
  * });
- * 
+ *
  * const result = await refactorer.refactorLinks(
  *   parsedFile,
  *   'old/path/file.md',
  *   'new/path/file.md'
  * );
- * 
+ *
  * console.log(`Updated ${result.changes.length} links`);
  * ```
  *
@@ -69,7 +69,7 @@ export interface RefactorOptions {
  *   ['docs/old.md', 'guides/new.md'],
  *   ['api/legacy.md', 'reference/current.md']
  * ]);
- * 
+ *
  * const result = await refactorer.refactorLinksWithMapping(
  *   parsedFile,
  *   pathMap

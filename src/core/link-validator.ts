@@ -37,9 +37,9 @@ export interface LinkValidatorOptions {
  *   strictInternal: true,
  *   externalTimeout: 10000
  * });
- * 
+ *
  * const result = await validator.validateFile('docs/api.md');
- * 
+ *
  * if (!result.isValid) {
  *   console.log(`Found ${result.brokenLinks.length} broken links`);
  *   result.brokenLinks.forEach(link => {
@@ -52,7 +52,7 @@ export interface LinkValidatorOptions {
  * ```typescript
  * const validator = new LinkValidator();
  * const files = ['docs/guide.md', 'docs/api.md', 'docs/examples.md'];
- * 
+ *
  * const results = await validator.validateFiles(files);
  * const totalBroken = results.reduce((sum, r) => sum + r.brokenLinks.length, 0);
  * console.log(`Found ${totalBroken} broken links across ${files.length} files`);
