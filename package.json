@@ -1,0 +1,43 @@
+{
+  "name": "markmv",
+  "version": "0.1.0",
+  "description": "TypeScript CLI for markdown file operations with intelligent link refactoring",
+  "main": "dist/index.js",
+  "bin": {
+    "markmv": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/cli.js",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "biome lint src/",
+    "format": "biome format src/ --write", 
+    "check": "biome check src/ --write",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "markdown",
+    "cli",
+    "typescript",
+    "links",
+    "refactoring",
+    "file-operations"
+  ],
+  "author": "Joe Mearman",
+  "license": "MIT",
+  "devDependencies": {
+    "@biomejs/biome": "^1.4.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  },
+  "dependencies": {
+    "commander": "^11.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
