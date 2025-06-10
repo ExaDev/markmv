@@ -31,11 +31,16 @@
   "devDependencies": {
     "@biomejs/biome": "^1.4.0",
     "@types/node": "^20.0.0",
+    "@types/unist": "^3.0.0",
     "typescript": "^5.0.0",
     "vitest": "^1.0.0"
   },
   "dependencies": {
-    "commander": "^11.0.0"
+    "commander": "^11.0.0",
+    "remark": "^15.0.0",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.0",
+    "unist-util-visit": "^5.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
