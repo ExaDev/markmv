@@ -1,3 +1,25 @@
+## [1.6.0](https://github.com/ExaDev/markmv/compare/v1.5.2...v1.6.0) (2025-06-10)
+
+### Features
+
+* implement dual auto-fix strategy for protected and non-protected branches ([7ba70f3](https://github.com/ExaDev/markmv/commit/7ba70f390222749134bcef1776350c05d519328f))
+
+### Bug Fixes
+
+* auto-commit linting fixes on source branch only ([9cdb358](https://github.com/ExaDev/markmv/commit/9cdb3585745274cef633a9e4b88ba2192625bad3))
+* correct YAML syntax for multiline PR body in workflow ([393f197](https://github.com/ExaDev/markmv/commit/393f197d917e9fb2f8bc3358fde59b74339b02af))
+* run CI on all branch pushes for auto-fix testing ([e83e0fc](https://github.com/ExaDev/markmv/commit/e83e0fc2f4d3d53bb8f7851c0dd7bb543d79750a))
+* run CI on all branch pushes for auto-fix testing ([488b145](https://github.com/ExaDev/markmv/commit/488b14593298cf6b2693c0be13d40d1d8cbc1c3e))
+
+### Styles
+
+* auto-fix linting issues ([26596d2](https://github.com/ExaDev/markmv/commit/26596d2cbcbe1e30c907ec01be05aa9c26120dfd))
+
+### Tests
+
+* add trailing whitespace to test auto-fix on feature branch ([34291e0](https://github.com/ExaDev/markmv/commit/34291e037a6dd7a8e73b992cf9c74272a397aeff))
+* add trailing whitespace to test PR creation on main ([6027e5c](https://github.com/ExaDev/markmv/commit/6027e5c7d79628eaa50101c28d01bca32f94c761))
+
 ## [1.5.2](https://github.com/ExaDev/markmv/compare/v1.5.1...v1.5.2) (2025-06-10)
 
 ### Bug Fixes
