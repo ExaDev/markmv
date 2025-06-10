@@ -1,3 +1,10 @@
+## [1.8.2](https://github.com/ExaDev/markmv/compare/v1.8.1...v1.8.2) (2025-06-10)
+
+### Bug Fixes
+
+* improve lint-fix CI job robustness ([ade2727](https://github.com/ExaDev/markmv/commit/ade2727b20e0f13f4f99767266538ecaa101e07a))
+* improve test directory creation robustness in link-parser tests ([d54616e](https://github.com/ExaDev/markmv/commit/d54616e34a8296a5e50f13fe00f9e2ca60d9baab))
+
 ## [1.8.1](https://github.com/ExaDev/markmv/compare/v1.8.0...v1.8.1) (2025-06-10)
 
 ### Bug Fixes
