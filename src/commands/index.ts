@@ -4,10 +4,11 @@ import { glob } from 'glob';
 import { FileUtils } from '../utils/file-utils';
 
 export interface IndexOptions {
-  type: 'links' | 'include' | 'hybrid';
+  type: 'links' | 'import' | 'embed' | 'hybrid';
   strategy: 'directory' | 'metadata' | 'manual';
   location: 'all' | 'root' | 'branch' | 'existing';
   name: string;
+  embedStyle: 'obsidian' | 'markdown';
   template?: string;
   dryRun: boolean;
   verbose: boolean;
@@ -29,9 +30,30 @@ export interface IndexableFile {
 }
 
 /**
- * Generate index files for markdown documentation
+ * CLI wrapper for index generation
  */
 export async function indexCommand(
+  directory: string = '.',
+  cliOptions: any
+): Promise<void> {
+  const options: IndexOptions = {
+    type: cliOptions.type || 'links',
+    strategy: cliOptions.strategy || 'directory',
+    location: cliOptions.location || 'root',
+    name: cliOptions.name || 'index.md',
+    embedStyle: cliOptions.embedStyle || 'obsidian',
+    template: cliOptions.template,
+    dryRun: cliOptions.dryRun || false,
+    verbose: cliOptions.verbose || false,
+  };
+  
+  return generateIndexFiles(directory, options);
+}
+
+/**
+ * Generate index files for markdown documentation
+ */
+async function generateIndexFiles(
   directory: string = '.',
   options: IndexOptions
 ): Promise<void> {
@@ -361,9 +383,18 @@ updated: ${now}
           content += '\n';
           break;
           
-        case 'include':
+        case 'import':
           content += `### ${title}\n`;
           content += `@${relativePath}\n\n`;
+          break;
+          
+        case 'embed':
+          content += `### ${title}\n`;
+          if (options.embedStyle === 'obsidian') {
+            content += `![[${relativePath}]]\n\n`;
+          } else {
+            content += `![${title}](${relativePath})\n\n`;
+          }
           break;
           
         case 'hybrid':
