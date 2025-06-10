@@ -1,0 +1,52 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "out": "docs",
+  "name": "markmv",
+  "includeVersion": true,
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeInternal": false,
+  "readme": "README.md",
+  "theme": "default",
+  "customCss": "./typedoc-theme.css",
+  "sort": ["source-order"],
+  "categorizeByGroup": true,
+  "defaultCategory": "Other",
+  "categoryOrder": [
+    "Core",
+    "Commands", 
+    "Strategies",
+    "Types",
+    "Utilities",
+    "*"
+  ],
+  "gitRevision": "main",
+  "gitRemote": "origin",
+  "sourceLinkTemplate": "https://github.com/ExaDev/markmv/blob/{gitRevision}/{path}#L{line}",
+  "navigation": {
+    "includeCategories": true,
+    "includeGroups": true
+  },
+  "searchInComments": true,
+  "searchInDocuments": true,
+  "validation": {
+    "notExported": true,
+    "invalidLink": true,
+    "notDocumented": false
+  },
+  "treatWarningsAsErrors": false,
+  "logLevel": "Info",
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/cli.ts",
+    "node_modules/**/*"
+  ],
+  "externalPattern": [
+    "**/node_modules/**"
+  ],
+  "plugin": [
+    "typedoc-plugin-missing-exports"
+  ]
+}

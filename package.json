@@ -3,8 +3,17 @@
   "version": "1.6.1",
   "description": "TypeScript CLI for markdown file operations with intelligent link refactoring",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
     "markmv": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
   },
   "scripts": {
     "build": "tsc",
@@ -17,6 +26,9 @@
     "format": "biome format src/ --write",
     "check": "biome check src/ --write",
     "typecheck": "tsc --noEmit",
+    "docs": "typedoc",
+    "docs:serve": "npx serve docs",
+    "docs:watch": "typedoc --watch",
     "release": "semantic-release",
     "release:dry": "semantic-release --dry-run",
     "commit": "cz",
@@ -30,7 +42,12 @@
     "typescript",
     "links",
     "refactoring",
-    "file-operations"
+    "file-operations",
+    "programmatic",
+    "api",
+    "library",
+    "documentation",
+    "cross-references"
   ],
   "author": "Joe Mearman",
   "license": "CC-BY-NC-SA-4.0",
@@ -48,6 +65,8 @@
     "conventional-changelog-conventionalcommits": "^9.0.0",
     "cz-conventional-changelog": "^3.3.0",
     "semantic-release": "^24.2.5",
+    "typedoc": "^0.28.5",
+    "typedoc-plugin-missing-exports": "^4.0.0",
     "typescript": "^5.0.0",
     "vitest": "^1.0.0"
   },
@@ -64,6 +83,7 @@
   },
   "files": [
     "dist/**/*",
+    "examples/**/*",
     "README.md",
     "CHANGELOG.md",
     "CONTRIBUTING.md"

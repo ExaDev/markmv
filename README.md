@@ -238,6 +238,36 @@ npx markmv index --dry-run --verbose
 
 Configuration options can be passed via command line flags. See each command's `--help` for available options.
 
+## 📚 Library Usage
+
+### Programmatic API
+
+markmv provides a comprehensive TypeScript API for integration into your projects:
+
+```typescript
+import { FileOperations, moveFile, createMarkMv } from 'markmv';
+
+// Simple file move
+const result = await moveFile('old.md', 'new.md');
+
+// Advanced usage with options
+const fileOps = new FileOperations();
+const result = await fileOps.moveFile('docs/api.md', 'reference/', {
+  dryRun: true,
+  verbose: true
+});
+
+// Glob pattern support
+const result = await fileOps.moveFiles([
+  { source: 'docs/*.md', destination: 'archive/' }
+]);
+
+// Check for broken links
+const validation = await fileOps.validateOperation(result);
+```
+
+See the [API Documentation](https://exadev.github.io/markmv/) for complete details.
+
 ## 🧪 Examples
 
 ### Reorganising Documentation
@@ -399,10 +429,10 @@ For detailed documentation and examples, see the sections below or visit the [Gi
 
 ### Getting Help
 
-- 📖 Check the [documentation](docs/)
-- 🐛 [Report bugs](https://github.com/joe-mearman/markmv/issues)
-- 💬 [Start a discussion](https://github.com/joe-mearman/markmv/discussions)
-- ❓ [Ask questions](https://github.com/joe-mearman/markmv/issues/new?template=question.md)
+- 📖 [API Documentation](https://exadev.github.io/markmv/) - Comprehensive TypeDoc documentation
+- 🐛 [Report bugs](https://github.com/ExaDev/markmv/issues)
+- 💬 [Start a discussion](https://github.com/ExaDev/markmv/discussions)
+- ❓ [Ask questions](https://github.com/ExaDev/markmv/issues/new?template=question.md)
 
 ## 🙏 Acknowledgments
 

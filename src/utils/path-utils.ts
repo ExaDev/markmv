@@ -1,9 +1,51 @@
+import { existsSync, statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
+/**
+ * Utility class for path manipulation and resolution operations.
+ *
+ * Provides comprehensive path handling for markdown file operations including
+ * relative path updates, home directory resolution, and cross-platform compatibility.
+ *
+ * @category Utilities
+ *
+ * @example Path resolution
+ * ```typescript
+ * // Resolve various path formats
+ * PathUtils.resolvePath('~/docs/file.md');     // Home directory
+ * PathUtils.resolvePath('../guide.md', '/current/dir');  // Relative
+ * PathUtils.resolvePath('/absolute/path.md');  // Absolute
+ * ```
+ *
+ * @example Relative path updates for moved files
+ * ```typescript
+ * // When moving a file, update its relative links
+ * const originalLink = '../images/diagram.png';
+ * const updatedLink = PathUtils.updateRelativePath(
+ *   originalLink,
+ *   'docs/guide.md',      // old file location
+ *   'tutorials/guide.md'  // new file location
+ * );
+ * // Result: '../../docs/images/diagram.png'
+ * ```
+ */
 export class PathUtils {
   /**
-   * Resolve a path that may be relative, absolute, or use home directory notation
+   * Resolve a path that may be relative, absolute, or use home directory notation.
+   *
+   * @param path - The path to resolve (supports ~/, relative, and absolute paths)
+   * @param basePath - Optional base directory for relative path resolution
+   * @returns Resolved absolute path
+   *
+   * @example
+   * ```typescript
+   * PathUtils.resolvePath('~/docs/file.md');
+   * // Returns: '/Users/username/docs/file.md'
+   *
+   * PathUtils.resolvePath('../file.md', '/current/working/dir');
+   * // Returns: '/current/working/file.md'
+   * ```
    */
   static resolvePath(path: string, basePath?: string): string {
     if (path.startsWith('~/')) {
@@ -191,5 +233,40 @@ export class PathUtils {
     if (filteredParts.length === 0) return '';
 
     return resolve(join(...filteredParts));
+  }
+
+  /**
+   * Check if a path is a directory
+   */
+  static isDirectory(path: string): boolean {
+    try {
+      const resolvedPath = PathUtils.resolvePath(path);
+      return existsSync(resolvedPath) && statSync(resolvedPath).isDirectory();
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Check if a path looks like a directory (ends with / or \)
+   */
+  static looksLikeDirectory(path: string): boolean {
+    return path.endsWith('/') || path.endsWith('\\');
+  }
+
+  /**
+   * Resolve destination path when target might be a directory
+   * If destination is a directory, preserves the source filename
+   */
+  static resolveDestination(sourcePath: string, destinationPath: string): string {
+    const resolvedDest = PathUtils.resolvePath(destinationPath);
+
+    // If destination looks like a directory or exists as a directory
+    if (PathUtils.looksLikeDirectory(destinationPath) || PathUtils.isDirectory(resolvedDest)) {
+      const sourceFileName = basename(sourcePath);
+      return join(resolvedDest, sourceFileName);
+    }
+
+    return resolvedDest;
   }
 }

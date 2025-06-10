@@ -17,8 +17,10 @@ program
 program
   .command('move')
   .description('Move markdown files while updating cross-references')
-  .argument('<source>', 'Source markdown file or directory')
-  .argument('<destination>', 'Destination path')
+  .argument(
+    '<sources...>',
+    'Source markdown files and destination (supports globs like *.md, **/*.md)'
+  )
   .option('-d, --dry-run', 'Show what would be changed without making changes')
   .option('-v, --verbose', 'Show detailed output')
   .action(moveCommand);

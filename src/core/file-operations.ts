@@ -13,13 +13,75 @@ import type { LinkRefactorResult } from './link-refactorer.js';
 import { LinkRefactorer } from './link-refactorer.js';
 import { LinkValidator } from './link-validator.js';
 
+/**
+ * Core class for performing markdown file operations with intelligent link refactoring.
+ *
+ * This class provides the main functionality for moving, splitting, joining, and merging
+ * markdown files while maintaining the integrity of cross-references and links.
+ *
+ * @category Core
+ *
+ * @example Basic file move
+ * ```typescript
+ * const fileOps = new FileOperations();
+ * const result = await fileOps.moveFile('old.md', 'new.md');
+ *
+ * if (result.success) {
+ *   console.log(`Successfully moved file and updated ${result.modifiedFiles.length} references`);
+ * } else {
+ *   console.error('Move failed:', result.errors);
+ * }
+ * ```
+ *
+ * @example Dry run with verbose output
+ * ```typescript
+ * const fileOps = new FileOperations();
+ * const result = await fileOps.moveFile('docs/guide.md', 'tutorials/guide.md', {
+ *   dryRun: true,
+ *   verbose: true
+ * });
+ *
+ * // Preview changes without actually modifying files
+ * result.changes.forEach(change => {
+ *   console.log(`${change.type}: ${change.filePath} - ${change.description}`);
+ * });
+ * ```
+ */
 export class FileOperations {
   private linkParser = new LinkParser();
   private linkRefactorer = new LinkRefactorer();
   private linkValidator = new LinkValidator();
 
   /**
-   * Move a markdown file and update all links that reference it
+   * Move a markdown file and update all links that reference it.
+   *
+   * This method performs an intelligent move operation that:
+   * 1. Validates the source and destination paths
+   * 2. Discovers all files that link to the source file
+   * 3. Updates all cross-references to maintain link integrity
+   * 4. Optionally performs a dry run to preview changes
+   *
+   * @param sourcePath - The current path of the markdown file to move
+   * @param destinationPath - The target path (can be a directory)
+   * @param options - Configuration options for the move operation
+   * @returns Promise resolving to detailed operation results
+   *
+   * @example
+   * ```typescript
+   * const fileOps = new FileOperations();
+   *
+   * // Simple move
+   * await fileOps.moveFile('docs/old.md', 'docs/new.md');
+   *
+   * // Move to directory (filename preserved)
+   * await fileOps.moveFile('guide.md', './docs/');
+   *
+   * // Dry run with verbose output
+   * const result = await fileOps.moveFile('api.md', 'reference/api.md', {
+   *   dryRun: true,
+   *   verbose: true
+   * });
+   * ```
    */
   async moveFile(
     sourcePath: string,
@@ -29,8 +91,11 @@ export class FileOperations {
     const { dryRun = false, verbose = false } = options;
 
     try {
+      // Resolve destination in case it's a directory
+      const resolvedDestination = PathUtils.resolveDestination(sourcePath, destinationPath);
+
       // Validate inputs
-      const validation = this.validateMoveOperation(sourcePath, destinationPath);
+      const validation = this.validateMoveOperation(sourcePath, resolvedDestination);
       if (!validation.valid) {
         return {
           success: false,
@@ -69,8 +134,8 @@ export class FileOperations {
       if (!dryRun) {
         transaction.addFileMove(
           sourcePath,
-          destinationPath,
-          `Move ${sourcePath} to ${destinationPath}`
+          resolvedDestination,
+          `Move ${sourcePath} to ${resolvedDestination}`
         );
       }
 
@@ -84,7 +149,7 @@ export class FileOperations {
             await this.linkRefactorer.refactorLinksForFileMove(
               dependentFile,
               sourcePath,
-              destinationPath
+              resolvedDestination
             );
 
           if (refactorResult.changes.length > 0) {
@@ -112,7 +177,7 @@ export class FileOperations {
       try {
         const selfRefactorResult = await this.linkRefactorer.refactorLinksForCurrentFileMove(
           sourceFile,
-          destinationPath
+          resolvedDestination
         );
 
         if (selfRefactorResult.changes.length > 0) {
@@ -120,7 +185,7 @@ export class FileOperations {
 
           if (!dryRun) {
             transaction.addContentUpdate(
-              destinationPath,
+              resolvedDestination,
               selfRefactorResult.updatedContent,
               'Update internal links in moved file'
             );
@@ -149,8 +214,8 @@ export class FileOperations {
         return {
           success: true,
           modifiedFiles,
-          createdFiles: destinationPath !== sourcePath ? [destinationPath] : [],
-          deletedFiles: destinationPath !== sourcePath ? [sourcePath] : [],
+          createdFiles: resolvedDestination !== sourcePath ? [resolvedDestination] : [],
+          deletedFiles: resolvedDestination !== sourcePath ? [sourcePath] : [],
           errors: [],
           warnings,
           changes,
@@ -175,7 +240,7 @@ export class FileOperations {
       return {
         success: true,
         modifiedFiles,
-        createdFiles: [destinationPath],
+        createdFiles: [resolvedDestination],
         deletedFiles: [sourcePath],
         errors: [],
         warnings,
@@ -204,8 +269,26 @@ export class FileOperations {
     const { dryRun = false } = options;
 
     try {
-      // Validate all moves first
-      for (const { source, destination } of moves) {
+      // Handle empty moves array
+      if (moves.length === 0) {
+        return {
+          success: true,
+          modifiedFiles: [],
+          createdFiles: [],
+          deletedFiles: [],
+          errors: [],
+          warnings: [],
+          changes: [],
+        };
+      }
+
+      // Resolve destinations and validate all moves first
+      const resolvedMoves = moves.map(({ source, destination }) => ({
+        source,
+        destination: PathUtils.resolveDestination(source, destination),
+      }));
+
+      for (const { source, destination } of resolvedMoves) {
         const validation = this.validateMoveOperation(source, destination);
         if (!validation.valid) {
           return {
@@ -224,7 +307,7 @@ export class FileOperations {
       const allFiles: ParsedMarkdownFile[] = [];
       const fileContents = new Map<string, string>(); // Store original file contents
 
-      for (const { source } of moves) {
+      for (const { source } of resolvedMoves) {
         const sourceFile = await this.linkParser.parseFile(source);
         allFiles.push(sourceFile);
 
@@ -234,11 +317,11 @@ export class FileOperations {
       }
 
       // Discover additional project files
-      const projectFiles = await this.discoverProjectFiles(moves[0].source);
+      const projectFiles = await this.discoverProjectFiles(resolvedMoves[0].source);
       const dependencyGraph = new DependencyGraph([...allFiles, ...projectFiles]);
 
       // Store content for additional files that might be affected (excluding destination files that don't exist yet)
-      const sourceFilePaths = new Set(moves.map((m) => m.source));
+      const sourceFilePaths = new Set(resolvedMoves.map((m) => m.source));
       for (const filePath of sourceFilePaths) {
         if (!fileContents.has(filePath) && (await FileUtils.exists(filePath))) {
           const content = await FileUtils.readTextFile(filePath);
@@ -256,7 +339,7 @@ export class FileOperations {
       const warnings: string[] = [];
 
       // First pass: Add all file moves to the transaction
-      for (const { source, destination } of moves) {
+      for (const { source, destination } of resolvedMoves) {
         if (!dryRun) {
           transaction.addFileMove(source, destination);
         }
@@ -265,7 +348,7 @@ export class FileOperations {
       }
 
       // Second pass: Process content updates for dependent files and moved files
-      for (const { source, destination } of moves) {
+      for (const { source, destination } of resolvedMoves) {
         // Find dependent files (files that depend on the source file being moved)
         // Note: use destination since we've already updated the dependency graph
         const dependentFiles = dependencyGraph.getDependents(destination);
@@ -276,7 +359,7 @@ export class FileOperations {
           if (!dependentFile) continue;
 
           // For files being moved in this batch, use stored content and update the destination
-          const moveInfo = moves.find((move) => move.destination === dependentFilePath);
+          const moveInfo = resolvedMoves.find((move) => move.destination === dependentFilePath);
           const actualDependentFile = dependentFile;
           let actualDependentPath = dependentFilePath;
           let contentToUse = fileContents.get(dependentFile.filePath);
@@ -377,8 +460,8 @@ export class FileOperations {
         return {
           success: true,
           modifiedFiles: Array.from(modifiedFiles),
-          createdFiles: moves.map((m) => m.destination),
-          deletedFiles: moves.map((m) => m.source),
+          createdFiles: resolvedMoves.map((m) => m.destination),
+          deletedFiles: resolvedMoves.map((m) => m.source),
           errors: [],
           warnings,
           changes: allChanges,
@@ -390,8 +473,8 @@ export class FileOperations {
       return {
         success: executionResult.success,
         modifiedFiles: Array.from(modifiedFiles),
-        createdFiles: executionResult.success ? moves.map((m) => m.destination) : [],
-        deletedFiles: executionResult.success ? moves.map((m) => m.source) : [],
+        createdFiles: executionResult.success ? resolvedMoves.map((m) => m.destination) : [],
+        deletedFiles: executionResult.success ? resolvedMoves.map((m) => m.source) : [],
         errors: executionResult.errors,
         warnings,
         changes: allChanges,
