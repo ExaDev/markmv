@@ -45,7 +45,7 @@ describe('PathUtils', () => {
         '/project/docs/source.md',
         '/project/moved/source.md'
       );
-      expect(result).toBe('../target.md');
+      expect(result).toBe('../docs/target.md');
     });
 
     it('should not change absolute paths', () => {
@@ -74,7 +74,7 @@ describe('PathUtils', () => {
         '/project/docs/source.md',
         '/project/moved/source.md'
       );
-      expect(result).toBe('../config.md');
+      expect(result).toBe('../docs/config.md');
     });
 
     it('should preserve absolute Claude import paths', () => {
