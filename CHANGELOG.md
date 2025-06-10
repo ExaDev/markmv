@@ -1,3 +1,9 @@
+## [1.2.1](https://github.com/ExaDev/markmv/compare/v1.2.0...v1.2.1) (2025-06-10)
+
+### Bug Fixes
+
+* remove redundant publish workflow to prevent duplicate npm publishing ([b075d01](https://github.com/ExaDev/markmv/commit/b075d012ba6017b0f401bffc9d0316e1c1373d42))
+
 ## [1.2.0](https://github.com/ExaDev/markmv/compare/v1.1.0...v1.2.0) (2025-06-10)
 
 ### Features
