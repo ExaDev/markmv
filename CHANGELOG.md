@@ -1,3 +1,9 @@
+## [1.5.2](https://github.com/ExaDev/markmv/compare/v1.5.1...v1.5.2) (2025-06-10)
+
+### Bug Fixes
+
+* auto-commit linting fixes on source branch only ([f465ba0](https://github.com/ExaDev/markmv/commit/f465ba073735f3fe8a8111f576e27cfb728e08c6))
+
 ## [1.5.1](https://github.com/ExaDev/markmv/compare/v1.5.0...v1.5.1) (2025-06-10)
 
 ### Bug Fixes
