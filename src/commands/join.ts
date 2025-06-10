@@ -22,7 +22,7 @@ export async function joinCommand(files: string[], options: JoinOptions): Promis
   }
 
   const joinOptions: JoinOperationOptions = {
-    output: options.output,
+    output: options.output || undefined,
     dryRun: options.dryRun || false,
     verbose: options.verbose || false,
     orderStrategy: options.orderStrategy || 'dependency',

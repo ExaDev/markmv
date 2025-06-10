@@ -5,7 +5,6 @@ import {
   InteractiveMergeStrategy,
   PrependMergeStrategy,
 } from '../strategies/merge-strategies.js';
-import type { MergeOperationOptions } from '../types/operations.js';
 
 export interface MergeOptions {
   strategy?: 'append' | 'prepend' | 'interactive';

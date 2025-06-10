@@ -35,12 +35,12 @@ export async function splitCommand(source: string, options: SplitOptions): Promi
 
   const splitOptions: SplitOperationOptions = {
     strategy: options.strategy || 'headers',
-    outputDir: options.output,
+    outputDir: options.output || '.',
     dryRun: options.dryRun || false,
     verbose: options.verbose || false,
     headerLevel: options.headerLevel || 2,
     maxSize: options.maxSize || 100,
-    splitLines,
+    splitLines: splitLines || undefined,
   };
 
   if (options.verbose) {
