@@ -40,7 +40,7 @@ export async function mergeCommand(
     const targetContent = await fs.readFile(target, 'utf8');
 
     // Choose strategy
-    let mergeStrategy;
+    let mergeStrategy: AppendMergeStrategy | PrependMergeStrategy | InteractiveMergeStrategy;
     switch (strategy) {
       case 'append':
         mergeStrategy = new AppendMergeStrategy({
@@ -52,7 +52,6 @@ export async function mergeCommand(
           createTransclusions: options.createTransclusions || false,
         });
         break;
-      case 'interactive':
       default:
         mergeStrategy = new InteractiveMergeStrategy({
           createTransclusions: options.createTransclusions || false,

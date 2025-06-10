@@ -21,7 +21,7 @@ export async function splitCommand(source: string, options: SplitOptions): Promi
       splitLines = options.splitLines
         .split(',')
         .map((line) => Number.parseInt(line.trim(), 10))
-        .filter((line) => !isNaN(line));
+        .filter((line) => !Number.isNaN(line));
 
       if (splitLines.length === 0) {
         console.error('❌ Invalid split lines format. Use comma-separated numbers like: 10,25,50');
