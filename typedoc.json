@@ -1,5 +1,6 @@
 {
   "$schema": "https://typedoc.org/schema.json",
+  "_comment": "Updated for v1.8.0 documentation deployment",
   "entryPoints": ["src/index.ts"],
   "out": "docs",
   "name": "markmv",
