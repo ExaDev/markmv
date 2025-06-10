@@ -82,7 +82,7 @@
         "addReleases": "bottom",
         "draftRelease": false,
         "prerelease": false,
-        "releasedLabels": ["released<%= nextRelease.channel ? \` on @\${nextRelease.channel}\` : \"\" %>"]
+        "releasedLabels": ["released"]
       }
     ],
     [
