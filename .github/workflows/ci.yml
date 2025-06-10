@@ -74,14 +74,17 @@ jobs:
           # Create PR
           gh pr create \
             --title "style: auto-fix linting issues" \
-            --body "Automatically generated PR to fix linting issues detected in CI.
-
-**Fixed issues:**
-- Removed trailing whitespace
-- Fixed import ordering
-- Applied Biome formatting rules
-
-This PR was created automatically because linting issues were detected on the protected main branch." \
+            --body "$(cat <<'EOF'
+          Automatically generated PR to fix linting issues detected in CI.
+          
+          **Fixed issues:**
+          - Removed trailing whitespace
+          - Fixed import ordering
+          - Applied Biome formatting rules
+          
+          This PR was created automatically because linting issues were detected on the protected main branch.
+          EOF
+          )" \
             --head "$BRANCH_NAME" \
             --base main \
             --label "automated" \
