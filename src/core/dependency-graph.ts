@@ -1,5 +1,14 @@
 import type { ParsedMarkdownFile } from '../types/links.js';
 
+/**
+ * Represents a node in the markdown file dependency graph.
+ *
+ * Each node contains metadata about a markdown file and its relationships
+ * to other files through links and references. Used for dependency analysis,
+ * topological sorting, and impact assessment during file operations.
+ *
+ * @category Core
+ */
 export interface FileNode {
   /** Absolute file path */
   path: string;
@@ -11,6 +20,44 @@ export interface FileNode {
   dependents: Set<string>;
 }
 
+/**
+ * Builds and analyzes dependency relationships between markdown files.
+ *
+ * The DependencyGraph tracks file relationships through links, references, and imports
+ * to enable intelligent file operations. It supports cycle detection, topological sorting,
+ * impact analysis, and dependency-aware ordering for operations like joining and splitting.
+ *
+ * @category Core
+ *
+ * @example Building a dependency graph
+ * ```typescript
+ * const graph = new DependencyGraph();
+ * 
+ * // Add files to the graph
+ * await graph.addFile('intro.md');
+ * await graph.addFile('setup.md');
+ * await graph.addFile('usage.md');
+ * 
+ * // Analyze dependencies
+ * const order = graph.getTopologicalOrder();
+ * console.log('Processing order:', order);
+ * 
+ * // Check for circular dependencies
+ * const cycles = graph.detectCycles();
+ * if (cycles.length > 0) {
+ *   console.warn('Circular dependencies detected');
+ * }
+ * ```
+ *
+ * @example Impact analysis
+ * ```typescript
+ * const graph = new DependencyGraph(parsedFiles);
+ * 
+ * // Find all files affected by changing api.md
+ * const impacted = graph.getImpactedFiles('api.md');
+ * console.log(`${impacted.length} files will be affected`);
+ * ```
+ */
 export class DependencyGraph {
   private nodes = new Map<string, FileNode>();
   private edges = new Map<string, Set<string>>();

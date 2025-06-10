@@ -21,6 +21,15 @@ import { TransactionManager } from '../utils/transaction-manager.js';
 import { LinkParser } from './link-parser.js';
 // import { LinkRefactorer } from './link-refactorer.js';
 
+/**
+ * Result of redistributing links after a content split operation.
+ *
+ * When a markdown file is split into multiple files, links may need to be updated
+ * to maintain proper references. This interface captures the results of that
+ * redistribution process.
+ *
+ * @category Core
+ */
 export interface LinkRedistributionResult {
   /** Updated sections with redistributed links */
   updatedSections: SplitSection[];
@@ -35,12 +44,73 @@ export interface LinkRedistributionResult {
   errors: string[];
 }
 
+/**
+ * Splits large markdown files into smaller, manageable sections using various strategies.
+ *
+ * The ContentSplitter provides intelligent content division with support for header-based,
+ * size-based, manual marker-based, and line-based splitting strategies. It handles link
+ * redistribution, maintains content integrity, and ensures proper cross-references between
+ * the resulting files.
+ *
+ * @category Core
+ *
+ * @example Header-based splitting
+ * ```typescript
+ * const splitter = new ContentSplitter();
+ * const result = await splitter.splitFile('large-guide.md', {
+ *   strategy: 'headers',
+ *   headerLevel: 2,
+ *   outputDir: './split-guides/',
+ *   preserveLinks: true
+ * });
+ * 
+ * console.log(`Created ${result.createdFiles.length} files`);
+ * ```
+ *
+ * @example Size-based splitting
+ * ```typescript
+ * const splitter = new ContentSplitter();
+ * const result = await splitter.splitFile('large-document.md', {
+ *   strategy: 'size',
+ *   maxSize: '50KB',
+ *   outputDir: './chunks/',
+ *   dryRun: true // Preview without creating files
+ * });
+ * ```
+ */
 export class ContentSplitter {
   private linkParser = new LinkParser();
   // private linkRefactorer = new LinkRefactorer();
 
   /**
-   * Split a markdown file into multiple files
+   * Splits a markdown file into multiple smaller files using the specified strategy.
+   *
+   * This method analyzes the source file content and divides it into logical sections
+   * based on the chosen strategy. It handles link redistribution, maintains proper
+   * cross-references, and ensures content integrity across the split files.
+   *
+   * @param sourceFilePath - Path to the markdown file to split
+   * @param options - Configuration options for the split operation
+   * @returns Promise resolving to operation result with details of created files
+   *
+   * @example Basic header splitting
+   * ```typescript
+   * const result = await splitter.splitFile('documentation.md', {
+   *   strategy: 'headers',
+   *   headerLevel: 1, // Split on H1 headers
+   *   outputDir: './docs-sections/',
+   *   preserveLinks: true
+   * });
+   * ```
+   *
+   * @example Manual marker splitting
+   * ```typescript
+   * const result = await splitter.splitFile('article.md', {
+   *   strategy: 'manual',
+   *   markers: ['<!-- split -->', '---split---'],
+   *   outputDir: './article-parts/'
+   * });
+   * ```
    */
   async splitFile(
     sourceFilePath: string,
