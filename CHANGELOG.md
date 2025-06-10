@@ -1,3 +1,9 @@
+## [1.5.1](https://github.com/ExaDev/markmv/compare/v1.5.0...v1.5.1) (2025-06-10)
+
+### Bug Fixes
+
+* create PR for auto-fixes instead of direct push ([8ca3af4](https://github.com/ExaDev/markmv/commit/8ca3af47a057d0740a6e1f390522f5ac6070fd7a))
+
 ## [1.5.0](https://github.com/ExaDev/markmv/compare/v1.4.0...v1.5.0) (2025-06-10)
 
 ### Features
