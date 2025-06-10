@@ -101,9 +101,9 @@ describe('LinkRefactorer', () => {
       expect(result.changes).toHaveLength(1);
       expect(result.changes[0].type).toBe('link-updated');
       expect(result.changes[0].oldValue).toBe('./target.md');
-      expect(result.changes[0].newValue).toBe('renamed-target.md');
+      expect(result.changes[0].newValue).toBe('./renamed-target.md');
       expect(result.errors).toHaveLength(0);
-      expect(result.updatedContent).toContain('[Link to target](renamed-target.md)');
+      expect(result.updatedContent).toContain('[Link to target](./renamed-target.md)');
       expect(result.updatedContent).toContain('[Another link](./other.md)'); // Unchanged
     });
 
@@ -148,8 +148,8 @@ describe('LinkRefactorer', () => {
 
       expect(result.changes).toHaveLength(1);
       expect(result.changes[0].oldValue).toBe('./target.md');
-      expect(result.changes[0].newValue).toBe('renamed-target.md');
-      expect(result.updatedContent).toContain('@renamed-target.md');
+      expect(result.changes[0].newValue).toBe('./renamed-target.md');
+      expect(result.updatedContent).toContain('@./renamed-target.md');
       expect(result.updatedContent).toContain('@./other.md'); // Unchanged
     });
 
@@ -193,9 +193,9 @@ describe('LinkRefactorer', () => {
       expect(result.changes).toHaveLength(1);
       expect(result.changes[0].type).toBe('link-updated');
       expect(result.changes[0].oldValue).toBe('./image.png');
-      expect(result.changes[0].newValue).toBe('renamed-image.png');
+      expect(result.changes[0].newValue).toBe('./renamed-image.png');
       expect(result.errors).toHaveLength(0);
-      expect(result.updatedContent).toContain('![Image](renamed-image.png)');
+      expect(result.updatedContent).toContain('![Image](./renamed-image.png)');
       expect(result.updatedContent).toContain('![Another](./other.png)'); // Should be unchanged
     });
 
@@ -227,7 +227,7 @@ describe('LinkRefactorer', () => {
         newTargetFile
       );
 
-      expect(result.updatedContent).toContain('[Link with title](renamed-target.md "Title here")');
+      expect(result.updatedContent).toContain('[Link with title](./renamed-target.md "Title here")');
     });
 
     it('should handle links with anchors', async () => {
@@ -257,7 +257,7 @@ describe('LinkRefactorer', () => {
         newTargetFile
       );
 
-      expect(result.updatedContent).toContain('[Link to section](renamed-target.md#section)');
+      expect(result.updatedContent).toContain('[Link to section](./renamed-target.md#section)');
     });
 
     it('should handle multiple links on same line', async () => {
@@ -297,8 +297,8 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
       );
 
       expect(result.changes).toHaveLength(2);
-      expect(result.updatedContent).toContain('[First](renamed-target.md)');
-      expect(result.updatedContent).toContain('[Second](renamed-target.md#section)');
+      expect(result.updatedContent).toContain('[First](./renamed-target.md)');
+      expect(result.updatedContent).toContain('[Second](./renamed-target.md#section)');
     });
 
     it('should handle error during link refactoring', async () => {
@@ -498,8 +498,8 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
 
       expect(result.changes).toHaveLength(1);
       expect(result.changes[0].oldValue).toBe('./target.md');
-      expect(result.changes[0].newValue).toBe('renamed-target.md');
-      expect(result.updatedContent).toContain('[ref1]: renamed-target.md "Target file"');
+      expect(result.changes[0].newValue).toBe('./renamed-target.md');
+      expect(result.updatedContent).toContain('[ref1]: ./renamed-target.md "Target file"');
       expect(result.updatedContent).toContain('[ref2]: ./other.md "Other file"'); // Unchanged
     });
 
@@ -534,7 +534,7 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
       );
 
       expect(result.changes).toHaveLength(1);
-      expect(result.updatedContent).toContain('[ref1]: renamed-target.md');
+      expect(result.updatedContent).toContain('[ref1]: ./renamed-target.md');
       expect(result.updatedContent).not.toContain('""');
     });
 
@@ -595,7 +595,7 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
       );
 
       expect(result.changes).toHaveLength(1);
-      expect(result.updatedContent).toContain('[Link](file[renamed].md)');
+      expect(result.updatedContent).toContain('[Link](./file[renamed].md)');
     });
 
     it('should handle complex file paths with spaces and special characters', async () => {
@@ -626,7 +626,7 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
       );
 
       expect(result.changes).toHaveLength(1);
-      expect(result.updatedContent).toContain('[Link](My File (Renamed).md)');
+      expect(result.updatedContent).toContain('[Link](./My File (Renamed).md)');
     });
   });
 
