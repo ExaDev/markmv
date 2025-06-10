@@ -111,7 +111,7 @@ export abstract class BaseSplitStrategy {
    * Count the header level (number of # characters)
    */
   protected getHeaderLevel(line: string): number {
-    const match = line.match(/^(#+)\s/);
+    const match = line.match(/^(#+)(\s|$)/);
     return match ? match[1].length : 0;
   }
 
@@ -120,7 +120,7 @@ export abstract class BaseSplitStrategy {
    */
   protected isTargetHeader(line: string, targetLevel: number): boolean {
     const level = this.getHeaderLevel(line);
-    return level > 0 && level <= targetLevel;
+    return level === targetLevel;
   }
 }
 
@@ -164,7 +164,7 @@ export class HeaderBasedSplitStrategy extends BaseSplitStrategy {
         const title = this.extractTitleFromHeader(line);
         const headerLevel = this.getHeaderLevel(line);
 
-        if (!title) {
+        if (!title.trim()) {
           warnings.push(`Empty header found at line ${i + 1}`);
         }
 
@@ -245,7 +245,7 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
           content: currentSection.content.join('\n'),
           startLine: currentSection.startLine,
           endLine: i - 1,
-          filename: this.generateFilename(currentSection.title, sections.length, originalFilename),
+          filename: this.generateSizeBasedFilename(currentSection.title, sections.length, originalFilename),
         });
 
         // Start new section
@@ -270,7 +270,7 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
         content: currentSection.content.join('\n'),
         startLine: currentSection.startLine,
         endLine: lines.length - 1,
-        filename: this.generateFilename(currentSection.title, sections.length, originalFilename),
+        filename: this.generateSizeBasedFilename(currentSection.title, sections.length, originalFilename),
       });
     }
 
@@ -302,6 +302,27 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
     }
 
     return null;
+  }
+
+  /**
+   * Generate filename for size-based sections, ensuring uniqueness
+   */
+  private generateSizeBasedFilename(title: string, index: number, originalFilename: string): string {
+    const pattern = this.options.filenamePattern!;
+    let baseName = this.sanitizeFilename(title) || `part-${index + 1}`;
+    const extension = originalFilename.match(/\.[^.]+$/)?.[0] || '.md';
+
+    // Always append index for size-based splits to ensure uniqueness
+    if (index > 0) {
+      baseName = `${baseName}-${index + 1}`;
+    }
+
+    return (
+      pattern
+        .replace('{title}', baseName)
+        .replace('{index}', String(index + 1))
+        .replace('{original}', originalFilename.replace(/\.[^.]+$/, '')) + extension
+    );
   }
 }
 
@@ -412,22 +433,41 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
     const lines = mainContent.split('\n');
     const totalLines = lines.length;
 
-    // Validate and sort split lines
-    const validSplitLines = splitLines
-      .filter((lineNum) => {
-        if (lineNum < 1 || lineNum > totalLines) {
-          warnings.push(`Invalid line number ${lineNum}: file has ${totalLines} lines`);
-          return false;
+    // Validate and sort split lines, adjusting invalid ones when possible
+    const validSplitLines: number[] = [];
+    
+    for (const lineNum of splitLines) {
+      if (lineNum < 1) {
+        warnings.push(`Invalid line number ${lineNum}: file has ${totalLines} lines`);
+      } else if (lineNum > totalLines) {
+        warnings.push(`Invalid line number ${lineNum}: file has ${totalLines} lines`);
+        // Adjust to split at end if reasonably close
+        if (lineNum <= totalLines + 2) {
+          validSplitLines.push(totalLines);
         }
-        return true;
-      })
-      .sort((a, b) => a - b);
+      } else {
+        validSplitLines.push(lineNum);
+      }
+    }
+    
+    // Remove duplicates and sort
+    const uniqueSplitLines = [...new Set(validSplitLines)].sort((a, b) => a - b);
 
-    if (validSplitLines.length === 0) {
-      errors.push('No valid split lines after validation');
+    if (uniqueSplitLines.length === 0) {
+      // Still create sections from the content if there are valid sections to create
+      if (lines.length > 0 && lines.some(line => line.trim())) {
+        const title = this.findLineSectionTitle(lines, 1) || 'Content';
+        sections.push({
+          title,
+          content: lines.join('\n'),
+          startLine: 0,
+          endLine: lines.length - 1,
+          filename: this.generateFilename(title, 0, originalFilename),
+        });
+      }
       return {
-        sections: [],
-        remainingContent: content,
+        sections,
+        remainingContent: this.options.preserveFrontmatter ? frontmatter : undefined,
         errors,
         warnings,
       };
@@ -436,10 +476,10 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
     // Split content at specified lines
     let startLine = 0;
 
-    for (let i = 0; i <= validSplitLines.length; i++) {
+    for (let i = 0; i <= uniqueSplitLines.length; i++) {
       const endLine =
-        i < validSplitLines.length
-          ? validSplitLines[i] - 1 // Convert to 0-based and split before the line
+        i < uniqueSplitLines.length
+          ? uniqueSplitLines[i] - 1 // Convert to 0-based and split before the line
           : lines.length;
 
       if (endLine > startLine) {
@@ -487,12 +527,35 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
     }
 
     // If no header, try to extract from first meaningful line
+    // Look for lines that seem like good titles (complete thoughts, not fragments)
     for (const line of lines) {
       const trimmed = line.trim();
       if (trimmed && !trimmed.startsWith('<!--') && !trimmed.startsWith('---')) {
-        // Use first few words as title
+        // Skip obvious continuation/fragment lines
+        if (trimmed.match(/^(the|that|and|or|but|with|for|in|on|at|to|of)\s/i)) {
+          continue;
+        }
+        
+        // Use first few words as title, but limit to reasonable length
         const words = trimmed.split(/\s+/).slice(0, 5).join(' ');
-        return words.length > 50 ? `${words.substring(0, 47)}...` : words;
+        // If the line is long, truncate it
+        if (words.length > 50) {
+          return `${words.substring(0, 47)}...`;
+        }
+        // If it's a sentence, remove trailing punctuation for cleaner title
+        return words.replace(/[.!?]+$/, '');
+      }
+    }
+
+    // Fallback to first non-empty line if no good title found
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('<!--') && !trimmed.startsWith('---')) {
+        const words = trimmed.split(/\s+/).slice(0, 5).join(' ');
+        if (words.length > 50) {
+          return `${words.substring(0, 47)}...`;
+        }
+        return words.replace(/[.!?]+$/, '');
       }
     }
 
