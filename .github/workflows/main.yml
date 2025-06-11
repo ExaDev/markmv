@@ -162,9 +162,61 @@ jobs:
             docs-coverage.json
           retention-days: 30
 
-  # Update Coverage Badges - Only runs after successful quality checks on main
-  update-badges:
+  # Generate README - Only runs after successful quality checks on main
+  generate-readme:
     needs: quality
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Generate README from TypeScript documentation
+        run: npm run docs:readme-generate
+        
+      - name: Check for README changes
+        id: check-changes
+        run: |
+          if ! git diff --quiet README.md; then
+            echo "changes-detected=true" >> $GITHUB_OUTPUT
+            echo "📝 README.md changes detected from TypeScript documentation"
+          else
+            echo "changes-detected=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ No README.md changes needed"
+          fi
+          
+      - name: Commit generated README
+        if: steps.check-changes.outputs.changes-detected == 'true'
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          git add README.md
+          git commit -m "docs: auto-generate README from TypeScript documentation" \
+                     -m "Automatically generated from TypeDoc comments and templates" \
+                     -m "Ensures README stays in sync with codebase changes"
+          
+          git push
+          echo "✅ Generated README committed and pushed"
+
+  # Update Coverage Badges - Only runs after successful quality checks and README generation
+  update-badges:
+    needs: [quality, generate-readme]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
@@ -289,9 +341,9 @@ jobs:
             echo "ℹ️ No badge updates needed"
           fi
 
-  # Release - Only after ALL quality checks pass and badges are updated
+  # Release - Only after ALL quality checks pass, README is generated, and badges are updated
   release:
-    needs: [quality, update-badges]
+    needs: [quality, generate-readme, update-badges]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
@@ -373,7 +425,7 @@ jobs:
 
   # Documentation Deployment - Only after successful release with updated version
   documentation:
-    needs: [quality, update-badges, release]
+    needs: [quality, generate-readme, update-badges, release]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
