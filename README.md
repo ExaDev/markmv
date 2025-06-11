@@ -12,7 +12,7 @@ npx markmv --help
 [![Test Coverage](https://img.shields.io/badge/coverage-78.35-yellow.svg)](https://github.com/ExaDev/markmv/commit/7b2ccc5f87a6e7b51d387da86e52c61811fadfd2)
 [![Documentation Coverage](https://img.shields.io/badge/docs-98.7-brightgreen.svg)](https://github.com/ExaDev/markmv/commit/7b2ccc5f87a6e7b51d387da86e52c61811fadfd2)
 
-> A powerful TypeScript CLI tool for intelligent markdown file operations with automatic link refactoring
+> TypeScript CLI for markdown file operations with intelligent link refactoring
 
 **markmv** revolutionises how you manage markdown documentation by providing intelligent file operations that automatically maintain link integrity across your entire project. Whether you're reorganising documentation, splitting large files, or combining related content, markmv ensures your links never break.
 
@@ -242,7 +242,7 @@ Configuration options can be passed via command line flags. See each command's `
 
 ## 📚 Library Usage
 
-### Programmatic API
+###### Programmatic API
 
 markmv provides a comprehensive TypeScript API for integration into your projects:
 
@@ -269,6 +269,92 @@ const validation = await fileOps.validateOperation(result);
 ```
 
 See the [API Documentation](https://exadev.github.io/markmv/) for complete details.
+
+#### API Reference
+
+##### Classes
+
+###### Core
+
+- [ContentJoiner](classes/ContentJoiner.md)
+- [ContentSplitter](classes/ContentSplitter.md)
+- [DependencyGraph](classes/DependencyGraph.md)
+- [FileOperations](classes/FileOperations.md)
+- [LinkParser](classes/LinkParser.md)
+- [LinkRefactorer](classes/LinkRefactorer.md)
+- [LinkValidator](classes/LinkValidator.md)
+
+###### Strategies
+
+- [BaseJoinStrategy](classes/BaseJoinStrategy.md)
+- [DependencyOrderJoinStrategy](classes/DependencyOrderJoinStrategy.md)
+- [AlphabeticalJoinStrategy](classes/AlphabeticalJoinStrategy.md)
+- [ManualOrderJoinStrategy](classes/ManualOrderJoinStrategy.md)
+- [ChronologicalJoinStrategy](classes/ChronologicalJoinStrategy.md)
+- [BaseMergeStrategy](classes/BaseMergeStrategy.md)
+- [AppendMergeStrategy](classes/AppendMergeStrategy.md)
+- [PrependMergeStrategy](classes/PrependMergeStrategy.md)
+- [InteractiveMergeStrategy](classes/InteractiveMergeStrategy.md)
+- [BaseSplitStrategy](classes/BaseSplitStrategy.md)
+- [HeaderBasedSplitStrategy](classes/HeaderBasedSplitStrategy.md)
+- [SizeBasedSplitStrategy](classes/SizeBasedSplitStrategy.md)
+- [ManualSplitStrategy](classes/ManualSplitStrategy.md)
+- [LineBasedSplitStrategy](classes/LineBasedSplitStrategy.md)
+
+###### Utilities
+
+- [FileUtils](classes/FileUtils.md)
+- [PathUtils](classes/PathUtils.md)
+- [TransactionManager](classes/TransactionManager.md)
+
+##### Interfaces
+
+###### Commands
+
+- [IndexOptions](interfaces/IndexOptions.md)
+- [FileMetadata](interfaces/FileMetadata.md)
+- [IndexableFile](interfaces/IndexableFile.md)
+
+###### Strategies
+
+- [JoinSection](interfaces/JoinSection.md)
+- [JoinResult](interfaces/JoinResult.md)
+- [JoinConflict](interfaces/JoinConflict.md)
+- [JoinStrategyOptions](interfaces/JoinStrategyOptions.md)
+- [MergeSection](interfaces/MergeSection.md)
+- [MergeResult](interfaces/MergeResult.md)
+- [MergeConflict](interfaces/MergeConflict.md)
+- [MergeStrategyOptions](interfaces/MergeStrategyOptions.md)
+- [SplitSection](interfaces/SplitSection.md)
+- [SplitResult](interfaces/SplitResult.md)
+- [SplitStrategyOptions](interfaces/SplitStrategyOptions.md)
+
+###### Types
+
+- [MarkdownLink](interfaces/MarkdownLink.md)
+- [ParsedMarkdownFile](interfaces/ParsedMarkdownFile.md)
+- [OperationOptions](interfaces/OperationOptions.md)
+- [MoveOperationOptions](interfaces/MoveOperationOptions.md)
+- [SplitOperationOptions](interfaces/SplitOperationOptions.md)
+- [JoinOperationOptions](interfaces/JoinOperationOptions.md)
+- [MergeOperationOptions](interfaces/MergeOperationOptions.md)
+- [OperationResult](interfaces/OperationResult.md)
+- [OperationChange](interfaces/OperationChange.md)
+
+##### Type Aliases
+
+###### Types
+
+- [LinkType](type-aliases/LinkType.md)
+
+##### Functions
+
+- [indexCommand](functions/indexCommand.md)
+- [createMarkMv](functions/createMarkMv.md)
+- [moveFile](functions/moveFile.md)
+- [moveFiles](functions/moveFiles.md)
+- [validateOperation](functions/validateOperation.md)
+
 
 ## 🧪 Examples
 
@@ -453,11 +539,11 @@ This work is licensed under a Creative Commons Attribution-NonCommercial-ShareAl
 
 <div align="center">
 
-**[🏠 Homepage](https://github.com/ExaDev/markmv)** •
+**[🏠 Homepage](https://github.com/ExaDev/markmv#readme)** •
 **[📖 Documentation](https://github.com/ExaDev/markmv#readme)** •
 **[🐛 Report Bug](https://github.com/ExaDev/markmv/issues)** •
 **[✨ Request Feature](https://github.com/ExaDev/markmv/issues)**
 
-Made by [Joseph Mearman](https://github.com/Mearman)
+Made by [Joe Mearman](https://github.com/Mearman)
 
 </div>
