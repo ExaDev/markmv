@@ -1,3 +1,22 @@
+## [1.14.0](https://github.com/ExaDev/markmv/compare/v1.13.2...v1.14.0) (2025-06-11)
+
+### Features
+
+* enforce strict TypeScript type safety rules ([19bb510](https://github.com/ExaDev/markmv/commit/19bb51042543dc0196d2cde76cad1fe6b530226a))
+
+### Bug Fixes
+
+* allow test file warnings in CI linting ([7b2ccc5](https://github.com/ExaDev/markmv/commit/7b2ccc5f87a6e7b51d387da86e52c61811fadfd2))
+* eliminate all any types and type assertions from production code ([6195794](https://github.com/ExaDev/markmv/commit/61957942d9e99cd689f1c98f5f4a324ce074673b))
+
+### Styles
+
+* auto-fix linting issues ([17d9646](https://github.com/ExaDev/markmv/commit/17d96462de91e964e0df8877804396607c2bfd0c))
+
+### Continuous Integration
+
+* update coverage badges ([aabfe6c](https://github.com/ExaDev/markmv/commit/aabfe6c718f10fcac38b690cc110cd00397bffe7))
+
 ## [1.13.2](https://github.com/ExaDev/markmv/compare/v1.13.1...v1.13.2) (2025-06-10)
 
 ### Bug Fixes
