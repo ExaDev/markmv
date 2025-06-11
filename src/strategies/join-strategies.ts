@@ -157,7 +157,7 @@ export abstract class BaseJoinStrategy {
 
   /** Merge multiple frontmatter blocks */
   protected mergeFrontmatter(sections: JoinSection[]): string {
-    const frontmatterData: Record<string, any> = {};
+    const frontmatterData: Record<string, string | number | string[]> = {};
     const arrays: Record<string, string[]> = {};
 
     for (const section of sections) {
@@ -464,8 +464,11 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
     }
 
     while (queue.length > 0) {
-      const current = queue.shift()!;
-      const section = fileToSection.get(current)!;
+      const current = queue.shift();
+      if (!current) break;
+      
+      const section = fileToSection.get(current);
+      if (!section) continue;
       result.push(section);
 
       // Remove edges and update in-degrees

@@ -102,7 +102,7 @@ export abstract class BaseSplitStrategy {
 
   /** Generate a safe filename from a title */
   protected generateFilename(title: string, index: number, originalFilename: string): string {
-    const pattern = this.options.filenamePattern!;
+    const pattern = this.options.filenamePattern || '{title}';
     const baseName = this.sanitizeFilename(title) || `section-${index + 1}`;
     const extension = originalFilename.match(/\.[^.]+$/)?.[0] || '.md';
 
@@ -185,7 +185,7 @@ export class HeaderBasedSplitStrategy extends BaseSplitStrategy {
     const sections: SplitSection[] = [];
     const errors: string[] = [];
     const warnings: string[] = [];
-    const targetLevel = this.options.headerLevel!;
+    const targetLevel = this.options.headerLevel || 2;
 
     let currentSection: {
       title: string;
@@ -393,7 +393,7 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
     index: number,
     originalFilename: string
   ): string {
-    const pattern = this.options.filenamePattern!;
+    const pattern = this.options.filenamePattern || '{title}';
     let baseName = this.sanitizeFilename(title) || `part-${index + 1}`;
     const extension = originalFilename.match(/\.[^.]+$/)?.[0] || '.md';
 

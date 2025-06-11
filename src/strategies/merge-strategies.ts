@@ -171,7 +171,7 @@ export abstract class BaseMergeStrategy {
 
   /** Create an Obsidian transclusion reference */
   protected createTransclusion(file: string, section?: string): string {
-    const template = this.options.transclusionTemplate!;
+    const template = this.options.transclusionTemplate || '![[{file}#{section}]]';
     const cleanFile = file.replace(/\.md$/, '');
 
     if (section) {
@@ -216,16 +216,18 @@ export abstract class BaseMergeStrategy {
 
     // Special handling for arrays (tags, categories)
     for (const key of ['tags', 'categories', 'keywords']) {
-      if (sourceData[key] && targetData[key]) {
-        mergedData[key] = [...new Set([...sourceData[key], ...targetData[key]])];
+      const sourceValue = sourceData[key];
+      const targetValue = targetData[key];
+      if (Array.isArray(sourceValue) && Array.isArray(targetValue)) {
+        mergedData[key] = [...new Set([...sourceValue, ...targetValue])];
       }
     }
 
     return this.stringifyFrontmatter(mergedData);
   }
 
-  private parseFrontmatter(frontmatter: string): Record<string, any> {
-    const data: Record<string, any> = {};
+  private parseFrontmatter(frontmatter: string): Record<string, string | number | string[]> {
+    const data: Record<string, string | number | string[]> = {};
     const lines = frontmatter
       .replace(/^---\n/, '')
       .replace(/\n---$/, '')
@@ -252,7 +254,7 @@ export abstract class BaseMergeStrategy {
     return data;
   }
 
-  private stringifyFrontmatter(data: Record<string, any>): string {
+  private stringifyFrontmatter(data: Record<string, string | number | string[]>): string {
     if (Object.keys(data).length === 0) {
       return '';
     }

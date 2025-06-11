@@ -133,7 +133,7 @@ export class FileUtils {
       await mkdir(dirPath, { recursive: true });
     } catch (error) {
       // Ignore error if directory already exists
-      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+      if (!(error && typeof error === 'object' && 'code' in error && error.code === 'EEXIST')) {
         throw error;
       }
     }
@@ -236,7 +236,7 @@ export class FileUtils {
       await rename(sourcePath, destinationPath);
     } catch (error) {
       // If rename fails, fall back to copy + delete
-      if ((error as NodeJS.ErrnoException).code === 'EXDEV') {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'EXDEV') {
         await FileUtils.copyFile(sourcePath, destinationPath, { overwrite: true });
         await unlink(sourcePath);
       } else {

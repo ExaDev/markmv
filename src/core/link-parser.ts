@@ -150,8 +150,8 @@ export class LinkParser {
           text = node.alt || undefined;
         } else if (node.children) {
           text = node.children
-            .filter((child: any) => child.type === 'text')
-            .map((child: any) => child.value)
+            .filter((child): child is TextNode => child.type === 'text')
+            .map((child) => child.value)
             .join('');
         }
       } else {
@@ -165,8 +165,8 @@ export class LinkParser {
           text = node.alt || undefined;
         } else if (node.children) {
           text = node.children
-            .filter((child: any) => child.type === 'text')
-            .map((child: any) => child.value)
+            .filter((child): child is TextNode => child.type === 'text')
+            .map((child) => child.value)
             .join('');
         }
       }
@@ -256,7 +256,8 @@ export class LinkParser {
           (link.type === 'internal' || link.type === 'claude-import' || link.type === 'image') &&
           link.resolvedPath
       )
-      .map((link) => link.resolvedPath!)
+      .map((link) => link.resolvedPath)
+      .filter((path): path is string => path !== undefined)
       .filter((path, index, arr) => arr.indexOf(path) === index); // Remove duplicates
   }
 

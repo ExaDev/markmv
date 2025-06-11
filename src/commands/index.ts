@@ -83,16 +83,30 @@ export interface IndexableFile {
  *
  * @internal This is a CLI wrapper - use generateIndexFiles for programmatic access
  */
-export async function indexCommand(directory: string | undefined, cliOptions: any): Promise<void> {
+/**
+ * CLI options interface for the index command
+ */
+interface IndexCliOptions {
+  type?: 'links' | 'import' | 'embed' | 'hybrid';
+  strategy?: 'directory' | 'metadata' | 'manual';
+  location?: 'all' | 'root' | 'branch' | 'existing';
+  name?: string;
+  embedStyle?: 'obsidian' | 'markdown';
+  template?: string;
+  dryRun?: boolean;
+  verbose?: boolean;
+}
+
+export async function indexCommand(directory: string | undefined, cliOptions: IndexCliOptions): Promise<void> {
   const options: IndexOptions = {
     type: cliOptions.type || 'links',
     strategy: cliOptions.strategy || 'directory',
     location: cliOptions.location || 'root',
     name: cliOptions.name || 'index.md',
     embedStyle: cliOptions.embedStyle || 'obsidian',
-    template: cliOptions.template,
     dryRun: cliOptions.dryRun || false,
     verbose: cliOptions.verbose || false,
+    ...(cliOptions.template && { template: cliOptions.template }),
   };
 
   return generateIndexFiles(options, directory || '.');
@@ -273,7 +287,10 @@ function organizeFiles(
     if (!organized.has(groupKey)) {
       organized.set(groupKey, []);
     }
-    organized.get(groupKey)!.push(file);
+    const group = organized.get(groupKey);
+    if (group) {
+      group.push(file);
+    }
   }
 
   // Sort files within each group

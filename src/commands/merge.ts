@@ -218,8 +218,9 @@ export async function mergeCommand(
       );
     }
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      console.error(`❌ File not found: ${(error as NodeJS.ErrnoException).path}`);
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
+      const pathValue = 'path' in error ? String(error.path) : 'unknown';
+      console.error(`❌ File not found: ${pathValue}`);
     } else {
       console.error(`❌ Unexpected error: ${error}`);
     }

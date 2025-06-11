@@ -106,7 +106,7 @@ export class FileOperations {
           modifiedFiles: [],
           createdFiles: [],
           deletedFiles: [],
-          errors: [validation.error!],
+          errors: [validation.error || 'Validation failed'],
           warnings: [],
           changes: [],
         };
