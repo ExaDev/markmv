@@ -21,8 +21,18 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/consistent-type-imports': 'off', // Allow dynamic imports
       '@typescript-eslint/consistent-type-exports': 'error',
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/no-explicit-any': 'error', // Disallow 'any' types
+      '@typescript-eslint/consistent-type-assertions': ['error', {
+        assertionStyle: 'never' // Disallow type assertions (as Type)
+      }],
+      '@typescript-eslint/no-non-null-assertion': 'error', // Disallow non-null assertions (!)
+      '@typescript-eslint/ban-ts-comment': ['error', {
+        'ts-expect-error': 'allow-with-description',
+        'ts-ignore': true,
+        'ts-nocheck': true,
+        'ts-check': false,
+        minimumDescriptionLength: 10
+      }],
       '@typescript-eslint/no-unused-vars': ['error', { 
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_'
@@ -38,8 +48,10 @@ export default tseslint.config(
   {
     files: ['**/*.test.ts'],
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn', // Warn but allow in tests
+      '@typescript-eslint/consistent-type-assertions': 'off', // Allow type assertions in tests
+      '@typescript-eslint/no-non-null-assertion': 'warn', // Warn but allow in tests
+      '@typescript-eslint/ban-ts-comment': 'off', // Allow ts-ignore etc in tests
       '@typescript-eslint/no-unused-vars': ['error', { 
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_'
