@@ -1,3 +1,30 @@
+## [1.15.0](https://github.com/ExaDev/markmv/compare/v1.14.0...v1.15.0) (2025-06-11)
+
+### Features
+
+* add API documentation extraction script ([7442f93](https://github.com/ExaDev/markmv/commit/7442f93feb55e8a4ed70db1372750a688b02da3d))
+* add automatic README generation to CI pipeline ([8805859](https://github.com/ExaDev/markmv/commit/8805859fac0e9bac9d0b82c0c18c453158779627))
+* add complete README generation script ([af97cd5](https://github.com/ExaDev/markmv/commit/af97cd5eca236aabb771d76bdf36d69796405a02))
+* add TypeDoc markdown configuration ([b4d3b37](https://github.com/ExaDev/markmv/commit/b4d3b37ae236e146cc9a7e68bd891450373a6142))
+* add typedoc-plugin-markdown for README generation ([c888681](https://github.com/ExaDev/markmv/commit/c888681ec4263c6391fed2caad35d8528bb153c5))
+
+### Bug Fixes
+
+* resolve README generation and badge update conflicts ([8e034da](https://github.com/ExaDev/markmv/commit/8e034dad189f92db286c42e7649e1fbd58560d18))
+
+### Documentation
+
+* auto-generate README from TypeScript documentation ([5a58237](https://github.com/ExaDev/markmv/commit/5a582379940aabdd8f1c2df755aae57c745a32c1))
+* update README with generated content from TypeScript ([6ce1aca](https://github.com/ExaDev/markmv/commit/6ce1acaa55f3f0b0d36ca7d15e2ccc6338978aae))
+
+### Continuous Integration
+
+* update coverage badges ([10d5bec](https://github.com/ExaDev/markmv/commit/10d5bec1360ecb3fe59808f82ac2168e2dde4815))
+
+### Chores
+
+* ignore generated markdown documentation ([1fcb780](https://github.com/ExaDev/markmv/commit/1fcb780e19328b6b2cf44138bd5b6ee49fb4f06f))
+
 ## [1.14.0](https://github.com/ExaDev/markmv/compare/v1.13.2...v1.14.0) (2025-06-11)
 
 ### Features
