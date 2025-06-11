@@ -1,0 +1,56 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "plugin": ["typedoc-plugin-markdown"],
+  "entryPoints": ["src/index.ts"],
+  "out": "docs-markdown",
+  "name": "markmv",
+  "includeVersion": true,
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeInternal": false,
+  "readme": "none",
+  "gitRevision": "main",
+  "gitRemote": "origin",
+  "sourceLinkTemplate": "https://github.com/ExaDev/markmv/blob/{gitRevision}/{path}#L{line}",
+  "categorizeByGroup": true,
+  "defaultCategory": "Other",
+  "categoryOrder": [
+    "Core",
+    "Commands", 
+    "Strategies",
+    "Types",
+    "Utilities",
+    "*"
+  ],
+  "sort": ["source-order"],
+  "validation": {
+    "notExported": true,
+    "invalidLink": true,
+    "notDocumented": true
+  },
+  "treatWarningsAsErrors": false,
+  "logLevel": "Info",
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/cli.ts",
+    "node_modules/**/*"
+  ],
+  "externalPattern": [
+    "**/node_modules/**"
+  ],
+  "outputFileStrategy": "members",
+  "mergeReadme": false,
+  "hidePageHeader": false,
+  "hideBreadcrumbs": true,
+  "hidePageTitle": false,
+  "titleLink": "https://github.com/ExaDev/markmv",
+  "navigationLinks": {
+    "GitHub": "https://github.com/ExaDev/markmv",
+    "npm": "https://www.npmjs.com/package/markmv"
+  },
+  "sidebarLinks": {
+    "Documentation": "https://exadev.github.io/markmv/",
+    "Changelog": "https://github.com/ExaDev/markmv/blob/main/CHANGELOG.md"
+  }
+}
