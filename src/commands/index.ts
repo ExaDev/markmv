@@ -83,9 +83,7 @@ export interface IndexableFile {
  *
  * @internal This is a CLI wrapper - use generateIndexFiles for programmatic access
  */
-/**
- * CLI options interface for the index command
- */
+/** CLI options interface for the index command */
 interface IndexCliOptions {
   type?: 'links' | 'import' | 'embed' | 'hybrid';
   strategy?: 'directory' | 'metadata' | 'manual';
@@ -97,7 +95,10 @@ interface IndexCliOptions {
   verbose?: boolean;
 }
 
-export async function indexCommand(directory: string | undefined, cliOptions: IndexCliOptions): Promise<void> {
+export async function indexCommand(
+  directory: string | undefined,
+  cliOptions: IndexCliOptions
+): Promise<void> {
   const options: IndexOptions = {
     type: cliOptions.type || 'links',
     strategy: cliOptions.strategy || 'directory',

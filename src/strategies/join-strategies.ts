@@ -466,7 +466,7 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
     while (queue.length > 0) {
       const current = queue.shift();
       if (!current) break;
-      
+
       const section = fileToSection.get(current);
       if (!section) continue;
       result.push(section);
