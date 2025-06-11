@@ -12,6 +12,27 @@ const PACKAGE_JSON_PATH = 'package.json';
 const TEMPLATE_README_PATH = 'templates/README-template.md';
 const OUTPUT_README_PATH = 'README.md';
 
+function getExistingCoverageBadges() {
+  try {
+    if (!existsSync(OUTPUT_README_PATH)) {
+      return '';
+    }
+    
+    const existingReadme = readFileSync(OUTPUT_README_PATH, 'utf8');
+    const lines = existingReadme.split('\n');
+    
+    // Find coverage badge lines
+    const coverageBadges = lines.filter(line => 
+      line.includes('Test Coverage') || line.includes('Documentation Coverage')
+    );
+    
+    return coverageBadges.join('\n');
+  } catch (error) {
+    console.warn('⚠️ Could not read existing README for badge preservation:', error.message);
+    return '';
+  }
+}
+
 function generateCompleteReadme() {
   try {
     // Read package.json for metadata
@@ -45,6 +66,9 @@ function generateReadmeTemplate(packageJson, apiDocs) {
   // Extract overview from API docs (from the main module comment)
   const cleanedApiDocs = cleanupApiDocs(apiDocs, name);
   
+  // Read existing README to preserve coverage badges
+  const existingCoverageBadges = getExistingCoverageBadges();
+  
   return `# ${name} ✏️
 
 \`\`\`bash
@@ -55,7 +79,7 @@ npx ${name} --help
 [![npm version](https://badge.fury.io/js/${name}.svg)](https://badge.fury.io/js/${name})
 [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)${existingCoverageBadges ? '\n' + existingCoverageBadges : ''}
 
 > ${description}
 
