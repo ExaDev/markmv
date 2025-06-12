@@ -1,3 +1,9 @@
+## [1.20.0](https://github.com/ExaDev/markmv/compare/v1.19.8...v1.20.0) (2025-06-12)
+
+### Features
+
+* use GitHub App token for GitHub Packages authentication ([5bd26b0](https://github.com/ExaDev/markmv/commit/5bd26b0c672d247057f5671950f70f91b02f53b1))
+
 ## [1.19.8](https://github.com/ExaDev/markmv/compare/v1.19.7...v1.19.8) (2025-06-12)
 
 ### Bug Fixes
