@@ -44,19 +44,24 @@
     ],
     "@semantic-release/changelog",
     [
-      "@semantic-release/npm",
+      "@amanda-mitchell/semantic-release-npm-multiple",
       {
-        "npmPublish": true,
-        "tarballDir": "dist",
-        "pkgRoot": "./",
-        "provenance": true,
-        "addChannel": false
-      }
-    ],
-    [
-      "@semantic-release/exec",
-      {
-        "publishCmd": "echo 'Publishing to GitHub Packages...' && cp package.json package-github.json && jq '.name = \"@exadev/markmv\" | .publishConfig.registry = \"https://npm.pkg.github.com\"' package-github.json > temp.json && mv temp.json package-github.json && npm publish package-github.json --registry https://npm.pkg.github.com --provenance --access public && rm package-github.json"
+        "registries": {
+          "npmjs": {
+            "npmPublish": true,
+            "tarballDir": "dist",
+            "pkgRoot": "./",
+            "provenance": true,
+            "addChannel": false
+          },
+          "github": {
+            "npmPublish": true,
+            "tarballDir": "dist-github",
+            "pkgRoot": "./",
+            "provenance": true,
+            "addChannel": false
+          }
+        }
       }
     ],
     [

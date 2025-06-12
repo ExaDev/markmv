@@ -348,11 +348,32 @@ jobs:
             echo "ℹ️ No README changes to stage"
           fi
         
-      - name: Setup npmrc for multiple registries
+      - name: Prepare GitHub Packages package.json
         run: |
-          echo "🔧 Setting up .npmrc for multiple registry publishing..."
+          echo "📦 Preparing package configuration for GitHub Packages..."
           
-          # Configure for both NPM and GitHub Packages
+          # Create dist-github directory
+          mkdir -p dist-github
+          
+          # Create a scoped package.json for GitHub Packages
+          jq '.name = "@exadev/markmv" | .publishConfig.registry = "https://npm.pkg.github.com"' package.json > package-github.json
+          
+          echo "✅ GitHub Packages configuration prepared"
+          
+      - name: Release (includes README and badge updates)
+        env:
+          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Environment variables for npm-multiple plugin
+          NPMJS_NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
+          NPMJS_NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_NPM_CONFIG_REGISTRY: https://npm.pkg.github.com
+          GITHUB_NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🚀 Starting semantic-release with staged README and badge updates..."
+          
+          # Set up .npmrc for both registries
           cat > .npmrc << EOF
           registry=https://registry.npmjs.org/
           //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
@@ -360,15 +381,9 @@ jobs:
           @exadev:registry=https://npm.pkg.github.com
           EOF
           
-          echo "✅ Registry configuration completed"
+          # Copy the GitHub-scoped package.json to the directory
+          cp package-github.json dist-github/package.json
           
-      - name: Release (includes README and badge updates)
-        env:
-          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          echo "🚀 Starting semantic-release with staged README and badge updates..."
           npm run release
           echo "✅ Release completed - packages published to both NPM and GitHub Packages"
           
