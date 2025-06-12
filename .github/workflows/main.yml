@@ -409,7 +409,7 @@ jobs:
           cp .npmrc dist-github/
           
           npm run release
-          echo "✅ Release completed - packages published to both NPM and GitHub Packages"
+          echo "✅ Release completed - version tagged and prepared for publishing"
           
       # Temporarily disabled - attestation verification step
       # - name: Verify attestations are available for NPM
@@ -441,6 +441,73 @@ jobs:
       #     
       #     echo "📦 NPM provenance is enabled in package.json publishConfig"
       #     echo "🔐 Attestations will be automatically linked to published package"
+
+      # Separate NPM Publishing Step
+      - name: Publish to NPM Registry
+        continue-on-error: true
+        run: |
+          echo "📦 Publishing to NPM registry..."
+          
+          # Check if we have a tarball to publish
+          if [ -f "dist/markmv-"*.tgz ]; then
+            echo "✅ Found tarball: $(ls dist/markmv-*.tgz)"
+            
+            # Publish with provenance
+            npm publish dist/markmv-*.tgz --provenance --access public
+            
+            if [ $? -eq 0 ]; then
+              echo "✅ Successfully published to NPM"
+            else
+              echo "❌ NPM publishing failed"
+            fi
+          else
+            echo "❌ No tarball found for NPM publishing"
+            ls -la dist/ || echo "No dist directory"
+          fi
+
+      # Separate GitHub Packages Publishing Step  
+      - name: Publish to GitHub Packages
+        continue-on-error: true
+        run: |
+          echo "📦 Publishing to GitHub Packages as @mearman/markmv..."
+          
+          # Check if dist-github directory exists
+          if [ -d "dist-github" ]; then
+            echo "✅ Found dist-github directory"
+            ls -la dist-github/
+            
+            # Verify package.json is configured correctly
+            echo "📋 Package configuration:"
+            cat dist-github/package.json | jq '.name, .publishConfig'
+            
+            # Publish to GitHub Packages
+            cd dist-github && npm publish --registry https://npm.pkg.github.com --access public
+            
+            if [ $? -eq 0 ]; then
+              echo "✅ Successfully published to GitHub Packages"
+            else
+              echo "❌ GitHub Packages publishing failed"
+            fi
+          else
+            echo "❌ No dist-github directory found"
+          fi
+
+      # Summary of Publishing Results
+      - name: Publishing Summary
+        run: |
+          echo "📊 Publishing Summary:"
+          echo "===================="
+          
+          # Check NPM
+          LATEST_NPM=$(npm view markmv version 2>/dev/null || echo "unknown")
+          echo "📦 NPM Registry: $LATEST_NPM"
+          
+          # Check GitHub Packages  
+          LATEST_GH=$(npm view @mearman/markmv version --registry https://npm.pkg.github.com 2>/dev/null || echo "unknown")
+          echo "📦 GitHub Packages: $LATEST_GH"
+          
+          echo "===================="
+          echo "🔍 For installation instructions, see the release notes"
 
   # Documentation Deployment - Only after successful release with updated version
   documentation:

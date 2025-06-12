@@ -46,17 +46,11 @@
     [
       "@semantic-release/npm",
       {
-        "npmPublish": true,
+        "npmPublish": false,
         "tarballDir": "dist",
         "pkgRoot": "./",
         "provenance": true,
         "addChannel": false
-      }
-    ],
-    [
-      "@semantic-release/exec",
-      {
-        "publishCmd": "echo 'Attempting GitHub Packages publishing...' && cd dist-github && npm publish --registry https://npm.pkg.github.com --access public || echo 'GitHub Packages publishing failed, continuing with NPM-only release'"
       }
     ],
     [
