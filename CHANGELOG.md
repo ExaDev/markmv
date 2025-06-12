@@ -1,3 +1,9 @@
+## [1.19.3](https://github.com/ExaDev/markmv/compare/v1.19.2...v1.19.3) (2025-06-12)
+
+### Bug Fixes
+
+* improve GitHub Packages binary file copying and validation ([77b8ab2](https://github.com/ExaDev/markmv/commit/77b8ab2efca020d5bc1ac1f777972d43d05b0dd5))
+
 ## [1.19.2](https://github.com/ExaDev/markmv/compare/v1.19.1...v1.19.2) (2025-06-12)
 
 ### Bug Fixes
