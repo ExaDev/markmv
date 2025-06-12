@@ -356,8 +356,8 @@ jobs:
           mkdir -p dist-github
           cp -r dist/* dist-github/
           
-          # Create a scoped package.json for GitHub Packages
-          jq '.name = "@exadev/markmv" | .publishConfig.registry = "https://npm.pkg.github.com"' package.json > dist-github/package.json
+          # Create a scoped package.json for GitHub Packages (remove prepublishOnly script)
+          jq '.name = "@exadev/markmv" | .publishConfig.registry = "https://npm.pkg.github.com" | del(.scripts.prepublishOnly)' package.json > dist-github/package.json
           
           # Copy other required files to dist-github
           cp README.md CHANGELOG.md LICENSE dist-github/ 2>/dev/null || true
