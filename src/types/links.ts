@@ -16,6 +16,20 @@ export type LinkType =
   | 'obsidian-transclusion'; // Obsidian [[file]] or ![[file]] syntax
 
 /**
+ * Link style formats supported for conversion operations.
+ *
+ * Defines the different syntactic formats that links can be converted between while
+ * maintaining their semantic meaning and target paths.
+ *
+ * @category Types
+ */
+export type LinkStyle =
+  | 'markdown' // Standard markdown: [text](url)
+  | 'claude' // Claude import: @url
+  | 'combined' // Combined format: [@url](url)
+  | 'wikilink'; // Obsidian wikilink: [[url]]
+
+/**
  * Represents a parsed markdown link with comprehensive metadata.
  *
  * Contains all information needed for link validation, path resolution, and cross-reference

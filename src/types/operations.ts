@@ -79,6 +79,25 @@ export interface MergeOperationOptions extends OperationOptions {
 }
 
 /**
+ * Configuration options specific to convert operations.
+ *
+ * Extends base operation options with convert-specific settings for transforming link formats
+ * and path resolution styles across markdown files.
+ *
+ * @category Types
+ */
+export interface ConvertOperationOptions extends OperationOptions {
+  /** Target path resolution type */
+  pathResolution?: 'absolute' | 'relative';
+  /** Base path for relative path calculations */
+  basePath?: string;
+  /** Target link style format */
+  linkStyle?: 'markdown' | 'claude' | 'combined' | 'wikilink';
+  /** Whether to process files recursively */
+  recursive?: boolean;
+}
+
+/**
  * Result of any file operation containing comprehensive status information.
  *
  * Provides detailed information about what was changed, created, or deleted during an operation,
