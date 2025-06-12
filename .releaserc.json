@@ -54,6 +54,12 @@
       }
     ],
     [
+      "@semantic-release/exec",
+      {
+        "publishCmd": "echo 'Publishing to GitHub Packages...' && cp package.json package-github.json && jq '.name = \"@exadev/markmv\" | .publishConfig.registry = \"https://npm.pkg.github.com\"' package-github.json > temp.json && mv temp.json package-github.json && npm publish package-github.json --registry https://npm.pkg.github.com --provenance --access public && rm package-github.json"
+      }
+    ],
+    [
       "@semantic-release/github",
       {
         "assets": [
@@ -83,7 +89,7 @@
             "label": "Software Bill of Materials (SBOM)"
           }
         ],
-        "successComment": "🎉 This ${issue.pull_request ? 'PR is included' : 'issue has been resolved'} in version ${nextRelease.version} 🎉\n\nThe release is available on:\n- **[GitHub Releases](${releases.filter(release => release.name === 'GitHub')[0].url})** - includes coverage reports and SBOM\n- **[npm package (@latest dist-tag)](https://www.npmjs.com/package/markmv)** - published with build attestations\n\n## Installation\n```bash\nnpm install -g markmv@${nextRelease.version}\n```\n\n## Security & Supply Chain\n✅ **Build Provenance**: Cryptographically signed build attestations\n✅ **SBOM**: Software Bill of Materials included in release\n✅ **NPM Provenance**: Published with npm provenance attestations\n\n## Test Coverage\nThis release includes comprehensive test coverage reports. View coverage details in the release assets.\n\nYour **[semantic-release](https://github.com/semantic-release/semantic-release)** bot 📦🚀",
+        "successComment": "🎉 This ${issue.pull_request ? 'PR is included' : 'issue has been resolved'} in version ${nextRelease.version} 🎉\n\nThe release is available on:\n- **[GitHub Releases](${releases.filter(release => release.name === 'GitHub')[0].url})** - includes coverage reports and SBOM\n- **[npm package (@latest dist-tag)](https://www.npmjs.com/package/markmv)** - published with build attestations\n- **[GitHub Packages](https://github.com/ExaDev/markmv/pkgs/npm/markmv)** - alternative NPM registry\n\n## Installation\n\n### From NPM (Recommended)\n```bash\nnpm install -g markmv@${nextRelease.version}\n```\n\n### From GitHub Packages\n```bash\nnpm install -g @exadev/markmv@${nextRelease.version} --registry=https://npm.pkg.github.com\n```\n\n## Security & Supply Chain\n✅ **Build Provenance**: Cryptographically signed build attestations\n✅ **SBOM**: Software Bill of Materials included in release\n✅ **NPM Provenance**: Published with npm provenance attestations\n✅ **Multiple Registries**: Available on both NPM and GitHub Packages\n\n## Test Coverage\nThis release includes comprehensive test coverage reports. View coverage details in the release assets.\n\nYour **[semantic-release](https://github.com/semantic-release/semantic-release)** bot 📦🚀",
         "failComment": "❌ This release failed. Check the [build logs](${env.GITHUB_SERVER_URL}/${env.GITHUB_REPOSITORY}/actions/runs/${env.GITHUB_RUN_ID}) for details.",
         "failTitle": "🚨 Release failed for ${nextRelease.version}",
         "addReleases": "bottom",

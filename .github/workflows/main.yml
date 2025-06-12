@@ -348,6 +348,20 @@ jobs:
             echo "ℹ️ No README changes to stage"
           fi
         
+      - name: Setup npmrc for multiple registries
+        run: |
+          echo "🔧 Setting up .npmrc for multiple registry publishing..."
+          
+          # Configure for both NPM and GitHub Packages
+          cat > .npmrc << EOF
+          registry=https://registry.npmjs.org/
+          //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
+          //npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}
+          @exadev:registry=https://npm.pkg.github.com
+          EOF
+          
+          echo "✅ Registry configuration completed"
+          
       - name: Release (includes README and badge updates)
         env:
           GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
@@ -356,7 +370,7 @@ jobs:
         run: |
           echo "🚀 Starting semantic-release with staged README and badge updates..."
           npm run release
-          echo "✅ Release completed - README and badges included in release commit"
+          echo "✅ Release completed - packages published to both NPM and GitHub Packages"
           
       - name: Verify attestations are available for NPM
         run: |
