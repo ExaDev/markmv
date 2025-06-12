@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
+import { convertCommand } from './commands/convert';
 import { indexCommand } from './commands/index';
 import { joinCommand } from './commands/join';
 import { mergeCommand } from './commands/merge';
@@ -13,6 +14,18 @@ program
   .name('markmv')
   .description('CLI for markdown file operations with intelligent link refactoring')
   .version('0.1.0');
+
+program
+  .command('convert')
+  .description('Convert markdown link formats and path resolution')
+  .argument('<files...>', 'Markdown files to convert (supports globs like *.md, **/*.md)')
+  .option('--path-resolution <type>', 'Convert path resolution: absolute|relative')
+  .option('--base-path <path>', 'Base path for relative path calculations')
+  .option('--link-style <style>', 'Convert link style: markdown|claude|combined|wikilink')
+  .option('-r, --recursive', 'Process directories recursively')
+  .option('-d, --dry-run', 'Show what would be changed without making changes')
+  .option('-v, --verbose', 'Show detailed output')
+  .action(convertCommand);
 
 program
   .command('move')
