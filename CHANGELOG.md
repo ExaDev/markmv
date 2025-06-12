@@ -1,3 +1,9 @@
+## [1.17.3](https://github.com/ExaDev/markmv/compare/v1.17.2...v1.17.3) (2025-06-12)
+
+### Bug Fixes
+
+* use fetch and merge instead of pull with rebase for README updates ([8bb1fb1](https://github.com/ExaDev/markmv/commit/8bb1fb1be546220231d55506ec6cdad5949ade5e))
+
 ## [1.17.2](https://github.com/ExaDev/markmv/compare/v1.17.1...v1.17.2) (2025-06-12)
 
 ### Bug Fixes
