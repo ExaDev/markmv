@@ -61,7 +61,7 @@ jobs:
             ${{ runner.os }}-test-
           
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
         
       # Auto-fix linting issues (only on push to main)
       - name: Check for fixable linting issues
@@ -191,7 +191,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
         
       - name: Download coverage artifacts
         uses: actions/download-artifact@v4
@@ -446,7 +446,7 @@ jobs:
           cache: 'npm'
           
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
         
       - name: Build project
         run: npm run build
