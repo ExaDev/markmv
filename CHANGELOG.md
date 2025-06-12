@@ -1,3 +1,9 @@
+## [1.19.6](https://github.com/ExaDev/markmv/compare/v1.19.5...v1.19.6) (2025-06-12)
+
+### Tests
+
+* verify GitHub Packages publishing with updated permissions ([91f891a](https://github.com/ExaDev/markmv/commit/91f891ac045c7ef18b1deceb429a06d2eb878703))
+
 ## [1.19.5](https://github.com/ExaDev/markmv/compare/v1.19.4...v1.19.5) (2025-06-12)
 
 ### Bug Fixes
