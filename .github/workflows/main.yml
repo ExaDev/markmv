@@ -352,15 +352,30 @@ jobs:
         run: |
           echo "📦 Preparing package configuration for GitHub Packages..."
           
-          # Create dist-github directory and copy build artifacts
+          # Create dist-github directory and copy ALL build artifacts
           mkdir -p dist-github
-          cp -r dist/* dist-github/
+          cp -r dist/* dist-github/ 2>/dev/null || echo "Warning: No dist files found"
+          
+          # Verify binary files exist and are executable
+          if [ -f "dist-github/cli.js" ]; then
+            chmod +x dist-github/cli.js
+            echo "✅ CLI binary found and made executable"
+          else
+            echo "❌ CLI binary not found in dist-github/"
+            ls -la dist-github/ || echo "dist-github directory is empty"
+            ls -la dist/ || echo "dist directory not found"
+            exit 1
+          fi
           
           # Create a scoped package.json for GitHub Packages (remove prepublishOnly script)
           jq '.name = "@exadev/markmv" | .publishConfig.registry = "https://npm.pkg.github.com" | del(.scripts.prepublishOnly)' package.json > dist-github/package.json
           
           # Copy other required files to dist-github
           cp README.md CHANGELOG.md LICENSE dist-github/ 2>/dev/null || true
+          
+          # Show final structure
+          echo "📁 Final dist-github structure:"
+          ls -la dist-github/
           
           echo "✅ GitHub Packages configuration prepared"
           
