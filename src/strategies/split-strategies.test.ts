@@ -325,7 +325,9 @@ Content 2`;
 
     it('should sanitize filenames correctly', () => {
       // Access protected method for testing
-      const sanitize = (strategy as any).sanitizeFilename.bind(strategy);
+      const sanitize = (
+        strategy as { sanitizeFilename: (filename: string) => string }
+      ).sanitizeFilename.bind(strategy);
 
       expect(sanitize('Hello World!')).toBe('hello-world');
       expect(sanitize('Special@#$%Characters')).toBe('specialcharacters');
@@ -334,7 +336,9 @@ Content 2`;
     });
 
     it('should extract header levels correctly', () => {
-      const getLevel = (strategy as any).getHeaderLevel.bind(strategy);
+      const getLevel = (
+        strategy as { getHeaderLevel: (line: string) => number }
+      ).getHeaderLevel.bind(strategy);
 
       expect(getLevel('# Header 1')).toBe(1);
       expect(getLevel('## Header 2')).toBe(2);
@@ -347,7 +351,9 @@ Content 2`;
     });
 
     it('should extract titles from headers', () => {
-      const extractTitle = (strategy as any).extractTitleFromHeader.bind(strategy);
+      const extractTitle = (
+        strategy as { extractTitleFromHeader: (line: string) => string }
+      ).extractTitleFromHeader.bind(strategy);
 
       expect(extractTitle('# Main Title')).toBe('Main Title');
       expect(extractTitle('## Section Title')).toBe('Section Title');

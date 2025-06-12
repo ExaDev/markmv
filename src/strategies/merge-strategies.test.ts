@@ -194,7 +194,9 @@ More content.`;
     const strategy = new AppendMergeStrategy();
 
     it('should extract transclusions correctly', () => {
-      const extractTransclusions = (strategy as any).extractTransclusions.bind(strategy);
+      const extractTransclusions = (
+        strategy as { extractTransclusions: (content: string) => unknown[] }
+      ).extractTransclusions.bind(strategy);
 
       const content = `# Test Document
 
@@ -218,14 +220,20 @@ End.`;
     });
 
     it('should create transclusion references', () => {
-      const createTransclusion = (strategy as any).createTransclusion.bind(strategy);
+      const createTransclusion = (
+        strategy as { createTransclusion: (filePath: string) => string }
+      ).createTransclusion.bind(strategy);
 
       expect(createTransclusion('test-file.md')).toBe('![[test-file]]');
       expect(createTransclusion('test-file.md', 'section')).toBe('![[test-file#section]]');
     });
 
     it('should detect transclusion loops', () => {
-      const detectLoops = (strategy as any).detectTransclusionLoops.bind(strategy);
+      const detectLoops = (
+        strategy as {
+          detectTransclusionLoops: (transclusions: unknown[], filePath: string) => boolean;
+        }
+      ).detectTransclusionLoops.bind(strategy);
 
       const existingRefs = ['![[file-a]]', '![[file-b#section]]'];
 
@@ -235,7 +243,9 @@ End.`;
     });
 
     it('should extract headers with levels and positions', () => {
-      const extractHeaders = (strategy as any).extractHeaders.bind(strategy);
+      const extractHeaders = (
+        strategy as { extractHeaders: (content: string) => unknown[] }
+      ).extractHeaders.bind(strategy);
 
       const content = `# Main Header
 Some content.
@@ -259,7 +269,11 @@ Even more content.`;
     });
 
     it('should find header conflicts', () => {
-      const findConflicts = (strategy as any).findHeaderConflicts.bind(strategy);
+      const findConflicts = (
+        strategy as {
+          findHeaderConflicts: (sourceHeaders: unknown[], targetHeaders: unknown[]) => unknown[];
+        }
+      ).findHeaderConflicts.bind(strategy);
 
       const target = '# Same Header\n\n## Different Header\n\n### Same Header';
       const source = '# Same Header\n\n## Another Header\n\n### Same Header';
@@ -271,7 +285,9 @@ Even more content.`;
     });
 
     it('should merge frontmatter with array deduplication', () => {
-      const mergeFrontmatter = (strategy as any).mergeFrontmatter.bind(strategy);
+      const mergeFrontmatter = (
+        strategy as { mergeFrontmatter: (sourceFm: string, targetFm: string) => string }
+      ).mergeFrontmatter.bind(strategy);
 
       const target = `---
 title: "Target"

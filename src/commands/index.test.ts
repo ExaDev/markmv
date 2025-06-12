@@ -32,7 +32,7 @@ describe('Index Command', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockExistsSync.mockReturnValue(true);
-    mockStatSync.mockReturnValue(mockStats as any);
+    mockStatSync.mockReturnValue(mockStats as import('fs').Stats);
   });
 
   describe('CLI Options Processing', () => {
@@ -374,7 +374,7 @@ Just plain content.`;
 
     it('should throw error for non-directory path', async () => {
       mockExistsSync.mockReturnValue(true);
-      mockStatSync.mockReturnValue({ isDirectory: () => false } as any);
+      mockStatSync.mockReturnValue({ isDirectory: () => false } as import('fs').Stats);
 
       const cliOptions = { type: 'links', dryRun: true };
 

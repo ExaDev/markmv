@@ -115,7 +115,7 @@ This is just text with no links.
 
       const originalError = console.error;
       const errors: string[] = [];
-      console.error = (...args: any[]) => {
+      console.error = (...args: unknown[]) => {
         errors.push(args.join(' '));
       };
 
@@ -147,7 +147,7 @@ This is just text with no links.
 
       const originalError = console.error;
       const errors: string[] = [];
-      console.error = (...args: any[]) => {
+      console.error = (...args: unknown[]) => {
         errors.push(args.join(' '));
       };
 
@@ -178,7 +178,7 @@ This is just text with no links.
 
       const originalError = console.error;
       const errors: string[] = [];
-      console.error = (...args: any[]) => {
+      console.error = (...args: unknown[]) => {
         errors.push(args.join(' '));
       };
 
@@ -270,7 +270,7 @@ This is just text with no links.
 
       const originalError = console.error;
       const errors: string[] = [];
-      console.error = (...args: any[]) => {
+      console.error = (...args: unknown[]) => {
         errors.push(args.join(' '));
       };
 
@@ -298,7 +298,7 @@ This is just text with no links.
 
       const originalError = console.error;
       const errors: string[] = [];
-      console.error = (...args: any[]) => {
+      console.error = (...args: unknown[]) => {
         errors.push(args.join(' '));
       };
 

@@ -276,7 +276,9 @@ describe('Join Strategies', () => {
     const strategy = new DependencyOrderJoinStrategy();
 
     it('should extract titles correctly', () => {
-      const extractTitle = (strategy as any).extractTitle.bind(strategy);
+      const extractTitle = (
+        strategy as { extractTitle: (content: string, frontmatter: string) => string }
+      ).extractTitle.bind(strategy);
 
       expect(extractTitle('# Main Title\n\nContent', '')).toBe('Main Title');
       expect(extractTitle('Content without header', '---\ntitle: "From Frontmatter"\n---\n')).toBe(
@@ -286,7 +288,9 @@ describe('Join Strategies', () => {
     });
 
     it('should merge frontmatter correctly', () => {
-      const mergeFrontmatter = (strategy as any).mergeFrontmatter.bind(strategy);
+      const mergeFrontmatter = (
+        strategy as { mergeFrontmatter: (sections: unknown[]) => string }
+      ).mergeFrontmatter.bind(strategy);
 
       const sections = [
         {
@@ -313,7 +317,9 @@ describe('Join Strategies', () => {
     });
 
     it('should detect header conflicts', () => {
-      const detectConflicts = (strategy as any).detectConflicts.bind(strategy);
+      const detectConflicts = (
+        strategy as { detectConflicts: (sections: unknown[]) => unknown[] }
+      ).detectConflicts.bind(strategy);
 
       const sections = [
         {
