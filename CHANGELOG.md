@@ -1,3 +1,9 @@
+## [1.19.4](https://github.com/ExaDev/markmv/compare/v1.19.3...v1.19.4) (2025-06-12)
+
+### Bug Fixes
+
+* improve GitHub Packages publishing with fallback strategy ([c3ce0aa](https://github.com/ExaDev/markmv/commit/c3ce0aa9e6240bb251587e6759382c9c4541ed25))
+
 ## [1.19.3](https://github.com/ExaDev/markmv/compare/v1.19.2...v1.19.3) (2025-06-12)
 
 ### Bug Fixes
