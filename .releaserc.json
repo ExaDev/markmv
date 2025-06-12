@@ -94,8 +94,8 @@
     [
       "@semantic-release/git",
       {
-        "assets": ["CHANGELOG.md", "package.json", "package-lock.json"],
-        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+        "assets": ["CHANGELOG.md", "package.json", "package-lock.json", "README.md"],
+        "message": "chore(release): ${nextRelease.version} [skip ci]\n\nIncludes auto-generated README and updated coverage badges\n\n${nextRelease.notes}"
       }
     ]
   ]

@@ -237,34 +237,13 @@ jobs:
           subject-path: 'dist/**/*'
           sbom-path: 'sbom.spdx.json'
         
-      - name: Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm run release
-        
-      # Post-release updates - only if a release was created
-      - name: Check if release was created
-        id: check-release
-        run: |
-          # Check if semantic-release created new commits
-          if git log --oneline -1 | grep -E "(chore\(release\)|Release)"; then
-            echo "release-created=true" >> $GITHUB_OUTPUT
-            echo "✅ New release was created, proceeding with README and badge updates"
-          else
-            echo "release-created=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ No new release created, skipping post-release updates"
-          fi
-          
-      - name: Generate updated README
-        if: steps.check-release.outputs.release-created == 'true'
+      # Pre-release: Generate README and update badges BEFORE semantic-release
+      - name: Generate updated README for release
         run: |
           echo "🔄 Generating README from TypeScript documentation..."
           npm run docs:readme-generate
           
       - name: Extract coverage data for badges
-        if: steps.check-release.outputs.release-created == 'true'
         id: coverage
         run: |
           # Test coverage
@@ -286,7 +265,6 @@ jobs:
           echo "📊 Test Coverage: $TEST_COV% | Documentation Coverage: $DOCS_COV%"
           
       - name: Determine badge colors
-        if: steps.check-release.outputs.release-created == 'true'
         id: colors
         run: |
           # Test coverage color
@@ -330,11 +308,11 @@ jobs:
           echo "test-color=$TEST_COLOR" >> $GITHUB_OUTPUT
           echo "docs-color=$DOCS_COLOR" >> $GITHUB_OUTPUT
           
-      - name: Update README badges
-        if: steps.check-release.outputs.release-created == 'true'
+      - name: Update README badges before release
         run: |
           echo "🎨 Updating coverage badges in README..."
-          COMMIT_HASH=$(git rev-parse HEAD)
+          # Use current commit hash as base for badges (will be the commit before release)
+          CURRENT_HASH=$(git rev-parse HEAD)
           
           TEST_COV="${{ steps.coverage.outputs.test-coverage }}"
           DOCS_COV="${{ steps.coverage.outputs.docs-coverage }}"
@@ -345,9 +323,9 @@ jobs:
           TEST_COV_ENCODED=$(echo "$TEST_COV" | sed 's/%/%25/g')
           DOCS_COV_ENCODED=$(echo "$DOCS_COV" | sed 's/%/%25/g')
           
-          # Create new badge URLs
-          TEST_BADGE="[![Test Coverage](https://img.shields.io/badge/coverage-${TEST_COV_ENCODED}-${TEST_COLOR}.svg)](https://github.com/ExaDev/markmv/commit/${COMMIT_HASH})"
-          DOCS_BADGE="[![Documentation Coverage](https://img.shields.io/badge/docs-${DOCS_COV_ENCODED}-${DOCS_COLOR}.svg)](https://github.com/ExaDev/markmv/commit/${COMMIT_HASH})"
+          # Create new badge URLs with current commit hash
+          TEST_BADGE="[![Test Coverage](https://img.shields.io/badge/coverage-${TEST_COV_ENCODED}-${TEST_COLOR}.svg)](https://github.com/ExaDev/markmv/commit/${CURRENT_HASH})"
+          DOCS_BADGE="[![Documentation Coverage](https://img.shields.io/badge/docs-${DOCS_COV_ENCODED}-${DOCS_COLOR}.svg)](https://github.com/ExaDev/markmv/commit/${CURRENT_HASH})"
           
           # Update README.md
           awk -v test_badge="$TEST_BADGE" -v docs_badge="$DOCS_BADGE" '
@@ -356,35 +334,27 @@ jobs:
           { print }
           ' README.md > README.md.tmp && mv README.md.tmp README.md
           
-      - name: Commit README and badge updates as part of release
-        if: steps.check-release.outputs.release-created == 'true'
+          echo "✅ README badges updated with current coverage data (commit: ${CURRENT_HASH})"
+          
+      - name: Stage README and badge updates for release
         run: |
           if ! git diff --quiet; then
-            echo "📝 Committing README and badge updates as part of release..."
-            
-            git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git config --local user.name "github-actions[bot]"
-            
-            # Fetch and merge remote changes (including the release commit)
-            git fetch origin main
-            git merge origin/main || echo "Merge conflicts resolved automatically"
-            
-            # Add all changes (README updates, badge updates)
+            echo "📝 Staging README and badge updates for inclusion in release commit..."
             git add README.md
-            
-            # Create a follow-up commit with README and badge updates
-            git commit -m "docs: update README and coverage badges for release" \
-                       -m "Auto-generated README from TypeScript documentation" \
-                       -m "Test Coverage: ${{ steps.coverage.outputs.test-coverage }}" \
-                       -m "Documentation Coverage: ${{ steps.coverage.outputs.docs-coverage }}" \
-                       -m "Generated as part of release pipeline"
-            
-            # Push the updates
-            git push
-            echo "✅ README and badge updates committed and pushed"
+            echo "✅ Changes staged and ready for semantic-release"
           else
-            echo "ℹ️ No changes to add"
+            echo "ℹ️ No README changes to stage"
           fi
+        
+      - name: Release (includes README and badge updates)
+        env:
+          GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          echo "🚀 Starting semantic-release with staged README and badge updates..."
+          npm run release
+          echo "✅ Release completed - README and badges included in release commit"
 
   # Documentation Deployment - Only after successful release with updated version
   documentation:
