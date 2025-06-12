@@ -50,7 +50,7 @@ export interface ConvertOptions {
  *
  *   // Recursive directory processing
  *   await expandSourcePatterns(['docs/'], { recursive: true });
- *   ```
+ *   ```;
  *
  * @param patterns - Array of file patterns, paths, or directories to expand
  * @param options - Conversion options including recursive processing
@@ -86,14 +86,14 @@ async function expandSourcePatterns(
       if (options.recursive) {
         const globPattern = `${absolutePattern}/**/*.md`;
         const files = await glob(globPattern, { absolute: true });
-        files.forEach(file => resolvedFiles.add(file));
+        files.forEach((file) => resolvedFiles.add(file));
         if (options.verbose) {
           console.log(`Added ${files.length} files from directory: ${absolutePattern}`);
         }
       } else {
         const globPattern = `${absolutePattern}/*.md`;
         const files = await glob(globPattern, { absolute: true });
-        files.forEach(file => resolvedFiles.add(file));
+        files.forEach((file) => resolvedFiles.add(file));
         if (options.verbose) {
           console.log(`Added ${files.length} files from directory: ${absolutePattern}`);
         }
@@ -104,26 +104,30 @@ async function expandSourcePatterns(
     // Treat as glob pattern
     try {
       const files = await glob(pattern, { absolute: true });
-      const markdownFiles = files.filter(file => PathUtils.isMarkdownFile(file));
-      
+      const markdownFiles = files.filter((file) => PathUtils.isMarkdownFile(file));
+
       if (markdownFiles.length === 0 && options.verbose) {
         console.warn(`No markdown files found for pattern: ${pattern}`);
       }
 
-      markdownFiles.forEach(file => resolvedFiles.add(file));
-      
+      markdownFiles.forEach((file) => resolvedFiles.add(file));
+
       if (options.verbose) {
         console.log(`Pattern "${pattern}" matched ${markdownFiles.length} markdown files`);
       }
     } catch (error) {
-      throw new Error(`Invalid glob pattern "${pattern}": ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Invalid glob pattern "${pattern}": ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
   const finalFiles = Array.from(resolvedFiles);
 
   if (finalFiles.length === 0) {
-    throw new Error(`No markdown files found matching the provided patterns: ${patterns.join(', ')}`);
+    throw new Error(
+      `No markdown files found matching the provided patterns: ${patterns.join(', ')}`
+    );
   }
 
   return finalFiles.sort();
@@ -133,7 +137,9 @@ async function expandSourcePatterns(
  * Validate conversion options and provide defaults.
  *
  * @param options - Raw conversion options from CLI
+ *
  * @returns Validated options with defaults applied
+ *
  * @throws Error if options are invalid
  */
 function validateConvertOptions(options: ConvertOptions): ConvertOptions {
@@ -141,17 +147,26 @@ function validateConvertOptions(options: ConvertOptions): ConvertOptions {
 
   // Validate path resolution
   if (validated.pathResolution && !['absolute', 'relative'].includes(validated.pathResolution)) {
-    throw new Error(`Invalid path resolution type: ${validated.pathResolution}. Must be 'absolute' or 'relative'`);
+    throw new Error(
+      `Invalid path resolution type: ${validated.pathResolution}. Must be 'absolute' or 'relative'`
+    );
   }
 
   // Validate link style
-  if (validated.linkStyle && !['markdown', 'claude', 'combined', 'wikilink'].includes(validated.linkStyle)) {
-    throw new Error(`Invalid link style: ${validated.linkStyle}. Must be 'markdown', 'claude', 'combined', or 'wikilink'`);
+  if (
+    validated.linkStyle &&
+    !['markdown', 'claude', 'combined', 'wikilink'].includes(validated.linkStyle)
+  ) {
+    throw new Error(
+      `Invalid link style: ${validated.linkStyle}. Must be 'markdown', 'claude', 'combined', or 'wikilink'`
+    );
   }
 
   // Require at least one conversion operation
   if (!validated.pathResolution && !validated.linkStyle) {
-    throw new Error('At least one conversion option must be specified (--path-resolution or --link-style)');
+    throw new Error(
+      'At least one conversion option must be specified (--path-resolution or --link-style)'
+    );
   }
 
   // Set default base path
@@ -190,12 +205,12 @@ function printConvertSummary(
 
   if (result.errors.length > 0) {
     console.log(`Errors: ${result.errors.length}`);
-    result.errors.forEach(error => console.error(`  - ${error}`));
+    result.errors.forEach((error) => console.error(`  - ${error}`));
   }
 
   if (result.warnings.length > 0) {
     console.log(`Warnings: ${result.warnings.length}`);
-    result.warnings.forEach(warning => console.warn(`  - ${warning}`));
+    result.warnings.forEach((warning) => console.warn(`  - ${warning}`));
   }
 
   if (options.dryRun) {
@@ -209,6 +224,8 @@ function printConvertSummary(
  * Processes markdown files to convert link formats and path resolution according to specified
  * options. Supports dry run mode, verbose output, and various conversion strategies.
  *
+ * @category Commands
+ *
  * @example
  *   ```bash
  *   # Convert all links to relative paths
@@ -219,17 +236,12 @@ function printConvertSummary(
  *
  *   # Dry run with verbose output
  *   markmv convert README.md --link-style claude --dry-run --verbose
- *   ```
+ *   ```;
  *
  * @param patterns - File patterns to process (supports globs)
  * @param options - Command options specifying conversion parameters
- *
- * @category Commands
  */
-export async function convertCommand(
-  patterns: string[],
-  options: ConvertOptions
-): Promise<void> {
+export async function convertCommand(patterns: string[], options: ConvertOptions): Promise<void> {
   try {
     // Validate input patterns
     if (!patterns || patterns.length === 0) {
@@ -268,7 +280,7 @@ export async function convertCommand(
       ...(validatedOptions.linkStyle && { linkStyle: validatedOptions.linkStyle }),
       ...(validatedOptions.recursive && { recursive: validatedOptions.recursive }),
       ...(validatedOptions.dryRun && { dryRun: validatedOptions.dryRun }),
-      ...(validatedOptions.verbose && { verbose: validatedOptions.verbose })
+      ...(validatedOptions.verbose && { verbose: validatedOptions.verbose }),
     };
 
     const result = await converter.convertFiles(files, operationOptions);
@@ -287,7 +299,6 @@ export async function convertCommand(
     } else {
       console.log('\nConversion completed successfully');
     }
-
   } catch (error) {
     console.error('Conversion failed:', error instanceof Error ? error.message : String(error));
     process.exit(1);

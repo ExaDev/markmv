@@ -50,7 +50,7 @@ Also a reference link [ref link][1] and a Claude import:
         await convertCommand([testFile], {
           pathResolution: 'relative',
           dryRun: true,
-          verbose: true
+          verbose: true,
         });
       } catch {
         // Expected when process.exit is called
@@ -60,8 +60,8 @@ Also a reference link [ref link][1] and a Claude import:
       }
 
       expect(exitCode).toBe(0);
-      expect(logs.some(log => log.includes('Starting link conversion'))).toBe(true);
-      expect(logs.some(log => log.includes('Dry run mode'))).toBe(true);
+      expect(logs.some((log) => log.includes('Starting link conversion'))).toBe(true);
+      expect(logs.some((log) => log.includes('Dry run mode'))).toBe(true);
     });
 
     it('should handle files that need no conversion', async () => {
@@ -90,7 +90,7 @@ This is just text with no links.
       try {
         await convertCommand([testFile], {
           pathResolution: 'relative',
-          verbose: true
+          verbose: true,
         });
       } catch {
         // Expected when process.exit is called
@@ -100,7 +100,7 @@ This is just text with no links.
       }
 
       expect(exitCode).toBe(0);
-      expect(logs.some(log => log.includes('No changes were needed'))).toBe(true);
+      expect(logs.some((log) => log.includes('No changes were needed'))).toBe(true);
     });
 
     it('should validate conversion options', async () => {
@@ -131,7 +131,9 @@ This is just text with no links.
       }
 
       expect(exitCode).toBe(1);
-      expect(errors.some(error => error.includes('At least one conversion option must be specified'))).toBe(true);
+      expect(
+        errors.some((error) => error.includes('At least one conversion option must be specified'))
+      ).toBe(true);
     });
 
     it('should handle invalid path resolution option', async () => {
@@ -153,7 +155,7 @@ This is just text with no links.
 
       try {
         await convertCommand([testFile], {
-          pathResolution: 'invalid' as 'absolute' | 'relative'
+          pathResolution: 'invalid' as 'absolute' | 'relative',
         });
       } catch {
         // Expected when process.exit is called
@@ -163,7 +165,7 @@ This is just text with no links.
       }
 
       expect(exitCode).toBe(1);
-      expect(errors.some(error => error.includes('Invalid path resolution type'))).toBe(true);
+      expect(errors.some((error) => error.includes('Invalid path resolution type'))).toBe(true);
     });
 
     it('should handle invalid link style option', async () => {
@@ -185,7 +187,7 @@ This is just text with no links.
 
       try {
         await convertCommand([testFile], {
-          linkStyle: 'invalid' as 'markdown' | 'claude' | 'combined' | 'wikilink'
+          linkStyle: 'invalid' as 'markdown' | 'claude' | 'combined' | 'wikilink',
         });
       } catch {
         // Expected when process.exit is called
@@ -195,7 +197,7 @@ This is just text with no links.
       }
 
       expect(exitCode).toBe(1);
-      expect(errors.some(error => error.includes('Invalid link style'))).toBe(true);
+      expect(errors.some((error) => error.includes('Invalid link style'))).toBe(true);
     });
   });
 
@@ -215,7 +217,7 @@ This is just text with no links.
         await convertCommand([testFile], {
           pathResolution: 'relative',
           dryRun: true,
-          verbose: true
+          verbose: true,
         });
       } catch {
         // Expected when process.exit is called
@@ -250,7 +252,7 @@ This is just text with no links.
           pathResolution: 'relative',
           recursive: true,
           dryRun: true,
-          verbose: true
+          verbose: true,
         });
       } catch {
         // Expected when process.exit is called
@@ -260,7 +262,7 @@ This is just text with no links.
       }
 
       expect(exitCode).toBe(0);
-      expect(logs.some(log => log.includes('markdown files to process'))).toBe(true);
+      expect(logs.some((log) => log.includes('markdown files to process'))).toBe(true);
     });
 
     it('should handle non-existent files gracefully', async () => {
@@ -279,7 +281,7 @@ This is just text with no links.
 
       try {
         await convertCommand(['non-existent.md'], {
-          pathResolution: 'relative'
+          pathResolution: 'relative',
         });
       } catch {
         // Expected when process.exit is called
@@ -289,7 +291,7 @@ This is just text with no links.
       }
 
       expect(exitCode).toBe(1);
-      expect(errors.some(error => error.includes('No markdown files found'))).toBe(true);
+      expect(errors.some((error) => error.includes('No markdown files found'))).toBe(true);
     });
 
     it('should require at least one file pattern', async () => {
@@ -308,7 +310,7 @@ This is just text with no links.
 
       try {
         await convertCommand([], {
-          pathResolution: 'relative'
+          pathResolution: 'relative',
         });
       } catch {
         // Expected when process.exit is called
@@ -318,7 +320,9 @@ This is just text with no links.
       }
 
       expect(exitCode).toBe(1);
-      expect(errors.some(error => error.includes('At least one file pattern must be specified'))).toBe(true);
+      expect(
+        errors.some((error) => error.includes('At least one file pattern must be specified'))
+      ).toBe(true);
     });
   });
 
@@ -349,7 +353,7 @@ This is just text with no links.
           pathResolution: 'relative',
           linkStyle: 'wikilink',
           dryRun: true,
-          verbose: true
+          verbose: true,
         });
       } catch {
         // Expected when process.exit is called
@@ -359,11 +363,13 @@ This is just text with no links.
       }
 
       expect(exitCode).toBe(0);
-      expect(logs.some(log => log.includes('Conversion Summary'))).toBe(true);
-      expect(logs.some(log => log.includes('Files processed:'))).toBe(true);
-      expect(logs.some(log => log.includes('Path resolution: converted to relative'))).toBe(true);
-      expect(logs.some(log => log.includes('Link style: converted to wikilink'))).toBe(true);
-      expect(logs.some(log => log.includes('Dry run - no files were actually modified'))).toBe(true);
+      expect(logs.some((log) => log.includes('Conversion Summary'))).toBe(true);
+      expect(logs.some((log) => log.includes('Files processed:'))).toBe(true);
+      expect(logs.some((log) => log.includes('Path resolution: converted to relative'))).toBe(true);
+      expect(logs.some((log) => log.includes('Link style: converted to wikilink'))).toBe(true);
+      expect(logs.some((log) => log.includes('Dry run - no files were actually modified'))).toBe(
+        true
+      );
     });
   });
 });

@@ -5,7 +5,11 @@ import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
 import { visit } from 'unist-util-visit';
 import type { Node } from 'unist';
-import type { ConvertOperationOptions, OperationResult, OperationChange } from '../types/operations.js';
+import type {
+  ConvertOperationOptions,
+  OperationResult,
+  OperationChange,
+} from '../types/operations.js';
 import type { MarkdownLink } from '../types/links.js';
 import { LinkParser } from './link-parser.js';
 
@@ -25,7 +29,6 @@ interface TextNode extends Node {
   value: string;
 }
 
-
 /**
  * Core class for converting markdown link formats and path resolution.
  *
@@ -38,12 +41,12 @@ interface TextNode extends Node {
  *   Basic link conversion
  *   ```typescript
  *   const converter = new LinkConverter();
- *   
+ *
  *   // Convert all links to relative paths and wikilink style
  *   const result = await converter.convertFile('document.md', {
- *     pathResolution: 'relative',
- *     linkStyle: 'wikilink',
- *     basePath: process.cwd()
+ *   pathResolution: 'relative',
+ *   linkStyle: 'wikilink',
+ *   basePath: process.cwd()
  *   });
  *   ```
  */
@@ -59,6 +62,7 @@ export class LinkConverter {
    *
    * @param filePath - Path to the markdown file to convert
    * @param options - Conversion options specifying target format
+   *
    * @returns Promise resolving to operation result with conversion details
    */
   async convertFile(filePath: string, options: ConvertOperationOptions): Promise<OperationResult> {
@@ -69,21 +73,16 @@ export class LinkConverter {
       deletedFiles: [],
       errors: [],
       warnings: [],
-      changes: []
+      changes: [],
     };
 
     try {
       // Read and parse the file
       const content = await readFile(filePath, 'utf-8');
       const parsed = await this.parser.parseFile(filePath);
-      
+
       // Convert the content
-      const convertedContent = await this.convertContent(
-        content, 
-        parsed.links, 
-        filePath, 
-        options
-      );
+      const convertedContent = await this.convertContent(content, parsed.links, filePath, options);
 
       // Check if content actually changed
       if (convertedContent === content) {
@@ -122,9 +121,13 @@ export class LinkConverter {
    *
    * @param filePaths - Array of file paths to convert
    * @param options - Conversion options specifying target format
+   *
    * @returns Promise resolving to combined operation result
    */
-  async convertFiles(filePaths: string[], options: ConvertOperationOptions): Promise<OperationResult> {
+  async convertFiles(
+    filePaths: string[],
+    options: ConvertOperationOptions
+  ): Promise<OperationResult> {
     const combinedResult: OperationResult = {
       success: true,
       modifiedFiles: [],
@@ -132,12 +135,12 @@ export class LinkConverter {
       deletedFiles: [],
       errors: [],
       warnings: [],
-      changes: []
+      changes: [],
     };
 
     for (const filePath of filePaths) {
       const result = await this.convertFile(filePath, options);
-      
+
       // Combine results
       combinedResult.modifiedFiles.push(...result.modifiedFiles);
       combinedResult.createdFiles.push(...result.createdFiles);
@@ -158,10 +161,12 @@ export class LinkConverter {
    * Convert markdown content with specified link transformations.
    *
    * @private
+   *
    * @param content - Original markdown content
    * @param links - Parsed link information
    * @param filePath - Path of the source file (for relative path calculations)
    * @param options - Conversion options
+   *
    * @returns Promise resolving to converted content
    */
   private async convertContent(
@@ -171,13 +176,11 @@ export class LinkConverter {
     options: ConvertOperationOptions
   ): Promise<string> {
     // Parse markdown AST
-    const processor = unified()
-      .use(remarkParse)
-      .use(remarkStringify, {
-        bullet: '-',
-        fences: true,
-        incrementListMarker: false
-      });
+    const processor = unified().use(remarkParse).use(remarkStringify, {
+      bullet: '-',
+      fences: true,
+      incrementListMarker: false,
+    });
 
     const tree = processor.parse(content);
     let hasChanges = false;
@@ -212,9 +215,11 @@ export class LinkConverter {
    * Transform a link node according to conversion options.
    *
    * @private
+   *
    * @param node - The link/image node to transform
    * @param filePath - Source file path for relative calculations
    * @param options - Conversion options
+   *
    * @returns Whether the node was modified
    */
   private transformLinkNode(
@@ -252,9 +257,11 @@ export class LinkConverter {
    * Transform text-based links (like Claude imports).
    *
    * @private
+   *
    * @param node - Text node that might contain text-based links
    * @param filePath - Source file path for relative calculations
    * @param options - Conversion options
+   *
    * @returns Whether the node was modified
    */
   private transformTextLinks(
@@ -292,10 +299,12 @@ export class LinkConverter {
    * Convert path resolution between absolute and relative formats.
    *
    * @private
+   *
    * @param linkPath - Original link path
    * @param sourceFile - Path of the file containing the link
    * @param targetResolution - Target path resolution type
    * @param basePath - Base path for absolute resolution calculations
+   *
    * @returns Converted path
    */
   private convertPathResolution(
@@ -317,7 +326,7 @@ export class LinkConverter {
       if (isAbsolute(linkPath)) {
         return linkPath;
       }
-      
+
       // Resolve relative to source file
       const resolvedPath = resolve(sourceDir, linkPath);
       return relative(base, resolvedPath);
@@ -337,17 +346,19 @@ export class LinkConverter {
    * Convert link style format.
    *
    * @private
+   *
    * @param node - Link node to convert
    * @param targetStyle - Target link style
+   *
    * @returns Whether the node was modified
    */
   private convertLinkStyle(_node: LinkNode, _targetStyle: string): boolean {
     // For now, this is a placeholder as style conversion requires more complex AST manipulation
     // The actual implementation would need to transform the node type and structure
-    
+
     // TODO: Implement style conversion logic
     // This would involve changing node types and restructuring the AST
-    
+
     return false;
   }
 
@@ -355,31 +366,33 @@ export class LinkConverter {
    * Detect changes between original and converted content.
    *
    * @private
+   *
    * @param original - Original content
    * @param converted - Converted content
    * @param filePath - File path for change tracking
+   *
    * @returns Array of detected changes
    */
   private detectChanges(original: string, converted: string, filePath: string): OperationChange[] {
     const changes: OperationChange[] = [];
-    
+
     // Simple line-by-line comparison for now
     const originalLines = original.split('\n');
     const convertedLines = converted.split('\n');
-    
+
     const maxLines = Math.max(originalLines.length, convertedLines.length);
-    
+
     for (let i = 0; i < maxLines; i++) {
       const originalLine = originalLines[i] || '';
       const convertedLine = convertedLines[i] || '';
-      
+
       if (originalLine !== convertedLine) {
         changes.push({
           type: 'link-updated',
           filePath,
           oldValue: originalLine,
           newValue: convertedLine,
-          line: i + 1
+          line: i + 1,
         });
       }
     }
@@ -391,7 +404,9 @@ export class LinkConverter {
    * Check if a node is a link or image node.
    *
    * @private
+   *
    * @param node - Node to check
+   *
    * @returns Whether the node is a link node
    */
   private isLinkNode(node: Node): node is LinkNode {
@@ -402,7 +417,9 @@ export class LinkConverter {
    * Check if a node is a text node.
    *
    * @private
+   *
    * @param node - Node to check
+   *
    * @returns Whether the node is a text node
    */
   private isTextNode(node: Node): node is TextNode {
@@ -413,7 +430,9 @@ export class LinkConverter {
    * Check if a URL represents an internal link.
    *
    * @private
+   *
    * @param url - URL to check
+   *
    * @returns Whether the URL is an internal link
    */
   private isInternalLink(url: string): boolean {

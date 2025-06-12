@@ -18,8 +18,8 @@ export type LinkType =
 /**
  * Link style formats supported for conversion operations.
  *
- * Defines the different syntactic formats that links can be converted between while
- * maintaining their semantic meaning and target paths.
+ * Defines the different syntactic formats that links can be converted between while maintaining
+ * their semantic meaning and target paths.
  *
  * @category Types
  */

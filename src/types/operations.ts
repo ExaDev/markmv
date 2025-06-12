@@ -81,8 +81,8 @@ export interface MergeOperationOptions extends OperationOptions {
 /**
  * Configuration options specific to convert operations.
  *
- * Extends base operation options with convert-specific settings for transforming link formats
- * and path resolution styles across markdown files.
+ * Extends base operation options with convert-specific settings for transforming link formats and
+ * path resolution styles across markdown files.
  *
  * @category Types
  */
