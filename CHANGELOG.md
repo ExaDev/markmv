@@ -1,3 +1,11 @@
+## [1.20.3](https://github.com/ExaDev/markmv/compare/v1.20.2...v1.20.3) (2025-06-12)
+
+### Bug Fixes
+
+* remove Node 18.x from CI matrix due to semantic-release compatibility ([200f540](https://github.com/ExaDev/markmv/commit/200f540a130b837ad0a8e4fa725c8be42c3d866f))
+* switch from GitHub App token to GITHUB_TOKEN for npm packages ([029d64a](https://github.com/ExaDev/markmv/commit/029d64ad5268955506fd66be80ead89ccc640002))
+* switch to user-scoped package for GitHub Packages publishing ([ce366a8](https://github.com/ExaDev/markmv/commit/ce366a8659e33b052689a7e74f96155fa1927b5e))
+
 ## [1.20.2](https://github.com/ExaDev/markmv/compare/v1.20.1...v1.20.2) (2025-06-12)
 
 ### Bug Fixes
