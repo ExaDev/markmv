@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { convertCommand } from './convert.js';
@@ -37,7 +37,8 @@ Also a reference link [ref link][1] and a Claude import:
       const originalExit = process.exit;
       process.exit = ((code: number | undefined): never => {
         exitCode = code || 0;
-        throw new Error('process.exit called');
+        // Don't throw, just prevent actual exit
+        return null as never;
       }) as typeof process.exit;
 
       const originalLog = console.log;
@@ -52,8 +53,6 @@ Also a reference link [ref link][1] and a Claude import:
           dryRun: true,
           verbose: true,
         });
-      } catch {
-        // Expected when process.exit is called
       } finally {
         process.exit = originalExit;
         console.log = originalLog;
@@ -78,7 +77,8 @@ This is just text with no links.
       const originalExit = process.exit;
       process.exit = ((code: number | undefined): never => {
         exitCode = code || 0;
-        throw new Error('process.exit called');
+        // Don't throw, just prevent actual exit
+        return null as never;
       }) as typeof process.exit;
 
       const originalLog = console.log;
@@ -92,8 +92,6 @@ This is just text with no links.
           pathResolution: 'relative',
           verbose: true,
         });
-      } catch {
-        // Expected when process.exit is called
       } finally {
         process.exit = originalExit;
         console.log = originalLog;
@@ -111,20 +109,19 @@ This is just text with no links.
       const originalExit = process.exit;
       process.exit = ((code: number | undefined): never => {
         exitCode = code || 0;
-        throw new Error('process.exit called');
+        // Don't throw, just prevent actual exit
+        return null as never;
       }) as typeof process.exit;
 
       const originalError = console.error;
       const errors: string[] = [];
-      console.error = (message: string) => {
-        errors.push(message);
+      console.error = (...args: any[]) => {
+        errors.push(args.join(' '));
       };
 
       try {
         // Test with no conversion options
         await convertCommand([testFile], {});
-      } catch {
-        // Expected when process.exit is called
       } finally {
         process.exit = originalExit;
         console.error = originalError;
@@ -144,21 +141,20 @@ This is just text with no links.
       const originalExit = process.exit;
       process.exit = ((code: number | undefined): never => {
         exitCode = code || 0;
-        throw new Error('process.exit called');
+        // Don't throw, just prevent actual exit
+        return null as never;
       }) as typeof process.exit;
 
       const originalError = console.error;
       const errors: string[] = [];
-      console.error = (message: string) => {
-        errors.push(message);
+      console.error = (...args: any[]) => {
+        errors.push(args.join(' '));
       };
 
       try {
         await convertCommand([testFile], {
           pathResolution: 'invalid' as 'absolute' | 'relative',
         });
-      } catch {
-        // Expected when process.exit is called
       } finally {
         process.exit = originalExit;
         console.error = originalError;
@@ -176,21 +172,20 @@ This is just text with no links.
       const originalExit = process.exit;
       process.exit = ((code: number | undefined): never => {
         exitCode = code || 0;
-        throw new Error('process.exit called');
+        // Don't throw, just prevent actual exit
+        return null as never;
       }) as typeof process.exit;
 
       const originalError = console.error;
       const errors: string[] = [];
-      console.error = (message: string) => {
-        errors.push(message);
+      console.error = (...args: any[]) => {
+        errors.push(args.join(' '));
       };
 
       try {
         await convertCommand([testFile], {
           linkStyle: 'invalid' as 'markdown' | 'claude' | 'combined' | 'wikilink',
         });
-      } catch {
-        // Expected when process.exit is called
       } finally {
         process.exit = originalExit;
         console.error = originalError;
@@ -210,7 +205,8 @@ This is just text with no links.
       const originalExit = process.exit;
       process.exit = ((code: number | undefined): never => {
         exitCode = code || 0;
-        throw new Error('process.exit called');
+        // Don't throw, just prevent actual exit
+        return null as never;
       }) as typeof process.exit;
 
       try {
@@ -219,8 +215,6 @@ This is just text with no links.
           dryRun: true,
           verbose: true,
         });
-      } catch {
-        // Expected when process.exit is called
       } finally {
         process.exit = originalExit;
       }
@@ -231,6 +225,7 @@ This is just text with no links.
     it('should handle directory patterns with recursive option', async () => {
       // Create nested directory structure
       const subDir = join(testDir, 'subdir');
+      await mkdir(subDir, { recursive: true });
       await writeFile(join(subDir, 'nested.md'), '# Nested file');
       await writeFile(join(testDir, 'root.md'), '# Root file');
 
@@ -238,7 +233,8 @@ This is just text with no links.
       const originalExit = process.exit;
       process.exit = ((code: number | undefined): never => {
         exitCode = code || 0;
-        throw new Error('process.exit called');
+        // Don't throw, just prevent actual exit
+        return null as never;
       }) as typeof process.exit;
 
       const originalLog = console.log;
@@ -254,8 +250,6 @@ This is just text with no links.
           dryRun: true,
           verbose: true,
         });
-      } catch {
-        // Expected when process.exit is called
       } finally {
         process.exit = originalExit;
         console.log = originalLog;
@@ -270,21 +264,20 @@ This is just text with no links.
       const originalExit = process.exit;
       process.exit = ((code: number | undefined): never => {
         exitCode = code || 0;
-        throw new Error('process.exit called');
+        // Don't throw, just prevent actual exit
+        return null as never;
       }) as typeof process.exit;
 
       const originalError = console.error;
       const errors: string[] = [];
-      console.error = (message: string) => {
-        errors.push(message);
+      console.error = (...args: any[]) => {
+        errors.push(args.join(' '));
       };
 
       try {
         await convertCommand(['non-existent.md'], {
           pathResolution: 'relative',
         });
-      } catch {
-        // Expected when process.exit is called
       } finally {
         process.exit = originalExit;
         console.error = originalError;
@@ -299,21 +292,20 @@ This is just text with no links.
       const originalExit = process.exit;
       process.exit = ((code: number | undefined): never => {
         exitCode = code || 0;
-        throw new Error('process.exit called');
+        // Don't throw, just prevent actual exit
+        return null as never;
       }) as typeof process.exit;
 
       const originalError = console.error;
       const errors: string[] = [];
-      console.error = (message: string) => {
-        errors.push(message);
+      console.error = (...args: any[]) => {
+        errors.push(args.join(' '));
       };
 
       try {
         await convertCommand([], {
           pathResolution: 'relative',
         });
-      } catch {
-        // Expected when process.exit is called
       } finally {
         process.exit = originalExit;
         console.error = originalError;
@@ -339,7 +331,8 @@ This is just text with no links.
       const originalExit = process.exit;
       process.exit = ((code: number | undefined): never => {
         exitCode = code || 0;
-        throw new Error('process.exit called');
+        // Don't throw, just prevent actual exit
+        return null as never;
       }) as typeof process.exit;
 
       const originalLog = console.log;
@@ -355,8 +348,6 @@ This is just text with no links.
           dryRun: true,
           verbose: true,
         });
-      } catch {
-        // Expected when process.exit is called
       } finally {
         process.exit = originalExit;
         console.log = originalLog;
