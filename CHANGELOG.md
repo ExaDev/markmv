@@ -1,3 +1,9 @@
+## [1.20.2](https://github.com/ExaDev/markmv/compare/v1.20.1...v1.20.2) (2025-06-12)
+
+### Bug Fixes
+
+* use correct GitHub organization case for scoped package ([f7b6d06](https://github.com/ExaDev/markmv/commit/f7b6d0634fef59dbefaa04fdffed9fdf3e521666))
+
 ## [1.20.1](https://github.com/ExaDev/markmv/compare/v1.20.0...v1.20.1) (2025-06-12)
 
 ### Tests
