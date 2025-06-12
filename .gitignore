@@ -42,3 +42,4 @@ logs/
 # Claude Code memory (should not be committed)
 .claude/
 CLAUDE.md# Test commit to verify GitHub Packages permissions
+# Retrigger CI after GitHub App packages permission update
