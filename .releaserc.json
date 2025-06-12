@@ -56,7 +56,7 @@
     [
       "@semantic-release/exec",
       {
-        "publishCmd": "echo 'Attempting GitHub Packages publishing...' && npm publish dist-github --registry https://npm.pkg.github.com --access public || echo 'GitHub Packages publishing failed, continuing with NPM-only release'"
+        "publishCmd": "echo 'Attempting GitHub Packages publishing...' && cd dist-github && npm publish --registry https://npm.pkg.github.com --access public || echo 'GitHub Packages publishing failed, continuing with NPM-only release'"
       }
     ],
     [
