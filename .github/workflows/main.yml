@@ -356,30 +356,33 @@ jobs:
           { print }
           ' README.md > README.md.tmp && mv README.md.tmp README.md
           
-      - name: Amend release commit with README and badge updates
+      - name: Commit README and badge updates as part of release
         if: steps.check-release.outputs.release-created == 'true'
         run: |
           if ! git diff --quiet; then
-            echo "📝 Adding README and badge updates to release commit..."
+            echo "📝 Committing README and badge updates as part of release..."
             
             git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git config --local user.name "github-actions[bot]"
             
+            # Pull any remote changes first (including the release commit)
+            git pull --rebase origin main
+            
             # Add all changes (README updates, badge updates)
             git add README.md
             
-            # Amend the release commit to include these updates
-            ORIGINAL_MSG=$(git log -1 --pretty=%B)
-            git commit --amend -m "$ORIGINAL_MSG" \
-                              -m "Includes auto-generated README and updated coverage badges" \
-                              -m "Test Coverage: ${{ steps.coverage.outputs.test-coverage }}" \
-                              -m "Documentation Coverage: ${{ steps.coverage.outputs.docs-coverage }}"
+            # Create a follow-up commit with README and badge updates
+            git commit -m "docs: update README and coverage badges for release" \
+                       -m "Auto-generated README from TypeScript documentation" \
+                       -m "Test Coverage: ${{ steps.coverage.outputs.test-coverage }}" \
+                       -m "Documentation Coverage: ${{ steps.coverage.outputs.docs-coverage }}" \
+                       -m "Generated as part of release pipeline"
             
-            # Force push the amended commit (this updates the release tag too)
-            git push --force-with-lease
-            echo "✅ Release commit amended with README and badge updates"
+            # Push the updates
+            git push
+            echo "✅ README and badge updates committed and pushed"
           else
-            echo "ℹ️ No changes to add to release commit"
+            echo "ℹ️ No changes to add"
           fi
 
   # Documentation Deployment - Only after successful release with updated version
