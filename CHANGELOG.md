@@ -1,3 +1,9 @@
+## [1.18.1](https://github.com/ExaDev/markmv/compare/v1.18.0...v1.18.1) (2025-06-12)
+
+### Continuous Integration
+
+* configure NPM attestations and SBOM publishing ([b61e170](https://github.com/ExaDev/markmv/commit/b61e170663b85fe70d0d79cd5d676f82495d8f75))
+
 ## [1.18.0](https://github.com/ExaDev/markmv/compare/v1.17.3...v1.18.0) (2025-06-12)
 
 ### Features
