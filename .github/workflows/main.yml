@@ -400,6 +400,9 @@ jobs:
           @exadev:registry=https://npm.pkg.github.com
           EOF
           
+          # Copy .npmrc to dist-github for GitHub Packages authentication
+          cp .npmrc dist-github/
+          
           npm run release
           echo "✅ Release completed - packages published to both NPM and GitHub Packages"
           
