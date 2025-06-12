@@ -191,9 +191,11 @@ export class LinkConverter {
         }
       } else if (node.type === 'text' && options.linkStyle) {
         // Handle Claude imports and other text-based link formats
-        const transformed = this.transformTextLinks(node as TextNode, filePath, options);
-        if (transformed) {
-          hasChanges = true;
+        if (this.isTextNode(node)) {
+          const transformed = this.transformTextLinks(node, filePath, options);
+          if (transformed) {
+            hasChanges = true;
+          }
         }
       }
     });
@@ -202,7 +204,8 @@ export class LinkConverter {
       return content;
     }
 
-    return String(processor.stringify(tree));
+    const result = processor.stringify(tree);
+    return typeof result === 'string' ? result : String(result);
   }
 
   /**
@@ -393,6 +396,17 @@ export class LinkConverter {
    */
   private isLinkNode(node: Node): node is LinkNode {
     return ['link', 'image', 'linkReference', 'imageReference'].includes(node.type);
+  }
+
+  /**
+   * Check if a node is a text node.
+   *
+   * @private
+   * @param node - Node to check
+   * @returns Whether the node is a text node
+   */
+  private isTextNode(node: Node): node is TextNode {
+    return node.type === 'text';
   }
 
   /**
