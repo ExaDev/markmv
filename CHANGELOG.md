@@ -1,3 +1,9 @@
+## [1.20.1](https://github.com/ExaDev/markmv/compare/v1.20.0...v1.20.1) (2025-06-12)
+
+### Tests
+
+* retrigger CI after GitHub App packages permission update ([da7c2b8](https://github.com/ExaDev/markmv/commit/da7c2b8e9f4d88ffb4237b920453ef2a82991df4))
+
 ## [1.20.0](https://github.com/ExaDev/markmv/compare/v1.19.8...v1.20.0) (2025-06-12)
 
 ### Features
