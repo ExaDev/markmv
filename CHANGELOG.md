@@ -1,3 +1,9 @@
+## [1.19.7](https://github.com/ExaDev/markmv/compare/v1.19.6...v1.19.7) (2025-06-12)
+
+### Bug Fixes
+
+* copy .npmrc to dist-github for GitHub Packages authentication ([5888156](https://github.com/ExaDev/markmv/commit/588815630610a8c9e91633d2635416d795c82c78))
+
 ## [1.19.6](https://github.com/ExaDev/markmv/compare/v1.19.5...v1.19.6) (2025-06-12)
 
 ### Tests
