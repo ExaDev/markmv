@@ -368,7 +368,7 @@ jobs:
           fi
           
           # Create a scoped package.json for GitHub Packages (fix paths and remove prepublishOnly script)
-          jq '.name = "@exadev/markmv" | .publishConfig.registry = "https://npm.pkg.github.com" | del(.scripts.prepublishOnly) | .bin.markmv = "./cli.js" | .main = "./index.js" | .types = "./index.d.ts"' package.json > dist-github/package.json
+          jq '.name = "@ExaDev/markmv" | .publishConfig.registry = "https://npm.pkg.github.com" | del(.scripts.prepublishOnly) | .bin.markmv = "./cli.js" | .main = "./index.js" | .types = "./index.d.ts"' package.json > dist-github/package.json
           
           # Copy other required files to dist-github
           cp README.md CHANGELOG.md LICENSE dist-github/ 2>/dev/null || true
@@ -397,7 +397,7 @@ jobs:
           registry=https://registry.npmjs.org/
           //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
           //npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}
-          @exadev:registry=https://npm.pkg.github.com
+          @ExaDev:registry=https://npm.pkg.github.com
           EOF
           
           # Copy .npmrc to dist-github for GitHub Packages authentication
