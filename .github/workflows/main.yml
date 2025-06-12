@@ -367,8 +367,8 @@ jobs:
             exit 1
           fi
           
-          # Create a scoped package.json for GitHub Packages (remove prepublishOnly script)
-          jq '.name = "@exadev/markmv" | .publishConfig.registry = "https://npm.pkg.github.com" | del(.scripts.prepublishOnly)' package.json > dist-github/package.json
+          # Create a scoped package.json for GitHub Packages (fix paths and remove prepublishOnly script)
+          jq '.name = "@exadev/markmv" | .publishConfig.registry = "https://npm.pkg.github.com" | del(.scripts.prepublishOnly) | .bin.markmv = "./cli.js" | .main = "./index.js" | .types = "./index.d.ts"' package.json > dist-github/package.json
           
           # Copy other required files to dist-github
           cp README.md CHANGELOG.md LICENSE dist-github/ 2>/dev/null || true

@@ -44,24 +44,19 @@
     ],
     "@semantic-release/changelog",
     [
-      "@amanda-mitchell/semantic-release-npm-multiple",
+      "@semantic-release/npm",
       {
-        "registries": {
-          "npmjs": {
-            "npmPublish": true,
-            "tarballDir": "dist",
-            "pkgRoot": "./",
-            "provenance": true,
-            "addChannel": false
-          },
-          "github": {
-            "npmPublish": true,
-            "tarballDir": "dist-github",
-            "pkgRoot": "dist-github",
-            "provenance": true,
-            "addChannel": false
-          }
-        }
+        "npmPublish": true,
+        "tarballDir": "dist",
+        "pkgRoot": "./",
+        "provenance": true,
+        "addChannel": false
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "publishCmd": "echo 'Attempting GitHub Packages publishing...' && npm publish dist-github --registry https://npm.pkg.github.com --access public || echo 'GitHub Packages publishing failed, continuing with NPM-only release'"
       }
     ],
     [
