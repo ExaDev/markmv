@@ -48,12 +48,6 @@ npx markmv --help
 - Frontmatter-aware organization and sorting
 - Support for Obsidian and Claude syntax
 
-### 🔄 **Link Format Conversion**
-- Convert between markdown, Claude import, wikilink, and combined styles
-- Transform path resolution between absolute and relative
-- Batch processing with glob pattern support
-- Intelligent format detection and preservation
-
 ### 🛡️ **Robust Operations**
 - Transactional operations with automatic rollback
 - Comprehensive error handling and validation
@@ -101,9 +95,6 @@ npx markmv merge draft.md master.md --interactive
 
 # Generate documentation index
 npx markmv index --type links --strategy directory
-
-# Convert link formats and path resolution
-npx markmv convert docs/*.md --link-style wikilink --path-resolution relative
 ```
 
 ## 📖 Usage Guide
@@ -245,45 +236,6 @@ npx markmv index --dry-run --verbose
 - **branch**: Index in directories with subdirectories
 - **existing**: Only update existing index files
 
-### Converting Link Formats
-
-Transform link formats and path resolution across markdown files:
-
-```bash
-# Convert to wikilink format with relative paths
-npx markmv convert docs/*.md --link-style wikilink --path-resolution relative
-
-# Convert to Claude import format
-npx markmv convert README.md guide.md --link-style claude
-
-# Convert all files to absolute paths
-npx markmv convert **/*.md --path-resolution absolute --recursive
-
-# Convert to combined format ([@url](url)) with dry run
-npx markmv convert docs/ --link-style combined --recursive --dry-run
-
-# Preview changes with verbose output
-npx markmv convert *.md --link-style markdown --path-resolution relative --verbose
-```
-
-**Link Styles:**
-- **markdown**: Standard markdown links `[text](url)`
-- **claude**: Claude import syntax `@url`
-- **combined**: Combined format `[@url](url)`
-- **wikilink**: Obsidian-style wikilinks `[[url]]`
-
-**Path Resolution:**
-- **absolute**: Convert to absolute file paths
-- **relative**: Convert to relative file paths (from base path)
-
-**Options:**
-- `--path-resolution <type>`: Convert path resolution (absolute|relative)
-- `--base-path <path>`: Base path for relative path calculations
-- `--link-style <style>`: Convert link style (markdown|claude|combined|wikilink)
-- `--recursive, -r`: Process directories recursively
-- `--dry-run, -d`: Preview changes without executing
-- `--verbose, -v`: Detailed operation logging
-
 ## ⚙️ Configuration
 
 Configuration options can be passed via command line flags. See each command's `--help` for available options.
@@ -295,7 +247,7 @@ Configuration options can be passed via command line flags. See each command's `
 markmv provides a comprehensive TypeScript API for integration into your projects:
 
 ```typescript
-import { FileOperations, moveFile, createMarkMv, LinkConverter } from 'markmv';
+import { FileOperations, moveFile, createMarkMv } from 'markmv';
 
 // Simple file move
 const result = await moveFile('old.md', 'new.md');
@@ -311,25 +263,6 @@ const result = await fileOps.moveFile('docs/api.md', 'reference/', {
 const result = await fileOps.moveFiles([
   { source: 'docs/*.md', destination: 'archive/' }
 ]);
-
-// Convert link formats programmatically
-const converter = new LinkConverter();
-
-// Convert single file to wikilink format
-const convertResult = await converter.convertFile('README.md', {
-  linkStyle: 'wikilink',
-  pathResolution: 'relative',
-  basePath: process.cwd()
-});
-
-// Batch convert multiple files
-const files = ['docs/guide.md', 'docs/api.md'];
-const batchResult = await converter.convertFiles(files, {
-  linkStyle: 'claude',
-  pathResolution: 'absolute',
-  dryRun: true,
-  verbose: true
-});
 
 // Check for broken links
 const validation = await fileOps.validateOperation(result);
@@ -476,22 +409,6 @@ npx markmv index knowledge-base/ --location all --type hybrid
 npx markmv index guides/ --type import --strategy metadata
 ```
 
-### Link Format Standardisation
-
-```bash
-# Standardise project links to consistent format
-npx markmv convert docs/ --link-style wikilink --path-resolution relative --recursive
-
-# Convert Claude imports to standard markdown
-npx markmv convert *.md --link-style markdown
-
-# Migrate to absolute paths for portability
-npx markmv convert **/*.md --path-resolution absolute --recursive
-
-# Preview conversion changes
-npx markmv convert README.md docs/guide.md --link-style combined --dry-run --verbose
-```
-
 ## 🛠️ Development
 
 ### Prerequisites
@@ -606,13 +523,6 @@ For detailed documentation and examples, see the sections below or visit the [Gi
 - Use `--max-size` option for size-based splitting
 - Consider processing files in smaller batches
 - Enable verbose mode to monitor progress
-
-**Convert command issues:**
-- Ensure at least one conversion option is specified (`--path-resolution` or `--link-style`)
-- Check that glob patterns match markdown files (use `--verbose` to see matches)
-- For relative paths, verify `--base-path` is correct (defaults to current directory)
-- Use `--dry-run` to preview changes before applying them
-- Verify file permissions for write access when not using `--dry-run`
 
 ### Getting Help
 
