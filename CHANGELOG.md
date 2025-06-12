@@ -1,3 +1,9 @@
+## [1.17.2](https://github.com/ExaDev/markmv/compare/v1.17.1...v1.17.2) (2025-06-12)
+
+### Bug Fixes
+
+* use follow-up commit instead of amending release commit ([8644eb7](https://github.com/ExaDev/markmv/commit/8644eb7dbbdcd6176b8867dabeb341fa6afce9ca))
+
 ## [1.17.1](https://github.com/ExaDev/markmv/compare/v1.17.0...v1.17.1) (2025-06-12)
 
 ### Continuous Integration
