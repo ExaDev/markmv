@@ -215,7 +215,7 @@ jobs:
           ls -la dist/
           node dist/cli.js --version || echo "CLI not yet ready"
         
-      - name: Generate SBOM
+      - name: Generate SBOM for NPM attestations
         uses: anchore/sbom-action@v0.17.8
         with:
           path: ./
@@ -224,18 +224,20 @@ jobs:
           upload-artifact: true
           upload-release-assets: false
         
-      - name: Attest build provenance
+      - name: Generate build attestations for NPM
         uses: actions/attest-build-provenance@v1
         id: attest-build
         with:
           subject-path: 'dist/**/*'
+          push-to-registry: false
         
-      - name: Attest SBOM
+      - name: Generate SBOM attestations for NPM
         uses: actions/attest-sbom@v1
         id: attest-sbom
         with:
           subject-path: 'dist/**/*'
           sbom-path: 'sbom.spdx.json'
+          push-to-registry: false
         
       # Pre-release: Generate README and update badges BEFORE semantic-release
       - name: Generate updated README for release
@@ -355,6 +357,36 @@ jobs:
           echo "🚀 Starting semantic-release with staged README and badge updates..."
           npm run release
           echo "✅ Release completed - README and badges included in release commit"
+          
+      - name: Verify attestations are available for NPM
+        run: |
+          echo "🔍 Verifying attestations are ready for NPM publishing..."
+          
+          # Check if attestations were generated
+          if [ -f "${{ steps.attest-build.outputs.bundle-path }}" ]; then
+            echo "✅ Build attestation available: ${{ steps.attest-build.outputs.bundle-path }}"
+            ls -la "${{ steps.attest-build.outputs.bundle-path }}"
+          else
+            echo "⚠️ No build attestation bundle found"
+          fi
+          
+          if [ -f "${{ steps.attest-sbom.outputs.bundle-path }}" ]; then
+            echo "✅ SBOM attestation available: ${{ steps.attest-sbom.outputs.bundle-path }}"
+            ls -la "${{ steps.attest-sbom.outputs.bundle-path }}"
+          else
+            echo "⚠️ No SBOM attestation bundle found"
+          fi
+          
+          # Verify SBOM file is available
+          if [ -f "sbom.spdx.json" ]; then
+            echo "✅ SBOM file available: sbom.spdx.json"
+            ls -la sbom.spdx.json
+          else
+            echo "⚠️ SBOM file not found"
+          fi
+          
+          echo "📦 NPM provenance is enabled in package.json publishConfig"
+          echo "🔐 Attestations will be automatically linked to published package"
 
   # Documentation Deployment - Only after successful release with updated version
   documentation:
