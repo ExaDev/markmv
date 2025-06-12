@@ -1,3 +1,9 @@
+## [1.19.5](https://github.com/ExaDev/markmv/compare/v1.19.4...v1.19.5) (2025-06-12)
+
+### Bug Fixes
+
+* correct GitHub Packages publishing command syntax ([8f444b4](https://github.com/ExaDev/markmv/commit/8f444b42279c1b71a04cba4f795b150155591d25))
+
 ## [1.19.4](https://github.com/ExaDev/markmv/compare/v1.19.3...v1.19.4) (2025-06-12)
 
 ### Bug Fixes
