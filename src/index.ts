@@ -43,6 +43,7 @@ export { FileOperations };
 export { LinkParser } from './core/link-parser.js';
 export { LinkRefactorer } from './core/link-refactorer.js';
 export { LinkValidator } from './core/link-validator.js';
+export { LinkConverter } from './core/link-converter.js';
 export { DependencyGraph } from './core/dependency-graph.js';
 export { ContentJoiner } from './core/content-joiner.js';
 export { ContentSplitter } from './core/content-splitter.js';
@@ -77,6 +78,7 @@ export {
 } from './strategies/split-strategies.js';
 
 // Command functions for programmatic access
+export { convertCommand } from './commands/convert.js';
 export { indexCommand } from './commands/index.js';
 
 // Type definitions
@@ -85,6 +87,7 @@ export type {
   MarkdownLink,
   ParsedMarkdownFile,
   LinkType,
+  LinkStyle,
 } from './types/links.js';
 
 export type {
@@ -95,6 +98,7 @@ export type {
   SplitOperationOptions,
   JoinOperationOptions,
   MergeOperationOptions,
+  ConvertOperationOptions,
 } from './types/operations.js';
 
 export type { IndexOptions, FileMetadata, IndexableFile } from './commands/index.js';
