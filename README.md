@@ -280,6 +280,7 @@ See the [API Documentation](https://exadev.github.io/markmv/) for complete detai
 - [ContentSplitter](classes/ContentSplitter.md)
 - [DependencyGraph](classes/DependencyGraph.md)
 - [FileOperations](classes/FileOperations.md)
+- [LinkConverter](classes/LinkConverter.md)
 - [LinkParser](classes/LinkParser.md)
 - [LinkRefactorer](classes/LinkRefactorer.md)
 - [LinkValidator](classes/LinkValidator.md)
@@ -338,6 +339,7 @@ See the [API Documentation](https://exadev.github.io/markmv/) for complete detai
 - [SplitOperationOptions](interfaces/SplitOperationOptions.md)
 - [JoinOperationOptions](interfaces/JoinOperationOptions.md)
 - [MergeOperationOptions](interfaces/MergeOperationOptions.md)
+- [ConvertOperationOptions](interfaces/ConvertOperationOptions.md)
 - [OperationResult](interfaces/OperationResult.md)
 - [OperationChange](interfaces/OperationChange.md)
 
@@ -346,8 +348,15 @@ See the [API Documentation](https://exadev.github.io/markmv/) for complete detai
 ###### Types
 
 - [LinkType](type-aliases/LinkType.md)
+- [LinkStyle](type-aliases/LinkStyle.md)
 
 ##### Functions
+
+###### Commands
+
+- [convertCommand](functions/convertCommand.md)
+
+###### Other
 
 - [indexCommand](functions/indexCommand.md)
 - [createMarkMv](functions/createMarkMv.md)
