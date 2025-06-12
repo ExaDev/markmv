@@ -183,13 +183,8 @@ jobs:
           # Get the latest commit (including badge updates)
           ref: main
           
-      - name: Generate GitHub App Token
-        id: app-token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.GH_APP_ID }}
-          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-          owner: ExaDev
+      # Note: Using GITHUB_TOKEN instead of GitHub App token for GitHub Packages compatibility
+      # GitHub Packages npm registry doesn't support GitHub App installation tokens
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -397,7 +392,7 @@ jobs:
           NPMJS_NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
           NPMJS_NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_NPM_CONFIG_REGISTRY: https://npm.pkg.github.com
-          GITHUB_NODE_AUTH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GITHUB_NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "🚀 Starting semantic-release with staged README and badge updates..."
           
@@ -405,7 +400,7 @@ jobs:
           cat > .npmrc << EOF
           registry=https://registry.npmjs.org/
           //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
-          //npm.pkg.github.com/:_authToken=${{ steps.app-token.outputs.token }}
+          //npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}
           @exadev:registry=https://npm.pkg.github.com
           EOF
           
