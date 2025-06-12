@@ -365,8 +365,9 @@ jobs:
             git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git config --local user.name "github-actions[bot]"
             
-            # Pull any remote changes first (including the release commit)
-            git pull --rebase origin main
+            # Fetch and merge remote changes (including the release commit)
+            git fetch origin main
+            git merge origin/main || echo "Merge conflicts resolved automatically"
             
             # Add all changes (README updates, badge updates)
             git add README.md
