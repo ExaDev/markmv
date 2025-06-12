@@ -1,3 +1,9 @@
+## [1.19.8](https://github.com/ExaDev/markmv/compare/v1.19.7...v1.19.8) (2025-06-12)
+
+### Bug Fixes
+
+* use correct GitHub organization case for scoped package ([26a8002](https://github.com/ExaDev/markmv/commit/26a80020ba24dadafce129373e4430d43b7156f4))
+
 ## [1.19.7](https://github.com/ExaDev/markmv/compare/v1.19.6...v1.19.7) (2025-06-12)
 
 ### Bug Fixes
