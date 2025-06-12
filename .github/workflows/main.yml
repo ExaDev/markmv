@@ -162,196 +162,9 @@ jobs:
             docs-coverage.json
           retention-days: 30
 
-  # Generate README - Only runs after successful quality checks on main
-  generate-readme:
-    needs: quality
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    permissions:
-      contents: write
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 1
-          
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-          cache: 'npm'
-          
-      - name: Install dependencies
-        run: npm ci
-        
-      - name: Pull latest changes (in case of concurrent updates)
-        run: git pull --rebase origin main || true
-        
-      - name: Generate README from TypeScript documentation
-        run: npm run docs:readme-generate
-        
-      - name: Check for README changes
-        id: check-changes
-        run: |
-          if ! git diff --quiet README.md; then
-            echo "changes-detected=true" >> $GITHUB_OUTPUT
-            echo "📝 README.md changes detected from TypeScript documentation"
-          else
-            echo "changes-detected=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ No README.md changes needed"
-          fi
-          
-      - name: Commit generated README
-        if: steps.check-changes.outputs.changes-detected == 'true'
-        run: |
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          
-          git add README.md
-          git commit -m "docs: auto-generate README from TypeScript documentation" \
-                     -m "Automatically generated from TypeDoc comments and templates" \
-                     -m "Ensures README stays in sync with codebase changes"
-          
-          git push
-          echo "✅ Generated README committed and pushed"
-
-  # Update Coverage Badges - Only runs after successful quality checks and README generation
-  update-badges:
-    needs: [quality, generate-readme]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    permissions:
-      contents: write
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 1
-          
-      - name: Pull latest changes (including README updates)
-        run: git pull --rebase origin main || true
-          
-      - name: Download coverage artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-reports
-        continue-on-error: true
-        
-      - name: Extract coverage data
-        id: coverage
-        run: |
-          # Test coverage
-          if [ -f "coverage-output.txt" ]; then
-            TEST_COV=$(grep "All files" coverage-output.txt | awk '{print $4}' | head -1)
-          else
-            TEST_COV="unknown"
-          fi
-          
-          # Documentation coverage
-          if [ -f "docs-coverage.json" ]; then
-            DOCS_COV=$(jq -r '.overallCoverage' docs-coverage.json)
-          else
-            DOCS_COV="unknown"
-          fi
-          
-          echo "test-coverage=$TEST_COV" >> $GITHUB_OUTPUT
-          echo "docs-coverage=$DOCS_COV" >> $GITHUB_OUTPUT
-          
-      - name: Determine badge colors
-        id: colors
-        run: |
-          # Test coverage color
-          TEST_COV="${{ steps.coverage.outputs.test-coverage }}"
-          if [ "$TEST_COV" = "unknown" ]; then
-            TEST_COLOR="lightgrey"
-          else
-            TEST_NUM=$(echo "$TEST_COV" | sed 's/%//' | cut -d'.' -f1)
-            if [ "$TEST_NUM" -ge 90 ]; then
-              TEST_COLOR="brightgreen"
-            elif [ "$TEST_NUM" -ge 80 ]; then
-              TEST_COLOR="green"
-            elif [ "$TEST_NUM" -ge 70 ]; then
-              TEST_COLOR="yellow"
-            elif [ "$TEST_NUM" -ge 60 ]; then
-              TEST_COLOR="orange"
-            else
-              TEST_COLOR="red"
-            fi
-          fi
-          
-          # Documentation coverage color
-          DOCS_COV="${{ steps.coverage.outputs.docs-coverage }}"
-          if [ "$DOCS_COV" = "unknown" ]; then
-            DOCS_COLOR="lightgrey"
-          else
-            DOCS_NUM=$(echo "$DOCS_COV" | sed 's/%//' | cut -d'.' -f1)
-            if [ "$DOCS_NUM" -ge 95 ]; then
-              DOCS_COLOR="brightgreen"
-            elif [ "$DOCS_NUM" -ge 90 ]; then
-              DOCS_COLOR="green"
-            elif [ "$DOCS_NUM" -ge 80 ]; then
-              DOCS_COLOR="yellow"
-            elif [ "$DOCS_NUM" -ge 70 ]; then
-              DOCS_COLOR="orange"
-            else
-              DOCS_COLOR="red"
-            fi
-          fi
-          
-          echo "test-color=$TEST_COLOR" >> $GITHUB_OUTPUT
-          echo "docs-color=$DOCS_COLOR" >> $GITHUB_OUTPUT
-          
-      - name: Update README badges
-        run: |
-          COMMIT_HASH=$(git rev-parse HEAD)
-          
-          TEST_COV="${{ steps.coverage.outputs.test-coverage }}"
-          DOCS_COV="${{ steps.coverage.outputs.docs-coverage }}"
-          TEST_COLOR="${{ steps.colors.outputs.test-color }}"
-          DOCS_COLOR="${{ steps.colors.outputs.docs-color }}"
-          
-          # URL encode percentage signs
-          TEST_COV_ENCODED=$(echo "$TEST_COV" | sed 's/%/%25/g')
-          DOCS_COV_ENCODED=$(echo "$DOCS_COV" | sed 's/%/%25/g')
-          
-          # Create new badge URLs
-          TEST_BADGE="[![Test Coverage](https://img.shields.io/badge/coverage-${TEST_COV_ENCODED}-${TEST_COLOR}.svg)](https://github.com/ExaDev/markmv/commit/${COMMIT_HASH})"
-          DOCS_BADGE="[![Documentation Coverage](https://img.shields.io/badge/docs-${DOCS_COV_ENCODED}-${DOCS_COLOR}.svg)](https://github.com/ExaDev/markmv/commit/${COMMIT_HASH})"
-          
-          # Update README.md
-          awk -v test_badge="$TEST_BADGE" -v docs_badge="$DOCS_BADGE" '
-          /\[\!\[Test Coverage\]/ { print test_badge; next }
-          /\[\!\[Documentation Coverage\]/ { print docs_badge; next }
-          { print }
-          ' README.md > README.md.tmp && mv README.md.tmp README.md
-          
-      - name: Commit badge updates
-        run: |
-          if ! git diff --quiet README.md; then
-            git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git config --local user.name "github-actions[bot]"
-            
-            git add README.md
-            git commit -m "ci: update coverage badges" \
-                       -m "Test Coverage: ${{ steps.coverage.outputs.test-coverage }}" \
-                       -m "Documentation Coverage: ${{ steps.coverage.outputs.docs-coverage }}" \
-                       -m "Auto-generated by CI pipeline"
-            
-            # Pull any concurrent changes before pushing
-            git pull --rebase origin main || true
-            git push
-            echo "✅ Coverage badges updated and pushed"
-          else
-            echo "ℹ️ No badge updates needed"
-          fi
-
-  # Release - Only after ALL quality checks pass, README is generated, and badges are updated
+  # Release - Only after quality checks pass, includes README generation and badge updates
   release:
-    needs: [quality, generate-readme, update-badges]
+    needs: quality
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
@@ -430,10 +243,148 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm run release
+        
+      # Post-release updates - only if a release was created
+      - name: Check if release was created
+        id: check-release
+        run: |
+          # Check if semantic-release created new commits
+          if git log --oneline -1 | grep -E "(chore\(release\)|Release)"; then
+            echo "release-created=true" >> $GITHUB_OUTPUT
+            echo "✅ New release was created, proceeding with README and badge updates"
+          else
+            echo "release-created=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ No new release created, skipping post-release updates"
+          fi
+          
+      - name: Generate updated README
+        if: steps.check-release.outputs.release-created == 'true'
+        run: |
+          echo "🔄 Generating README from TypeScript documentation..."
+          npm run docs:readme-generate
+          
+      - name: Extract coverage data for badges
+        if: steps.check-release.outputs.release-created == 'true'
+        id: coverage
+        run: |
+          # Test coverage
+          if [ -f "coverage-output.txt" ]; then
+            TEST_COV=$(grep "All files" coverage-output.txt | awk '{print $4}' | head -1)
+          else
+            TEST_COV="unknown"
+          fi
+          
+          # Documentation coverage
+          if [ -f "docs-coverage.json" ]; then
+            DOCS_COV=$(jq -r '.overallCoverage' docs-coverage.json)
+          else
+            DOCS_COV="unknown"
+          fi
+          
+          echo "test-coverage=$TEST_COV" >> $GITHUB_OUTPUT
+          echo "docs-coverage=$DOCS_COV" >> $GITHUB_OUTPUT
+          echo "📊 Test Coverage: $TEST_COV% | Documentation Coverage: $DOCS_COV%"
+          
+      - name: Determine badge colors
+        if: steps.check-release.outputs.release-created == 'true'
+        id: colors
+        run: |
+          # Test coverage color
+          TEST_COV="${{ steps.coverage.outputs.test-coverage }}"
+          if [ "$TEST_COV" = "unknown" ]; then
+            TEST_COLOR="lightgrey"
+          else
+            TEST_NUM=$(echo "$TEST_COV" | sed 's/%//' | cut -d'.' -f1)
+            if [ "$TEST_NUM" -ge 90 ]; then
+              TEST_COLOR="brightgreen"
+            elif [ "$TEST_NUM" -ge 80 ]; then
+              TEST_COLOR="green"
+            elif [ "$TEST_NUM" -ge 70 ]; then
+              TEST_COLOR="yellow"
+            elif [ "$TEST_NUM" -ge 60 ]; then
+              TEST_COLOR="orange"
+            else
+              TEST_COLOR="red"
+            fi
+          fi
+          
+          # Documentation coverage color
+          DOCS_COV="${{ steps.coverage.outputs.docs-coverage }}"
+          if [ "$DOCS_COV" = "unknown" ]; then
+            DOCS_COLOR="lightgrey"
+          else
+            DOCS_NUM=$(echo "$DOCS_COV" | sed 's/%//' | cut -d'.' -f1)
+            if [ "$DOCS_NUM" -ge 95 ]; then
+              DOCS_COLOR="brightgreen"
+            elif [ "$DOCS_NUM" -ge 90 ]; then
+              DOCS_COLOR="green"
+            elif [ "$DOCS_NUM" -ge 80 ]; then
+              DOCS_COLOR="yellow"
+            elif [ "$DOCS_NUM" -ge 70 ]; then
+              DOCS_COLOR="orange"
+            else
+              DOCS_COLOR="red"
+            fi
+          fi
+          
+          echo "test-color=$TEST_COLOR" >> $GITHUB_OUTPUT
+          echo "docs-color=$DOCS_COLOR" >> $GITHUB_OUTPUT
+          
+      - name: Update README badges
+        if: steps.check-release.outputs.release-created == 'true'
+        run: |
+          echo "🎨 Updating coverage badges in README..."
+          COMMIT_HASH=$(git rev-parse HEAD)
+          
+          TEST_COV="${{ steps.coverage.outputs.test-coverage }}"
+          DOCS_COV="${{ steps.coverage.outputs.docs-coverage }}"
+          TEST_COLOR="${{ steps.colors.outputs.test-color }}"
+          DOCS_COLOR="${{ steps.colors.outputs.docs-color }}"
+          
+          # URL encode percentage signs
+          TEST_COV_ENCODED=$(echo "$TEST_COV" | sed 's/%/%25/g')
+          DOCS_COV_ENCODED=$(echo "$DOCS_COV" | sed 's/%/%25/g')
+          
+          # Create new badge URLs
+          TEST_BADGE="[![Test Coverage](https://img.shields.io/badge/coverage-${TEST_COV_ENCODED}-${TEST_COLOR}.svg)](https://github.com/ExaDev/markmv/commit/${COMMIT_HASH})"
+          DOCS_BADGE="[![Documentation Coverage](https://img.shields.io/badge/docs-${DOCS_COV_ENCODED}-${DOCS_COLOR}.svg)](https://github.com/ExaDev/markmv/commit/${COMMIT_HASH})"
+          
+          # Update README.md
+          awk -v test_badge="$TEST_BADGE" -v docs_badge="$DOCS_BADGE" '
+          /\[\!\[Test Coverage\]/ { print test_badge; next }
+          /\[\!\[Documentation Coverage\]/ { print docs_badge; next }
+          { print }
+          ' README.md > README.md.tmp && mv README.md.tmp README.md
+          
+      - name: Amend release commit with README and badge updates
+        if: steps.check-release.outputs.release-created == 'true'
+        run: |
+          if ! git diff --quiet; then
+            echo "📝 Adding README and badge updates to release commit..."
+            
+            git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            
+            # Add all changes (README updates, badge updates)
+            git add README.md
+            
+            # Amend the release commit to include these updates
+            ORIGINAL_MSG=$(git log -1 --pretty=%B)
+            git commit --amend -m "$ORIGINAL_MSG" \
+                              -m "Includes auto-generated README and updated coverage badges" \
+                              -m "Test Coverage: ${{ steps.coverage.outputs.test-coverage }}" \
+                              -m "Documentation Coverage: ${{ steps.coverage.outputs.docs-coverage }}"
+            
+            # Force push the amended commit (this updates the release tag too)
+            git push --force-with-lease
+            echo "✅ Release commit amended with README and badge updates"
+          else
+            echo "ℹ️ No changes to add to release commit"
+          fi
 
   # Documentation Deployment - Only after successful release with updated version
   documentation:
-    needs: [quality, generate-readme, update-badges, release]
+    needs: [quality, release]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
