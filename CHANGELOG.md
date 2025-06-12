@@ -1,3 +1,35 @@
+## [1.16.0](https://github.com/ExaDev/markmv/compare/v1.15.0...v1.16.0) (2025-06-12)
+
+### Features
+
+* add convert command for link format conversion ([c76e3bf](https://github.com/ExaDev/markmv/commit/c76e3bf9a7aad25a0dbf3d3212e82d1a92622487)), closes [#10](https://github.com/ExaDev/markmv/issues/10)
+* add types for link format conversion functionality ([683d264](https://github.com/ExaDev/markmv/commit/683d264c297699f594e607e3b24214bba77f5ab6)), closes [#10](https://github.com/ExaDev/markmv/issues/10) [#10](https://github.com/ExaDev/markmv/issues/10)
+* export convert functionality for programmatic use ([149535d](https://github.com/ExaDev/markmv/commit/149535d0b926dc1e8bc156253752f10f4fe2c6cd)), closes [#10](https://github.com/ExaDev/markmv/issues/10)
+* implement LinkConverter core class for format conversion ([8ff5321](https://github.com/ExaDev/markmv/commit/8ff53213d4453b1521a943a259e33d88487893d6)), closes [#10](https://github.com/ExaDev/markmv/issues/10)
+* integrate convert command into CLI interface ([12bcfbc](https://github.com/ExaDev/markmv/commit/12bcfbc47fbcd3b2ec3d95ab679f0a446cc0fc5b)), closes [#10](https://github.com/ExaDev/markmv/issues/10)
+
+### Bug Fixes
+
+* remove unused error variable in test catch blocks ([5cc7331](https://github.com/ExaDev/markmv/commit/5cc7331e9b17cd61c538c9e64775570ea36d9e0c))
+* resolve linting errors in convert functionality ([ae2085d](https://github.com/ExaDev/markmv/commit/ae2085de82f45a0ca9f17be4b361b7b211380696)), closes [#10](https://github.com/ExaDev/markmv/issues/10)
+* resolve test failures in convert command tests ([c17da04](https://github.com/ExaDev/markmv/commit/c17da046722fbb00cbd96bffb736b0c6854c380e)), closes [#10](https://github.com/ExaDev/markmv/issues/10)
+
+### Documentation
+
+* auto-generate README from TypeScript documentation ([be30fe0](https://github.com/ExaDev/markmv/commit/be30fe0fbe5d054af5df4d173f0f684e87aad768))
+
+### Styles
+
+* auto-fix linting issues ([859084a](https://github.com/ExaDev/markmv/commit/859084aa277ab7ddaac747b4f09fe4ef7a43cfe1))
+
+### Tests
+
+* add comprehensive tests for convert command ([588b3bc](https://github.com/ExaDev/markmv/commit/588b3bc41842233f499796d4226aa6b232681e30)), closes [#10](https://github.com/ExaDev/markmv/issues/10)
+
+### Continuous Integration
+
+* update coverage badges ([a22ba20](https://github.com/ExaDev/markmv/commit/a22ba208f2d4795b1e93aeff7a865ab3a70cbefe))
+
 ## [1.15.0](https://github.com/ExaDev/markmv/compare/v1.14.0...v1.15.0) (2025-06-11)
 
 ### Features
