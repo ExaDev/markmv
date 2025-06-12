@@ -1,3 +1,9 @@
+## [1.19.0](https://github.com/ExaDev/markmv/compare/v1.18.1...v1.19.0) (2025-06-12)
+
+### Features
+
+* add parallel publishing to GitHub Packages ([d2585f0](https://github.com/ExaDev/markmv/commit/d2585f084a604d0ae10fb030666664e9914d1622))
+
 ## [1.18.1](https://github.com/ExaDev/markmv/compare/v1.18.0...v1.18.1) (2025-06-12)
 
 ### Continuous Integration
