@@ -20,11 +20,33 @@ program
   .description('Convert markdown link formats and path resolution')
   .argument('<files...>', 'Markdown files to convert (supports globs like *.md, **/*.md)')
   .option('--path-resolution <type>', 'Convert path resolution: absolute|relative')
-  .option('--base-path <path>', 'Base path for relative path calculations')
+  .option(
+    '--base-path <path>',
+    'Base path for relative path calculations (defaults to current directory)'
+  )
   .option('--link-style <style>', 'Convert link style: markdown|claude|combined|wikilink')
   .option('-r, --recursive', 'Process directories recursively')
   .option('-d, --dry-run', 'Show what would be changed without making changes')
-  .option('-v, --verbose', 'Show detailed output')
+  .option('-v, --verbose', 'Show detailed output with processing information')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ markmv convert docs/*.md --link-style wikilink --path-resolution relative
+  $ markmv convert README.md --link-style claude --dry-run
+  $ markmv convert **/*.md --path-resolution absolute --recursive
+  $ markmv convert docs/ --link-style combined --recursive --verbose
+
+Link Styles:
+  markdown  Standard markdown links: [text](url)
+  claude    Claude import syntax: @url
+  combined  Combined format: [@url](url)
+  wikilink  Obsidian wikilinks: [[url]]
+
+Path Resolution:
+  absolute  Convert to absolute file paths
+  relative  Convert to relative file paths from base-path`
+  )
   .action(convertCommand);
 
 program
