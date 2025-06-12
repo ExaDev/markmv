@@ -1,3 +1,9 @@
+## [1.17.1](https://github.com/ExaDev/markmv/compare/v1.17.0...v1.17.1) (2025-06-12)
+
+### Continuous Integration
+
+* consolidate README and badge updates into release commit ([d81b7c6](https://github.com/ExaDev/markmv/commit/d81b7c6382bdcd487c7ba0f28a0de201256d82a0))
+
 ## [1.17.0](https://github.com/ExaDev/markmv/compare/v1.16.0...v1.17.0) (2025-06-12)
 
 ### Features
