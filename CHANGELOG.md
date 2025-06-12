@@ -1,3 +1,9 @@
+## [1.19.2](https://github.com/ExaDev/markmv/compare/v1.19.1...v1.19.2) (2025-06-12)
+
+### Bug Fixes
+
+* remove prepublishOnly script from GitHub Packages publishing ([5f918d0](https://github.com/ExaDev/markmv/commit/5f918d0effa3c29b9450c895ee91f177765793a6))
+
 ## [1.19.1](https://github.com/ExaDev/markmv/compare/v1.19.0...v1.19.1) (2025-06-12)
 
 ### Bug Fixes
