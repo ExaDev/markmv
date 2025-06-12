@@ -348,15 +348,19 @@ jobs:
             echo "ℹ️ No README changes to stage"
           fi
         
-      - name: Prepare GitHub Packages package.json
+      - name: Prepare GitHub Packages publishing
         run: |
           echo "📦 Preparing package configuration for GitHub Packages..."
           
-          # Create dist-github directory
+          # Create dist-github directory and copy build artifacts
           mkdir -p dist-github
+          cp -r dist/* dist-github/
           
           # Create a scoped package.json for GitHub Packages
-          jq '.name = "@exadev/markmv" | .publishConfig.registry = "https://npm.pkg.github.com"' package.json > package-github.json
+          jq '.name = "@exadev/markmv" | .publishConfig.registry = "https://npm.pkg.github.com"' package.json > dist-github/package.json
+          
+          # Copy other required files to dist-github
+          cp README.md CHANGELOG.md LICENSE dist-github/ 2>/dev/null || true
           
           echo "✅ GitHub Packages configuration prepared"
           
@@ -380,9 +384,6 @@ jobs:
           //npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}
           @exadev:registry=https://npm.pkg.github.com
           EOF
-          
-          # Copy the GitHub-scoped package.json to the directory
-          cp package-github.json dist-github/package.json
           
           npm run release
           echo "✅ Release completed - packages published to both NPM and GitHub Packages"

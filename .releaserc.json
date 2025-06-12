@@ -57,7 +57,7 @@
           "github": {
             "npmPublish": true,
             "tarballDir": "dist-github",
-            "pkgRoot": "./",
+            "pkgRoot": "dist-github",
             "provenance": true,
             "addChannel": false
           }
