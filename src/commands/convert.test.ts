@@ -52,7 +52,7 @@ Also a reference link [ref link][1] and a Claude import:
           dryRun: true,
           verbose: true
         });
-      } catch (_error) {
+      } catch {
         // Expected when process.exit is called
       } finally {
         process.exit = originalExit;
@@ -92,7 +92,7 @@ This is just text with no links.
           pathResolution: 'relative',
           verbose: true
         });
-      } catch (_error) {
+      } catch {
         // Expected when process.exit is called
       } finally {
         process.exit = originalExit;
@@ -123,7 +123,7 @@ This is just text with no links.
       try {
         // Test with no conversion options
         await convertCommand([testFile], {});
-      } catch (_error) {
+      } catch {
         // Expected when process.exit is called
       } finally {
         process.exit = originalExit;
@@ -155,7 +155,7 @@ This is just text with no links.
         await convertCommand([testFile], {
           pathResolution: 'invalid' as 'absolute' | 'relative'
         });
-      } catch (_error) {
+      } catch {
         // Expected when process.exit is called
       } finally {
         process.exit = originalExit;
@@ -187,7 +187,7 @@ This is just text with no links.
         await convertCommand([testFile], {
           linkStyle: 'invalid' as 'markdown' | 'claude' | 'combined' | 'wikilink'
         });
-      } catch (_error) {
+      } catch {
         // Expected when process.exit is called
       } finally {
         process.exit = originalExit;
@@ -217,7 +217,7 @@ This is just text with no links.
           dryRun: true,
           verbose: true
         });
-      } catch (_error) {
+      } catch {
         // Expected when process.exit is called
       } finally {
         process.exit = originalExit;
@@ -252,7 +252,7 @@ This is just text with no links.
           dryRun: true,
           verbose: true
         });
-      } catch (_error) {
+      } catch {
         // Expected when process.exit is called
       } finally {
         process.exit = originalExit;
@@ -281,7 +281,7 @@ This is just text with no links.
         await convertCommand(['non-existent.md'], {
           pathResolution: 'relative'
         });
-      } catch (_error) {
+      } catch {
         // Expected when process.exit is called
       } finally {
         process.exit = originalExit;
@@ -310,7 +310,7 @@ This is just text with no links.
         await convertCommand([], {
           pathResolution: 'relative'
         });
-      } catch (_error) {
+      } catch {
         // Expected when process.exit is called
       } finally {
         process.exit = originalExit;
@@ -351,7 +351,7 @@ This is just text with no links.
           dryRun: true,
           verbose: true
         });
-      } catch (_error) {
+      } catch {
         // Expected when process.exit is called
       } finally {
         process.exit = originalExit;
