@@ -1,3 +1,13 @@
+## [1.18.0](https://github.com/ExaDev/markmv/compare/v1.17.3...v1.18.0) (2025-06-12)
+
+### Features
+
+* include README and badges directly in release commit ([0e26003](https://github.com/ExaDev/markmv/commit/0e260031527f44706e1530d3c2f14d44a9dfd3c8))
+
+### Documentation
+
+* update README and coverage badges for release ([7f7f079](https://github.com/ExaDev/markmv/commit/7f7f079f3d964d862e03cf468c70e8049eabf49b))
+
 ## [1.17.3](https://github.com/ExaDev/markmv/compare/v1.17.2...v1.17.3) (2025-06-12)
 
 ### Bug Fixes
