@@ -68,7 +68,7 @@
     "@semantic-release/exec": "^7.1.0",
     "@semantic-release/git": "^10.0.1",
     "@types/mdast": "^4.0.4",
-    "@types/node": "^20.0.0",
+    "@types/node": "^24.0.1",
     "@types/unist": "^3.0.0",
     "@typescript-eslint/eslint-plugin": "^8.34.0",
     "@typescript-eslint/parser": "^8.34.0",
