@@ -1,3 +1,22 @@
+## [1.17.0](https://github.com/ExaDev/markmv/compare/v1.16.0...v1.17.0) (2025-06-12)
+
+### Features
+
+* enhance convert command CLI help with examples and format descriptions ([3c7fc34](https://github.com/ExaDev/markmv/commit/3c7fc34354d3ba6d22461197e49d8ef69a3d262e))
+
+### Bug Fixes
+
+* replace any types with proper type annotations in tests ([a05576e](https://github.com/ExaDev/markmv/commit/a05576ec25ce2e7b712320056d1e92f0025a69ae))
+
+### Documentation
+
+* add comprehensive convert command documentation and examples ([5106927](https://github.com/ExaDev/markmv/commit/51069272c5290105d04841a8f074975e02c7d863))
+* auto-generate README from TypeScript documentation ([53bd46d](https://github.com/ExaDev/markmv/commit/53bd46dc7b4fe858abbbeec27b49e95a5d7e226b))
+
+### Continuous Integration
+
+* update coverage badges ([1e8aa63](https://github.com/ExaDev/markmv/commit/1e8aa633ecf670a81f4fbefa5ce1cb982b1ccfb1))
+
 ## [1.16.0](https://github.com/ExaDev/markmv/compare/v1.15.0...v1.16.0) (2025-06-12)
 
 ### Features
