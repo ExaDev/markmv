@@ -1,3 +1,13 @@
+## [1.19.1](https://github.com/ExaDev/markmv/compare/v1.19.0...v1.19.1) (2025-06-12)
+
+### Bug Fixes
+
+* correct parallel publishing configuration for GitHub Packages ([b44817b](https://github.com/ExaDev/markmv/commit/b44817b433a45f2fe3a70ec787de125605077091))
+
+### Continuous Integration
+
+* use legacy peer deps to resolve npm-multiple plugin conflicts ([640e4c6](https://github.com/ExaDev/markmv/commit/640e4c6fd15efb69ccb7243c15b6a6539662d5b8))
+
 ## [1.19.0](https://github.com/ExaDev/markmv/compare/v1.18.1...v1.19.0) (2025-06-12)
 
 ### Features
