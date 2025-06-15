@@ -28,6 +28,7 @@ program
   .option('-r, --recursive', 'Process directories recursively')
   .option('-d, --dry-run', 'Show what would be changed without making changes')
   .option('-v, --verbose', 'Show detailed output with processing information')
+  .option('--json', 'Output results in JSON format')
   .addHelpText(
     'after',
     `
@@ -58,6 +59,7 @@ program
   )
   .option('-d, --dry-run', 'Show what would be changed without making changes')
   .option('-v, --verbose', 'Show detailed output')
+  .option('--json', 'Output results in JSON format')
   .action(moveCommand);
 
 program
@@ -71,6 +73,7 @@ program
   .option('--split-lines <lines>', 'Comma-separated line numbers to split on (for lines strategy)')
   .option('-d, --dry-run', 'Show what would be changed without making changes')
   .option('-v, --verbose', 'Show detailed output')
+  .option('--json', 'Output results in JSON format')
   .action(splitCommand);
 
 program
@@ -85,6 +88,7 @@ program
   )
   .option('-d, --dry-run', 'Show what would be changed without making changes')
   .option('-v, --verbose', 'Show detailed output')
+  .option('--json', 'Output results in JSON format')
   .action(joinCommand);
 
 program
@@ -96,6 +100,7 @@ program
   .option('--create-transclusions', 'Create Obsidian transclusions instead of copying content')
   .option('-d, --dry-run', 'Show what would be changed without making changes')
   .option('-v, --verbose', 'Show detailed output')
+  .option('--json', 'Output results in JSON format')
   .action(mergeCommand);
 
 program
@@ -117,6 +122,7 @@ program
   .option('--boundary <path>', 'Explicit boundary path to limit scanning scope')
   .option('-d, --dry-run', 'Show what would be generated without creating files')
   .option('-v, --verbose', 'Show detailed output')
+  .option('--json', 'Output results in JSON format')
   .action(indexCommand);
 
 program.parse();
