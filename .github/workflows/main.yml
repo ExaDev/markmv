@@ -14,7 +14,7 @@ concurrency:
 jobs:
   # Quality Gates - All quality checks must pass before anything else
   quality:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: write
       pull-requests: write
@@ -22,7 +22,21 @@ jobs:
     
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
         node-version: [20.x, 22.x]  # Removed 18.x due to semantic-release compatibility
+        include:
+          # Test case-sensitive filesystem behavior on macOS (default) and Linux
+          - os: ubuntu-latest
+            node-version: 20.x
+            filesystem-case: sensitive
+          - os: macos-latest  
+            node-version: 20.x
+            filesystem-case: insensitive
+          # Test Windows path separators and drive letters
+          - os: windows-latest
+            node-version: 20.x
+            filesystem-case: insensitive
+            path-separator: backslash
       fail-fast: false
     
     steps:
@@ -32,6 +46,19 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
           
+      - name: Configure OS-specific environment
+        run: |
+          echo "OS: ${{ matrix.os }}"
+          echo "Node: ${{ matrix.node-version }}"
+          echo "Filesystem case: ${{ matrix.filesystem-case }}"
+          echo "Path separator: ${{ matrix.path-separator }}"
+          
+          # Set environment variables for cross-platform testing
+          echo "MARKMV_TEST_OS=${{ matrix.os }}" >> $GITHUB_ENV
+          echo "MARKMV_TEST_CASE_SENSITIVE=${{ matrix.filesystem-case == 'sensitive' }}" >> $GITHUB_ENV
+          echo "MARKMV_TEST_PATH_SEP=${{ matrix.path-separator || 'slash' }}" >> $GITHUB_ENV
+        shell: bash
+
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
@@ -63,9 +90,9 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
         
-      # Auto-fix linting issues (only on push to main, only on Node.js 22.x to avoid race conditions)
+      # Auto-fix linting issues (only on push to main, only on Node.js 22.x and Ubuntu to avoid race conditions)
       - name: Check for fixable linting issues
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.node-version == '22.x'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest'
         id: check-fixes
         run: |
           git status --porcelain > before.txt
@@ -83,13 +110,13 @@ jobs:
           rm -f before.txt after.txt
           
       - name: Auto-fix linting issues
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.node-version == '22.x' && steps.check-fixes.outputs.fixes-available == 'true'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest' && steps.check-fixes.outputs.fixes-available == 'true'
         run: |
           npm run lint:fix
           npm run format
           
       - name: Commit auto-fixes
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.node-version == '22.x' && steps.check-fixes.outputs.fixes-available == 'true'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest' && steps.check-fixes.outputs.fixes-available == 'true'
         run: |
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
@@ -124,12 +151,85 @@ jobs:
       - name: Build
         run: npm run build
         
-      - name: Run tests
+      - name: Create filesystem test environment
+        run: |
+          # Create test directories for cross-platform filesystem testing
+          mkdir -p test-filesystem/case-test
+          mkdir -p test-filesystem/path-test
+          mkdir -p test-filesystem/symlink-test
+          
+          # Test case sensitivity (if supported)
+          cd test-filesystem/case-test
+          echo "lowercase content" > testfile.txt
+          echo "uppercase content" > TESTFILE.TXT
+          
+          # Count files to detect case sensitivity
+          FILE_COUNT=$(ls testfile.txt TESTFILE.TXT 2>/dev/null | wc -l || echo "0")
+          echo "FILESYSTEM_CASE_TEST_COUNT=$FILE_COUNT" >> $GITHUB_ENV
+          
+          if [ "$FILE_COUNT" -eq "2" ]; then
+            echo "✅ Case-sensitive filesystem detected"
+            echo "FILESYSTEM_IS_CASE_SENSITIVE=true" >> $GITHUB_ENV
+          else
+            echo "✅ Case-insensitive filesystem detected"  
+            echo "FILESYSTEM_IS_CASE_SENSITIVE=false" >> $GITHUB_ENV
+          fi
+          
+          cd ../..
+        shell: bash
+
+      - name: Test filesystem behaviors
+        run: |
+          echo "🧪 Testing filesystem behaviors..."
+          echo "Expected case sensitivity: ${{ matrix.filesystem-case }}"
+          echo "Detected case sensitivity: $FILESYSTEM_IS_CASE_SENSITIVE"
+          echo "File count in case test: $FILESYSTEM_CASE_TEST_COUNT"
+          
+          # Test path separators
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            echo "Testing Windows path separators..."
+            # Test with both forward and back slashes
+            echo "test content" > "test-filesystem\\path-test\\backslash.txt" || echo "Backslash path failed"
+            echo "test content" > "test-filesystem/path-test/forward.txt" || echo "Forward slash path failed"
+          else
+            echo "Testing Unix-like path separators..."
+            echo "test content" > "test-filesystem/path-test/unix.txt"
+          fi
+          
+          # Test symbolic links (if supported)
+          cd test-filesystem/symlink-test
+          echo "original content" > original.txt
+          ln -s original.txt symlink.txt 2>/dev/null || echo "Symlinks not supported on this filesystem"
+          
+          if [ -L symlink.txt ]; then
+            echo "✅ Symbolic links supported"
+            echo "FILESYSTEM_SUPPORTS_SYMLINKS=true" >> $GITHUB_ENV
+          else
+            echo "❌ Symbolic links not supported"
+            echo "FILESYSTEM_SUPPORTS_SYMLINKS=false" >> $GITHUB_ENV
+          fi
+          
+          cd ../..
+        shell: bash
+
+      - name: Run tests with OS-specific environment
+        env:
+          MARKMV_TEST_FILESYSTEM_CASE_SENSITIVE: ${{ env.FILESYSTEM_IS_CASE_SENSITIVE }}
+          MARKMV_TEST_SUPPORTS_SYMLINKS: ${{ env.FILESYSTEM_SUPPORTS_SYMLINKS }}
         run: npm run test:run
+
+      - name: Report filesystem test results
+        run: |
+          echo "## 🖥️ Filesystem Test Results - ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Node Version:** ${{ matrix.node-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Case Sensitivity:** $FILESYSTEM_IS_CASE_SENSITIVE" >> $GITHUB_STEP_SUMMARY
+          echo "**Symlink Support:** $FILESYSTEM_SUPPORTS_SYMLINKS" >> $GITHUB_STEP_SUMMARY
+          echo "**Path Separator:** ${{ matrix.path-separator || 'forward-slash' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
         
-      # Coverage generation (only on Node 20.x to avoid duplication)
+      # Coverage generation (only on Node 20.x and Ubuntu to avoid duplication)
       - name: Generate test coverage
-        if: matrix.node-version == '20.x'
+        if: matrix.node-version == '20.x' && matrix.os == 'ubuntu-latest'
         run: |
           npm run test:coverage | tee coverage-output.txt
           
@@ -139,7 +239,7 @@ jobs:
           echo "📊 Test coverage: $COVERAGE%" >> $GITHUB_STEP_SUMMARY
           
       - name: Generate documentation coverage
-        if: matrix.node-version == '20.x'
+        if: matrix.node-version == '20.x' && matrix.os == 'ubuntu-latest'
         run: |
           # Generate regular report for summary
           npm run docs:coverage
@@ -159,7 +259,7 @@ jobs:
           OUTPUT_JSON=true node scripts/check-docs-coverage.js 2>/dev/null > docs-coverage.json || echo '{"overallCoverage": 0}' > docs-coverage.json
           
       - name: Upload coverage artifacts
-        if: matrix.node-version == '20.x'
+        if: matrix.node-version == '20.x' && matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-reports
