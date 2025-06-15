@@ -9,7 +9,6 @@
   "excludeInternal": false,
   "readme": "README.md",
   "theme": "default",
-  "customCss": "./typedoc-theme.css",
   "cacheBust": true,
   "sort": ["source-order"],
   "categorizeByGroup": true,
@@ -49,6 +48,7 @@
   ],
   "plugin": [
     "typedoc-plugin-missing-exports",
-    "typedoc-plugin-coverage"
+    "typedoc-plugin-coverage",
+    "typedoc-material-theme"
   ]
 }
