@@ -1,3 +1,19 @@
+## [1.21.0](https://github.com/ExaDev/markmv/compare/v1.20.3...v1.21.0) (2025-06-15)
+
+### Features
+
+* add CLI flags for index command directory scoping ([b97df0c](https://github.com/ExaDev/markmv/commit/b97df0c57c8436c468e1a664ee77574667ac4e10)), closes [#12](https://github.com/ExaDev/markmv/issues/12)
+* add directory scoping options to index command ([98fafdd](https://github.com/ExaDev/markmv/commit/98fafdd0ef112e4ceab40612a587eb56083e68ac)), closes [#12](https://github.com/ExaDev/markmv/issues/12)
+* split publishing into separate independent steps ([639b730](https://github.com/ExaDev/markmv/commit/639b7305f3be9b53d7ff3db984fbbf1ad8e79b15))
+
+### Styles
+
+* auto-fix linting issues ([28e307a](https://github.com/ExaDev/markmv/commit/28e307ae5cdd25c59f9af734111efd3b463f9b6b))
+
+### Chores
+
+* trigger CI to verify clean build after auto-fixes ([dd6ed3b](https://github.com/ExaDev/markmv/commit/dd6ed3b5c17c6d0692ec87d956927b0798c3a16b))
+
 ## [1.20.3](https://github.com/ExaDev/markmv/compare/v1.20.2...v1.20.3) (2025-06-12)
 
 ### Bug Fixes

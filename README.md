@@ -9,8 +9,8 @@ npx markmv --help
 [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
-[![Test Coverage](https://img.shields.io/badge/coverage-78.58-yellow.svg)](https://github.com/ExaDev/markmv/commit/ce366a8659e33b052689a7e74f96155fa1927b5e)
-[![Documentation Coverage](https://img.shields.io/badge/docs-98.8-brightgreen.svg)](https://github.com/ExaDev/markmv/commit/ce366a8659e33b052689a7e74f96155fa1927b5e)
+[![Test Coverage](https://img.shields.io/badge/coverage-78.53-yellow.svg)](https://github.com/ExaDev/markmv/commit/dd6ed3b5c17c6d0692ec87d956927b0798c3a16b)
+[![Documentation Coverage](https://img.shields.io/badge/docs-98.8-brightgreen.svg)](https://github.com/ExaDev/markmv/commit/dd6ed3b5c17c6d0692ec87d956927b0798c3a16b)
 
 > TypeScript CLI for markdown file operations with intelligent link refactoring
 
