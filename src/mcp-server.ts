@@ -125,6 +125,20 @@ export function createMcpServer(): Server {
         } else {
           throw new Error('Invalid arguments object for validateOperation');
         }
+      } else if (methodName === 'testAutoExposure') {
+        if (typeof args === 'object' && args !== null && !Array.isArray(args)) {
+          const argsObj = args as Record<string, unknown>;
+          const input = argsObj.input;
+          
+          if (typeof input === 'string') {
+            const { testAutoExposure } = await import('./index.js');
+            result = await testAutoExposure(input);
+          } else {
+            throw new Error('Invalid parameters for testAutoExposure: input must be a string');
+          }
+        } else {
+          throw new Error('Invalid arguments object for testAutoExposure');
+        }
       } else {
         throw new Error(`Method ${methodName} not implemented`);
       }
