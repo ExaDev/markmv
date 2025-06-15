@@ -2,6 +2,7 @@
   "name": "markmv",
   "version": "1.22.1",
   "description": "TypeScript CLI for markdown file operations with intelligent link refactoring",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
@@ -12,8 +13,7 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.js"
+      "import": "./dist/index.js"
     },
     "./package.json": "./package.json"
   },
