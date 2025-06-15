@@ -54,24 +54,40 @@ npx markmv --help
 - Dry-run mode for safe testing
 - Detailed operation reporting
 
+### 🌐 **Multiple Access Methods**
+- **CLI Tool**: Direct command-line interface with JSON output
+- **REST API**: Lightweight HTTP server using native Node.js
+- **MCP Server**: Model Context Protocol for AI agent integration
+- **Programmatic API**: TypeScript library for Node.js applications
+
 ## 📦 Installation
 
 ### Direct Usage with npx (Recommended)
 ```bash
+# CLI Tool
 npx markmv --help
 npx markmv move old-doc.md new-doc.md
+
+# REST API Server
+npx markmv-api
+
+# MCP Server
+npx markmv-mcp
 ```
 
 ### Global Installation
 ```bash
 npm install -g markmv
-markmv --help
+
+# All tools available globally
+markmv --help           # CLI tool
+markmv-api             # REST API server
+markmv-mcp             # MCP server
 ```
 
-### Local Installation
+### Library Installation
 ```bash
 npm install markmv
-npx markmv --help
 ```
 
 ### Requirements
@@ -235,6 +251,104 @@ npx markmv index --dry-run --verbose
 - **all**: Index in every directory
 - **branch**: Index in directories with subdirectories
 - **existing**: Only update existing index files
+
+## 🌐 Access Methods
+
+markmv provides multiple ways to access its functionality:
+
+### 1. CLI Tool (Command Line Interface)
+
+The primary command-line interface with JSON output support:
+
+```bash
+# Basic usage
+npx markmv move old.md new.md
+
+# With JSON output for scripting
+npx markmv move old.md new.md --json
+
+# Dry run with detailed output
+npx markmv split large.md --strategy headers --dry-run --verbose --json
+```
+
+### 2. REST API Server
+
+Lightweight HTTP API using native Node.js (zero external dependencies):
+
+```bash
+# Start API server (default port 3000)
+npx markmv-api
+
+# Custom port
+PORT=8080 npx markmv-api
+```
+
+**Available Endpoints:**
+- `GET /health` - Health check
+- `POST /api/move` - Move single file
+- `POST /api/move-batch` - Move multiple files
+- `POST /api/validate` - Validate operation results
+
+**Example API Usage:**
+```bash
+# Move a file
+curl -X POST http://localhost:3000/api/move \
+  -H "Content-Type: application/json" \
+  -d '{"source": "old.md", "destination": "new.md", "options": {"dryRun": true}}'
+
+# Health check
+curl http://localhost:3000/health
+```
+
+### 3. MCP Server (Model Context Protocol)
+
+For AI agent integration with Claude and other MCP-compatible systems:
+
+```bash
+# Start MCP server
+npx markmv-mcp
+```
+
+**MCP Configuration for Claude Desktop:**
+```json
+{
+  "mcpServers": {
+    "markmv": {
+      "command": "npx",
+      "args": ["markmv-mcp"]
+    }
+  }
+}
+```
+
+**Available MCP Tools:**
+- `move_file` - Move markdown file with link updates
+- `move_files` - Move multiple files with link updates
+- `validate_operation` - Validate operation results
+
+### 4. Programmatic API
+
+TypeScript/JavaScript library for Node.js applications:
+
+```typescript
+import { FileOperations, moveFile, createMarkMv } from 'markmv';
+
+// Simple usage
+const result = await moveFile('old.md', 'new.md');
+
+// Advanced usage
+const fileOps = new FileOperations();
+const result = await fileOps.moveFile('docs/api.md', 'reference/', {
+  dryRun: true,
+  verbose: true
+});
+
+// Factory pattern
+const markmv = createMarkMv();
+const result = await markmv.moveFiles([
+  { source: 'docs/*.md', destination: 'archive/' }
+]);
+```
 
 ## ⚙️ Configuration
 
