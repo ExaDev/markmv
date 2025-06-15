@@ -232,3 +232,32 @@ export async function validateOperation(result: OperationResult): Promise<{
   const fileOps = new FileOperations();
   return fileOps.validateOperation(result);
 }
+
+/**
+ * Test function to demonstrate auto-exposure pattern
+ *
+ * @group Testing
+ *
+ * @example
+ *   ```typescript
+ *   import { testAutoExposure } from 'markmv';
+ *
+ *   const result = await testAutoExposure('Hello World');
+ *   console.log(result.message); // "Echo: Hello World"
+ *   ```
+ *
+ * @param input - The input message to echo
+ *
+ * @returns Promise resolving to echo result
+ */
+export async function testAutoExposure(input: string): Promise<{
+  message: string;
+  timestamp: string;
+  success: boolean;
+}> {
+  return {
+    message: `Echo: ${input}`,
+    timestamp: new Date().toISOString(),
+    success: true
+  };
+}
