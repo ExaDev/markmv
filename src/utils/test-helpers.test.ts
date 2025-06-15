@@ -7,7 +7,6 @@ import {
   convertPathSeparators,
   wouldFilenamesConflict,
   skipIfUnsupported,
-  shouldSkipTest,
   createConditionalTest,
   fileExists,
   getTestPaths,

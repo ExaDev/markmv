@@ -187,7 +187,7 @@ export function shouldSkipTest(
  * Create test helper that conditionally runs based on platform capabilities
  * Note: This function expects to be called within a test context where `test` is available
  */
-export function createConditionalTest(testFn: any) {
+export function createConditionalTest(testFn: unknown) {
   return function conditionalTest(
     name: string,
     requirement: 'symlinks' | 'case-sensitivity' | 'windows' | 'unix',
