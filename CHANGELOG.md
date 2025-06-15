@@ -1,3 +1,9 @@
+## [1.25.2](https://github.com/ExaDev/markmv/compare/v1.25.1...v1.25.2) (2025-06-15)
+
+### Bug Fixes
+
+* resolve npm publishing issues with tarball path handling ([1a94943](https://github.com/ExaDev/markmv/commit/1a94943d1026ed0d499fb6815732f638d1d42320))
+
 ## [1.25.1](https://github.com/ExaDev/markmv/compare/v1.25.0...v1.25.1) (2025-06-15)
 
 ### Documentation
