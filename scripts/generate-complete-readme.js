@@ -137,11 +137,11 @@ npx ${name} --help
 npx ${name} --help
 npx ${name} move old-doc.md new-doc.md
 
-# REST API Server
-npx ${name}-api
+# REST API Server (requires package specification)
+npx --package=${name} ${name}-api
 
-# MCP Server
-npx ${name}-mcp
+# MCP Server (requires package specification)
+npx --package=${name} ${name}-mcp
 \`\`\`
 
 ### Global Installation
@@ -345,11 +345,18 @@ npx ${name} split large.md --strategy headers --dry-run --verbose --json
 Lightweight HTTP API using native Node.js (zero external dependencies):
 
 \`\`\`bash
-# Start API server (default port 3000)
-npx ${name}-api
+# Option 1: Install globally first
+npm install -g ${name}
+${name}-api
 
-# Custom port
-PORT=8080 npx ${name}-api
+# Option 2: Use npx with package specification
+npx --package=${name} ${name}-api
+
+# Custom port (after global installation)
+PORT=8080 ${name}-api
+
+# Custom port with npx
+PORT=8080 npx --package=${name} ${name}-api
 \`\`\`
 
 **Available Endpoints:**
@@ -374,17 +381,34 @@ curl http://localhost:3000/health
 For AI agent integration with Claude and other MCP-compatible systems:
 
 \`\`\`bash
-# Start MCP server
-npx ${name}-mcp
+# Option 1: Install globally first
+npm install -g ${name}
+${name}-mcp
+
+# Option 2: Use npx with package specification
+npx --package=${name} ${name}-mcp
 \`\`\`
 
 **MCP Configuration for Claude Desktop:**
+
+Option 1 - After global installation:
+\`\`\`json
+{
+  "mcpServers": {
+    "${name}": {
+      "command": "${name}-mcp"
+    }
+  }
+}
+\`\`\`
+
+Option 2 - Using npx with package specification:
 \`\`\`json
 {
   "mcpServers": {
     "${name}": {
       "command": "npx",
-      "args": ["${name}-mcp"]
+      "args": ["--package=${name}", "${name}-mcp"]
     }
   }
 }

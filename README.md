@@ -68,11 +68,11 @@ npx markmv --help
 npx markmv --help
 npx markmv move old-doc.md new-doc.md
 
-# REST API Server
-npx markmv-api
+# REST API Server (requires package specification)
+npx --package=markmv markmv-api
 
-# MCP Server
-npx markmv-mcp
+# MCP Server (requires package specification)
+npx --package=markmv markmv-mcp
 ```
 
 ### Global Installation
@@ -276,11 +276,18 @@ npx markmv split large.md --strategy headers --dry-run --verbose --json
 Lightweight HTTP API using native Node.js (zero external dependencies):
 
 ```bash
-# Start API server (default port 3000)
-npx markmv-api
+# Option 1: Install globally first
+npm install -g markmv
+markmv-api
 
-# Custom port
-PORT=8080 npx markmv-api
+# Option 2: Use npx with package specification
+npx --package=markmv markmv-api
+
+# Custom port (after global installation)
+PORT=8080 markmv-api
+
+# Custom port with npx
+PORT=8080 npx --package=markmv markmv-api
 ```
 
 **Available Endpoints:**
@@ -305,17 +312,34 @@ curl http://localhost:3000/health
 For AI agent integration with Claude and other MCP-compatible systems:
 
 ```bash
-# Start MCP server
-npx markmv-mcp
+# Option 1: Install globally first
+npm install -g markmv
+markmv-mcp
+
+# Option 2: Use npx with package specification
+npx --package=markmv markmv-mcp
 ```
 
 **MCP Configuration for Claude Desktop:**
+
+Option 1 - After global installation:
+```json
+{
+  "mcpServers": {
+    "markmv": {
+      "command": "markmv-mcp"
+    }
+  }
+}
+```
+
+Option 2 - Using npx with package specification:
 ```json
 {
   "mcpServers": {
     "markmv": {
       "command": "npx",
-      "args": ["markmv-mcp"]
+      "args": ["--package=markmv", "markmv-mcp"]
     }
   }
 }
