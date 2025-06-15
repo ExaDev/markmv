@@ -330,7 +330,9 @@ describe('Generated OpenAPI Specification', () => {
       Object.entries(openapiSpec.components.schemas).forEach(
         ([schemaName, schema]: [string, unknown]) => {
           const schemaObj = schema as Record<string, unknown>;
-          const schemaWithProps = schemaObj as { properties: Record<string, { description?: string }> };
+          const schemaWithProps = schemaObj as {
+            properties: Record<string, { description?: string }>;
+          };
           Object.entries(schemaWithProps.properties).forEach(([propName, property]) => {
             if (property.description) {
               expect(property.description.length).toBeGreaterThan(0);
@@ -374,23 +376,26 @@ describe('Generated OpenAPI Specification', () => {
       // Collect all $ref references
       Object.values(openapiSpec.paths).forEach((pathSpec: unknown) => {
         const spec = pathSpec as Record<string, unknown>;
-        const postSpec = spec as { 
-          post: { 
-            requestBody?: { 
-              content?: { 
-                'application/json'?: { 
-                  schema?: { $ref?: string } 
-                } 
-              } 
+        const postSpec = spec as {
+          post: {
+            requestBody?: {
+              content?: {
+                'application/json'?: {
+                  schema?: { $ref?: string };
+                };
+              };
             };
-            responses: Record<string, { 
-              content?: { 
-                'application/json'?: { 
-                  schema?: { $ref?: string } 
-                } 
-              } 
-            }>;
-          } 
+            responses: Record<
+              string,
+              {
+                content?: {
+                  'application/json'?: {
+                    schema?: { $ref?: string };
+                  };
+                };
+              }
+            >;
+          };
         };
         const post = postSpec.post;
 
