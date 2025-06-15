@@ -184,7 +184,7 @@ async function discoverMarkdownFiles(
 ): Promise<IndexableFile[]> {
   // Determine the effective boundary for file scanning
   const effectiveBoundary = options.boundary ? resolve(options.boundary) : targetDir;
-  
+
   // Build glob pattern based on maxDepth option
   let globPattern: string;
   if (options.maxDepth !== undefined) {
@@ -195,10 +195,10 @@ async function discoverMarkdownFiles(
     globPattern = join(targetDir, '**/*.md');
   }
 
-  const globOptions: Parameters<typeof glob>[1] = { 
+  const globOptions: Parameters<typeof glob>[1] = {
     ignore: ['**/node_modules/**'],
   };
-  
+
   // Only set cwd if noTraverseUp is enabled
   if (options.noTraverseUp) {
     globOptions.cwd = targetDir;
@@ -208,10 +208,10 @@ async function discoverMarkdownFiles(
 
   // Filter files to respect boundary constraints and convert Path objects to strings
   const boundaryFilePaths = filePaths
-    .map(filePath => typeof filePath === 'string' ? filePath : filePath.toString())
-    .filter(filePath => {
+    .map((filePath) => (typeof filePath === 'string' ? filePath : filePath.toString()))
+    .filter((filePath) => {
       const resolvedPath = resolve(filePath);
-      
+
       // Ensure file is within the boundary directory
       if (options.boundary) {
         const relativeToBoundary = relative(effectiveBoundary, resolvedPath);
@@ -219,7 +219,7 @@ async function discoverMarkdownFiles(
           return false; // File is outside boundary
         }
       }
-      
+
       // Ensure file is within or below target directory when noTraverseUp is enabled
       if (options.noTraverseUp) {
         const relativeToTarget = relative(targetDir, resolvedPath);
@@ -227,7 +227,7 @@ async function discoverMarkdownFiles(
           return false; // File is above target directory
         }
       }
-      
+
       return true;
     });
 
