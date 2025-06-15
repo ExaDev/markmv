@@ -79,7 +79,7 @@ export class FileOperations {
    *     dryRun: true,
    *     verbose: true
    *   });
-   *   ```;
+   *   ```
    *
    * @param sourcePath - The current path of the markdown file to move
    * @param destinationPath - The target path (can be a directory)

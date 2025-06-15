@@ -43,7 +43,7 @@ export class PathUtils {
    *
    *   PathUtils.resolvePath('../file.md', '/current/working/dir');
    *   // Returns: '/current/working/file.md'
-   *   ```;
+   *   ```
    *
    * @param path - The path to resolve (supports ~/, relative, and absolute paths)
    * @param basePath - Optional base directory for relative path resolution

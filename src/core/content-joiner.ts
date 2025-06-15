@@ -80,7 +80,7 @@ export class ContentJoiner {
    *       handleFrontmatter: 'first' // Use first file's frontmatter
    *     }
    *   );
-   *   ```;
+   *   ```
    *
    * @param filePaths - Array of file paths to join together
    * @param options - Configuration options for the join operation
