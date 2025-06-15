@@ -4,6 +4,14 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    env: {
+      // Cross-platform test environment variables
+      MARKMV_TEST_OS: process.env.MARKMV_TEST_OS || 'unknown',
+      MARKMV_TEST_CASE_SENSITIVE: process.env.MARKMV_TEST_CASE_SENSITIVE || 'auto',
+      MARKMV_TEST_PATH_SEP: process.env.MARKMV_TEST_PATH_SEP || 'auto',
+      MARKMV_TEST_FILESYSTEM_CASE_SENSITIVE: process.env.MARKMV_TEST_FILESYSTEM_CASE_SENSITIVE,
+      MARKMV_TEST_SUPPORTS_SYMLINKS: process.env.MARKMV_TEST_SUPPORTS_SYMLINKS,
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'json-summary', 'html', 'lcov'],
