@@ -174,7 +174,7 @@ jobs:
           
           # Test basic file operations
           echo "Testing file listing..."
-          node ../../dist/cli.js index --format json . || echo "Index command failed"
+          node ../../dist/cli.js index --json . || echo "Index command failed"
           
           # Test file moving with different path styles
           if [ "${{ runner.os }}" = "Windows" ]; then
@@ -201,8 +201,8 @@ jobs:
             echo "✅ Case-sensitive files coexist"
             
             # Test CLI handles case-sensitive files correctly
-            node ../../dist/cli.js index --format json . | grep -i "lowercase.md"
-            node ../../dist/cli.js index --format json . | grep -i "UPPERCASE.md"
+            node ../../dist/cli.js index --json . | grep -i "lowercase.md"
+            node ../../dist/cli.js index --json . | grep -i "UPPERCASE.md"
           else
             echo "❌ Expected case-sensitive files not found"
             ls -la

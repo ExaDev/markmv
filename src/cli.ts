@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { convertCommand } from './commands/convert';
-import { indexCommand } from './commands/index';
-import { joinCommand } from './commands/join';
-import { mergeCommand } from './commands/merge';
-import { moveCommand } from './commands/move';
-import { splitCommand } from './commands/split';
+import { convertCommand } from './commands/convert.js';
+import { indexCommand } from './commands/index.js';
+import { joinCommand } from './commands/join.js';
+import { mergeCommand } from './commands/merge.js';
+import { moveCommand } from './commands/move.js';
+import { splitCommand } from './commands/split.js';
 
 const program = new Command();
 

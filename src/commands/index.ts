@@ -1,7 +1,7 @@
 import { existsSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { glob } from 'glob';
-import { FileUtils } from '../utils/file-utils';
+import { FileUtils } from '../utils/file-utils.js';
 
 // Test PR creation with trailing spaces on main branch
 
@@ -99,6 +99,7 @@ interface IndexCliOptions {
   template?: string;
   dryRun?: boolean;
   verbose?: boolean;
+  json?: boolean;
   maxDepth?: number;
   noTraverseUp?: boolean;
   boundary?: string;
@@ -145,7 +146,65 @@ export async function indexCommand(
     ...(cliOptions.boundary && { boundary: cliOptions.boundary }),
   };
 
-  return generateIndexFiles(options, directory || '.');
+  if (cliOptions.json) {
+    return generateIndexFilesJson(options, directory || '.');
+  } else {
+    return generateIndexFiles(options, directory || '.');
+  }
+}
+
+/** Generate index files for markdown documentation (JSON output) */
+async function generateIndexFilesJson(options: IndexOptions, directory: string): Promise<void> {
+  const targetDir = resolve(directory);
+
+  if (!existsSync(targetDir)) {
+    throw new Error(`Directory not found: ${targetDir}`);
+  }
+
+  if (!statSync(targetDir).isDirectory()) {
+    throw new Error(`Path is not a directory: ${targetDir}`);
+  }
+
+  try {
+    // Discover markdown files
+    const files = await discoverMarkdownFiles(targetDir, options);
+
+    // Organize files based on strategy
+    const organizedFiles = organizeFiles(files, options);
+
+    // Convert to JSON output
+    const jsonOutput = {
+      directory: targetDir,
+      options: {
+        type: options.type,
+        strategy: options.strategy,
+        location: options.location,
+      },
+      totalFiles: files.length,
+      organizedFiles: Object.fromEntries(
+        Array.from(organizedFiles.entries()).map(([key, groupFiles]) => [
+          key,
+          groupFiles.map(file => ({
+            path: file.path,
+            relativePath: file.relativePath,
+            title: file.metadata.title || file.relativePath,
+          }))
+        ])
+      ),
+      files: files.map(file => ({
+        path: file.path,
+        relativePath: file.relativePath,
+        title: file.metadata.title || file.relativePath,
+      }))
+    };
+
+    console.log(JSON.stringify(jsonOutput, null, 2));
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to generate index: ${error.message}`);
+    }
+    throw error;
+  }
 }
 
 /** Generate index files for markdown documentation */

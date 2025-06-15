@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { FileUtils } from '../utils/file-utils';
-import { indexCommand } from './index';
+import { FileUtils } from '../utils/file-utils.js';
+import { indexCommand } from './index.js';
 
 // Mock FileUtils
 vi.mock('../utils/file-utils');
