@@ -412,11 +412,11 @@ export const validators = {
  * Validate input for a specific method
  */
 export function validateInput(methodName: string, data: unknown): { valid: boolean; errors: string[] } {
-  const validator = validators[methodName as keyof typeof validators]?.input;
-  if (!validator) {
+  if (!(methodName in validators)) {
     return { valid: false, errors: [`Unknown method: ${methodName}`] };
   }
   
+  const validator = validators[methodName as keyof typeof validators].input;
   const valid = validator(data);
   return valid ? { valid, errors: [] } : {
     valid,
@@ -428,11 +428,11 @@ export function validateInput(methodName: string, data: unknown): { valid: boole
  * Validate output for a specific method
  */
 export function validateOutput(methodName: string, data: unknown): { valid: boolean; errors: string[] } {
-  const validator = validators[methodName as keyof typeof validators]?.output;
-  if (!validator) {
+  if (!(methodName in validators)) {
     return { valid: false, errors: [`Unknown method: ${methodName}`] };
   }
   
+  const validator = validators[methodName as keyof typeof validators].output;
   const valid = validator(data);
   return valid ? { valid, errors: [] } : {
     valid,

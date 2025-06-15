@@ -67,7 +67,7 @@ describe('Auto-Generated AJV Validators', () => {
     });
 
     it('should have input and output validators for each method', () => {
-      Object.entries(validators).forEach(([methodName, validator]) => {
+      Object.entries(validators).forEach(([_methodName, validator]) => {
         expect(validator).toHaveProperty('input');
         expect(validator).toHaveProperty('output');
         expect(typeof validator.input).toBe('function');

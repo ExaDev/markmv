@@ -69,7 +69,7 @@ describe('Auto-Generated MCP Tools', () => {
         expect(tool?.name).toBe('move_file');
         expect(tool?.description).toContain('Move a single markdown file');
         
-        const schema = tool?.inputSchema as any;
+        const schema = tool?.inputSchema as Record<string, unknown>;
         expect(schema.properties).toHaveProperty('sourcePath');
         expect(schema.properties).toHaveProperty('destinationPath');
         expect(schema.properties).toHaveProperty('options');
@@ -86,7 +86,7 @@ describe('Auto-Generated MCP Tools', () => {
         expect(tool?.name).toBe('move_files');
         expect(tool?.description).toContain('Move multiple markdown files');
         
-        const schema = tool?.inputSchema as any;
+        const schema = tool?.inputSchema as Record<string, unknown>;
         expect(schema.properties).toHaveProperty('moves');
         expect(schema.properties).toHaveProperty('options');
         expect(schema.required).toContain('moves');
@@ -102,7 +102,7 @@ describe('Auto-Generated MCP Tools', () => {
         expect(tool?.name).toBe('validate_operation');
         expect(tool?.description).toContain('Validate the result');
         
-        const schema = tool?.inputSchema as any;
+        const schema = tool?.inputSchema as Record<string, unknown>;
         expect(schema.properties).toHaveProperty('result');
         expect(schema.required).toContain('result');
         expect(schema.properties.result.type).toBe('object');
@@ -117,7 +117,7 @@ describe('Auto-Generated MCP Tools', () => {
         expect(tool?.name).toBe('test_auto_exposure');
         expect(tool?.description).toContain('Test function to demonstrate auto-exposure');
         
-        const schema = tool?.inputSchema as any;
+        const schema = tool?.inputSchema as Record<string, unknown>;
         expect(schema.properties).toHaveProperty('input');
         expect(schema.required).toContain('input');
         expect(schema.properties.input.type).toBe('string');

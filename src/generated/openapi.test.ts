@@ -65,12 +65,14 @@ describe('Generated OpenAPI Specification', () => {
     });
 
     it('should use POST method for all endpoints', () => {
-      Object.values(openapiSpec.paths).forEach((pathSpec: any) => {
-        expect(pathSpec).toHaveProperty('post');
-        expect(pathSpec.post).toHaveProperty('summary');
-        expect(pathSpec.post).toHaveProperty('tags');
-        expect(pathSpec.post).toHaveProperty('requestBody');
-        expect(pathSpec.post).toHaveProperty('responses');
+      Object.values(openapiSpec.paths).forEach((pathSpec: unknown) => {
+        const spec = pathSpec as Record<string, unknown>;
+        expect(spec).toHaveProperty('post');
+        const post = spec.post as Record<string, unknown>;
+        expect(post).toHaveProperty('summary');
+        expect(post).toHaveProperty('tags');
+        expect(post).toHaveProperty('requestBody');
+        expect(post).toHaveProperty('responses');
       });
     });
 
@@ -241,8 +243,10 @@ describe('Generated OpenAPI Specification', () => {
 
   describe('Error Response Schemas', () => {
     it('should have consistent error response structure across all endpoints', () => {
-      Object.values(openapiSpec.paths).forEach((pathSpec: any) => {
-        const responses = pathSpec.post.responses;
+      Object.values(openapiSpec.paths).forEach((pathSpec: unknown) => {
+        const spec = pathSpec as Record<string, unknown>;
+        const post = spec.post as Record<string, unknown>;
+        const responses = post.responses;
         
         // 400 Error Response
         expect(responses['400']).toBeDefined();
@@ -269,7 +273,8 @@ describe('Generated OpenAPI Specification', () => {
 
   describe('Schema Validation', () => {
     it('should have valid JSON Schema structures', () => {
-      Object.entries(openapiSpec.components.schemas).forEach(([schemaName, schema]: [string, any]) => {
+      Object.entries(openapiSpec.components.schemas).forEach(([schemaName, schema]: [string, unknown]) => {
+        const schemaObj = schema as Record<string, unknown>;
         expect(schema).toHaveProperty('type');
         expect(schema.type).toBe('object');
         expect(schema).toHaveProperty('properties');
@@ -278,7 +283,8 @@ describe('Generated OpenAPI Specification', () => {
         expect(schema.additionalProperties).toBe(false);
 
         // All properties should have valid types
-        Object.values(schema.properties).forEach((property: any) => {
+        Object.values(schemaObj.properties as Record<string, unknown>).forEach((property: unknown) => {
+          const prop = property as Record<string, unknown>;
           expect(property).toHaveProperty('type');
           expect(['string', 'number', 'boolean', 'array', 'object']).toContain(property.type);
           
@@ -308,12 +314,14 @@ describe('Generated OpenAPI Specification', () => {
     });
 
     it('should have proper descriptions for all components', () => {
-      Object.values(openapiSpec.paths).forEach((pathSpec: any) => {
+      Object.values(openapiSpec.paths).forEach((pathSpec: unknown) => {
+        const spec = pathSpec as Record<string, unknown>;
         expect(pathSpec.post.summary).toBeTruthy();
         expect(pathSpec.post.summary.length).toBeGreaterThan(0);
       });
 
-      Object.entries(openapiSpec.components.schemas).forEach(([schemaName, schema]: [string, any]) => {
+      Object.entries(openapiSpec.components.schemas).forEach(([schemaName, schema]: [string, unknown]) => {
+        const schemaObj = schema as Record<string, unknown>;
         Object.entries(schema.properties).forEach(([propName, property]: [string, any]) => {
           if (property.description) {
             expect(property.description.length).toBeGreaterThan(0);
@@ -354,7 +362,8 @@ describe('Generated OpenAPI Specification', () => {
       const referencedSchemas = new Set<string>();
       
       // Collect all $ref references
-      Object.values(openapiSpec.paths).forEach((pathSpec: any) => {
+      Object.values(openapiSpec.paths).forEach((pathSpec: unknown) => {
+        const spec = pathSpec as Record<string, unknown>;
         const post = pathSpec.post;
         
         // Request body schema

@@ -4,10 +4,7 @@
  * via MCP tools and REST API endpoints.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { mkdir, writeFile, rm } from 'node:fs/promises';
+import { describe, it, expect } from 'vitest';
 import { testAutoExposure } from './index.js';
 
 describe('Auto-Exposure Pattern', () => {
