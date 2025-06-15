@@ -2,6 +2,13 @@ import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { PathUtils } from './path-utils.js';
+import { 
+  getPlatformInfo, 
+  conditionalTest, 
+  getTestPaths,
+  createPath,
+  convertPathSeparators
+} from './test-helpers.js';
 
 describe('PathUtils', () => {
   describe('resolvePath', () => {
@@ -147,6 +154,119 @@ describe('PathUtils', () => {
     it('should leave Unix paths unchanged', () => {
       const result = PathUtils.toUnixPath('path/to/file.md');
       expect(result).toBe('path/to/file.md');
+    });
+  });
+
+  describe('Cross-Platform Path Behavior', () => {
+    const platformInfo = getPlatformInfo();
+    const testPaths = getTestPaths();
+
+    describe('Platform-specific path handling', () => {
+      it('should handle platform-appropriate absolute paths', () => {
+        testPaths.absolute.forEach(testPath => {
+          const result = PathUtils.validatePath(testPath);
+          expect(result.valid).toBe(true);
+        });
+      });
+
+      it('should handle platform-appropriate relative paths', () => {
+        testPaths.relative.forEach(testPath => {
+          const result = PathUtils.validatePath(testPath);
+          expect(result.valid).toBe(true);
+        });
+      });
+
+      conditionalTest('Windows drive letter handling', 'windows', () => {
+        expect(PathUtils.validatePath('C:\\Users\\test\\file.md').valid).toBe(true);
+        expect(PathUtils.validatePath('D:\\Projects\\readme.md').valid).toBe(true);
+      });
+
+      conditionalTest('Unix absolute path handling', 'unix', () => {
+        expect(PathUtils.validatePath('/home/user/file.md').valid).toBe(true);
+        expect(PathUtils.validatePath('/usr/local/share/doc.md').valid).toBe(true);
+      });
+    });
+
+    describe('Path separator handling', () => {
+      it('should handle native path separators', () => {
+        const nativePath = createPath('folder', 'subfolder', 'file.md');
+        const result = PathUtils.validatePath(nativePath);
+        expect(result.valid).toBe(true);
+      });
+
+      it('should convert path separators when needed', () => {
+        if (platformInfo.isWindows) {
+          const unixPath = 'folder/subfolder/file.md';
+          const windowsPath = convertPathSeparators(unixPath);
+          expect(windowsPath).toBe('folder\\subfolder\\file.md');
+          expect(PathUtils.validatePath(windowsPath).valid).toBe(true);
+        } else {
+          const windowsPath = 'folder\\subfolder\\file.md';
+          const unixPath = convertPathSeparators(windowsPath);
+          expect(unixPath).toBe('folder/subfolder/file.md');
+          expect(PathUtils.validatePath(unixPath).valid).toBe(true);
+        }
+      });
+    });
+
+    describe('toUnixPath cross-platform behavior', () => {
+      it('should consistently convert to Unix paths regardless of platform', () => {
+        const mixedPaths = [
+          'folder\\subfolder\\file.md',
+          'folder/subfolder/file.md',
+          'folder\\mixed/path\\file.md'
+        ];
+
+        mixedPaths.forEach(path => {
+          const result = PathUtils.toUnixPath(path);
+          expect(result).not.toContain('\\');
+          expect(result).toMatch(/\//);
+        });
+      });
+    });
+
+    describe('Relative path updates across platforms', () => {
+      it('should handle relative path updates with platform-specific paths', () => {
+        if (platformInfo.isWindows) {
+          const result = PathUtils.updateRelativePath(
+            '.\\target.md',
+            'C:\\project\\docs\\source.md',
+            'C:\\project\\moved\\source.md'
+          );
+          // Should work regardless of path separator style
+          expect(result).toMatch(/\.\.[\\/]docs[\\/]target\.md/);
+        } else {
+          const result = PathUtils.updateRelativePath(
+            './target.md',
+            '/project/docs/source.md',
+            '/project/moved/source.md'
+          );
+          expect(result).toBe('../docs/target.md');
+        }
+      });
+    });
+
+    describe('findCommonBase with mixed path separators', () => {
+      it('should find common base even with mixed separators', () => {
+        let paths: string[];
+        
+        if (platformInfo.isWindows) {
+          paths = [
+            'C:\\project\\docs\\file1.md',
+            'C:/project/docs/file2.md',  // Mixed separator style
+            'C:\\project\\src\\file3.md'
+          ];
+        } else {
+          paths = [
+            '/project/docs/file1.md',
+            '/project\\docs\\file2.md',  // Mixed separator style (should be normalized)
+            '/project/src/file3.md'
+          ];
+        }
+        
+        const result = PathUtils.findCommonBase(paths);
+        expect(result).toContain('project');
+      });
     });
   });
 });
