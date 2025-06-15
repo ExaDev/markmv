@@ -505,7 +505,7 @@ describe('LinkValidator', () => {
 
     it('should handle unknown link types', async () => {
       const link: MarkdownLink = {
-        type: 'unknown' as any,
+        type: 'unknown' as never,
         href: 'unknown://link',
         line: 1,
         column: 1,

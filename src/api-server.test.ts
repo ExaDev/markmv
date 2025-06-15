@@ -4,7 +4,7 @@ import { createApiServer } from './api-server.js';
 
 // Mock console.log to avoid output during tests
 const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
-const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+const _mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
 // Mock the markmv index module
 vi.mock('./index.js', () => ({
@@ -27,7 +27,7 @@ vi.mock('./generated/api-routes.js', () => ({
     {
       path: '/api/test',
       method: 'POST',
-      handler: vi.fn(async (req: any, res: any) => {
+      handler: vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, data: 'test response' }));
       }),
@@ -51,7 +51,7 @@ describe('API Server', () => {
   afterEach(async () => {
     if (server) {
       await new Promise<void>((resolve) => {
-        server!.close(() => resolve());
+        server?.close(() => resolve());
       });
       server = null;
     }
@@ -74,7 +74,7 @@ describe('API Server', () => {
     });
 
     it('should use default port 3000 when no port specified', async () => {
-      const defaultPort = 3100 + Math.floor(Math.random() * 100); // Use a different range to avoid conflicts
+      const _defaultPort = 3100 + Math.floor(Math.random() * 100); // Use a different range to avoid conflicts
       
       // Test the port parsing logic directly instead of creating another server
       const originalEnv = process.env.PORT;
@@ -363,7 +363,7 @@ describe('API Server', () => {
         });
       });
       
-      const address = customServer.address() as any;
+      const address = customServer.address() as { port: number; family: string; address: string };
       expect(address.port).toBe(customPort);
       
       await new Promise<void>((resolve) => {

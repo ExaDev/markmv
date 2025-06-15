@@ -34,7 +34,7 @@ describe('Move Command', () => {
           fs.rmSync(testDir, { recursive: true, force: true });
         }
       });
-    } catch (error) {
+    } catch {
       // Ignore cleanup errors
     }
   });
@@ -224,7 +224,7 @@ describe('Move Command', () => {
 
     it('should handle unexpected errors', async () => {
       // Create a scenario that would cause an unexpected error by mocking expandSourcePatterns to throw
-      const originalExpandSourcePatterns = await import('./move.js');
+      const _originalExpandSourcePatterns = await import('./move.js');
       
       // We'll use a non-existent glob pattern that should cause an error in expansion
       const badPattern = '/nonexistent/path/**/*.md';

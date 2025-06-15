@@ -180,7 +180,7 @@ describe('MCP Server', () => {
   });
 
   describe('Tool Execution', () => {
-    let callToolHandler: any;
+    let callToolHandler: (request: { params: { name: string; arguments?: Record<string, unknown> } }) => Promise<{ content: Array<{ type: string; text: string }> }>;
 
     beforeEach(() => {
       vi.clearAllMocks();
@@ -432,7 +432,7 @@ describe('MCP Server', () => {
   });
 
   describe('Utility Functions', () => {
-    let callToolHandler: any;
+    let callToolHandler: (request: { params: { name: string; arguments?: Record<string, unknown> } }) => Promise<{ content: Array<{ type: string; text: string }> }>;
 
     beforeEach(() => {
       vi.clearAllMocks();

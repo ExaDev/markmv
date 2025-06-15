@@ -29,7 +29,7 @@ describe('Split Command', () => {
           fs.rmSync(testDir, { recursive: true, force: true });
         }
       });
-    } catch (error) {
+    } catch {
       // Ignore cleanup errors
     }
   });
@@ -236,7 +236,7 @@ More content`;
       
       // Use invalid strategy to trigger error handling
       await expect(splitCommand(sourceFile, { 
-        strategy: 'invalid' as any,
+        strategy: 'invalid' as never,
         dryRun: true 
       })).rejects.toThrow();
     });

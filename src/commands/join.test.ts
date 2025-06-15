@@ -29,7 +29,7 @@ describe('Join Command', () => {
           fs.rmSync(testDir, { recursive: true, force: true });
         }
       });
-    } catch (error) {
+    } catch {
       // Ignore cleanup errors
     }
   });
@@ -279,7 +279,7 @@ describe('Join Command', () => {
       
       // Use invalid order strategy to trigger error
       await expect(joinCommand([file1], { 
-        orderStrategy: 'invalid' as any,
+        orderStrategy: 'invalid' as never,
         dryRun: true 
       })).rejects.toThrow();
     });
