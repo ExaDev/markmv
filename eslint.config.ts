@@ -60,5 +60,17 @@ export default tseslint.config(
       'no-empty': 'off',
     },
   },
+  {
+    files: ['src/generated/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'warn', // Warn but allow in generated files
+      '@typescript-eslint/consistent-type-assertions': 'off', // Allow type assertions in generated files
+      '@typescript-eslint/no-non-null-assertion': 'warn', // Warn but allow in generated files
+      '@typescript-eslint/ban-ts-comment': 'off', // Allow ts-ignore etc in generated files
+      '@typescript-eslint/no-unused-vars': 'off', // Allow unused vars in generated files
+      'no-undef': 'off',
+      'no-empty': 'off',
+    },
+  },
   prettier,
 ) satisfies Linter.Config[];

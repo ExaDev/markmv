@@ -65,8 +65,8 @@ describe('Auto-Exposure Pattern Integration', () => {
       expect(mcpTool?.description).toBe(apiRoute?.description);
       
       // Input schemas should be consistent
-      const mcpInputSchema = mcpTool?.inputSchema as any;
-      const apiInputSchema = apiRoute?.inputSchema as any;
+      const mcpInputSchema = mcpTool?.inputSchema as Record<string, unknown>;
+      const apiInputSchema = apiRoute?.inputSchema as Record<string, unknown>;
       
       expect(mcpInputSchema.properties.input.type).toBe(apiInputSchema.properties.input.type);
       expect(mcpInputSchema.properties.input.description).toBe(apiInputSchema.properties.input.description);
@@ -111,7 +111,7 @@ describe('Auto-Exposure Pattern Integration', () => {
         {}, // missing input
       ];
 
-      testCases.forEach(({ input, shouldPass }, index) => {
+      testCases.forEach(({ input, shouldPass }, _index) => {
         const data = input !== undefined ? { input } : (typeof input === 'object' && input !== null ? input : {});
         const result = validateInput('testAutoExposure', data);
         
@@ -139,7 +139,7 @@ describe('Auto-Exposure Pattern Integration', () => {
         { message: 'Echo: test', timestamp: validResult.timestamp, success: 'true' }, // wrong type
       ];
 
-      invalidOutputs.forEach((invalidOutput, index) => {
+      invalidOutputs.forEach((invalidOutput, _index) => {
         const result = validateOutput('testAutoExposure', invalidOutput);
         expect(result.valid).toBe(false);
       });
