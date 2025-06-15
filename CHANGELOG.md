@@ -1,3 +1,9 @@
+## [1.25.1](https://github.com/ExaDev/markmv/compare/v1.25.0...v1.25.1) (2025-06-15)
+
+### Documentation
+
+* update package.json to point to GitHub Pages documentation site ([0523631](https://github.com/ExaDev/markmv/commit/052363164bff677edd92b51846bee950f41bdf5c))
+
 ## [1.25.0](https://github.com/ExaDev/markmv/compare/v1.24.0...v1.25.0) (2025-06-15)
 
 ### Features
