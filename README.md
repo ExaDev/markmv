@@ -169,8 +169,8 @@ Defined in: [commands/index.ts:130](https://github.com/ExaDev/markmv/blob/main/s
 
 CLI command handler for generating documentation indexes.
 
-Creates organized documentation indexes from markdown files using various strategies.
-Supports multiple index types including links, imports, embeds, and hybrid modes.
+Creates organized documentation indexes from markdown files using various strategies. Supports
+multiple index types including links, imports, embeds, and hybrid modes.
 
 #### Example
 
@@ -213,7 +213,7 @@ A new FileOperations instance
 
   const markmv = createMarkMv();
   const result = await markmv.moveFile('old.md', 'new.md');
-  ```
+  ```;
 
 ***
 
@@ -264,7 +264,7 @@ Promise resolving to operation result
   const result = await moveFile('docs/old.md', 'docs/new.md', {
     dryRun: true
   });
-  ```
+  ```;
 
 ***
 
@@ -307,7 +307,7 @@ Promise resolving to operation result
     { source: 'old1.md', destination: 'new1.md' },
     { source: 'old2.md', destination: 'new2.md' }
   ]);
-  ```
+  ```;
 
 ***
 

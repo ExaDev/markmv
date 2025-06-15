@@ -1,3 +1,54 @@
+## [1.23.0](https://github.com/ExaDev/markmv/compare/v1.22.1...v1.23.0) (2025-06-15)
+
+### Features
+
+* add testAutoExposure function to demonstrate auto-exposure pattern ([58bd8a2](https://github.com/ExaDev/markmv/commit/58bd8a21e6c40ce00931abe90c4053118f1b4ef3))
+* add testAutoExposure handler to MCP server ([9e173d1](https://github.com/ExaDev/markmv/commit/9e173d15fff7d31e1dd56899ce8559a9903ff2ee))
+* add TypeDoc [@group](https://github.com/group) annotations and configuration enhancements ([b60c31e](https://github.com/ExaDev/markmv/commit/b60c31ee8388845acc2395bc3ba3a1dc110eaad1))
+* extend schema generator to support testAutoExposure function ([2a746fc](https://github.com/ExaDev/markmv/commit/2a746fc8603ca824df7f9fc0d54580bd2e5aabdc))
+* implement JSON Schema-first auto-exposure pattern ([af28353](https://github.com/ExaDev/markmv/commit/af28353eb56137c97dc2a518c595c6f8ada3e65d))
+
+### Bug Fixes
+
+* remove any types and unused variables from test files ([acf405b](https://github.com/ExaDev/markmv/commit/acf405bb90014a5b03a02e47e2ad49b14b9dc22f))
+* resolve CI race condition by limiting auto-fixes to Node.js 22.x only ([30d167c](https://github.com/ExaDev/markmv/commit/30d167cfa6490c3b8167232dec9b0b49200a24c6))
+* resolve final linting issues with type assertions and any types ([5c013af](https://github.com/ExaDev/markmv/commit/5c013af4956ed85a423dae5128875ff79cb1c458))
+* resolve type assertions and linting issues ([f5d9898](https://github.com/ExaDev/markmv/commit/f5d989828954431c95b811a28cf9e2343d8a4227))
+* resolve variable name conflict in openapi test ([dd5b02c](https://github.com/ExaDev/markmv/commit/dd5b02cf6acedb2dc40e9dec2df833ad8c77bd5b))
+
+### Documentation
+
+* enhance JSDoc documentation across core modules ([a6a619e](https://github.com/ExaDev/markmv/commit/a6a619eeaa672098a05cf6e9d44f88b87b413c9e))
+
+### Styles
+
+* auto-fix linting issues ([cffac7c](https://github.com/ExaDev/markmv/commit/cffac7c121553cd5f6de66d9f3cd6bc3c50d360f))
+* auto-fix linting issues ([8bde2ee](https://github.com/ExaDev/markmv/commit/8bde2ee4b0d7c7b033591c1561495044f5f7bc8b))
+* auto-fix linting issues ([783a549](https://github.com/ExaDev/markmv/commit/783a5492fc01451dfad591072e37eb9c70660133))
+* auto-fix linting issues ([b27059e](https://github.com/ExaDev/markmv/commit/b27059e22b311a1b40ee1864c02b87fde8d7fd84))
+
+### Code Refactoring
+
+* enhance README generation with TypeDoc integration ([600e7ec](https://github.com/ExaDev/markmv/commit/600e7ec24e94d7abad7e7b9cf30efc6765af51b3))
+* remove legacy compatibility from API server ([3e54033](https://github.com/ExaDev/markmv/commit/3e54033e946ac6b72b21c9178a60cba70ccb3c3a))
+* simplify schema generation by removing TypeScript AST parsing ([1a8cebd](https://github.com/ExaDev/markmv/commit/1a8cebd6a98a3cae6f24c96b82a397790acfee9f))
+
+### Tests
+
+* add comprehensive auto-exposure test coverage ([d387d04](https://github.com/ExaDev/markmv/commit/d387d041c3e583417c2c9c643fe97cf236cda806))
+
+### Build System
+
+* migrate to pure ES modules ([de39c05](https://github.com/ExaDev/markmv/commit/de39c05fdb8d2bff82aee9bfb1299d2420b2d28b))
+* modernize TypeScript config for ES modules ([708d13c](https://github.com/ExaDev/markmv/commit/708d13ca47549b35b6f91cd9387ae8933f3aee31))
+* regenerate auto-exposure artifacts with testAutoExposure function ([9e17175](https://github.com/ExaDev/markmv/commit/9e1717518f8a192f5204162b5f16bd7fcc7e2733))
+
+### Chores
+
+* ignore test temporary directories in gitignore ([2c6376c](https://github.com/ExaDev/markmv/commit/2c6376c8fefce7e54432afb9143dd64ff6f0676d))
+* regenerate schemas with latest timestamp ([b5d4c1c](https://github.com/ExaDev/markmv/commit/b5d4c1c2a280e8a99ed1c143fa4224acfe28a7e4))
+* update generated file timestamps ([13777cb](https://github.com/ExaDev/markmv/commit/13777cb020cdb0a0a1fd3db351eafc67f93c114b))
+
 ## [1.22.1](https://github.com/ExaDev/markmv/compare/v1.22.0...v1.22.1) (2025-06-15)
 
 ### Bug Fixes
