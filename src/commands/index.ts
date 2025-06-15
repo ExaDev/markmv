@@ -184,18 +184,18 @@ async function generateIndexFilesJson(options: IndexOptions, directory: string):
       organizedFiles: Object.fromEntries(
         Array.from(organizedFiles.entries()).map(([key, groupFiles]) => [
           key,
-          groupFiles.map(file => ({
+          groupFiles.map((file) => ({
             path: file.path,
             relativePath: file.relativePath,
             title: file.metadata.title || file.relativePath,
-          }))
+          })),
         ])
       ),
-      files: files.map(file => ({
+      files: files.map((file) => ({
         path: file.path,
         relativePath: file.relativePath,
         title: file.metadata.title || file.relativePath,
-      }))
+      })),
     };
 
     console.log(JSON.stringify(jsonOutput, null, 2));
