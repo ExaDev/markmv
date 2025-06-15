@@ -151,6 +151,9 @@ jobs:
           ls -la test-data/cross-platform/
         shell: bash
 
+      - name: Generate schemas (required for TypeScript compilation)
+        run: npm run generate:schemas
+        
       - name: Build project
         run: npm run build
 
