@@ -132,7 +132,8 @@
     "type": "git",
     "url": "https://github.com/ExaDev/markmv.git"
   },
-  "homepage": "https://github.com/ExaDev/markmv#readme",
+  "homepage": "https://exadev.github.io/markmv/",
+  "documentation": "https://exadev.github.io/markmv/",
   "bugs": {
     "url": "https://github.com/ExaDev/markmv/issues"
   },
