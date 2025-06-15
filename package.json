@@ -94,7 +94,7 @@
     "vitest": "^1.0.0"
   },
   "dependencies": {
-    "commander": "^11.0.0",
+    "commander": "^14.0.0",
     "glob": "^10.0.0",
     "remark": "^15.0.0",
     "remark-parse": "^11.0.0",
