@@ -168,7 +168,10 @@ export function shouldSkipTest(requirement: 'symlinks' | 'case-sensitivity' | 'w
  * Create test helper that conditionally runs based on platform capabilities Note: This function
  * expects to be called within a test context where `test` is available
  */
-export function createConditionalTest(testFn: unknown) {
+export function createConditionalTest(testFn: {
+  (name: string, testCallback: () => void | Promise<void>): void;
+  skip: (name: string, testCallback: () => void | Promise<void>) => void;
+}) {
   return function conditionalTest(
     name: string,
     requirement: 'symlinks' | 'case-sensitivity' | 'windows' | 'unix',
