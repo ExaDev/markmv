@@ -19,6 +19,8 @@ docs-markdown/
 # Testing
 coverage/
 .nyc_output/
+test-temp-*/
+markmv-*-test-*
 
 # Environment
 .env
