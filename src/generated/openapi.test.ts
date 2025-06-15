@@ -322,9 +322,9 @@ describe('Generated OpenAPI Specification', () => {
     it('should have proper descriptions for all components', () => {
       Object.values(openapiSpec.paths).forEach((pathSpec: unknown) => {
         const spec = pathSpec as Record<string, unknown>;
-        const pathSpec = spec as { post: { summary: string } };
-        expect(pathSpec.post.summary).toBeTruthy();
-        expect(pathSpec.post.summary.length).toBeGreaterThan(0);
+        const typedPath = spec as { post: { summary: string } };
+        expect(typedPath.post.summary).toBeTruthy();
+        expect(typedPath.post.summary.length).toBeGreaterThan(0);
       });
 
       Object.entries(openapiSpec.components.schemas).forEach(
