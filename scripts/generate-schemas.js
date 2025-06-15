@@ -2,11 +2,10 @@
 /**
  * JSON Schema-First Auto-Exposure Pattern Generator
  * 
- * Implements the recommended approach from our research:
- * TypeScript AST → JSON Schema → Multi-target generation (AJV + OpenAPI + MCP + Types)
+ * Generates auto-exposure artifacts for markmv methods:
+ * Method Definitions → JSON Schema → Multi-target generation (AJV + OpenAPI + MCP + Types)
  */
 
-import { createGenerator } from 'ts-json-schema-generator';
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,66 +19,14 @@ if (!existsSync(GENERATED_DIR)) {
   mkdirSync(GENERATED_DIR, { recursive: true });
 }
 
-/**
- * Extract method information from TypeScript source using AST parsing
- */
-function extractMethodsFromTS() {
-  console.log('🔍 Extracting methods with @group annotations from TypeScript...');
-  
-  const config = {
-    path: join(ROOT_DIR, 'src/index.ts'),
-    tsconfig: join(ROOT_DIR, 'tsconfig.json'),
-    type: '*', // Generate for all exported types
-    expose: 'export',
-    topRef: true,
-    jsDoc: 'extended',
-    skipTypeCheck: true,
-    additionalProperties: false,
-  };
-
-  try {
-    const generator = createGenerator(config);
-    const schema = generator.createSchema();
-    
-    // Extract methods that have @group annotations
-    const methods = [];
-    
-    // Look for function definitions in the schema
-    if (schema.definitions) {
-      for (const [typeName, definition] of Object.entries(schema.definitions)) {
-        if (definition.type === 'object' && definition.properties) {
-          for (const [propName, propDef] of Object.entries(definition.properties)) {
-            if (propDef.description && propDef.description.includes('@group')) {
-              methods.push({
-                name: propName,
-                typeName,
-                schema: propDef,
-                group: extractGroupFromDescription(propDef.description),
-                description: cleanDescription(propDef.description),
-                examples: extractExamples(propDef.description)
-              });
-            }
-          }
-        }
-      }
-    }
-
-    console.log(`✅ Extracted ${methods.length} methods with @group annotations`);
-    return { methods, fullSchema: schema };
-  } catch (error) {
-    console.error('❌ Failed to extract methods:', error.message);
-    throw error;
-  }
-}
 
 /**
- * Alternative approach: Use file parsing to extract @group methods
+ * Extract methods from markmv with @group annotations
  */
-function extractMethodsFromFileOperations() {
-  console.log('🔍 Extracting FileOperations methods with @group annotations...');
+function extractMethods() {
+  console.log('🔍 Extracting markmv methods with @group annotations...');
   
-  // For now, manually define the core methods based on our existing codebase
-  // This ensures we have a working implementation while the full AST parsing is refined
+  // Define the core methods that should be auto-exposed via MCP and REST API
   const methods = [
     {
       name: 'moveFile',
@@ -242,7 +189,7 @@ function extractMethodsFromFileOperations() {
     }
   ];
 
-  console.log(`✅ Extracted ${methods.length} FileOperations methods`);
+  console.log(`✅ Extracted ${methods.length} markmv methods`);
   return { methods };
 }
 
@@ -711,8 +658,8 @@ async function main() {
   console.log('🚀 Starting JSON Schema-First Auto-Exposure Pattern Generation...\n');
 
   try {
-    // Extract methods (using file-based approach for now)
-    const { methods } = extractMethodsFromFileOperations();
+    // Extract methods
+    const { methods } = extractMethods();
     
     // Generate JSON schemas
     const schemas = generateJSONSchemas(methods);
