@@ -323,6 +323,51 @@
       "additionalProperties": false,
       "x-group": "Core API",
       "x-examples": []
+    },
+    "testAutoExposure": {
+      "title": "testAutoExposure",
+      "description": "Test function to demonstrate auto-exposure pattern",
+      "type": "object",
+      "properties": {
+        "input": {
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "string",
+              "description": "The input message to echo"
+            }
+          },
+          "required": [
+            "input"
+          ],
+          "additionalProperties": false
+        },
+        "output": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string"
+            },
+            "timestamp": {
+              "type": "string"
+            },
+            "success": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "message",
+            "timestamp",
+            "success"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "x-group": "Testing",
+      "x-examples": [
+        "markmv test \"Hello World\""
+      ]
     }
   }
 }

@@ -1,6 +1,6 @@
 /**
  * Auto-generated AJV validators for markmv API methods
- * Generated on: 2025-06-15T14:04:24.287Z
+ * Generated on: 2025-06-15T14:09:51.847Z
  * 
  * DO NOT EDIT MANUALLY - This file is auto-generated
  */
@@ -339,6 +339,51 @@ export const schemas = {
       "additionalProperties": false,
       "x-group": "Core API",
       "x-examples": []
+    },
+    "testAutoExposure": {
+      "title": "testAutoExposure",
+      "description": "Test function to demonstrate auto-exposure pattern",
+      "type": "object",
+      "properties": {
+        "input": {
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "string",
+              "description": "The input message to echo"
+            }
+          },
+          "required": [
+            "input"
+          ],
+          "additionalProperties": false
+        },
+        "output": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string"
+            },
+            "timestamp": {
+              "type": "string"
+            },
+            "success": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "message",
+            "timestamp",
+            "success"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "x-group": "Testing",
+      "x-examples": [
+        "markmv test \"Hello World\""
+      ]
     }
   }
 };
@@ -356,6 +401,10 @@ export const validators = {
   validateOperation: {
     input: ajv.compile(schemas.definitions.validateOperation.properties.input),
     output: ajv.compile(schemas.definitions.validateOperation.properties.output)
+  },
+  testAutoExposure: {
+    input: ajv.compile(schemas.definitions.testAutoExposure.properties.input),
+    output: ajv.compile(schemas.definitions.testAutoExposure.properties.output)
   }
 };
 
