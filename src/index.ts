@@ -130,13 +130,15 @@ export type {
  * Creates a new FileOperations instance for performing markdown file operations. This is the
  * recommended way to get started with the library.
  *
+ * @group Core API
+ *
  * @example
  *   ```typescript
  *   import { createMarkMv } from 'markmv';
  *
  *   const markmv = createMarkMv();
  *   const result = await markmv.moveFile('old.md', 'new.md');
- *   ```;
+ *   ```
  *
  * @returns A new FileOperations instance
  */
@@ -147,6 +149,8 @@ export function createMarkMv(): FileOperations {
 /**
  * Convenience function for moving a single markdown file
  *
+ * @group Core API
+ *
  * @example
  *   ```typescript
  *   import { moveFile } from 'markmv';
@@ -154,7 +158,7 @@ export function createMarkMv(): FileOperations {
  *   const result = await moveFile('docs/old.md', 'docs/new.md', {
  *     dryRun: true
  *   });
- *   ```;
+ *   ```
  *
  * @param sourcePath - The current file path
  * @param destinationPath - The target file path
@@ -174,6 +178,8 @@ export async function moveFile(
 /**
  * Convenience function for moving multiple markdown files
  *
+ * @group Core API
+ *
  * @example
  *   ```typescript
  *   import { moveFiles } from 'markmv';
@@ -182,7 +188,7 @@ export async function moveFile(
  *     { source: 'old1.md', destination: 'new1.md' },
  *     { source: 'old2.md', destination: 'new2.md' }
  *   ]);
- *   ```;
+ *   ```
  *
  * @param moves - Array of source/destination pairs
  * @param options - Optional configuration
@@ -199,6 +205,8 @@ export async function moveFiles(
 
 /**
  * Convenience function for validating markdown file operations
+ *
+ * @group Core API
  *
  * @example
  *   ```typescript
