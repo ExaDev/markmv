@@ -107,10 +107,8 @@ interface IndexCliOptions {
 /**
  * CLI command handler for generating documentation indexes.
  *
- * Creates organized documentation indexes from markdown files using various strategies.
- * Supports multiple index types including links, imports, embeds, and hybrid modes.
- *
- * @group Commands
+ * Creates organized documentation indexes from markdown files using various strategies. Supports
+ * multiple index types including links, imports, embeds, and hybrid modes.
  *
  * @example
  *   ```bash
@@ -122,10 +120,12 @@ interface IndexCliOptions {
  *
  *   # Dry run with verbose output
  *   markmv index --dry-run --verbose
- *   ```
+ *   ```;
  *
  * @param directory - Target directory for index generation
  * @param cliOptions - Command options specifying index parameters
+ *
+ * @group Commands
  */
 export async function indexCommand(
   directory: string | undefined,

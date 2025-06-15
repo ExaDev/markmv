@@ -50,7 +50,7 @@ export interface ConvertOptions {
  *
  *   // Recursive directory processing
  *   await expandSourcePatterns(['docs/'], { recursive: true });
- *   ```
+ *   ```;
  *
  * @param patterns - Array of file patterns, paths, or directories to expand
  * @param options - Conversion options including recursive processing
@@ -224,8 +224,6 @@ function printConvertSummary(
  * Processes markdown files to convert link formats and path resolution according to specified
  * options. Supports dry run mode, verbose output, and various conversion strategies.
  *
- * @group Commands
- *
  * @example
  *   ```bash
  *   # Convert all links to relative paths
@@ -236,10 +234,12 @@ function printConvertSummary(
  *
  *   # Dry run with verbose output
  *   markmv convert README.md --link-style claude --dry-run --verbose
- *   ```
+ *   ```;
  *
  * @param patterns - File patterns to process (supports globs)
  * @param options - Command options specifying conversion parameters
+ *
+ * @group Commands
  */
 export async function convertCommand(patterns: string[], options: ConvertOptions): Promise<void> {
   try {

@@ -2,8 +2,8 @@
  * MCP Server implementation for markmv
  *
  * Provides Model Context Protocol server that exposes markmv functionality as tools for AI agents.
- * Uses auto-generated tool definitions from JSON Schema-first approach.
- * Allows seamless integration with Claude and other MCP clients.
+ * Uses auto-generated tool definitions from JSON Schema-first approach. Allows seamless integration
+ * with Claude and other MCP clients.
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -30,7 +30,7 @@ function isOperationResult(obj: unknown): obj is OperationResult {
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
     return false;
   }
-  
+
   // Since we've checked it's an object above, this is safe
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const record = obj as Record<string, unknown>;
@@ -44,7 +44,6 @@ function isOperationResult(obj: unknown): obj is OperationResult {
     Array.isArray(record.changes)
   );
 }
-
 
 /** Create and configure the MCP server for markmv */
 export function createMcpServer(): Server {
@@ -80,7 +79,7 @@ export function createMcpServer(): Server {
 
       // Convert snake_case tool name back to camelCase method name
       const methodName = snakeToCamel(name);
-      
+
       // Validate input using auto-generated validators
       const validation = validateInput(methodName, args);
       if (!validation.valid) {
@@ -89,7 +88,7 @@ export function createMcpServer(): Server {
 
       // Route to appropriate method with proper type checking
       let result: unknown;
-      
+
       if (methodName === 'moveFile') {
         if (typeof args === 'object' && args !== null && !Array.isArray(args)) {
           // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
@@ -97,13 +96,24 @@ export function createMcpServer(): Server {
           const sourcePath = argsObj.sourcePath;
           const destinationPath = argsObj.destinationPath;
           const options = argsObj.options || {};
-          
-          if (typeof sourcePath === 'string' && typeof destinationPath === 'string' && 
-              typeof options === 'object' && options !== null && !Array.isArray(options)) {
+
+          if (
+            typeof sourcePath === 'string' &&
+            typeof destinationPath === 'string' &&
+            typeof options === 'object' &&
+            options !== null &&
+            !Array.isArray(options)
+          ) {
             // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-            result = await markmv.moveFile(sourcePath, destinationPath, options as Record<string, unknown>);
+            result = await markmv.moveFile(
+              sourcePath,
+              destinationPath,
+              options as Record<string, unknown>
+            );
           } else {
-            throw new Error('Invalid parameters for moveFile: sourcePath and destinationPath must be strings');
+            throw new Error(
+              'Invalid parameters for moveFile: sourcePath and destinationPath must be strings'
+            );
           }
         } else {
           throw new Error('Invalid arguments object for moveFile');
@@ -114,9 +124,13 @@ export function createMcpServer(): Server {
           const argsObj = args as Record<string, unknown>;
           const moves = argsObj.moves;
           const options = argsObj.options || {};
-          
-          if (Array.isArray(moves) && 
-              typeof options === 'object' && options !== null && !Array.isArray(options)) {
+
+          if (
+            Array.isArray(moves) &&
+            typeof options === 'object' &&
+            options !== null &&
+            !Array.isArray(options)
+          ) {
             // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
             result = await markmv.moveFiles(moves, options as Record<string, unknown>);
           } else {
@@ -130,7 +144,7 @@ export function createMcpServer(): Server {
           // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
           const argsObj = args as Record<string, unknown>;
           const operationResult = argsObj.result;
-          
+
           if (isOperationResult(operationResult)) {
             result = await markmv.validateOperation(operationResult);
           } else {
@@ -144,7 +158,7 @@ export function createMcpServer(): Server {
           // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
           const argsObj = args as Record<string, unknown>;
           const input = argsObj.input;
-          
+
           if (typeof input === 'string') {
             const { testAutoExposure } = await import('./index.js');
             result = await testAutoExposure(input);

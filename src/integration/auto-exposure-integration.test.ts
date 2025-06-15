@@ -1,6 +1,6 @@
 /**
- * @fileoverview Integration tests for the complete auto-exposure pattern workflow
- * Tests the end-to-end functionality from function definition to MCP/API exposure
+ * @file Integration tests for the complete auto-exposure pattern workflow Tests the end-to-end
+ *   functionality from function definition to MCP/API exposure
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
@@ -32,7 +32,7 @@ describe('Auto-Exposure Pattern Integration', () => {
       const result = await testAutoExposure('Integration Test');
       expect(result).toMatchObject({
         message: 'Echo: Integration Test',
-        success: true
+        success: true,
       });
       expect(typeof result.timestamp).toBe('string');
 
@@ -63,13 +63,15 @@ describe('Auto-Exposure Pattern Integration', () => {
       const apiRoute = getApiRouteByPath('/api/test-auto-exposure');
 
       expect(mcpTool?.description).toBe(apiRoute?.description);
-      
+
       // Input schemas should be consistent
       const mcpInputSchema = mcpTool?.inputSchema as Record<string, unknown>;
       const apiInputSchema = apiRoute?.inputSchema as Record<string, unknown>;
-      
+
       expect(mcpInputSchema.properties.input.type).toBe(apiInputSchema.properties.input.type);
-      expect(mcpInputSchema.properties.input.description).toBe(apiInputSchema.properties.input.description);
+      expect(mcpInputSchema.properties.input.description).toBe(
+        apiInputSchema.properties.input.description
+      );
     });
 
     it('should handle the complete request/response cycle', async () => {
@@ -91,7 +93,7 @@ describe('Auto-Exposure Pattern Integration', () => {
       // 4. Verify result structure
       expect(result).toMatchObject({
         message: `Echo: ${input}`,
-        success: true
+        success: true,
       });
       expect(new Date(result.timestamp)).toBeInstanceOf(Date);
     });
@@ -112,9 +114,14 @@ describe('Auto-Exposure Pattern Integration', () => {
       ];
 
       testCases.forEach(({ input, shouldPass }, _index) => {
-        const data = input !== undefined ? { input } : (typeof input === 'object' && input !== null ? input : {});
+        const data =
+          input !== undefined
+            ? { input }
+            : typeof input === 'object' && input !== null
+              ? input
+              : {};
         const result = validateInput('testAutoExposure', data);
-        
+
         if (shouldPass) {
           expect(result.valid).toBe(true);
         } else {
@@ -126,7 +133,7 @@ describe('Auto-Exposure Pattern Integration', () => {
 
     it('should validate output schemas strictly', async () => {
       const validResult = await testAutoExposure('Schema Test');
-      
+
       // Valid output should pass
       expect(validateOutput('testAutoExposure', validResult).valid).toBe(true);
 
@@ -158,7 +165,7 @@ describe('Auto-Exposure Pattern Integration', () => {
         { input: 123 },
       ];
 
-      invalidInputs.forEach(invalidInput => {
+      invalidInputs.forEach((invalidInput) => {
         const result = validateInput('testAutoExposure', invalidInput);
         expect(result.valid).toBe(false);
         expect(result.errors).toBeDefined();
@@ -169,17 +176,17 @@ describe('Auto-Exposure Pattern Integration', () => {
 
     it('should provide meaningful error messages', () => {
       const result = validateInput('testAutoExposure', { input: 123 });
-      
+
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.errors.some(error => 
-        error.includes('type') || error.includes('string')
-      )).toBe(true);
+      expect(
+        result.errors.some((error) => error.includes('type') || error.includes('string'))
+      ).toBe(true);
     });
 
     it('should handle unknown methods gracefully', () => {
       const result = validateInput('unknownMethod', { test: 'data' });
-      
+
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Unknown method: unknownMethod');
     });
@@ -191,21 +198,25 @@ describe('Auto-Exposure Pattern Integration', () => {
       const testInput = 'Concurrent Test';
 
       const start = Date.now();
-      
-      const promises = Array(concurrentCount).fill(0).map(async (_, index) => {
-        // Validate input
-        const inputValidation = validateInput('testAutoExposure', { input: `${testInput} ${index}` });
-        expect(inputValidation.valid).toBe(true);
 
-        // Execute function
-        const result = await testAutoExposure(`${testInput} ${index}`);
+      const promises = Array(concurrentCount)
+        .fill(0)
+        .map(async (_, index) => {
+          // Validate input
+          const inputValidation = validateInput('testAutoExposure', {
+            input: `${testInput} ${index}`,
+          });
+          expect(inputValidation.valid).toBe(true);
 
-        // Validate output
-        const outputValidation = validateOutput('testAutoExposure', result);
-        expect(outputValidation.valid).toBe(true);
+          // Execute function
+          const result = await testAutoExposure(`${testInput} ${index}`);
 
-        return result;
-      });
+          // Validate output
+          const outputValidation = validateOutput('testAutoExposure', result);
+          expect(outputValidation.valid).toBe(true);
+
+          return result;
+        });
 
       const results = await Promise.all(promises);
       const duration = Date.now() - start;
@@ -224,11 +235,11 @@ describe('Auto-Exposure Pattern Integration', () => {
       const validOutput = {
         message: 'Echo: Performance Test',
         timestamp: new Date().toISOString(),
-        success: true
+        success: true,
       };
 
       const iterations = 1000;
-      
+
       // Test input validation performance
       const inputStart = Date.now();
       for (let i = 0; i < iterations; i++) {
@@ -288,15 +299,22 @@ describe('Auto-Exposure Pattern Integration', () => {
       const requestData: { input: string } = { input };
 
       // Input validation should return proper types
-      const inputResult: { valid: boolean; errors: string[] } = validateInput('testAutoExposure', requestData);
+      const inputResult: { valid: boolean; errors: string[] } = validateInput(
+        'testAutoExposure',
+        requestData
+      );
       expect(inputResult.valid).toBe(true);
 
       // Function should return proper types
-      const functionResult: { message: string; timestamp: string; success: boolean } = await testAutoExposure(input);
+      const functionResult: { message: string; timestamp: string; success: boolean } =
+        await testAutoExposure(input);
       expect(functionResult.success).toBe(true);
 
       // Output validation should work with proper types
-      const outputResult: { valid: boolean; errors: string[] } = validateOutput('testAutoExposure', functionResult);
+      const outputResult: { valid: boolean; errors: string[] } = validateOutput(
+        'testAutoExposure',
+        functionResult
+      );
       expect(outputResult.valid).toBe(true);
 
       // All type assertions should be satisfied
@@ -321,12 +339,12 @@ describe('Auto-Exposure Pattern Integration', () => {
 
       // 2. Should be discoverable via MCP tools
       const mcpTools = autoGeneratedMcpTools;
-      const testTool = mcpTools.find(tool => tool.name === 'test_auto_exposure');
+      const testTool = mcpTools.find((tool) => tool.name === 'test_auto_exposure');
       expect(testTool).toBeDefined();
 
       // 3. Should be discoverable via API routes
       const apiRoutes = autoGeneratedApiRoutes;
-      const testRoute = apiRoutes.find(route => route.path === '/api/test-auto-exposure');
+      const testRoute = apiRoutes.find((route) => route.path === '/api/test-auto-exposure');
       expect(testRoute).toBeDefined();
 
       // 4. Should have working validation

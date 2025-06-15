@@ -41,7 +41,7 @@ export interface MoveOptions {
  *
  *   // Mixed patterns
  *   await expandSourcePatterns(['README.md', 'docs/*.md']);
- *   ```
+ *   ```;
  *
  * @param patterns - Array of file patterns or direct paths to expand
  * @param verbose - Whether to output detailed expansion information

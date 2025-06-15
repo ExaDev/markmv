@@ -130,17 +130,17 @@ export type {
  * Creates a new FileOperations instance for performing markdown file operations. This is the
  * recommended way to get started with the library.
  *
- * @group Core API
- *
  * @example
  *   ```typescript
  *   import { createMarkMv } from 'markmv';
  *
  *   const markmv = createMarkMv();
  *   const result = await markmv.moveFile('old.md', 'new.md');
- *   ```
+ *   ```;
  *
  * @returns A new FileOperations instance
+ *
+ * @group Core API
  */
 export function createMarkMv(): FileOperations {
   return new FileOperations();
@@ -149,8 +149,6 @@ export function createMarkMv(): FileOperations {
 /**
  * Convenience function for moving a single markdown file
  *
- * @group Core API
- *
  * @example
  *   ```typescript
  *   import { moveFile } from 'markmv';
@@ -158,13 +156,15 @@ export function createMarkMv(): FileOperations {
  *   const result = await moveFile('docs/old.md', 'docs/new.md', {
  *     dryRun: true
  *   });
- *   ```
+ *   ```;
  *
  * @param sourcePath - The current file path
  * @param destinationPath - The target file path
  * @param options - Optional configuration
  *
  * @returns Promise resolving to operation result
+ *
+ * @group Core API
  */
 export async function moveFile(
   sourcePath: string,
@@ -178,8 +178,6 @@ export async function moveFile(
 /**
  * Convenience function for moving multiple markdown files
  *
- * @group Core API
- *
  * @example
  *   ```typescript
  *   import { moveFiles } from 'markmv';
@@ -188,12 +186,14 @@ export async function moveFile(
  *     { source: 'old1.md', destination: 'new1.md' },
  *     { source: 'old2.md', destination: 'new2.md' }
  *   ]);
- *   ```
+ *   ```;
  *
  * @param moves - Array of source/destination pairs
  * @param options - Optional configuration
  *
  * @returns Promise resolving to operation result
+ *
+ * @group Core API
  */
 export async function moveFiles(
   moves: Array<{ source: string; destination: string }>,
@@ -205,8 +205,6 @@ export async function moveFiles(
 
 /**
  * Convenience function for validating markdown file operations
- *
- * @group Core API
  *
  * @example
  *   ```typescript
@@ -223,6 +221,8 @@ export async function moveFiles(
  * @param result - The operation result to validate
  *
  * @returns Promise resolving to validation result
+ *
+ * @group Core API
  */
 export async function validateOperation(result: OperationResult): Promise<{
   valid: boolean;
@@ -236,19 +236,19 @@ export async function validateOperation(result: OperationResult): Promise<{
 /**
  * Test function to demonstrate auto-exposure pattern
  *
- * @group Testing
- *
  * @example
  *   ```typescript
  *   import { testAutoExposure } from 'markmv';
  *
  *   const result = await testAutoExposure('Hello World');
  *   console.log(result.message); // "Echo: Hello World"
- *   ```
+ *   ```;
  *
  * @param input - The input message to echo
  *
  * @returns Promise resolving to echo result
+ *
+ * @group Testing
  */
 export async function testAutoExposure(input: string): Promise<{
   message: string;
@@ -258,6 +258,6 @@ export async function testAutoExposure(input: string): Promise<{
   return {
     message: `Echo: ${input}`,
     timestamp: new Date().toISOString(),
-    success: true
+    success: true,
   };
 }

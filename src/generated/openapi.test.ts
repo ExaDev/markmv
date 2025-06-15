@@ -1,6 +1,6 @@
 /**
- * @fileoverview Tests for generated OpenAPI specification accuracy
- * Verifies that the OpenAPI spec correctly represents the auto-exposed API endpoints
+ * @file Tests for generated OpenAPI specification accuracy Verifies that the OpenAPI spec correctly
+ *   represents the auto-exposed API endpoints
  */
 
 import { describe, it, expect } from 'vitest';
@@ -51,10 +51,10 @@ describe('Generated OpenAPI Specification', () => {
         '/api/move-file',
         '/api/move-files',
         '/api/validate-operation',
-        '/api/test-auto-exposure'
+        '/api/test-auto-exposure',
       ];
 
-      expectedPaths.forEach(path => {
+      expectedPaths.forEach((path) => {
         expect(openapiSpec.paths).toHaveProperty(path);
       });
     });
@@ -93,7 +93,7 @@ describe('Generated OpenAPI Specification', () => {
 
           expect(requestBody.required).toBe(true);
           expect(requestBody.content).toHaveProperty('application/json');
-          
+
           const schema = requestBody.content['application/json'].schema;
           expect(schema.$ref).toBe('#/components/schemas/testAutoExposureInput');
         });
@@ -105,7 +105,9 @@ describe('Generated OpenAPI Specification', () => {
           // Success response
           expect(responses['200']).toBeDefined();
           expect(responses['200'].description).toBe('Success');
-          expect(responses['200'].content['application/json'].schema.$ref).toBe('#/components/schemas/testAutoExposureOutput');
+          expect(responses['200'].content['application/json'].schema.$ref).toBe(
+            '#/components/schemas/testAutoExposureOutput'
+          );
 
           // Error responses
           expect(responses['400']).toBeDefined();
@@ -151,10 +153,10 @@ describe('Generated OpenAPI Specification', () => {
         'validateOperationInput',
         'validateOperationOutput',
         'testAutoExposureInput',
-        'testAutoExposureOutput'
+        'testAutoExposureOutput',
       ];
 
-      expectedSchemas.forEach(schema => {
+      expectedSchemas.forEach((schema) => {
         expect(openapiSpec.components.schemas).toHaveProperty(schema);
       });
     });
@@ -167,7 +169,7 @@ describe('Generated OpenAPI Specification', () => {
     describe('testAutoExposure Schemas', () => {
       it('should have correct input schema structure', () => {
         const inputSchema = openapiSpec.components.schemas.testAutoExposureInput;
-        
+
         expect(inputSchema.type).toBe('object');
         expect(inputSchema.properties).toHaveProperty('input');
         expect(inputSchema.properties.input.type).toBe('string');
@@ -178,16 +180,16 @@ describe('Generated OpenAPI Specification', () => {
 
       it('should have correct output schema structure', () => {
         const outputSchema = openapiSpec.components.schemas.testAutoExposureOutput;
-        
+
         expect(outputSchema.type).toBe('object');
         expect(outputSchema.properties).toHaveProperty('message');
         expect(outputSchema.properties).toHaveProperty('timestamp');
         expect(outputSchema.properties).toHaveProperty('success');
-        
+
         expect(outputSchema.properties.message.type).toBe('string');
         expect(outputSchema.properties.timestamp.type).toBe('string');
         expect(outputSchema.properties.success.type).toBe('boolean');
-        
+
         expect(outputSchema.required).toContain('message');
         expect(outputSchema.required).toContain('timestamp');
         expect(outputSchema.required).toContain('success');
@@ -198,16 +200,16 @@ describe('Generated OpenAPI Specification', () => {
     describe('moveFile Schemas', () => {
       it('should have correct input schema with options', () => {
         const inputSchema = openapiSpec.components.schemas.moveFileInput;
-        
+
         expect(inputSchema.type).toBe('object');
         expect(inputSchema.properties).toHaveProperty('sourcePath');
         expect(inputSchema.properties).toHaveProperty('destinationPath');
         expect(inputSchema.properties).toHaveProperty('options');
-        
+
         expect(inputSchema.properties.sourcePath.type).toBe('string');
         expect(inputSchema.properties.destinationPath.type).toBe('string');
         expect(inputSchema.properties.options.type).toBe('object');
-        
+
         expect(inputSchema.required).toContain('sourcePath');
         expect(inputSchema.required).toContain('destinationPath');
         expect(inputSchema.additionalProperties).toBe(false);
@@ -223,7 +225,7 @@ describe('Generated OpenAPI Specification', () => {
 
       it('should have correct output schema with operation result', () => {
         const outputSchema = openapiSpec.components.schemas.moveFileOutput;
-        
+
         expect(outputSchema.type).toBe('object');
         expect(outputSchema.properties).toHaveProperty('success');
         expect(outputSchema.properties).toHaveProperty('modifiedFiles');
@@ -232,7 +234,7 @@ describe('Generated OpenAPI Specification', () => {
         expect(outputSchema.properties).toHaveProperty('errors');
         expect(outputSchema.properties).toHaveProperty('warnings');
         expect(outputSchema.properties).toHaveProperty('changes');
-        
+
         expect(outputSchema.properties.success.type).toBe('boolean');
         expect(outputSchema.properties.modifiedFiles.type).toBe('array');
         expect(outputSchema.properties.modifiedFiles.items.type).toBe('string');
@@ -247,7 +249,7 @@ describe('Generated OpenAPI Specification', () => {
         const spec = pathSpec as Record<string, unknown>;
         const post = spec.post as Record<string, unknown>;
         const responses = post.responses;
-        
+
         // 400 Error Response
         expect(responses['400']).toBeDefined();
         expect(responses['400'].description).toBe('Validation error');
@@ -273,42 +275,46 @@ describe('Generated OpenAPI Specification', () => {
 
   describe('Schema Validation', () => {
     it('should have valid JSON Schema structures', () => {
-      Object.entries(openapiSpec.components.schemas).forEach(([schemaName, schema]: [string, unknown]) => {
-        const schemaObj = schema as Record<string, unknown>;
-        expect(schema).toHaveProperty('type');
-        expect(schema.type).toBe('object');
-        expect(schema).toHaveProperty('properties');
-        expect(schema).toHaveProperty('required');
-        expect(schema).toHaveProperty('additionalProperties');
-        expect(schema.additionalProperties).toBe(false);
+      Object.entries(openapiSpec.components.schemas).forEach(
+        ([schemaName, schema]: [string, unknown]) => {
+          const schemaObj = schema as Record<string, unknown>;
+          expect(schema).toHaveProperty('type');
+          expect(schema.type).toBe('object');
+          expect(schema).toHaveProperty('properties');
+          expect(schema).toHaveProperty('required');
+          expect(schema).toHaveProperty('additionalProperties');
+          expect(schema.additionalProperties).toBe(false);
 
-        // All properties should have valid types
-        Object.values(schemaObj.properties as Record<string, unknown>).forEach((property: unknown) => {
-          const prop = property as Record<string, unknown>;
-          expect(property).toHaveProperty('type');
-          expect(['string', 'number', 'boolean', 'array', 'object']).toContain(property.type);
-          
-          if (property.type === 'array') {
-            expect(property).toHaveProperty('items');
-            expect(property.items).toHaveProperty('type');
-          }
-        });
+          // All properties should have valid types
+          Object.values(schemaObj.properties as Record<string, unknown>).forEach(
+            (property: unknown) => {
+              const prop = property as Record<string, unknown>;
+              expect(property).toHaveProperty('type');
+              expect(['string', 'number', 'boolean', 'array', 'object']).toContain(property.type);
 
-        // Required fields should exist in properties
-        schema.required.forEach((requiredField: string) => {
-          expect(schema.properties).toHaveProperty(requiredField);
-        });
-      });
+              if (property.type === 'array') {
+                expect(property).toHaveProperty('items');
+                expect(property.items).toHaveProperty('type');
+              }
+            }
+          );
+
+          // Required fields should exist in properties
+          schema.required.forEach((requiredField: string) => {
+            expect(schema.properties).toHaveProperty(requiredField);
+          });
+        }
+      );
     });
 
     it('should have consistent naming conventions', () => {
       // Schema names should be camelCase with Input/Output suffix
-      Object.keys(openapiSpec.components.schemas).forEach(schemaName => {
+      Object.keys(openapiSpec.components.schemas).forEach((schemaName) => {
         expect(schemaName).toMatch(/^[a-z][a-zA-Z]*(Input|Output)$/);
       });
 
       // Path names should be kebab-case
-      Object.keys(openapiSpec.paths).forEach(pathName => {
+      Object.keys(openapiSpec.paths).forEach((pathName) => {
         expect(pathName).toMatch(/^\/api\/[a-z]+(-[a-z]+)*$/);
       });
     });
@@ -320,26 +326,28 @@ describe('Generated OpenAPI Specification', () => {
         expect(pathSpec.post.summary.length).toBeGreaterThan(0);
       });
 
-      Object.entries(openapiSpec.components.schemas).forEach(([schemaName, schema]: [string, unknown]) => {
-        const schemaObj = schema as Record<string, unknown>;
-        Object.entries(schema.properties).forEach(([propName, property]: [string, any]) => {
-          if (property.description) {
-            expect(property.description.length).toBeGreaterThan(0);
-            expect(property.description.trim()).toBe(property.description);
-          }
-        });
-      });
+      Object.entries(openapiSpec.components.schemas).forEach(
+        ([schemaName, schema]: [string, unknown]) => {
+          const schemaObj = schema as Record<string, unknown>;
+          Object.entries(schema.properties).forEach(([propName, property]: [string, any]) => {
+            if (property.description) {
+              expect(property.description.length).toBeGreaterThan(0);
+              expect(property.description.trim()).toBe(property.description);
+            }
+          });
+        }
+      );
     });
   });
 
   describe('Consistency Checks', () => {
     it('should have matching input/output pairs for each method', () => {
       const methods = ['moveFile', 'moveFiles', 'validateOperation', 'testAutoExposure'];
-      
-      methods.forEach(method => {
+
+      methods.forEach((method) => {
         const inputSchema = `${method}Input`;
         const outputSchema = `${method}Output`;
-        
+
         expect(openapiSpec.components.schemas).toHaveProperty(inputSchema);
         expect(openapiSpec.components.schemas).toHaveProperty(outputSchema);
       });
@@ -349,30 +357,30 @@ describe('Generated OpenAPI Specification', () => {
       const coreApiEndpoints = ['/api/move-file', '/api/move-files', '/api/validate-operation'];
       const testingEndpoints = ['/api/test-auto-exposure'];
 
-      coreApiEndpoints.forEach(endpoint => {
+      coreApiEndpoints.forEach((endpoint) => {
         expect(openapiSpec.paths[endpoint].post.tags).toContain('Core API');
       });
 
-      testingEndpoints.forEach(endpoint => {
+      testingEndpoints.forEach((endpoint) => {
         expect(openapiSpec.paths[endpoint].post.tags).toContain('Testing');
       });
     });
 
     it('should have all referenced schemas defined', () => {
       const referencedSchemas = new Set<string>();
-      
+
       // Collect all $ref references
       Object.values(openapiSpec.paths).forEach((pathSpec: unknown) => {
         const spec = pathSpec as Record<string, unknown>;
         const post = pathSpec.post;
-        
+
         // Request body schema
         if (post.requestBody?.content?.['application/json']?.schema?.$ref) {
           const ref = post.requestBody.content['application/json'].schema.$ref;
           const schemaName = ref.replace('#/components/schemas/', '');
           referencedSchemas.add(schemaName);
         }
-        
+
         // Response schemas
         Object.values(post.responses).forEach((response: any) => {
           if (response.content?.['application/json']?.schema?.$ref) {
@@ -382,9 +390,9 @@ describe('Generated OpenAPI Specification', () => {
           }
         });
       });
-      
+
       // All referenced schemas should be defined
-      referencedSchemas.forEach(schemaName => {
+      referencedSchemas.forEach((schemaName) => {
         expect(openapiSpec.components.schemas).toHaveProperty(schemaName);
       });
     });

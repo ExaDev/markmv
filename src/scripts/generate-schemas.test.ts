@@ -1,6 +1,6 @@
 /**
- * @fileoverview Tests for the schema generation script
- * Verifies that the JSON Schema-first auto-exposure pattern generation works correctly
+ * @file Tests for the schema generation script Verifies that the JSON Schema-first auto-exposure
+ *   pattern generation works correctly
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -28,10 +28,10 @@ describe('Schema Generation Script', () => {
         'ajv-validators.ts',
         'mcp-tools.ts',
         'api-routes.ts',
-        'openapi.json'
+        'openapi.json',
       ];
 
-      expectedFiles.forEach(file => {
+      expectedFiles.forEach((file) => {
         const filePath = join(GENERATED_DIR, file);
         expect(existsSync(filePath)).toBe(true);
       });
@@ -42,12 +42,12 @@ describe('Schema Generation Script', () => {
       expect(existsSync(schemasPath)).toBe(true);
 
       const schemas = JSON.parse(readFileSync(schemasPath, 'utf8'));
-      
+
       expect(schemas).toHaveProperty('$schema');
       expect(schemas).toHaveProperty('title');
       expect(schemas).toHaveProperty('description');
       expect(schemas).toHaveProperty('definitions');
-      
+
       expect(schemas.$schema).toBe('http://json-schema.org/draft-07/schema#');
       expect(schemas.title).toBe('markmv API Schemas');
 
@@ -63,13 +63,13 @@ describe('Schema Generation Script', () => {
       expect(existsSync(openapiPath)).toBe(true);
 
       const openapi = JSON.parse(readFileSync(openapiPath, 'utf8'));
-      
+
       expect(openapi).toHaveProperty('openapi');
       expect(openapi).toHaveProperty('info');
       expect(openapi).toHaveProperty('servers');
       expect(openapi).toHaveProperty('paths');
       expect(openapi).toHaveProperty('components');
-      
+
       expect(openapi.openapi).toBe('3.0.3');
       expect(openapi.info.title).toBe('markmv API');
 
@@ -81,18 +81,14 @@ describe('Schema Generation Script', () => {
     });
 
     it('should generate valid TypeScript files', () => {
-      const tsFiles = [
-        'ajv-validators.ts',
-        'mcp-tools.ts',
-        'api-routes.ts'
-      ];
+      const tsFiles = ['ajv-validators.ts', 'mcp-tools.ts', 'api-routes.ts'];
 
-      tsFiles.forEach(file => {
+      tsFiles.forEach((file) => {
         const filePath = join(GENERATED_DIR, file);
         expect(existsSync(filePath)).toBe(true);
 
         const content = readFileSync(filePath, 'utf8');
-        
+
         // Basic TypeScript validation
         expect(content).toContain('/**');
         expect(content).toContain('*/');
@@ -175,8 +171,8 @@ describe('Schema Generation Script', () => {
       // Check MCP tool names (snake_case)
       const mcpContent = readFileSync(join(GENERATED_DIR, 'mcp-tools.ts'), 'utf8');
       const mcpToolNames = mcpContent.match(/name: '([^']+)'/g);
-      
-      mcpToolNames.forEach(match => {
+
+      mcpToolNames.forEach((match) => {
         const name = match.match(/name: '([^']+)'/)[1];
         expect(name).toMatch(/^[a-z]+(_[a-z]+)*$/); // snake_case
       });
@@ -184,8 +180,8 @@ describe('Schema Generation Script', () => {
       // Check API route paths (kebab-case)
       const apiContent = readFileSync(join(GENERATED_DIR, 'api-routes.ts'), 'utf8');
       const apiPaths = apiContent.match(/path: '([^']+)'/g);
-      
-      apiPaths.forEach(match => {
+
+      apiPaths.forEach((match) => {
         const path = match.match(/path: '([^']+)'/)[1];
         expect(path).toMatch(/^\/api\/[a-z]+(-[a-z]+)*$/); // kebab-case
       });
@@ -193,10 +189,10 @@ describe('Schema Generation Script', () => {
 
     it('should generate proper TypeScript types', () => {
       const validatorContent = readFileSync(join(GENERATED_DIR, 'ajv-validators.ts'), 'utf8');
-      
+
       // Should import Ajv properly
       expect(validatorContent).toContain("import Ajv from 'ajv'");
-      
+
       // Should export proper types
       expect(validatorContent).toContain('export const schemas');
       expect(validatorContent).toContain('export const validators');
@@ -214,14 +210,14 @@ describe('Schema Generation Script', () => {
     it('should generate exactly 4 methods', () => {
       const schemas = JSON.parse(readFileSync(join(GENERATED_DIR, 'schemas.json'), 'utf8'));
       const methodCount = Object.keys(schemas.definitions).length;
-      
+
       expect(methodCount).toBe(4);
     });
 
     it('should include all core markmv methods', () => {
       const schemas = JSON.parse(readFileSync(join(GENERATED_DIR, 'schemas.json'), 'utf8'));
       const methods = Object.keys(schemas.definitions);
-      
+
       expect(methods).toContain('moveFile');
       expect(methods).toContain('moveFiles');
       expect(methods).toContain('validateOperation');
@@ -230,12 +226,12 @@ describe('Schema Generation Script', () => {
 
     it('should generate proper group annotations', () => {
       const schemas = JSON.parse(readFileSync(join(GENERATED_DIR, 'schemas.json'), 'utf8'));
-      
+
       expect(schemas.definitions.moveFile).toHaveProperty('x-group');
       expect(schemas.definitions.moveFiles).toHaveProperty('x-group');
       expect(schemas.definitions.validateOperation).toHaveProperty('x-group');
       expect(schemas.definitions.testAutoExposure).toHaveProperty('x-group');
-      
+
       expect(schemas.definitions.moveFile['x-group']).toBe('Core API');
       expect(schemas.definitions.moveFiles['x-group']).toBe('Core API');
       expect(schemas.definitions.validateOperation['x-group']).toBe('Core API');
@@ -245,15 +241,11 @@ describe('Schema Generation Script', () => {
 
   describe('File Headers and Metadata', () => {
     it('should include proper file headers in all generated files', () => {
-      const files = [
-        'ajv-validators.ts',
-        'mcp-tools.ts',
-        'api-routes.ts'
-      ];
+      const files = ['ajv-validators.ts', 'mcp-tools.ts', 'api-routes.ts'];
 
-      files.forEach(file => {
+      files.forEach((file) => {
         const content = readFileSync(join(GENERATED_DIR, file), 'utf8');
-        
+
         expect(content).toContain('/**');
         expect(content).toContain('Auto-generated');
         expect(content).toContain('DO NOT EDIT MANUALLY');
@@ -263,16 +255,14 @@ describe('Schema Generation Script', () => {
     });
 
     it('should include proper generation timestamps', () => {
-      const files = [
-        'ajv-validators.ts',
-        'mcp-tools.ts',
-        'api-routes.ts'
-      ];
+      const files = ['ajv-validators.ts', 'mcp-tools.ts', 'api-routes.ts'];
 
-      files.forEach(file => {
+      files.forEach((file) => {
         const content = readFileSync(join(GENERATED_DIR, file), 'utf8');
-        const timestampMatch = content.match(/Generated on: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)/);
-        
+        const timestampMatch = content.match(
+          /Generated on: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)/
+        );
+
         expect(timestampMatch).toBeTruthy();
         expect(new Date(timestampMatch[1])).toBeInstanceOf(Date);
       });
@@ -289,7 +279,7 @@ describe('Schema Generation Script', () => {
         const validatorsPath = join(GENERATED_DIR, 'ajv-validators.ts');
         const mcpToolsPath = join(GENERATED_DIR, 'mcp-tools.ts');
         const apiRoutesPath = join(GENERATED_DIR, 'api-routes.ts');
-        
+
         expect(existsSync(validatorsPath)).toBe(true);
         expect(existsSync(mcpToolsPath)).toBe(true);
         expect(existsSync(apiRoutesPath)).toBe(true);
@@ -299,12 +289,12 @@ describe('Schema Generation Script', () => {
     it('should maintain consistency across all generated artifacts', () => {
       const schemas = JSON.parse(readFileSync(join(GENERATED_DIR, 'schemas.json'), 'utf8'));
       const openapi = JSON.parse(readFileSync(join(GENERATED_DIR, 'openapi.json'), 'utf8'));
-      
+
       const schemaMethods = Object.keys(schemas.definitions);
       const openapiPaths = Object.keys(openapi.paths);
-      
+
       // Should have corresponding OpenAPI paths for each schema
-      schemaMethods.forEach(methodName => {
+      schemaMethods.forEach((methodName) => {
         const kebabName = methodName.replace(/([A-Z])/g, '-$1').toLowerCase();
         const expectedPath = `/api/${kebabName}`;
         expect(openapiPaths).toContain(expectedPath);
