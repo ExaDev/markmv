@@ -104,6 +104,9 @@ jobs:
       - name: Generate schemas (required for TypeScript compilation)
         run: npm run generate:schemas
         
+      - name: Format generated files
+        run: npm run format
+        
       # Quality checks (must pass for all further steps)
       - name: Run lint (fast fail)
         run: npm run lint
