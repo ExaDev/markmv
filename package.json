@@ -5,7 +5,9 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "markmv": "./dist/cli.js"
+    "markmv": "./dist/cli.js",
+    "markmv-mcp": "./dist/mcp-server.js",
+    "markmv-api": "./dist/api-server.js"
   },
   "exports": {
     ".": {
@@ -19,6 +21,8 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/cli.js",
+    "mcp-server": "node dist/mcp-server.js",
+    "api-server": "node dist/api-server.js",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
@@ -94,6 +98,7 @@
     "vitest": "^3.2.3"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.3",
     "commander": "^14.0.0",
     "glob": "^11.0.3",
     "remark": "^15.0.0",
