@@ -1,3 +1,19 @@
+## [1.25.0](https://github.com/ExaDev/markmv/compare/v1.24.0...v1.25.0) (2025-06-15)
+
+### Features
+
+* comprehensive test coverage improvements ([cfe9deb](https://github.com/ExaDev/markmv/commit/cfe9deb297f8aa3e1c78b3916f87645b1b2b6c30))
+
+### Bug Fixes
+
+* format generated files in CI workflow after schema generation ([c0412ba](https://github.com/ExaDev/markmv/commit/c0412ba3c89168d5f1b86575dec4fc2a80761745))
+* resolve CI issues with missing generated files and non-null assertions ([ae0742d](https://github.com/ExaDev/markmv/commit/ae0742d27ba3a08e18766a65f00e300244c4198d))
+* resolve linting issues in test files ([2b12214](https://github.com/ExaDev/markmv/commit/2b12214f06a69bd6997e4580eaba2684a4a0459a))
+
+### Styles
+
+* auto-fix linting issues ([b6e420d](https://github.com/ExaDev/markmv/commit/b6e420dd7028a338827bf61d2d751909996546d9))
+
 ## [1.24.0](https://github.com/ExaDev/markmv/compare/v1.23.0...v1.24.0) (2025-06-15)
 
 ### Features
