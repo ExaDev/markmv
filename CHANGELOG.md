@@ -1,3 +1,23 @@
+## [1.22.0](https://github.com/ExaDev/markmv/compare/v1.21.1...v1.22.0) (2025-06-15)
+
+### Features
+
+* add JSON output support to all CLI commands ([a463940](https://github.com/ExaDev/markmv/commit/a46394075e58d06cf476c460f51038aadfc3403b))
+* add MCP SDK dependency and binary commands for programmatic access ([407dc3f](https://github.com/ExaDev/markmv/commit/407dc3fb5adaced286418320e5e814eb85cc36ae))
+* add TypeScript types for REST API interfaces ([d684db3](https://github.com/ExaDev/markmv/commit/d684db3a9606e72216c2664b7474bf2dcfef1171))
+* enhance README generator with programmatic access documentation ([5a259dc](https://github.com/ExaDev/markmv/commit/5a259dcab00d707f1121bd60aa33014f65504efc))
+* implement Model Context Protocol (MCP) server ([5096867](https://github.com/ExaDev/markmv/commit/5096867bfd5579f3f1e2a84cc0bb60f9a6e46fbf))
+* implement native Node.js REST API server ([25c4351](https://github.com/ExaDev/markmv/commit/25c435164203a3ccd73b4019b1b8197f95651bac))
+
+### Documentation
+
+* add comprehensive usage examples for API and MCP interfaces ([8dc9bba](https://github.com/ExaDev/markmv/commit/8dc9bba1c19c6b20827f8d33e386b4bf5a2b1612))
+* update README with comprehensive programmatic access methods ([35815ae](https://github.com/ExaDev/markmv/commit/35815ae187433947582e3b77e773ec9838386904))
+
+### Chores
+
+* update package-lock.json for MCP SDK dependency ([64ebbc1](https://github.com/ExaDev/markmv/commit/64ebbc1649fa24df08cd8209ea654e8168faca67))
+
 ## [1.21.1](https://github.com/ExaDev/markmv/compare/v1.21.0...v1.21.1) (2025-06-15)
 
 ### Bug Fixes
