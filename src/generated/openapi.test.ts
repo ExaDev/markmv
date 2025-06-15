@@ -322,6 +322,7 @@ describe('Generated OpenAPI Specification', () => {
     it('should have proper descriptions for all components', () => {
       Object.values(openapiSpec.paths).forEach((pathSpec: unknown) => {
         const spec = pathSpec as Record<string, unknown>;
+        const pathSpec = spec as { post: { summary: string } };
         expect(pathSpec.post.summary).toBeTruthy();
         expect(pathSpec.post.summary.length).toBeGreaterThan(0);
       });
@@ -329,7 +330,8 @@ describe('Generated OpenAPI Specification', () => {
       Object.entries(openapiSpec.components.schemas).forEach(
         ([schemaName, schema]: [string, unknown]) => {
           const schemaObj = schema as Record<string, unknown>;
-          Object.entries(schema.properties).forEach(([propName, property]: [string, any]) => {
+          const schemaWithProps = schemaObj as { properties: Record<string, { description?: string }> };
+          Object.entries(schemaWithProps.properties).forEach(([propName, property]) => {
             if (property.description) {
               expect(property.description.length).toBeGreaterThan(0);
               expect(property.description.trim()).toBe(property.description);
@@ -372,7 +374,25 @@ describe('Generated OpenAPI Specification', () => {
       // Collect all $ref references
       Object.values(openapiSpec.paths).forEach((pathSpec: unknown) => {
         const spec = pathSpec as Record<string, unknown>;
-        const post = pathSpec.post;
+        const postSpec = spec as { 
+          post: { 
+            requestBody?: { 
+              content?: { 
+                'application/json'?: { 
+                  schema?: { $ref?: string } 
+                } 
+              } 
+            };
+            responses: Record<string, { 
+              content?: { 
+                'application/json'?: { 
+                  schema?: { $ref?: string } 
+                } 
+              } 
+            }>;
+          } 
+        };
+        const post = postSpec.post;
 
         // Request body schema
         if (post.requestBody?.content?.['application/json']?.schema?.$ref) {
@@ -382,7 +402,7 @@ describe('Generated OpenAPI Specification', () => {
         }
 
         // Response schemas
-        Object.values(post.responses).forEach((response: any) => {
+        Object.values(post.responses).forEach((response) => {
           if (response.content?.['application/json']?.schema?.$ref) {
             const ref = response.content['application/json'].schema.$ref;
             const schemaName = ref.replace('#/components/schemas/', '');

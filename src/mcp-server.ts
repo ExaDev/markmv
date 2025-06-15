@@ -104,10 +104,10 @@ export function createMcpServer(): Server {
             options !== null &&
             !Array.isArray(options)
           ) {
-            // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
             result = await markmv.moveFile(
               sourcePath,
               destinationPath,
+              // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
               options as Record<string, unknown>
             );
           } else {
