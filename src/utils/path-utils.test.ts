@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { PathUtils } from './path-utils.js';
 import { 
   getPlatformInfo, 
-  conditionalTest, 
+  createConditionalTest, 
   getTestPaths,
   createPath,
   convertPathSeparators
@@ -160,6 +160,7 @@ describe('PathUtils', () => {
   describe('Cross-Platform Path Behavior', () => {
     const platformInfo = getPlatformInfo();
     const testPaths = getTestPaths();
+    const conditionalTest = createConditionalTest(it);
 
     describe('Platform-specific path handling', () => {
       it('should handle platform-appropriate absolute paths', () => {

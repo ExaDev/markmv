@@ -7,7 +7,8 @@ import {
   convertPathSeparators,
   wouldFilenamesConflict,
   skipIfUnsupported,
-  conditionalTest,
+  shouldSkipTest,
+  createConditionalTest,
   fileExists,
   getTestPaths,
   PLATFORM_TEST_PATHS,
@@ -152,6 +153,8 @@ describe('Cross-Platform Test Helpers', () => {
   });
 
   // Conditional tests to demonstrate the helper
+  const conditionalTest = createConditionalTest(test);
+  
   conditionalTest('symlink test', 'symlinks', () => {
     // This test only runs if symlinks are supported
     expect(true).toBe(true);

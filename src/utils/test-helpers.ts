@@ -3,7 +3,7 @@
  */
 
 import { platform } from 'node:os';
-import { join, sep, win32, posix } from 'node:path';
+import { sep, win32, posix } from 'node:path';
 import { accessSync, constants, lstatSync } from 'node:fs';
 
 export interface PlatformInfo {
@@ -150,42 +150,57 @@ export function skipIfUnsupported(feature: 'symlinks' | 'case-sensitivity'): boo
 }
 
 /**
- * Create test helper that conditionally runs based on platform capabilities
+ * Check if a test should be skipped based on platform capabilities
  */
-export function conditionalTest(
-  name: string,
-  requirement: 'symlinks' | 'case-sensitivity' | 'windows' | 'unix',
-  testFn: () => void | Promise<void>
-): void {
+export function shouldSkipTest(
+  requirement: 'symlinks' | 'case-sensitivity' | 'windows' | 'unix'
+): { skip: boolean; reason: string } {
   const platformInfo = getPlatformInfo();
-  
-  let shouldSkip = false;
-  let skipReason = '';
   
   switch (requirement) {
     case 'symlinks':
-      shouldSkip = !platformInfo.supportsSymlinks;
-      skipReason = 'symbolic links not supported on this platform';
-      break;
+      return {
+        skip: !platformInfo.supportsSymlinks,
+        reason: 'symbolic links not supported on this platform'
+      };
     case 'case-sensitivity':
-      shouldSkip = !platformInfo.caseSensitive;
-      skipReason = 'filesystem is not case-sensitive';
-      break;
+      return {
+        skip: !platformInfo.caseSensitive,
+        reason: 'filesystem is not case-sensitive'
+      };
     case 'windows':
-      shouldSkip = !platformInfo.isWindows;
-      skipReason = 'test requires Windows';
-      break;
+      return {
+        skip: !platformInfo.isWindows,
+        reason: 'test requires Windows'
+      };
     case 'unix':
-      shouldSkip = platformInfo.isWindows;
-      skipReason = 'test requires Unix-like system';
-      break;
+      return {
+        skip: platformInfo.isWindows,
+        reason: 'test requires Unix-like system'
+      };
+    default:
+      return { skip: false, reason: '' };
   }
-  
-  if (shouldSkip) {
-    test.skip(`${name} (skipped: ${skipReason})`, testFn);
-  } else {
-    test(name, testFn);
-  }
+}
+
+/**
+ * Create test helper that conditionally runs based on platform capabilities
+ * Note: This function expects to be called within a test context where `test` is available
+ */
+export function createConditionalTest(testFn: any) {
+  return function conditionalTest(
+    name: string,
+    requirement: 'symlinks' | 'case-sensitivity' | 'windows' | 'unix',
+    testCallback: () => void | Promise<void>
+  ): void {
+    const { skip, reason } = shouldSkipTest(requirement);
+    
+    if (skip) {
+      testFn.skip(`${name} (skipped: ${reason})`, testCallback);
+    } else {
+      testFn(name, testCallback);
+    }
+  };
 }
 
 /**
