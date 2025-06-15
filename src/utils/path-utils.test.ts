@@ -2,12 +2,12 @@ import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { PathUtils } from './path-utils.js';
-import { 
-  getPlatformInfo, 
-  createConditionalTest, 
+import {
+  getPlatformInfo,
+  createConditionalTest,
   getTestPaths,
   createPath,
-  convertPathSeparators
+  convertPathSeparators,
 } from './test-helpers.js';
 
 describe('PathUtils', () => {
@@ -164,14 +164,14 @@ describe('PathUtils', () => {
 
     describe('Platform-specific path handling', () => {
       it('should handle platform-appropriate absolute paths', () => {
-        testPaths.absolute.forEach(testPath => {
+        testPaths.absolute.forEach((testPath) => {
           const result = PathUtils.validatePath(testPath);
           expect(result.valid).toBe(true);
         });
       });
 
       it('should handle platform-appropriate relative paths', () => {
-        testPaths.relative.forEach(testPath => {
+        testPaths.relative.forEach((testPath) => {
           const result = PathUtils.validatePath(testPath);
           expect(result.valid).toBe(true);
         });
@@ -179,11 +179,11 @@ describe('PathUtils', () => {
 
       it('should handle path traversal validation appropriately', () => {
         // Test traversal paths separately since they may be rejected for security
-        const traversalPaths = platformInfo.isWindows 
+        const traversalPaths = platformInfo.isWindows
           ? ['..\\parent\\file.txt']
           : ['../parent/file.txt'];
-          
-        traversalPaths.forEach(testPath => {
+
+        traversalPaths.forEach((testPath) => {
           const result = PathUtils.validatePath(testPath);
           // Path traversal may be rejected for security - this is platform/implementation dependent
           expect(typeof result.valid).toBe('boolean');
@@ -231,10 +231,10 @@ describe('PathUtils', () => {
         const mixedPaths = [
           'folder\\subfolder\\file.md',
           'folder/subfolder/file.md',
-          'folder\\mixed/path\\file.md'
+          'folder\\mixed/path\\file.md',
         ];
 
-        mixedPaths.forEach(path => {
+        mixedPaths.forEach((path) => {
           const result = PathUtils.toUnixPath(path);
           expect(result).not.toContain('\\');
           expect(result).toMatch(/\//);
@@ -267,24 +267,24 @@ describe('PathUtils', () => {
       it('should find common base even with mixed separators', () => {
         let paths: string[];
         let expectedBase: string;
-        
+
         if (platformInfo.isWindows) {
           paths = [
             'C:\\project\\docs\\file1.md',
-            'C:/project/docs/file2.md',  // Mixed separator style
-            'C:\\project\\src\\file3.md'
+            'C:/project/docs/file2.md', // Mixed separator style
+            'C:\\project\\src\\file3.md',
           ];
           expectedBase = 'C:\\project';
         } else {
           // Use consistent separators for Unix systems
           paths = [
             '/tmp/project/docs/file1.md',
-            '/tmp/project/docs/file2.md',  
-            '/tmp/project/src/file3.md'
+            '/tmp/project/docs/file2.md',
+            '/tmp/project/src/file3.md',
           ];
           expectedBase = '/tmp/project';
         }
-        
+
         const result = PathUtils.findCommonBase(paths);
         expect(result).toBe(expectedBase);
       });

@@ -17,14 +17,14 @@ describe('Cross-Platform Test Helpers', () => {
   describe('getPlatformInfo', () => {
     test('should return valid platform information', () => {
       const info = getPlatformInfo();
-      
+
       expect(typeof info.isWindows).toBe('boolean');
       expect(typeof info.isMacOS).toBe('boolean');
       expect(typeof info.isLinux).toBe('boolean');
       expect(typeof info.pathSeparator).toBe('string');
       expect(typeof info.caseSensitive).toBe('boolean');
       expect(typeof info.supportsSymlinks).toBe('boolean');
-      
+
       // Exactly one platform should be true
       const platformCount = [info.isWindows, info.isMacOS, info.isLinux].filter(Boolean).length;
       expect(platformCount).toBe(1);
@@ -33,7 +33,7 @@ describe('Cross-Platform Test Helpers', () => {
     test('should correctly identify current platform', () => {
       const info = getPlatformInfo();
       const currentPlatform = platform();
-      
+
       switch (currentPlatform) {
         case 'win32':
           expect(info.isWindows).toBe(true);
@@ -58,7 +58,7 @@ describe('Cross-Platform Test Helpers', () => {
     test('should normalize paths correctly', () => {
       const testPath = 'folder/../subfolder/./file.txt';
       const normalized = normalizePath(testPath);
-      
+
       expect(normalized).toMatch(/subfolder/);
       expect(normalized).not.toMatch(/\.\./);
       expect(normalized).not.toMatch(/\.\//);
@@ -69,7 +69,7 @@ describe('Cross-Platform Test Helpers', () => {
     test('should create paths with correct separators', () => {
       const path = createPath('folder', 'subfolder', 'file.txt');
       const info = getPlatformInfo();
-      
+
       if (info.isWindows) {
         expect(path).toMatch(/folder\\subfolder\\file\.txt/);
       } else {
@@ -81,7 +81,7 @@ describe('Cross-Platform Test Helpers', () => {
   describe('convertPathSeparators', () => {
     test('should convert path separators for current platform', () => {
       const info = getPlatformInfo();
-      
+
       if (info.isWindows) {
         const converted = convertPathSeparators('folder/subfolder/file.txt');
         expect(converted).toBe('folder\\subfolder\\file.txt');
@@ -95,10 +95,10 @@ describe('Cross-Platform Test Helpers', () => {
   describe('wouldFilenamesConflict', () => {
     test('should detect filename conflicts based on case sensitivity', () => {
       const info = getPlatformInfo();
-      
+
       // Same case should always conflict
       expect(wouldFilenamesConflict('file.txt', 'file.txt')).toBe(true);
-      
+
       // Different case behavior depends on filesystem
       const differentCaseConflict = wouldFilenamesConflict('file.txt', 'FILE.TXT');
       if (info.caseSensitive) {
@@ -113,7 +113,7 @@ describe('Cross-Platform Test Helpers', () => {
     test('should return boolean for supported features', () => {
       const symlinkSkip = skipIfUnsupported('symlinks');
       const caseSkip = skipIfUnsupported('case-sensitivity');
-      
+
       expect(typeof symlinkSkip).toBe('boolean');
       expect(typeof caseSkip).toBe('boolean');
     });
@@ -134,26 +134,26 @@ describe('Cross-Platform Test Helpers', () => {
     test('should return appropriate test paths for current platform', () => {
       const testPaths = getTestPaths();
       const info = getPlatformInfo();
-      
+
       expect(testPaths).toHaveProperty('absolute');
       expect(testPaths).toHaveProperty('relative');
       expect(testPaths).toHaveProperty('invalid');
-      
+
       if (info.isWindows) {
         expect(testPaths).toBe(PLATFORM_TEST_PATHS.windows);
         // Windows paths should contain drive letters
-        expect(testPaths.absolute.some(path => path.match(/^[A-Z]:\\/i))).toBe(true);
+        expect(testPaths.absolute.some((path) => path.match(/^[A-Z]:\\/i))).toBe(true);
       } else {
         expect(testPaths).toBe(PLATFORM_TEST_PATHS.unix);
         // Unix paths should start with /
-        expect(testPaths.absolute.every(path => path.startsWith('/'))).toBe(true);
+        expect(testPaths.absolute.every((path) => path.startsWith('/'))).toBe(true);
       }
     });
   });
 
   // Conditional tests to demonstrate the helper
   const conditionalTest = createConditionalTest(test);
-  
+
   conditionalTest('symlink test', 'symlinks', () => {
     // This test only runs if symlinks are supported
     expect(true).toBe(true);
@@ -195,12 +195,12 @@ describe('Cross-Platform Test Helpers', () => {
       // These tests check if CI environment variables are properly read
       const caseSensitiveEnv = process.env.MARKMV_TEST_FILESYSTEM_CASE_SENSITIVE;
       const symlinksEnv = process.env.MARKMV_TEST_SUPPORTS_SYMLINKS;
-      
+
       if (caseSensitiveEnv !== undefined) {
         const info = getPlatformInfo();
         expect(info.caseSensitive).toBe(caseSensitiveEnv === 'true');
       }
-      
+
       if (symlinksEnv !== undefined) {
         const info = getPlatformInfo();
         expect(info.supportsSymlinks).toBe(symlinksEnv === 'true');

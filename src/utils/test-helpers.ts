@@ -1,6 +1,4 @@
-/**
- * Cross-platform test utilities for handling filesystem differences
- */
+/** Cross-platform test utilities for handling filesystem differences */
 
 import { platform } from 'node:os';
 import { sep, win32, posix } from 'node:path';
@@ -15,9 +13,7 @@ export interface PlatformInfo {
   supportsSymlinks: boolean;
 }
 
-/**
- * Get current platform information
- */
+/** Get current platform information */
 export function getPlatformInfo(): PlatformInfo {
   const currentPlatform = platform();
   const isWindows = currentPlatform === 'win32';
@@ -34,9 +30,7 @@ export function getPlatformInfo(): PlatformInfo {
   };
 }
 
-/**
- * Detect filesystem case sensitivity
- */
+/** Detect filesystem case sensitivity */
 function getCaseSensitivity(): boolean {
   // Check environment variable first (from CI)
   const envVar = process.env.MARKMV_TEST_FILESYSTEM_CASE_SENSITIVE;
@@ -58,9 +52,7 @@ function getCaseSensitivity(): boolean {
   }
 }
 
-/**
- * Detect symbolic link support
- */
+/** Detect symbolic link support */
 function getSymlinkSupport(): boolean {
   // Check environment variable first (from CI)
   const envVar = process.env.MARKMV_TEST_SUPPORTS_SYMLINKS;
@@ -81,12 +73,10 @@ function getSymlinkSupport(): boolean {
   }
 }
 
-/**
- * Normalize path for the current platform
- */
+/** Normalize path for the current platform */
 export function normalizePath(path: string): string {
   const platformInfo = getPlatformInfo();
-  
+
   if (platformInfo.isWindows) {
     return win32.normalize(path);
   } else {
@@ -94,12 +84,10 @@ export function normalizePath(path: string): string {
   }
 }
 
-/**
- * Create a path using the appropriate separator for the current platform
- */
+/** Create a path using the appropriate separator for the current platform */
 export function createPath(...segments: string[]): string {
   const platformInfo = getPlatformInfo();
-  
+
   if (platformInfo.isWindows) {
     return win32.join(...segments);
   } else {
@@ -107,12 +95,10 @@ export function createPath(...segments: string[]): string {
   }
 }
 
-/**
- * Convert path separators to the current platform
- */
+/** Convert path separators to the current platform */
 export function convertPathSeparators(path: string): string {
   const platformInfo = getPlatformInfo();
-  
+
   if (platformInfo.isWindows) {
     return path.replace(/\//g, '\\');
   } else {
@@ -120,12 +106,10 @@ export function convertPathSeparators(path: string): string {
   }
 }
 
-/**
- * Test if two filenames would conflict on the current filesystem
- */
+/** Test if two filenames would conflict on the current filesystem */
 export function wouldFilenamesConflict(filename1: string, filename2: string): boolean {
   const platformInfo = getPlatformInfo();
-  
+
   if (platformInfo.caseSensitive) {
     return filename1 === filename2;
   } else {
@@ -133,12 +117,10 @@ export function wouldFilenamesConflict(filename1: string, filename2: string): bo
   }
 }
 
-/**
- * Skip test if the current platform doesn't support the required feature
- */
+/** Skip test if the current platform doesn't support the required feature */
 export function skipIfUnsupported(feature: 'symlinks' | 'case-sensitivity'): boolean {
   const platformInfo = getPlatformInfo();
-  
+
   switch (feature) {
     case 'symlinks':
       return !platformInfo.supportsSymlinks;
@@ -149,34 +131,33 @@ export function skipIfUnsupported(feature: 'symlinks' | 'case-sensitivity'): boo
   }
 }
 
-/**
- * Check if a test should be skipped based on platform capabilities
- */
-export function shouldSkipTest(
-  requirement: 'symlinks' | 'case-sensitivity' | 'windows' | 'unix'
-): { skip: boolean; reason: string } {
+/** Check if a test should be skipped based on platform capabilities */
+export function shouldSkipTest(requirement: 'symlinks' | 'case-sensitivity' | 'windows' | 'unix'): {
+  skip: boolean;
+  reason: string;
+} {
   const platformInfo = getPlatformInfo();
-  
+
   switch (requirement) {
     case 'symlinks':
       return {
         skip: !platformInfo.supportsSymlinks,
-        reason: 'symbolic links not supported on this platform'
+        reason: 'symbolic links not supported on this platform',
       };
     case 'case-sensitivity':
       return {
         skip: !platformInfo.caseSensitive,
-        reason: 'filesystem is not case-sensitive'
+        reason: 'filesystem is not case-sensitive',
       };
     case 'windows':
       return {
         skip: !platformInfo.isWindows,
-        reason: 'test requires Windows'
+        reason: 'test requires Windows',
       };
     case 'unix':
       return {
         skip: platformInfo.isWindows,
-        reason: 'test requires Unix-like system'
+        reason: 'test requires Unix-like system',
       };
     default:
       return { skip: false, reason: '' };
@@ -184,8 +165,8 @@ export function shouldSkipTest(
 }
 
 /**
- * Create test helper that conditionally runs based on platform capabilities
- * Note: This function expects to be called within a test context where `test` is available
+ * Create test helper that conditionally runs based on platform capabilities Note: This function
+ * expects to be called within a test context where `test` is available
  */
 export function createConditionalTest(testFn: unknown) {
   return function conditionalTest(
@@ -194,7 +175,7 @@ export function createConditionalTest(testFn: unknown) {
     testCallback: () => void | Promise<void>
   ): void {
     const { skip, reason } = shouldSkipTest(requirement);
-    
+
     if (skip) {
       testFn.skip(`${name} (skipped: ${reason})`, testCallback);
     } else {
@@ -203,9 +184,7 @@ export function createConditionalTest(testFn: unknown) {
   };
 }
 
-/**
- * Check if a file exists and is accessible
- */
+/** Check if a file exists and is accessible */
 export function fileExists(filePath: string): boolean {
   try {
     accessSync(filePath, constants.F_OK);
@@ -215,9 +194,7 @@ export function fileExists(filePath: string): boolean {
   }
 }
 
-/**
- * Check if a path is a symbolic link
- */
+/** Check if a path is a symbolic link */
 export function isSymbolicLink(filePath: string): boolean {
   try {
     const stats = lstatSync(filePath);
@@ -227,12 +204,10 @@ export function isSymbolicLink(filePath: string): boolean {
   }
 }
 
-/**
- * Get OS-specific temporary directory patterns
- */
+/** Get OS-specific temporary directory patterns */
 export function getTempDirPatterns(): string[] {
   const platformInfo = getPlatformInfo();
-  
+
   if (platformInfo.isWindows) {
     return ['C:\\temp', 'C:\\tmp', '%TEMP%', '%TMP%'];
   } else {
@@ -240,9 +215,7 @@ export function getTempDirPatterns(): string[] {
   }
 }
 
-/**
- * Platform-specific test data for path testing
- */
+/** Platform-specific test data for path testing */
 export const PLATFORM_TEST_PATHS = {
   windows: {
     absolute: ['C:\\Users\\test\\file.txt', 'D:\\projects\\readme.md'],
@@ -258,12 +231,12 @@ export const PLATFORM_TEST_PATHS = {
   },
 };
 
-/**
- * Get platform-appropriate test paths
- */
-export function getTestPaths(): typeof PLATFORM_TEST_PATHS.windows | typeof PLATFORM_TEST_PATHS.unix {
+/** Get platform-appropriate test paths */
+export function getTestPaths():
+  | typeof PLATFORM_TEST_PATHS.windows
+  | typeof PLATFORM_TEST_PATHS.unix {
   const platformInfo = getPlatformInfo();
-  
+
   if (platformInfo.isWindows) {
     return PLATFORM_TEST_PATHS.windows;
   } else {
