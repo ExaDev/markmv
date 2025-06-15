@@ -455,24 +455,46 @@ jobs:
         run: |
           echo "📦 Publishing to NPM registry..."
           
-          # Find the tarball file created by semantic-release
-          TARBALL=$(ls dist/markmv-*.tgz 2>/dev/null | head -1)
-          
-          if [ -n "$TARBALL" ] && [ -f "$TARBALL" ]; then
-            echo "✅ Found tarball: $TARBALL"
+          # Check if we can publish directly from the project root
+          # since semantic-release has already prepared the package
+          if [ -f "package.json" ]; then
+            echo "✅ Found package.json, attempting direct publish"
             
-            # Publish with provenance
-            npm publish "$TARBALL" --provenance --access public
+            # Publish with provenance from current directory
+            npm publish --provenance --access public
             
             if [ $? -eq 0 ]; then
               echo "✅ Successfully published to NPM"
             else
-              echo "❌ NPM publishing failed"
+              echo "❌ NPM publishing failed, checking for tarball alternative"
+              
+              # Fallback: try to find and extract the tarball
+              TARBALL=$(ls dist/markmv-*.tgz 2>/dev/null | head -1)
+              if [ -n "$TARBALL" ] && [ -f "$TARBALL" ]; then
+                echo "📦 Found tarball: $TARBALL"
+                echo "📁 Extracting tarball for direct publish..."
+                
+                # Extract to a temporary directory and publish from there
+                mkdir -p /tmp/npm-publish
+                tar -xzf "$TARBALL" -C /tmp/npm-publish --strip-components=1
+                cd /tmp/npm-publish
+                
+                echo "📋 Publishing from extracted directory..."
+                npm publish --provenance --access public
+                
+                if [ $? -eq 0 ]; then
+                  echo "✅ Successfully published to NPM from extracted tarball"
+                else
+                  echo "❌ NPM publishing failed even from extracted tarball"
+                fi
+              else
+                echo "❌ No tarball found for fallback publishing"
+                echo "📁 Contents of dist directory:"
+                ls -la dist/ || echo "No dist directory"
+              fi
             fi
           else
-            echo "❌ No tarball found for NPM publishing"
-            echo "📁 Contents of dist directory:"
-            ls -la dist/ || echo "No dist directory"
+            echo "❌ No package.json found for publishing"
           fi
 
       # Separate GitHub Packages Publishing Step  
