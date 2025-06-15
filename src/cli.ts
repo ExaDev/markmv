@@ -112,6 +112,9 @@ program
   .option('-n, --name <name>', 'Index filename', 'index.md')
   .option('--embed-style <style>', 'Embed style for embed type: obsidian|markdown', 'obsidian')
   .option('--template <file>', 'Custom template file')
+  .option('--max-depth <number>', 'Maximum depth to traverse subdirectories', parseInt)
+  .option('--no-traverse-up', 'Prevent traversing above the specified directory')
+  .option('--boundary <path>', 'Explicit boundary path to limit scanning scope')
   .option('-d, --dry-run', 'Show what would be generated without creating files')
   .option('-v, --verbose', 'Show detailed output')
   .action(indexCommand);
