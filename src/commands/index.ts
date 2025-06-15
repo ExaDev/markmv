@@ -30,6 +30,12 @@ export interface IndexOptions {
   dryRun: boolean;
   /** Enable verbose output with detailed progress information */
   verbose: boolean;
+  /** Maximum depth to traverse subdirectories */
+  maxDepth?: number;
+  /** Prevent traversing up from the specified directory */
+  noTraverseUp: boolean;
+  /** Explicit boundary path to limit scanning scope */
+  boundary?: string;
 }
 
 /**
@@ -93,6 +99,9 @@ interface IndexCliOptions {
   template?: string;
   dryRun?: boolean;
   verbose?: boolean;
+  maxDepth?: number;
+  noTraverseUp?: boolean;
+  boundary?: string;
 }
 
 export async function indexCommand(
@@ -107,7 +116,10 @@ export async function indexCommand(
     embedStyle: cliOptions.embedStyle || 'obsidian',
     dryRun: cliOptions.dryRun || false,
     verbose: cliOptions.verbose || false,
+    noTraverseUp: cliOptions.noTraverseUp || false,
     ...(cliOptions.template && { template: cliOptions.template }),
+    ...(cliOptions.maxDepth !== undefined && { maxDepth: cliOptions.maxDepth }),
+    ...(cliOptions.boundary && { boundary: cliOptions.boundary }),
   };
 
   return generateIndexFiles(options, directory || '.');
@@ -170,12 +182,58 @@ async function discoverMarkdownFiles(
   targetDir: string,
   options: IndexOptions
 ): Promise<IndexableFile[]> {
-  const pattern = join(targetDir, '**/*.md');
-  const filePaths = await glob(pattern, { ignore: ['**/node_modules/**'] });
+  // Determine the effective boundary for file scanning
+  const effectiveBoundary = options.boundary ? resolve(options.boundary) : targetDir;
+  
+  // Build glob pattern based on maxDepth option
+  let globPattern: string;
+  if (options.maxDepth !== undefined) {
+    // Create depth-limited pattern
+    const depthPattern = Array.from({ length: options.maxDepth }, () => '*').join('/');
+    globPattern = join(targetDir, depthPattern, '*.md');
+  } else {
+    globPattern = join(targetDir, '**/*.md');
+  }
+
+  const globOptions: Parameters<typeof glob>[1] = { 
+    ignore: ['**/node_modules/**'],
+  };
+  
+  // Only set cwd if noTraverseUp is enabled
+  if (options.noTraverseUp) {
+    globOptions.cwd = targetDir;
+  }
+
+  const filePaths = await glob(globPattern, globOptions);
+
+  // Filter files to respect boundary constraints and convert Path objects to strings
+  const boundaryFilePaths = filePaths
+    .map(filePath => typeof filePath === 'string' ? filePath : filePath.toString())
+    .filter(filePath => {
+      const resolvedPath = resolve(filePath);
+      
+      // Ensure file is within the boundary directory
+      if (options.boundary) {
+        const relativeToBoundary = relative(effectiveBoundary, resolvedPath);
+        if (relativeToBoundary.startsWith('..')) {
+          return false; // File is outside boundary
+        }
+      }
+      
+      // Ensure file is within or below target directory when noTraverseUp is enabled
+      if (options.noTraverseUp) {
+        const relativeToTarget = relative(targetDir, resolvedPath);
+        if (relativeToTarget.startsWith('..')) {
+          return false; // File is above target directory
+        }
+      }
+      
+      return true;
+    });
 
   const files: IndexableFile[] = [];
 
-  for (const filePath of filePaths) {
+  for (const filePath of boundaryFilePaths) {
     // Skip existing index files if they match our naming pattern
     const fileName = filePath.split('/').pop() || '';
     if (fileName === options.name) {
