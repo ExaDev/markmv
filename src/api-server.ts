@@ -1,0 +1,347 @@
+/**
+ * Native Node.js REST API server for markmv
+ *
+ * Provides a lightweight HTTP API using only Node.js built-in modules. Exposes markmv functionality
+ * via RESTful endpoints for language-agnostic access.
+ */
+
+import http from 'node:http';
+import url from 'node:url';
+import { createMarkMv } from './index.js';
+import type { OperationResult } from './types/operations.js';
+import type { ApiResponse, HealthResponse, ErrorResponse } from './types/api.js';
+
+const markmv = createMarkMv();
+const startTime = Date.now();
+
+/** Type guard to check if an object is a valid OperationResult */
+function isOperationResult(obj: unknown): obj is OperationResult {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+    return false;
+  }
+
+  const record = obj;
+  return (
+    'success' in record &&
+    typeof record.success === 'boolean' &&
+    'modifiedFiles' in record &&
+    Array.isArray(record.modifiedFiles) &&
+    'createdFiles' in record &&
+    Array.isArray(record.createdFiles) &&
+    'deletedFiles' in record &&
+    Array.isArray(record.deletedFiles) &&
+    'errors' in record &&
+    Array.isArray(record.errors) &&
+    'warnings' in record &&
+    Array.isArray(record.warnings) &&
+    'changes' in record &&
+    Array.isArray(record.changes)
+  );
+}
+
+/** Parse JSON request body from HTTP request */
+function parseRequestBody(request: http.IncomingMessage): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    const body: Buffer[] = [];
+    request
+      .on('data', (chunk: Buffer) => body.push(chunk))
+      .on('end', () => {
+        try {
+          const bodyString = Buffer.concat(body).toString();
+          resolve(bodyString ? JSON.parse(bodyString) : {});
+        } catch (error) {
+          reject(error);
+        }
+      })
+      .on('error', reject);
+  });
+}
+
+/** Send JSON response with proper headers */
+function sendJSON(response: http.ServerResponse, statusCode: number, data: unknown): void {
+  response.writeHead(statusCode, {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  });
+  response.end(JSON.stringify(data));
+}
+
+/** Create a standardized API response */
+function createApiResponse<T>(
+  success: boolean,
+  data?: T,
+  error?: string,
+  details?: string[]
+): ApiResponse<T> {
+  const response: ApiResponse<T> = {
+    success,
+    timestamp: new Date().toISOString(),
+  };
+
+  if (data !== undefined) {
+    response.data = data;
+  }
+  if (error !== undefined) {
+    response.error = error;
+  }
+  if (details !== undefined) {
+    response.details = details;
+  }
+
+  return response;
+}
+
+/** Create an error response */
+function createErrorResponse(
+  statusCode: number,
+  error: string,
+  message: string,
+  details?: string[]
+): ErrorResponse {
+  const response: ErrorResponse = {
+    error,
+    message,
+    statusCode,
+  };
+
+  if (details !== undefined) {
+    response.details = details;
+  }
+
+  return response;
+}
+
+/** Handle CORS preflight requests */
+function handleCORS(request: http.IncomingMessage, response: http.ServerResponse): boolean {
+  if (request.method === 'OPTIONS') {
+    response.writeHead(200, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    });
+    response.end();
+    return true;
+  }
+  return false;
+}
+
+/** Handle health check endpoint */
+async function handleHealth(response: http.ServerResponse): Promise<void> {
+  const healthResponse: HealthResponse = {
+    status: 'ok',
+    version: '1.0.0',
+    uptime: Date.now() - startTime,
+    info: {
+      service: 'markmv-api',
+      description: 'Markdown file operations API',
+    },
+  };
+
+  const apiResponse = createApiResponse(true, healthResponse);
+  sendJSON(response, 200, apiResponse);
+}
+
+/** Handle move file endpoint */
+async function handleMoveFile(
+  request: http.IncomingMessage,
+  response: http.ServerResponse
+): Promise<void> {
+  try {
+    const body = await parseRequestBody(request);
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      const errorResponse = createErrorResponse(400, 'BadRequest', 'Invalid request body');
+      sendJSON(response, 400, errorResponse);
+      return;
+    }
+    const source = 'source' in body ? body.source : undefined;
+    const destination = 'destination' in body ? body.destination : undefined;
+    const options = 'options' in body && body.options ? body.options : {};
+
+    if (!source || !destination || typeof source !== 'string' || typeof destination !== 'string') {
+      const errorResponse = createErrorResponse(
+        400,
+        'BadRequest',
+        'Source and destination are required and must be strings',
+        ['Missing or invalid required fields: source, destination']
+      );
+      sendJSON(response, 400, errorResponse);
+      return;
+    }
+
+    const validOptions = typeof options === 'object' && !Array.isArray(options) ? options : {};
+    const result = await markmv.moveFile(source, destination, validOptions);
+    const apiResponse = createApiResponse(true, result);
+    sendJSON(response, 200, apiResponse);
+  } catch (error) {
+    const errorResponse = createErrorResponse(
+      500,
+      'InternalServerError',
+      error instanceof Error ? error.message : 'Unknown error occurred'
+    );
+    sendJSON(response, 500, errorResponse);
+  }
+}
+
+/** Handle move files endpoint */
+async function handleMoveFiles(
+  request: http.IncomingMessage,
+  response: http.ServerResponse
+): Promise<void> {
+  try {
+    const body = await parseRequestBody(request);
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      const errorResponse = createErrorResponse(400, 'BadRequest', 'Invalid request body');
+      sendJSON(response, 400, errorResponse);
+      return;
+    }
+    const moves = 'moves' in body ? body.moves : undefined;
+    const options = 'options' in body && body.options ? body.options : {};
+
+    if (!moves || !Array.isArray(moves) || moves.length === 0) {
+      const errorResponse = createErrorResponse(
+        400,
+        'BadRequest',
+        'Moves array is required and must not be empty',
+        ['moves must be a non-empty array of {source, destination} objects']
+      );
+      sendJSON(response, 400, errorResponse);
+      return;
+    }
+
+    const validOptions = typeof options === 'object' && !Array.isArray(options) ? options : {};
+    const result = await markmv.moveFiles(moves, validOptions);
+    const apiResponse = createApiResponse(true, result);
+    sendJSON(response, 200, apiResponse);
+  } catch (error) {
+    const errorResponse = createErrorResponse(
+      500,
+      'InternalServerError',
+      error instanceof Error ? error.message : 'Unknown error occurred'
+    );
+    sendJSON(response, 500, errorResponse);
+  }
+}
+
+/** Handle validate operation endpoint */
+async function handleValidateOperation(
+  request: http.IncomingMessage,
+  response: http.ServerResponse
+): Promise<void> {
+  try {
+    const body = await parseRequestBody(request);
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      const errorResponse = createErrorResponse(400, 'BadRequest', 'Invalid request body');
+      sendJSON(response, 400, errorResponse);
+      return;
+    }
+    const operationResult = 'result' in body ? body.result : undefined;
+
+    if (!operationResult) {
+      const errorResponse = createErrorResponse(400, 'BadRequest', 'Operation result is required', [
+        'Missing required field: result',
+      ]);
+      sendJSON(response, 400, errorResponse);
+      return;
+    }
+
+    if (!isOperationResult(operationResult)) {
+      const errorResponse = createErrorResponse(
+        400,
+        'BadRequest',
+        'Invalid operation result format'
+      );
+      sendJSON(response, 400, errorResponse);
+      return;
+    }
+
+    const validation = await markmv.validateOperation(operationResult);
+    const apiResponse = createApiResponse(true, validation);
+    sendJSON(response, 200, apiResponse);
+  } catch (error) {
+    const errorResponse = createErrorResponse(
+      500,
+      'InternalServerError',
+      error instanceof Error ? error.message : 'Unknown error occurred'
+    );
+    sendJSON(response, 500, errorResponse);
+  }
+}
+
+/** Main request handler */
+async function handleRequest(
+  request: http.IncomingMessage,
+  response: http.ServerResponse
+): Promise<void> {
+  // Handle CORS preflight
+  if (handleCORS(request, response)) {
+    return;
+  }
+
+  const { method, url: reqUrl } = request;
+  const parsedUrl = url.parse(reqUrl || '', true);
+  const path = parsedUrl.pathname;
+
+  try {
+    // Route requests
+    switch (`${method}:${path}`) {
+      case 'GET:/health':
+        await handleHealth(response);
+        break;
+      case 'POST:/api/move':
+        await handleMoveFile(request, response);
+        break;
+      case 'POST:/api/move-batch':
+        await handleMoveFiles(request, response);
+        break;
+      case 'POST:/api/validate':
+        await handleValidateOperation(request, response);
+        break;
+      default: {
+        const errorResponse = createErrorResponse(
+          404,
+          'NotFound',
+          `Route ${method} ${path} not found`,
+          [
+            `Available routes: GET /health, POST /api/move, POST /api/move-batch, POST /api/validate`,
+          ]
+        );
+        sendJSON(response, 404, errorResponse);
+        break;
+      }
+    }
+  } catch (error) {
+    console.error('Unhandled error:', error);
+    const errorResponse = createErrorResponse(
+      500,
+      'InternalServerError',
+      'An unexpected error occurred'
+    );
+    sendJSON(response, 500, errorResponse);
+  }
+}
+
+/** Create and start the HTTP server */
+export function createApiServer(port: number = 3000): http.Server {
+  const server = http.createServer(handleRequest);
+
+  server.listen(port, () => {
+    console.log(`markmv API server running on port ${port}`);
+    console.log(`Health check: http://localhost:${port}/health`);
+    console.log(`API endpoints: http://localhost:${port}/api/*`);
+  });
+
+  return server;
+}
+
+/** Start the API server with environment-based configuration */
+export function startApiServer(): http.Server {
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  return createApiServer(port);
+}
+
+// For direct execution
+if (process.argv[1] && process.argv[1].endsWith('api-server.js')) {
+  startApiServer();
+}
