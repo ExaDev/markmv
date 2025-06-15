@@ -455,12 +455,14 @@ jobs:
         run: |
           echo "📦 Publishing to NPM registry..."
           
-          # Check if we have a tarball to publish
-          if [ -f "dist/markmv-"*.tgz ]; then
-            echo "✅ Found tarball: $(ls dist/markmv-*.tgz)"
+          # Find the tarball file created by semantic-release
+          TARBALL=$(ls dist/markmv-*.tgz 2>/dev/null | head -1)
+          
+          if [ -n "$TARBALL" ] && [ -f "$TARBALL" ]; then
+            echo "✅ Found tarball: $TARBALL"
             
             # Publish with provenance
-            npm publish dist/markmv-*.tgz --provenance --access public
+            npm publish "$TARBALL" --provenance --access public
             
             if [ $? -eq 0 ]; then
               echo "✅ Successfully published to NPM"
@@ -469,6 +471,7 @@ jobs:
             fi
           else
             echo "❌ No tarball found for NPM publishing"
+            echo "📁 Contents of dist directory:"
             ls -la dist/ || echo "No dist directory"
           fi
 
