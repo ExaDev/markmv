@@ -272,9 +272,9 @@ describe('FileUtils', () => {
       await writeFile(destPath, 'existing content');
 
       // Should throw when overwrite is false
-      await expect(
-        FileUtils.copyFile(sourcePath, destPath, { overwrite: false })
-      ).rejects.toThrow('Destination file already exists');
+      await expect(FileUtils.copyFile(sourcePath, destPath, { overwrite: false })).rejects.toThrow(
+        'Destination file already exists'
+      );
 
       // Should succeed when overwrite is true
       await expect(
@@ -290,17 +290,19 @@ describe('FileUtils', () => {
       const destPath = join(testDir, 'dest.md');
 
       await writeFile(sourcePath, 'content');
-      
+
       // Wait a bit to ensure different timestamps
-      await new Promise(resolve => setTimeout(resolve, 10));
-      
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
       await FileUtils.copyFile(sourcePath, destPath, { preserveTimestamps: true });
 
       const sourceStats = await FileUtils.getStats(sourcePath);
       const destStats = await FileUtils.getStats(destPath);
 
       // Timestamps should be very close (within 1 second)
-      expect(Math.abs(sourceStats.modified.getTime() - destStats.modified.getTime())).toBeLessThan(1000);
+      expect(Math.abs(sourceStats.modified.getTime() - destStats.modified.getTime())).toBeLessThan(
+        1000
+      );
     });
   });
 
@@ -312,14 +314,14 @@ describe('FileUtils', () => {
       await writeFile(sourcePath, 'source content');
       await writeFile(destPath, 'existing content');
 
-      await FileUtils.moveFile(sourcePath, destPath, { 
-        overwrite: true, 
-        backup: true 
+      await FileUtils.moveFile(sourcePath, destPath, {
+        overwrite: true,
+        backup: true,
       });
 
       const backupPath = `${destPath}.backup`;
       expect(await FileUtils.exists(backupPath)).toBe(true);
-      
+
       const backupContent = await FileUtils.readTextFile(backupPath);
       expect(backupContent).toBe('existing content');
 
@@ -328,18 +330,16 @@ describe('FileUtils', () => {
     });
 
     it('should throw error for invalid source path', async () => {
-      await expect(
-        FileUtils.moveFile('', join(testDir, 'dest.md'))
-      ).rejects.toThrow('Invalid source path');
+      await expect(FileUtils.moveFile('', join(testDir, 'dest.md'))).rejects.toThrow(
+        'Invalid source path'
+      );
     });
 
     it('should throw error for invalid destination path', async () => {
       const sourcePath = join(testDir, 'source.md');
       await writeFile(sourcePath, 'content');
 
-      await expect(
-        FileUtils.moveFile(sourcePath, '')
-      ).rejects.toThrow('Invalid destination path');
+      await expect(FileUtils.moveFile(sourcePath, '')).rejects.toThrow('Invalid destination path');
     });
 
     it('should throw error for non-existent source', async () => {
@@ -355,9 +355,9 @@ describe('FileUtils', () => {
       await writeFile(sourcePath, 'source content');
       await writeFile(destPath, 'existing content');
 
-      await expect(
-        FileUtils.moveFile(sourcePath, destPath, { overwrite: false })
-      ).rejects.toThrow('Destination file already exists');
+      await expect(FileUtils.moveFile(sourcePath, destPath, { overwrite: false })).rejects.toThrow(
+        'Destination file already exists'
+      );
     });
   });
 
@@ -371,9 +371,7 @@ describe('FileUtils', () => {
     });
 
     it('should not throw for non-existent files', async () => {
-      await expect(
-        FileUtils.deleteFile(join(testDir, 'nonexistent.md'))
-      ).resolves.not.toThrow();
+      await expect(FileUtils.deleteFile(join(testDir, 'nonexistent.md'))).resolves.not.toThrow();
     });
   });
 
@@ -383,7 +381,7 @@ describe('FileUtils', () => {
       await mkdir(join(testDir, 'subdir'));
 
       const files = await FileUtils.listFiles(testDir, { includeDirectories: true });
-      const names = files.map(f => f.split('/').pop());
+      const names = files.map((f) => f.split('/').pop());
 
       expect(names).toContain('file.md');
       expect(names).toContain('subdir');
@@ -395,7 +393,7 @@ describe('FileUtils', () => {
       await writeFile(join(testDir, 'doc.txt'), '');
 
       const files = await FileUtils.listFiles(testDir, { extensions: ['.md'] });
-      const names = files.map(f => f.split('/').pop());
+      const names = files.map((f) => f.split('/').pop());
 
       expect(names).toContain('doc.md');
       expect(names).toContain('README.MD'); // Should find both due to case-insensitive extension matching
@@ -410,10 +408,10 @@ describe('FileUtils', () => {
       await writeFile(filePath, content);
 
       const backupPath = await FileUtils.createBackup(filePath);
-      
+
       expect(backupPath).toBe(`${filePath}.backup`);
       expect(await FileUtils.exists(backupPath)).toBe(true);
-      
+
       const backupContent = await FileUtils.readTextFile(backupPath);
       expect(backupContent).toBe(content);
     });
@@ -424,10 +422,10 @@ describe('FileUtils', () => {
       await writeFile(filePath, content);
 
       const backupPath = await FileUtils.createBackup(filePath, '.bak');
-      
+
       expect(backupPath).toBe(`${filePath}.bak`);
       expect(await FileUtils.exists(backupPath)).toBe(true);
-      
+
       const backupContent = await FileUtils.readTextFile(backupPath);
       expect(backupContent).toBe(content);
     });
@@ -448,28 +446,28 @@ describe('FileUtils', () => {
     it('should remove invalid characters', async () => {
       const input = 'file<>:"/\\|?*name.md';
       const result = FileUtils.sanitizeFilename(input);
-      
+
       expect(result).toBe('file-name.md');
     });
 
     it('should replace spaces with dashes', async () => {
       const input = 'file   with   spaces.md';
       const result = FileUtils.sanitizeFilename(input);
-      
+
       expect(result).toBe('file-with-spaces.md');
     });
 
     it('should remove leading and trailing dashes', async () => {
       const input = '---filename---';
       const result = FileUtils.sanitizeFilename(input);
-      
+
       expect(result).toBe('filename');
     });
 
     it('should handle complex filename cleaning', async () => {
       const input = '  <<invalid>>  file::name  ';
       const result = FileUtils.sanitizeFilename(input);
-      
+
       expect(result).toBe('invalid-file-name');
     });
   });
@@ -480,7 +478,7 @@ describe('FileUtils', () => {
       const toFile = '/project/assets/image.png';
 
       const result = FileUtils.getRelativePath(fromFile, toFile);
-      
+
       // Should return relative path from docs/ to assets/
       expect(result).toContain('../assets/image.png');
     });

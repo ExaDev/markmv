@@ -19,9 +19,12 @@ describe('Move Command', () => {
 
   beforeEach(() => {
     // Create a unique test directory
-    testDir = join(tmpdir(), `markmv-move-test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+    testDir = join(
+      tmpdir(),
+      `markmv-move-test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    );
     mkdirSync(testDir, { recursive: true });
-    
+
     // Clear all mocks
     vi.clearAllMocks();
   });
@@ -29,7 +32,7 @@ describe('Move Command', () => {
   afterEach(() => {
     // Clean up test files
     try {
-      import('node:fs').then(fs => {
+      import('node:fs').then((fs) => {
         if (existsSync(testDir)) {
           fs.rmSync(testDir, { recursive: true, force: true });
         }
@@ -42,22 +45,30 @@ describe('Move Command', () => {
   describe('Argument Validation', () => {
     it('should exit with error when fewer than 2 arguments provided', async () => {
       await expect(moveCommand([], {})).rejects.toThrow('Process exit called with code 1');
-      
-      expect(mockConsoleError).toHaveBeenCalledWith('❌ Error: At least 2 arguments required (source(s) and destination)');
+
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        '❌ Error: At least 2 arguments required (source(s) and destination)'
+      );
       expect(mockProcessExit).toHaveBeenCalledWith(1);
     });
 
     it('should exit with error when only 1 argument provided', async () => {
-      await expect(moveCommand(['single-arg'], {})).rejects.toThrow('Process exit called with code 1');
-      
-      expect(mockConsoleError).toHaveBeenCalledWith('❌ Error: At least 2 arguments required (source(s) and destination)');
+      await expect(moveCommand(['single-arg'], {})).rejects.toThrow(
+        'Process exit called with code 1'
+      );
+
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        '❌ Error: At least 2 arguments required (source(s) and destination)'
+      );
       expect(mockProcessExit).toHaveBeenCalledWith(1);
     });
 
     it('should show usage examples when insufficient arguments provided', async () => {
       await expect(moveCommand(['single'], {})).rejects.toThrow('Process exit called with code 1');
-      
-      expect(mockConsoleError).toHaveBeenCalledWith('Usage: markmv move <sources...> <destination>');
+
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        'Usage: markmv move <sources...> <destination>'
+      );
       expect(mockConsoleError).toHaveBeenCalledWith('Examples:');
       expect(mockConsoleError).toHaveBeenCalledWith('  markmv move file.md ./target/');
     });
@@ -68,11 +79,11 @@ describe('Move Command', () => {
       // Create test files
       const sourceFile = join(testDir, 'source.md');
       const destFile = join(testDir, 'dest.md');
-      
+
       writeFileSync(sourceFile, '# Test Content\n\nSome content here.');
-      
+
       await moveCommand([sourceFile, destFile], { dryRun: true, verbose: true });
-      
+
       expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('🔍 Expanding pattern:'));
       expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('✅ Direct file:'));
     });
@@ -80,22 +91,30 @@ describe('Move Command', () => {
     it('should exit when no markdown files found', async () => {
       const nonExistentFile = join(testDir, 'nonexistent.md');
       const destFile = join(testDir, 'dest.md');
-      
-      await expect(moveCommand([nonExistentFile, destFile], {})).rejects.toThrow('Process exit called with code 1');
-      
-      expect(mockConsoleError).toHaveBeenCalledWith('❌ No markdown files found matching the specified patterns');
+
+      await expect(moveCommand([nonExistentFile, destFile], {})).rejects.toThrow(
+        'Process exit called with code 1'
+      );
+
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        '❌ No markdown files found matching the specified patterns'
+      );
       expect(mockProcessExit).toHaveBeenCalledWith(1);
     });
 
     it('should warn about non-markdown files in direct paths', async () => {
       const txtFile = join(testDir, 'test.txt');
       const destFile = join(testDir, 'dest.md');
-      
+
       writeFileSync(txtFile, 'Some text content');
-      
-      await expect(moveCommand([txtFile, destFile], { verbose: true })).rejects.toThrow('Process exit called with code 1');
-      
-      expect(mockConsoleWarn).toHaveBeenCalledWith(expect.stringContaining('⚠️  Skipping non-markdown file:'));
+
+      await expect(moveCommand([txtFile, destFile], { verbose: true })).rejects.toThrow(
+        'Process exit called with code 1'
+      );
+
+      expect(mockConsoleWarn).toHaveBeenCalledWith(
+        expect.stringContaining('⚠️  Skipping non-markdown file:')
+      );
     });
 
     it('should handle glob patterns', async () => {
@@ -103,17 +122,19 @@ describe('Move Command', () => {
       const file1 = join(testDir, 'file1.md');
       const file2 = join(testDir, 'file2.md');
       const destDir = join(testDir, 'dest/');
-      
+
       writeFileSync(file1, '# File 1');
       writeFileSync(file2, '# File 2');
       mkdirSync(destDir, { recursive: true });
-      
+
       const globPattern = join(testDir, '*.md');
-      
+
       await moveCommand([globPattern, destDir], { dryRun: true, verbose: true });
-      
+
       expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('📁 Found'));
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('file(s) matching pattern'));
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('file(s) matching pattern')
+      );
     });
   });
 
@@ -122,13 +143,17 @@ describe('Move Command', () => {
       const file1 = join(testDir, 'file1.md');
       const file2 = join(testDir, 'file2.md');
       const destFile = join(testDir, 'dest.md');
-      
+
       writeFileSync(file1, '# File 1');
       writeFileSync(file2, '# File 2');
-      
-      await expect(moveCommand([file1, file2, destFile], {})).rejects.toThrow('Process exit called with code 1');
-      
-      expect(mockConsoleError).toHaveBeenCalledWith('❌ Error: When moving multiple files, destination must be a directory');
+
+      await expect(moveCommand([file1, file2, destFile], {})).rejects.toThrow(
+        'Process exit called with code 1'
+      );
+
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        '❌ Error: When moving multiple files, destination must be a directory'
+      );
       expect(mockProcessExit).toHaveBeenCalledWith(1);
     });
 
@@ -136,15 +161,17 @@ describe('Move Command', () => {
       const file1 = join(testDir, 'file1.md');
       const file2 = join(testDir, 'file2.md');
       const destDir = join(testDir, 'dest/');
-      
+
       writeFileSync(file1, '# File 1');
       writeFileSync(file2, '# File 2');
       mkdirSync(destDir, { recursive: true });
-      
+
       await moveCommand([file1, file2, destDir], { dryRun: true });
-      
+
       // Should not throw an error
-      expect(mockConsoleError).not.toHaveBeenCalledWith(expect.stringContaining('When moving multiple files'));
+      expect(mockConsoleError).not.toHaveBeenCalledWith(
+        expect.stringContaining('When moving multiple files')
+      );
     });
   });
 
@@ -152,11 +179,11 @@ describe('Move Command', () => {
     it('should show detailed information in verbose mode', async () => {
       const sourceFile = join(testDir, 'source.md');
       const destFile = join(testDir, 'dest.md');
-      
+
       writeFileSync(sourceFile, '# Test Content');
-      
+
       await moveCommand([sourceFile, destFile], { dryRun: true, verbose: true });
-      
+
       expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('🎯 Destination:'));
       expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('📁 Found'));
       expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('🔍 Dry run mode'));
@@ -165,11 +192,11 @@ describe('Move Command', () => {
     it('should not show extra details in non-verbose mode', async () => {
       const sourceFile = join(testDir, 'source.md');
       const destFile = join(testDir, 'dest.md');
-      
+
       writeFileSync(sourceFile, '# Test Content');
-      
+
       await moveCommand([sourceFile, destFile], { dryRun: true, verbose: false });
-      
+
       expect(mockConsoleLog).not.toHaveBeenCalledWith(expect.stringContaining('🎯 Destination:'));
       expect(mockConsoleLog).not.toHaveBeenCalledWith(expect.stringContaining('📁 Found'));
     });
@@ -179,32 +206,34 @@ describe('Move Command', () => {
     it('should show preview of changes in dry run mode', async () => {
       const sourceFile = join(testDir, 'source.md');
       const destFile = join(testDir, 'dest.md');
-      
+
       writeFileSync(sourceFile, '# Test Content\n\n[Link](./other.md)');
-      
+
       await moveCommand([sourceFile, destFile], { dryRun: true });
-      
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('📋 Changes that would be made:'));
+
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('📋 Changes that would be made:')
+      );
       expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('📊 Summary:'));
     });
 
     it('should show files that would be created in dry run', async () => {
       const sourceFile = join(testDir, 'source.md');
       const destFile = join(testDir, 'dest.md');
-      
+
       writeFileSync(sourceFile, '# Test Content');
-      
+
       await moveCommand([sourceFile, destFile], { dryRun: true });
-      
+
       // Look for either "would be created" or "would be deleted" sections
-      const logCalls = mockConsoleLog.mock.calls.map(call => call[0]);
-      const hasCreatedSection = logCalls.some(log => 
-        typeof log === 'string' && log.includes('✅ Files that would be created:')
+      const logCalls = mockConsoleLog.mock.calls.map((call) => call[0]);
+      const hasCreatedSection = logCalls.some(
+        (log) => typeof log === 'string' && log.includes('✅ Files that would be created:')
       );
-      const hasDeletedSection = logCalls.some(log => 
-        typeof log === 'string' && log.includes('🗑️  Files that would be deleted:')
+      const hasDeletedSection = logCalls.some(
+        (log) => typeof log === 'string' && log.includes('🗑️  Files that would be deleted:')
       );
-      
+
       expect(hasCreatedSection || hasDeletedSection).toBe(true);
     });
   });
@@ -213,11 +242,13 @@ describe('Move Command', () => {
     it('should handle file operation errors gracefully', async () => {
       const sourceFile = join(testDir, 'source.md');
       const invalidDest = '/invalid/path/that/cannot/be/created.md';
-      
+
       writeFileSync(sourceFile, '# Test Content');
-      
-      await expect(moveCommand([sourceFile, invalidDest], { dryRun: false })).rejects.toThrow('Process exit called with code 1');
-      
+
+      await expect(moveCommand([sourceFile, invalidDest], { dryRun: false })).rejects.toThrow(
+        'Process exit called with code 1'
+      );
+
       expect(mockConsoleError).toHaveBeenCalled();
       expect(mockProcessExit).toHaveBeenCalledWith(1);
     }, 10000); // Increase timeout to 10 seconds
@@ -225,14 +256,18 @@ describe('Move Command', () => {
     it('should handle unexpected errors', async () => {
       // Create a scenario that would cause an unexpected error by mocking expandSourcePatterns to throw
       const _originalExpandSourcePatterns = await import('./move.js');
-      
+
       // We'll use a non-existent glob pattern that should cause an error in expansion
       const badPattern = '/nonexistent/path/**/*.md';
       const destFile = join(testDir, 'dest.md');
-      
-      await expect(moveCommand([badPattern, destFile], {})).rejects.toThrow('Process exit called with code 1');
-      
-      expect(mockConsoleError).toHaveBeenCalledWith('❌ No markdown files found matching the specified patterns');
+
+      await expect(moveCommand([badPattern, destFile], {})).rejects.toThrow(
+        'Process exit called with code 1'
+      );
+
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        '❌ No markdown files found matching the specified patterns'
+      );
     });
   });
 
@@ -240,11 +275,11 @@ describe('Move Command', () => {
     it('should complete successfully for valid single file move', async () => {
       const sourceFile = join(testDir, 'source.md');
       const destFile = join(testDir, 'dest.md');
-      
+
       writeFileSync(sourceFile, '# Test Content');
-      
+
       await moveCommand([sourceFile, destFile], { dryRun: true });
-      
+
       // Should not throw any errors
       expect(mockConsoleError).not.toHaveBeenCalledWith(expect.stringContaining('❌'));
     });
@@ -253,13 +288,13 @@ describe('Move Command', () => {
       const file1 = join(testDir, 'file1.md');
       const file2 = join(testDir, 'file2.md');
       const destDir = join(testDir, 'dest/');
-      
+
       writeFileSync(file1, '# File 1');
       writeFileSync(file2, '# File 2');
       mkdirSync(destDir, { recursive: true });
-      
+
       await moveCommand([file1, file2, destDir], { dryRun: true });
-      
+
       // Should not throw any errors
       expect(mockConsoleError).not.toHaveBeenCalledWith(expect.stringContaining('❌'));
     });
@@ -269,13 +304,13 @@ describe('Move Command', () => {
     it('should perform link validation in verbose mode when not dry run', async () => {
       const sourceFile = join(testDir, 'source.md');
       const destFile = join(testDir, 'dest.md');
-      
+
       writeFileSync(sourceFile, '# Test Content\n\n[Link](./other.md)');
-      
+
       // Note: We use dry run here because actual file operations require more setup
       // and the validation step is only shown in non-dry-run + verbose mode
       await moveCommand([sourceFile, destFile], { dryRun: true, verbose: true });
-      
+
       // In dry run mode, validation message won't appear, but we can verify the flow works
       expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('📊 Summary:'));
     });
@@ -283,18 +318,18 @@ describe('Move Command', () => {
     it('should display warnings when present', async () => {
       const sourceFile = join(testDir, 'source.md');
       const destFile = join(testDir, 'dest.md');
-      
+
       writeFileSync(sourceFile, '# Test Content');
-      
+
       await moveCommand([sourceFile, destFile], { dryRun: true });
-      
+
       // The command should handle warnings display, even if none are generated in this simple case
       // This tests the warning display logic path
-      const logCalls = mockConsoleLog.mock.calls.map(call => call[0]);
-      const hasWarningCheck = logCalls.some(log => 
-        typeof log === 'string' && (log.includes('⚠️') || log.includes('Summary'))
+      const logCalls = mockConsoleLog.mock.calls.map((call) => call[0]);
+      const hasWarningCheck = logCalls.some(
+        (log) => typeof log === 'string' && (log.includes('⚠️') || log.includes('Summary'))
       );
-      
+
       expect(hasWarningCheck).toBe(true);
     });
   });

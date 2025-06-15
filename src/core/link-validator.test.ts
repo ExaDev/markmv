@@ -239,7 +239,7 @@ describe('LinkValidator', () => {
   describe('Configuration Options', () => {
     it('should respect strictInternal option when false', async () => {
       const nonStrictValidator = new LinkValidator({ strictInternal: false });
-      
+
       const link: MarkdownLink = {
         type: 'internal',
         href: './missing.md',
@@ -255,7 +255,7 @@ describe('LinkValidator', () => {
 
     it('should skip Claude imports when checkClaudeImports is false', async () => {
       const validator = new LinkValidator({ checkClaudeImports: false });
-      
+
       const link: MarkdownLink = {
         type: 'claude-import',
         href: './missing.md',
@@ -278,7 +278,7 @@ describe('LinkValidator', () => {
         checkExternal: true,
         externalTimeout: 10000,
         strictInternal: false,
-        checkClaudeImports: false
+        checkClaudeImports: false,
       });
       expect(customValidator).toBeDefined();
     });
@@ -326,12 +326,12 @@ describe('LinkValidator', () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        statusText: 'OK'
+        statusText: 'OK',
       });
       global.fetch = mockFetch;
 
       const externalValidator = new LinkValidator({ checkExternal: true });
-      
+
       const link: MarkdownLink = {
         type: 'image',
         href: 'https://example.com/image.png',
@@ -344,7 +344,7 @@ describe('LinkValidator', () => {
       expect(result).toBeNull();
       expect(mockFetch).toHaveBeenCalledWith('https://example.com/image.png', {
         method: 'HEAD',
-        signal: expect.any(AbortSignal)
+        signal: expect.any(AbortSignal),
       });
     });
 
@@ -391,12 +391,12 @@ describe('LinkValidator', () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        statusText: 'OK'
+        statusText: 'OK',
       });
       global.fetch = mockFetch;
 
       const externalValidator = new LinkValidator({ checkExternal: true });
-      
+
       const link: MarkdownLink = {
         type: 'external',
         href: 'https://example.com',
@@ -413,12 +413,12 @@ describe('LinkValidator', () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 404,
-        statusText: 'Not Found'
+        statusText: 'Not Found',
       });
       global.fetch = mockFetch;
 
       const externalValidator = new LinkValidator({ checkExternal: true });
-      
+
       const link: MarkdownLink = {
         type: 'external',
         href: 'https://example.com/not-found',
@@ -440,11 +440,11 @@ describe('LinkValidator', () => {
       const mockFetch = vi.fn().mockRejectedValue(new Error('Request timeout'));
       global.fetch = mockFetch;
 
-      const externalValidator = new LinkValidator({ 
+      const externalValidator = new LinkValidator({
         checkExternal: true,
-        externalTimeout: 100 // Short timeout for testing
+        externalTimeout: 100, // Short timeout for testing
       });
-      
+
       const link: MarkdownLink = {
         type: 'external',
         href: 'https://slow-example.com',

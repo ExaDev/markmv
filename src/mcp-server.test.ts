@@ -14,7 +14,7 @@ vi.mock('./index.js', () => ({
       deletedFiles: [],
       errors: [],
       warnings: [],
-      changes: []
+      changes: [],
     }),
     moveFiles: vi.fn().mockResolvedValue({
       success: true,
@@ -23,19 +23,19 @@ vi.mock('./index.js', () => ({
       deletedFiles: [],
       errors: [],
       warnings: [],
-      changes: []
+      changes: [],
     }),
     validateOperation: vi.fn().mockResolvedValue({
       valid: true,
       brokenLinks: 0,
-      errors: []
-    })
+      errors: [],
+    }),
   })),
   testAutoExposure: vi.fn().mockResolvedValue({
     message: 'Test response',
     timestamp: '2023-01-01T00:00:00.000Z',
-    success: true
-  })
+    success: true,
+  }),
 }));
 
 // Mock auto-generated MCP tools
@@ -49,10 +49,10 @@ vi.mock('./generated/mcp-tools.js', () => ({
         properties: {
           sourcePath: { type: 'string' },
           destinationPath: { type: 'string' },
-          options: { type: 'object' }
+          options: { type: 'object' },
         },
-        required: ['sourcePath', 'destinationPath']
-      }
+        required: ['sourcePath', 'destinationPath'],
+      },
     },
     {
       name: 'move_files',
@@ -61,10 +61,10 @@ vi.mock('./generated/mcp-tools.js', () => ({
         type: 'object',
         properties: {
           moves: { type: 'array' },
-          options: { type: 'object' }
+          options: { type: 'object' },
         },
-        required: ['moves']
-      }
+        required: ['moves'],
+      },
     },
     {
       name: 'validate_operation',
@@ -72,10 +72,10 @@ vi.mock('./generated/mcp-tools.js', () => ({
       inputSchema: {
         type: 'object',
         properties: {
-          result: { type: 'object' }
+          result: { type: 'object' },
         },
-        required: ['result']
-      }
+        required: ['result'],
+      },
     },
     {
       name: 'test_auto_exposure',
@@ -83,18 +83,23 @@ vi.mock('./generated/mcp-tools.js', () => ({
       inputSchema: {
         type: 'object',
         properties: {
-          input: { type: 'string' }
+          input: { type: 'string' },
         },
-        required: ['input']
-      }
-    }
+        required: ['input'],
+      },
+    },
   ],
-  getMcpToolNames: vi.fn(() => ['move_file', 'move_files', 'validate_operation', 'test_auto_exposure'])
+  getMcpToolNames: vi.fn(() => [
+    'move_file',
+    'move_files',
+    'validate_operation',
+    'test_auto_exposure',
+  ]),
 }));
 
 // Mock AJV validators
 vi.mock('./generated/ajv-validators.js', () => ({
-  validateInput: vi.fn().mockReturnValue({ valid: true, errors: [] })
+  validateInput: vi.fn().mockReturnValue({ valid: true, errors: [] }),
 }));
 
 // Mock MCP SDK Server
@@ -104,13 +109,13 @@ const mockConnect = vi.fn().mockResolvedValue(undefined);
 vi.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
   Server: vi.fn().mockImplementation(() => ({
     setRequestHandler: mockSetRequestHandler,
-    connect: mockConnect
-  }))
+    connect: mockConnect,
+  })),
 }));
 
 // Mock StdioServerTransport
 vi.mock('@modelcontextprotocol/sdk/server/stdio.js', () => ({
-  StdioServerTransport: vi.fn().mockImplementation(() => ({}))
+  StdioServerTransport: vi.fn().mockImplementation(() => ({})),
 }));
 
 // Import the functions to test after mocks are set up
@@ -128,14 +133,14 @@ describe('MCP Server', () => {
   describe('Server Creation', () => {
     it('should create an MCP server with correct configuration', () => {
       const server = createMcpServer();
-      
+
       expect(server).toBeDefined();
       expect(mockSetRequestHandler).toHaveBeenCalledTimes(2); // ListTools and CallTool handlers
     });
 
     it('should register request handlers', () => {
       createMcpServer();
-      
+
       // Check that setRequestHandler was called for both list and call tools
       expect(mockSetRequestHandler).toHaveBeenCalledTimes(2);
     });
@@ -144,48 +149,50 @@ describe('MCP Server', () => {
   describe('Tool Listing', () => {
     it('should handle list tools request', async () => {
       createMcpServer();
-      
+
       // Get the first handler (should be ListTools)
       const listToolsHandler = mockSetRequestHandler.mock.calls[0]?.[1];
       expect(listToolsHandler).toBeDefined();
 
       const request: ListToolsRequest = {
         method: 'tools/list',
-        params: {}
+        params: {},
       };
 
       const result = await listToolsHandler(request);
-      
+
       expect(result).toEqual({
         tools: expect.arrayContaining([
           expect.objectContaining({
             name: 'move_file',
-            description: 'Move a single markdown file and update all references'
+            description: 'Move a single markdown file and update all references',
           }),
           expect.objectContaining({
-            name: 'move_files', 
-            description: 'Move multiple markdown files and update all references'
+            name: 'move_files',
+            description: 'Move multiple markdown files and update all references',
           }),
           expect.objectContaining({
             name: 'validate_operation',
-            description: 'Validate the result of a previous operation for broken links'
+            description: 'Validate the result of a previous operation for broken links',
           }),
           expect.objectContaining({
             name: 'test_auto_exposure',
-            description: 'Test function to demonstrate auto-exposure pattern'
-          })
-        ])
+            description: 'Test function to demonstrate auto-exposure pattern',
+          }),
+        ]),
       });
     });
   });
 
   describe('Tool Execution', () => {
-    let callToolHandler: (request: { params: { name: string; arguments?: Record<string, unknown> } }) => Promise<{ content: Array<{ type: string; text: string }> }>;
+    let callToolHandler: (request: {
+      params: { name: string; arguments?: Record<string, unknown> };
+    }) => Promise<{ content: Array<{ type: string; text: string }> }>;
 
     beforeEach(() => {
       vi.clearAllMocks();
       createMcpServer();
-      
+
       // Get the second handler (should be CallTool)
       callToolHandler = mockSetRequestHandler.mock.calls[1]?.[1];
     });
@@ -198,18 +205,18 @@ describe('MCP Server', () => {
           arguments: {
             sourcePath: 'source.md',
             destinationPath: 'dest.md',
-            options: { dryRun: true }
-          }
-        }
+            options: { dryRun: true },
+          },
+        },
       };
 
       const result = await callToolHandler(request);
-      
+
       expect(result.content).toEqual([
         {
           type: 'text',
-          text: expect.stringContaining('"success": true')
-        }
+          text: expect.stringContaining('"success": true'),
+        },
       ]);
       expect(result.isError).toBeUndefined();
     });
@@ -222,20 +229,20 @@ describe('MCP Server', () => {
           arguments: {
             moves: [
               { source: 'file1.md', destination: 'dest1.md' },
-              { source: 'file2.md', destination: 'dest2.md' }
+              { source: 'file2.md', destination: 'dest2.md' },
             ],
-            options: { dryRun: true }
-          }
-        }
+            options: { dryRun: true },
+          },
+        },
       };
 
       const result = await callToolHandler(request);
-      
+
       expect(result.content).toEqual([
         {
           type: 'text',
-          text: expect.stringContaining('"success": true')
-        }
+          text: expect.stringContaining('"success": true'),
+        },
       ]);
       expect(result.isError).toBeUndefined();
     });
@@ -253,19 +260,19 @@ describe('MCP Server', () => {
               deletedFiles: [],
               errors: [],
               warnings: [],
-              changes: []
-            }
-          }
-        }
+              changes: [],
+            },
+          },
+        },
       };
 
       const result = await callToolHandler(request);
-      
+
       expect(result.content).toEqual([
         {
           type: 'text',
-          text: expect.stringContaining('"valid": true')
-        }
+          text: expect.stringContaining('"valid": true'),
+        },
       ]);
       expect(result.isError).toBeUndefined();
     });
@@ -276,18 +283,18 @@ describe('MCP Server', () => {
         params: {
           name: 'test_auto_exposure',
           arguments: {
-            input: 'test message'
-          }
-        }
+            input: 'test message',
+          },
+        },
       };
 
       const result = await callToolHandler(request);
-      
+
       expect(result.content).toEqual([
         {
           type: 'text',
-          text: expect.stringContaining('"success": true')
-        }
+          text: expect.stringContaining('"success": true'),
+        },
       ]);
       expect(result.isError).toBeUndefined();
     });
@@ -297,17 +304,17 @@ describe('MCP Server', () => {
         method: 'tools/call',
         params: {
           name: 'unknown_tool',
-          arguments: {}
-        }
+          arguments: {},
+        },
       };
 
       const result = await callToolHandler(request);
-      
+
       expect(result.content).toEqual([
         {
           type: 'text',
-          text: expect.stringContaining('Unknown tool: unknown_tool')
-        }
+          text: expect.stringContaining('Unknown tool: unknown_tool'),
+        },
       ]);
       expect(result.isError).toBe(true);
     });
@@ -319,18 +326,18 @@ describe('MCP Server', () => {
           name: 'move_file',
           arguments: {
             sourcePath: 123, // invalid type
-            destinationPath: 'dest.md'
-          }
-        }
+            destinationPath: 'dest.md',
+          },
+        },
       };
 
       const result = await callToolHandler(request);
-      
+
       expect(result.content).toEqual([
         {
           type: 'text',
-          text: expect.stringContaining('Invalid parameters for moveFile')
-        }
+          text: expect.stringContaining('Invalid parameters for moveFile'),
+        },
       ]);
       expect(result.isError).toBe(true);
     });
@@ -341,18 +348,18 @@ describe('MCP Server', () => {
         params: {
           name: 'move_files',
           arguments: {
-            moves: 'not an array' // invalid type
-          }
-        }
+            moves: 'not an array', // invalid type
+          },
+        },
       };
 
       const result = await callToolHandler(request);
-      
+
       expect(result.content).toEqual([
         {
           type: 'text',
-          text: expect.stringContaining('Invalid parameters for moveFiles')
-        }
+          text: expect.stringContaining('Invalid parameters for moveFiles'),
+        },
       ]);
       expect(result.isError).toBe(true);
     });
@@ -363,18 +370,18 @@ describe('MCP Server', () => {
         params: {
           name: 'validate_operation',
           arguments: {
-            result: 'not an object' // invalid type
-          }
-        }
+            result: 'not an object', // invalid type
+          },
+        },
       };
 
       const result = await callToolHandler(request);
-      
+
       expect(result.content).toEqual([
         {
           type: 'text',
-          text: expect.stringContaining('Invalid OperationResult structure')
-        }
+          text: expect.stringContaining('Invalid OperationResult structure'),
+        },
       ]);
       expect(result.isError).toBe(true);
     });
@@ -385,18 +392,18 @@ describe('MCP Server', () => {
         params: {
           name: 'test_auto_exposure',
           arguments: {
-            input: 123 // invalid type
-          }
-        }
+            input: 123, // invalid type
+          },
+        },
       };
 
       const result = await callToolHandler(request);
-      
+
       expect(result.content).toEqual([
         {
           type: 'text',
-          text: expect.stringContaining('Invalid parameters for testAutoExposure')
-        }
+          text: expect.stringContaining('Invalid parameters for testAutoExposure'),
+        },
       ]);
       expect(result.isError).toBe(true);
     });
@@ -406,17 +413,17 @@ describe('MCP Server', () => {
         method: 'tools/call',
         params: {
           name: 'move_file',
-          arguments: 'not an object'
-        }
+          arguments: 'not an object',
+        },
       };
 
       const result = await callToolHandler(request);
-      
+
       expect(result.content).toEqual([
         {
           type: 'text',
-          text: expect.stringContaining('Invalid arguments object')
-        }
+          text: expect.stringContaining('Invalid arguments object'),
+        },
       ]);
       expect(result.isError).toBe(true);
     });
@@ -425,14 +432,16 @@ describe('MCP Server', () => {
   describe('Server Startup', () => {
     it('should start MCP server successfully', async () => {
       await startMcpServer();
-      
+
       expect(mockConnect).toHaveBeenCalledTimes(1);
       expect(mockConsoleError).toHaveBeenCalledWith('markmv MCP server started');
     });
   });
 
   describe('Utility Functions', () => {
-    let callToolHandler: (request: { params: { name: string; arguments?: Record<string, unknown> } }) => Promise<{ content: Array<{ type: string; text: string }> }>;
+    let callToolHandler: (request: {
+      params: { name: string; arguments?: Record<string, unknown> };
+    }) => Promise<{ content: Array<{ type: string; text: string }> }>;
 
     beforeEach(() => {
       vi.clearAllMocks();
@@ -448,13 +457,13 @@ describe('MCP Server', () => {
           name: 'move_file', // snake_case tool name
           arguments: {
             sourcePath: 'source.md',
-            destinationPath: 'dest.md'
-          }
-        }
+            destinationPath: 'dest.md',
+          },
+        },
       };
 
       const result = await callToolHandler(request);
-      
+
       // The handler should successfully convert move_file to moveFile and execute
       expect(result.isError).toBeUndefined();
     });
@@ -467,7 +476,7 @@ describe('MCP Server', () => {
         deletedFiles: [],
         errors: [],
         warnings: [],
-        changes: []
+        changes: [],
       };
 
       const request: CallToolRequest = {
@@ -475,13 +484,13 @@ describe('MCP Server', () => {
         params: {
           name: 'validate_operation',
           arguments: {
-            result: validOperationResult
-          }
-        }
+            result: validOperationResult,
+          },
+        },
       };
 
       const result = await callToolHandler(request);
-      
+
       expect(result.isError).toBeUndefined();
       expect(result.content[0].text).toContain('"valid": true');
     });
@@ -497,13 +506,13 @@ describe('MCP Server', () => {
         params: {
           name: 'validate_operation',
           arguments: {
-            result: invalidOperationResult
-          }
-        }
+            result: invalidOperationResult,
+          },
+        },
       };
 
       const result = await callToolHandler(request);
-      
+
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('Invalid OperationResult structure');
     });

@@ -16,9 +16,9 @@ vi.mock('./index.js', () => ({
       deletedFiles: [],
       errors: [],
       warnings: [],
-      changes: []
-    })
-  }))
+      changes: [],
+    }),
+  })),
 }));
 
 // Mock auto-generated API routes
@@ -33,10 +33,10 @@ vi.mock('./generated/api-routes.js', () => ({
       }),
       description: 'Test endpoint',
       inputSchema: { type: 'object' },
-      outputSchema: { type: 'object' }
-    }
+      outputSchema: { type: 'object' },
+    },
   ],
-  getApiRoutePaths: vi.fn(() => ['/api/test'])
+  getApiRoutePaths: vi.fn(() => ['/api/test']),
 }));
 
 describe('API Server', () => {
@@ -60,13 +60,13 @@ describe('API Server', () => {
   describe('Server Creation', () => {
     it('should create a server and start listening', async () => {
       server = createApiServer(port);
-      
+
       await new Promise<void>((resolve) => {
         server!.on('listening', () => {
           resolve();
         });
       });
-      
+
       expect(server.listening).toBe(true);
       expect(mockConsoleLog).toHaveBeenCalledWith(`markmv API server running on port ${port}`);
       expect(mockConsoleLog).toHaveBeenCalledWith(`Health check: http://localhost:${port}/health`);
@@ -75,15 +75,15 @@ describe('API Server', () => {
 
     it('should use default port 3000 when no port specified', async () => {
       const _defaultPort = 3100 + Math.floor(Math.random() * 100); // Use a different range to avoid conflicts
-      
+
       // Test the port parsing logic directly instead of creating another server
       const originalEnv = process.env.PORT;
       delete process.env.PORT; // Ensure no PORT env var
-      
+
       // Since createApiServer defaults to 3000, we can test this logic without actually starting a server
       const expectedPort = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
       expect(expectedPort).toBe(3000);
-      
+
       // Restore original environment
       if (originalEnv !== undefined) {
         process.env.PORT = originalEnv;
@@ -104,26 +104,28 @@ describe('API Server', () => {
         hostname: 'localhost',
         port: port,
         path: '/health',
-        method: 'GET'
+        method: 'GET',
       };
 
-      const { res, data } = await new Promise<{ res: http.IncomingMessage, data: string }>((resolve, reject) => {
-        const req = http.request(options, (res) => {
-          let data = '';
-          res.on('data', (chunk) => data += chunk);
-          res.on('end', () => {
-            resolve({ res, data });
+      const { res, data } = await new Promise<{ res: http.IncomingMessage; data: string }>(
+        (resolve, reject) => {
+          const req = http.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => (data += chunk));
+            res.on('end', () => {
+              resolve({ res, data });
+            });
           });
-        });
 
-        req.on('error', reject);
-        req.end();
-      });
+          req.on('error', reject);
+          req.end();
+        }
+      );
 
       expect(res.statusCode).toBe(200);
       expect(res.headers['content-type']).toBe('application/json');
       expect(res.headers['access-control-allow-origin']).toBe('*');
-      
+
       const response = JSON.parse(data);
       expect(response.success).toBe(true);
       expect(response.data.status).toBe('ok');
@@ -147,7 +149,7 @@ describe('API Server', () => {
         hostname: 'localhost',
         port: port,
         path: '/any-path',
-        method: 'OPTIONS'
+        method: 'OPTIONS',
       };
 
       const res = await new Promise<http.IncomingMessage>((resolve, reject) => {
@@ -170,7 +172,7 @@ describe('API Server', () => {
         hostname: 'localhost',
         port: port,
         path: '/health',
-        method: 'GET'
+        method: 'GET',
       };
 
       const res = await new Promise<http.IncomingMessage>((resolve, reject) => {
@@ -198,7 +200,7 @@ describe('API Server', () => {
 
     it('should handle auto-generated API routes', async () => {
       const postData = JSON.stringify({ test: 'data' });
-      
+
       const options = {
         hostname: 'localhost',
         port: port,
@@ -206,27 +208,29 @@ describe('API Server', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(postData)
-        }
+          'Content-Length': Buffer.byteLength(postData),
+        },
       };
 
-      const { res, data } = await new Promise<{ res: http.IncomingMessage, data: string }>((resolve, reject) => {
-        const req = http.request(options, (res) => {
-          let data = '';
-          res.on('data', (chunk) => data += chunk);
-          res.on('end', () => {
-            resolve({ res, data });
+      const { res, data } = await new Promise<{ res: http.IncomingMessage; data: string }>(
+        (resolve, reject) => {
+          const req = http.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => (data += chunk));
+            res.on('end', () => {
+              resolve({ res, data });
+            });
           });
-        });
 
-        req.on('error', reject);
-        req.write(postData);
-        req.end();
-      });
+          req.on('error', reject);
+          req.write(postData);
+          req.end();
+        }
+      );
 
       expect(res.statusCode).toBe(200);
       expect(res.headers['content-type']).toBe('application/json');
-      
+
       const response = JSON.parse(data);
       expect(response.success).toBe(true);
       expect(response.data).toBe('test response');
@@ -246,32 +250,34 @@ describe('API Server', () => {
         hostname: 'localhost',
         port: port,
         path: '/unknown-route',
-        method: 'GET'
+        method: 'GET',
       };
 
-      const { res, data } = await new Promise<{ res: http.IncomingMessage, data: string }>((resolve, reject) => {
-        const req = http.request(options, (res) => {
-          let data = '';
-          res.on('data', (chunk) => data += chunk);
-          res.on('end', () => {
-            resolve({ res, data });
+      const { res, data } = await new Promise<{ res: http.IncomingMessage; data: string }>(
+        (resolve, reject) => {
+          const req = http.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => (data += chunk));
+            res.on('end', () => {
+              resolve({ res, data });
+            });
           });
-        });
 
-        req.on('error', reject);
-        req.end();
-      });
+          req.on('error', reject);
+          req.end();
+        }
+      );
 
       expect(res.statusCode).toBe(404);
       expect(res.headers['content-type']).toBe('application/json');
-      
+
       const response = JSON.parse(data);
       expect(response.error).toBe('NotFound');
       expect(response.message).toBe('Route GET /unknown-route not found');
       expect(response.statusCode).toBe(404);
-      expect(response.details).toEqual(expect.arrayContaining([
-        expect.stringContaining('Available routes:')
-      ]));
+      expect(response.details).toEqual(
+        expect.arrayContaining([expect.stringContaining('Available routes:')])
+      );
     });
 
     it('should handle internal server errors gracefully', async () => {
@@ -284,23 +290,25 @@ describe('API Server', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Content-Length': 2
-        }
+          'Content-Length': 2,
+        },
       };
 
-      const { res, data } = await new Promise<{ res: http.IncomingMessage, data: string }>((resolve, reject) => {
-        const req = http.request(options, (res) => {
-          let data = '';
-          res.on('data', (chunk) => data += chunk);
-          res.on('end', () => {
-            resolve({ res, data });
+      const { res, data } = await new Promise<{ res: http.IncomingMessage; data: string }>(
+        (resolve, reject) => {
+          const req = http.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => (data += chunk));
+            res.on('end', () => {
+              resolve({ res, data });
+            });
           });
-        });
 
-        req.on('error', reject);
-        req.write('{}');
-        req.end();
-      });
+          req.on('error', reject);
+          req.write('{}');
+          req.end();
+        }
+      );
 
       // The server should gracefully handle unknown routes
       expect(res.statusCode).toBe(404);
@@ -322,31 +330,33 @@ describe('API Server', () => {
         hostname: 'localhost',
         port: port,
         path: '/health',
-        method: 'GET'
+        method: 'GET',
       };
 
-      const { data } = await new Promise<{ res: http.IncomingMessage, data: string }>((resolve, reject) => {
-        const req = http.request(options, (res) => {
-          let data = '';
-          res.on('data', (chunk) => data += chunk);
-          res.on('end', () => {
-            resolve({ res, data });
+      const { data } = await new Promise<{ res: http.IncomingMessage; data: string }>(
+        (resolve, reject) => {
+          const req = http.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => (data += chunk));
+            res.on('end', () => {
+              resolve({ res, data });
+            });
           });
-        });
 
-        req.on('error', reject);
-        req.end();
-      });
+          req.on('error', reject);
+          req.end();
+        }
+      );
 
       const response = JSON.parse(data);
-      
+
       // Verify the response structure matches ApiResponse type
       expect(response).toHaveProperty('success');
       expect(response).toHaveProperty('timestamp');
       expect(response).toHaveProperty('data');
       expect(typeof response.success).toBe('boolean');
       expect(typeof response.timestamp).toBe('string');
-      
+
       // Verify timestamp is valid ISO string
       expect(() => new Date(response.timestamp)).not.toThrow();
     });
@@ -356,16 +366,16 @@ describe('API Server', () => {
     it('should accept custom port configuration', async () => {
       const customPort = 4001;
       const customServer = createApiServer(customPort);
-      
+
       await new Promise<void>((resolve) => {
         customServer.on('listening', () => {
           resolve();
         });
       });
-      
+
       const address = customServer.address() as { port: number; family: string; address: string };
       expect(address.port).toBe(customPort);
-      
+
       await new Promise<void>((resolve) => {
         customServer.close(() => resolve());
       });
@@ -375,12 +385,12 @@ describe('API Server', () => {
       // This tests the startApiServer function's port parsing logic
       const originalEnv = process.env.PORT;
       process.env.PORT = '5000';
-      
+
       // Since startApiServer calls createApiServer, we can't easily test it
       // without actually starting a server, so we'll just verify the logic
       const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
       expect(port).toBe(5000);
-      
+
       // Restore original environment
       if (originalEnv !== undefined) {
         process.env.PORT = originalEnv;
@@ -403,21 +413,23 @@ describe('API Server', () => {
         hostname: 'localhost',
         port: port,
         path: '/health',
-        method: 'POST' // Wrong method for health endpoint
+        method: 'POST', // Wrong method for health endpoint
       };
 
-      const { res, data } = await new Promise<{ res: http.IncomingMessage, data: string }>((resolve, reject) => {
-        const req = http.request(options, (res) => {
-          let data = '';
-          res.on('data', (chunk) => data += chunk);
-          res.on('end', () => {
-            resolve({ res, data });
+      const { res, data } = await new Promise<{ res: http.IncomingMessage; data: string }>(
+        (resolve, reject) => {
+          const req = http.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => (data += chunk));
+            res.on('end', () => {
+              resolve({ res, data });
+            });
           });
-        });
 
-        req.on('error', reject);
-        req.end();
-      });
+          req.on('error', reject);
+          req.end();
+        }
+      );
 
       expect(res.statusCode).toBe(404);
       const response = JSON.parse(data);
