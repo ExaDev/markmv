@@ -1,0 +1,517 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "markmv API",
+    "description": "Auto-generated API specification for markmv methods",
+    "version": "1.0.0",
+    "contact": {
+      "name": "markmv",
+      "url": "https://github.com/ExaDev/markmv"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Development server"
+    }
+  ],
+  "paths": {
+    "/api/move-file": {
+      "post": {
+        "summary": "Move a single markdown file and update all references",
+        "tags": [
+          "Core API"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/moveFileInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/moveFileOutput"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/move-files": {
+      "post": {
+        "summary": "Move multiple markdown files and update all references",
+        "tags": [
+          "Core API"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/moveFilesInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/moveFilesOutput"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/validate-operation": {
+      "post": {
+        "summary": "Validate the result of a previous operation for broken links",
+        "tags": [
+          "Core API"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/validateOperationInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/validateOperationOutput"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "moveFileInput": {
+        "type": "object",
+        "properties": {
+          "sourcePath": {
+            "type": "string",
+            "description": "Source file path"
+          },
+          "destinationPath": {
+            "type": "string",
+            "description": "Destination file path"
+          },
+          "options": {
+            "type": "object",
+            "properties": {
+              "dryRun": {
+                "type": "boolean",
+                "description": "Show changes without executing"
+              },
+              "verbose": {
+                "type": "boolean",
+                "description": "Show detailed output"
+              },
+              "force": {
+                "type": "boolean",
+                "description": "Force operation even if conflicts exist"
+              },
+              "createDirectories": {
+                "type": "boolean",
+                "description": "Create missing directories"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "sourcePath",
+          "destinationPath"
+        ],
+        "additionalProperties": false
+      },
+      "moveFileOutput": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "modifiedFiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdFiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "deletedFiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": [
+          "success",
+          "modifiedFiles",
+          "createdFiles",
+          "deletedFiles",
+          "errors",
+          "warnings",
+          "changes"
+        ],
+        "additionalProperties": false
+      },
+      "moveFilesInput": {
+        "type": "object",
+        "properties": {
+          "moves": {
+            "type": "array",
+            "description": "Array of source/destination pairs",
+            "items": {
+              "type": "object",
+              "properties": {
+                "source": {
+                  "type": "string"
+                },
+                "destination": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "source",
+                "destination"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "options": {
+            "type": "object",
+            "properties": {
+              "dryRun": {
+                "type": "boolean",
+                "description": "Show changes without executing"
+              },
+              "verbose": {
+                "type": "boolean",
+                "description": "Show detailed output"
+              },
+              "force": {
+                "type": "boolean",
+                "description": "Force operation even if conflicts exist"
+              },
+              "createDirectories": {
+                "type": "boolean",
+                "description": "Create missing directories"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "moves"
+        ],
+        "additionalProperties": false
+      },
+      "moveFilesOutput": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "modifiedFiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdFiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "deletedFiles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": [
+          "success",
+          "modifiedFiles",
+          "createdFiles",
+          "deletedFiles",
+          "errors",
+          "warnings",
+          "changes"
+        ],
+        "additionalProperties": false
+      },
+      "validateOperationInput": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "object",
+            "description": "Operation result to validate",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "modifiedFiles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "createdFiles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "deletedFiles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "errors": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "warnings": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "changes": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
+            },
+            "required": [
+              "success",
+              "modifiedFiles",
+              "createdFiles",
+              "deletedFiles",
+              "errors",
+              "warnings",
+              "changes"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "additionalProperties": false
+      },
+      "validateOperationOutput": {
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean"
+          },
+          "brokenLinks": {
+            "type": "number"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "valid",
+          "brokenLinks",
+          "errors"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

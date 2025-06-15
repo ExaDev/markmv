@@ -1,0 +1,328 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "markmv API Schemas",
+  "description": "Auto-generated schemas for markmv methods with @group annotations",
+  "definitions": {
+    "moveFile": {
+      "title": "moveFile",
+      "description": "Move a single markdown file and update all references",
+      "type": "object",
+      "properties": {
+        "input": {
+          "type": "object",
+          "properties": {
+            "sourcePath": {
+              "type": "string",
+              "description": "Source file path"
+            },
+            "destinationPath": {
+              "type": "string",
+              "description": "Destination file path"
+            },
+            "options": {
+              "type": "object",
+              "properties": {
+                "dryRun": {
+                  "type": "boolean",
+                  "description": "Show changes without executing"
+                },
+                "verbose": {
+                  "type": "boolean",
+                  "description": "Show detailed output"
+                },
+                "force": {
+                  "type": "boolean",
+                  "description": "Force operation even if conflicts exist"
+                },
+                "createDirectories": {
+                  "type": "boolean",
+                  "description": "Create missing directories"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "sourcePath",
+            "destinationPath"
+          ],
+          "additionalProperties": false
+        },
+        "output": {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "boolean"
+            },
+            "modifiedFiles": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "createdFiles": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "deletedFiles": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "warnings": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "changes": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
+          },
+          "required": [
+            "success",
+            "modifiedFiles",
+            "createdFiles",
+            "deletedFiles",
+            "errors",
+            "warnings",
+            "changes"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "x-group": "Core API",
+      "x-examples": [
+        "markmv move old.md new.md",
+        "markmv move docs/old.md archive/renamed.md --dry-run"
+      ]
+    },
+    "moveFiles": {
+      "title": "moveFiles",
+      "description": "Move multiple markdown files and update all references",
+      "type": "object",
+      "properties": {
+        "input": {
+          "type": "object",
+          "properties": {
+            "moves": {
+              "type": "array",
+              "description": "Array of source/destination pairs",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "source": {
+                    "type": "string"
+                  },
+                  "destination": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "source",
+                  "destination"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "options": {
+              "type": "object",
+              "properties": {
+                "dryRun": {
+                  "type": "boolean",
+                  "description": "Show changes without executing"
+                },
+                "verbose": {
+                  "type": "boolean",
+                  "description": "Show detailed output"
+                },
+                "force": {
+                  "type": "boolean",
+                  "description": "Force operation even if conflicts exist"
+                },
+                "createDirectories": {
+                  "type": "boolean",
+                  "description": "Create missing directories"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "moves"
+          ],
+          "additionalProperties": false
+        },
+        "output": {
+          "type": "object",
+          "properties": {
+            "success": {
+              "type": "boolean"
+            },
+            "modifiedFiles": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "createdFiles": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "deletedFiles": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "warnings": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "changes": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
+          },
+          "required": [
+            "success",
+            "modifiedFiles",
+            "createdFiles",
+            "deletedFiles",
+            "errors",
+            "warnings",
+            "changes"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "x-group": "Core API",
+      "x-examples": [
+        "markmv move-files --batch file1.md:new1.md file2.md:new2.md"
+      ]
+    },
+    "validateOperation": {
+      "title": "validateOperation",
+      "description": "Validate the result of a previous operation for broken links",
+      "type": "object",
+      "properties": {
+        "input": {
+          "type": "object",
+          "properties": {
+            "result": {
+              "type": "object",
+              "description": "Operation result to validate",
+              "properties": {
+                "success": {
+                  "type": "boolean"
+                },
+                "modifiedFiles": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "createdFiles": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "deletedFiles": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "errors": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "warnings": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "changes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              },
+              "required": [
+                "success",
+                "modifiedFiles",
+                "createdFiles",
+                "deletedFiles",
+                "errors",
+                "warnings",
+                "changes"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "result"
+          ],
+          "additionalProperties": false
+        },
+        "output": {
+          "type": "object",
+          "properties": {
+            "valid": {
+              "type": "boolean"
+            },
+            "brokenLinks": {
+              "type": "number"
+            },
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "valid",
+            "brokenLinks",
+            "errors"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "x-group": "Core API",
+      "x-examples": []
+    }
+  }
+}
