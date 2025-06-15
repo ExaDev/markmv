@@ -212,6 +212,33 @@ function extractMethodsFromFileOperations() {
         additionalProperties: false
       },
       examples: []
+    },
+    {
+      name: 'testAutoExposure',
+      group: 'Testing',
+      description: 'Test function to demonstrate auto-exposure pattern',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          input: { 
+            type: 'string', 
+            description: 'The input message to echo' 
+          }
+        },
+        required: ['input'],
+        additionalProperties: false
+      },
+      outputSchema: {
+        type: 'object',
+        properties: {
+          message: { type: 'string' },
+          timestamp: { type: 'string' },
+          success: { type: 'boolean' }
+        },
+        required: ['message', 'timestamp', 'success'],
+        additionalProperties: false
+      },
+      examples: ['markmv test "Hello World"']
     }
   ];
 
@@ -420,7 +447,7 @@ ${Object.keys(schemas.definitions).map(methodName => `
 export async function create${methodName}Handler(
   req: IncomingMessage, 
   res: ServerResponse,
-  markmvInstance: FileOperations
+  ${methodName === 'testAutoExposure' ? '_markmvInstance: FileOperations' : 'markmvInstance: FileOperations'}
 ): Promise<void> {
   try {
     // Parse request body
@@ -483,6 +510,15 @@ ${methodName === 'moveFile' ? `
       }
     } else {
       throw new Error('Invalid parameters for validateOperation');
+    }` : methodName === 'testAutoExposure' ? `
+    const input = bodyObj.input;
+    
+    if (typeof input === 'string') {
+      // Import and call the standalone function
+      const { testAutoExposure } = await import('../index.js');
+      result = await testAutoExposure(input);
+    } else {
+      throw new Error('Invalid parameters for testAutoExposure');
     }` : `
     throw new Error('Method ${methodName} not implemented');`}
     
