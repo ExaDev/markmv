@@ -1,3 +1,9 @@
+## [1.22.1](https://github.com/ExaDev/markmv/compare/v1.22.0...v1.22.1) (2025-06-15)
+
+### Bug Fixes
+
+* correct npx usage patterns for API and MCP servers in documentation ([d6a7585](https://github.com/ExaDev/markmv/commit/d6a758595a2cedaa8ef02f71acc00c54b16023d2))
+
 ## [1.22.0](https://github.com/ExaDev/markmv/compare/v1.21.1...v1.22.0) (2025-06-15)
 
 ### Features
