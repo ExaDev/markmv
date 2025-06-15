@@ -38,7 +38,7 @@
     "docs:coverage": "node scripts/check-docs-coverage.js",
     "docs:markdown": "typedoc --options typedoc.markdown.json",
     "docs:readme": "npm run docs:markdown && node scripts/generate-readme-api.js",
-    "docs:readme-generate": "npm run docs:markdown && node scripts/generate-complete-readme.js",
+    "docs:readme-generate": "npm run docs:markdown && node scripts/copy-typedoc-readme.js",
     "docs:coverage-report": "node scripts/check-docs-coverage.js > docs-coverage.txt",
     "docs:coverage-strict": "CI_STRICT_DOCS=true node scripts/check-docs-coverage.js",
     "docs:coverage-json": "OUTPUT_JSON=true node scripts/check-docs-coverage.js",
