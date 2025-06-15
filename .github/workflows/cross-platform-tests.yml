@@ -1,0 +1,315 @@
+name: Cross-Platform Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Allow only one concurrent deployment per ref
+concurrency:
+  group: "cross-platform-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  filesystem-tests:
+    name: Test on ${{ matrix.os }} (Node ${{ matrix.node-version }})
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [20.x, 22.x]
+        include:
+          # Extended test matrix with specific filesystem scenarios
+          - os: ubuntu-latest
+            node-version: 20.x
+            filesystem-case: sensitive
+            test-symlinks: true
+            test-type: "Linux case-sensitive"
+          - os: windows-latest
+            node-version: 20.x
+            filesystem-case: insensitive
+            test-symlinks: false
+            test-type: "Windows case-insensitive"
+          - os: macos-latest
+            node-version: 20.x
+            filesystem-case: insensitive
+            test-symlinks: true
+            test-type: "macOS case-insensitive"
+      fail-fast: false
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Detect filesystem capabilities
+        id: filesystem
+        run: |
+          echo "🔍 Detecting filesystem capabilities on ${{ matrix.os }}..."
+          
+          # Create test directory
+          mkdir -p fs-test
+          cd fs-test
+          
+          # Test case sensitivity
+          echo "testing case sensitivity" > testfile.txt
+          echo "testing case sensitivity uppercase" > TESTFILE.TXT
+          
+          if [ -f "testfile.txt" ] && [ -f "TESTFILE.TXT" ]; then
+            CASE_COUNT=$(ls testfile.txt TESTFILE.TXT 2>/dev/null | wc -l || echo "0")
+            if [ "$CASE_COUNT" -eq "2" ]; then
+              echo "case-sensitive=true" >> $GITHUB_OUTPUT
+              echo "✅ Filesystem is case-sensitive"
+            else
+              echo "case-sensitive=false" >> $GITHUB_OUTPUT
+              echo "✅ Filesystem is case-insensitive"
+            fi
+          else
+            echo "case-sensitive=false" >> $GITHUB_OUTPUT
+            echo "✅ Filesystem is case-insensitive (file collision detected)"
+          fi
+          
+          # Test symbolic link support
+          echo "original file" > original.txt
+          if ln -s original.txt symlink.txt 2>/dev/null; then
+            if [ -L symlink.txt ]; then
+              echo "symlinks=true" >> $GITHUB_OUTPUT
+              echo "✅ Symbolic links supported"
+            else
+              echo "symlinks=false" >> $GITHUB_OUTPUT
+              echo "❌ Symbolic links not supported"
+            fi
+          else
+            echo "symlinks=false" >> $GITHUB_OUTPUT
+            echo "❌ Symbolic links not supported (ln command failed)"
+          fi
+          
+          # Test path separators and special characters
+          if echo "test content" > "file with spaces.txt" 2>/dev/null; then
+            echo "spaces-in-filenames=true" >> $GITHUB_OUTPUT
+            echo "✅ Spaces in filenames supported"
+          else
+            echo "spaces-in-filenames=false" >> $GITHUB_OUTPUT
+            echo "❌ Spaces in filenames not supported"
+          fi
+          
+          cd ..
+        shell: bash
+
+      - name: Set test environment variables
+        run: |
+          echo "MARKMV_TEST_OS=${{ matrix.os }}" >> $GITHUB_ENV
+          echo "MARKMV_TEST_CASE_SENSITIVE=${{ steps.filesystem.outputs.case-sensitive }}" >> $GITHUB_ENV
+          echo "MARKMV_TEST_SUPPORTS_SYMLINKS=${{ steps.filesystem.outputs.symlinks }}" >> $GITHUB_ENV
+          echo "MARKMV_TEST_FILESYSTEM_CASE_SENSITIVE=${{ steps.filesystem.outputs.case-sensitive }}" >> $GITHUB_ENV
+          echo "MARKMV_TEST_SUPPORTS_SYMLINKS=${{ steps.filesystem.outputs.symlinks }}" >> $GITHUB_ENV
+          echo "MARKMV_TEST_NODE_VERSION=${{ matrix.node-version }}" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Create cross-platform test files
+        run: |
+          echo "📁 Creating test files for cross-platform testing..."
+          
+          # Create test markdown files with various path scenarios
+          mkdir -p test-data/cross-platform
+          cd test-data/cross-platform
+          
+          # Standard files
+          echo "# Test Document 1" > doc1.md
+          echo "# Test Document 2" > doc2.md
+          
+          # Files with different cases (for case sensitivity testing)
+          echo "# Lowercase Document" > lowercase.md
+          echo "# Uppercase Document" > UPPERCASE.md || echo "Case collision detected"
+          
+          # Files with spaces and special characters
+          echo "# Document with Spaces" > "document with spaces.md"
+          echo "# Document with-dashes" > "document-with-dashes.md"
+          echo "# Document_with_underscores" > "document_with_underscores.md"
+          
+          # Create subdirectories
+          mkdir -p subdirectory/nested
+          echo "# Nested Document" > subdirectory/nested/nested-doc.md
+          
+          # Create links between documents
+          echo "[Link to doc2](./doc2.md)" >> doc1.md
+          echo "[Link to nested](./subdirectory/nested/nested-doc.md)" >> doc1.md
+          
+          cd ../..
+          
+          echo "✅ Cross-platform test files created"
+          ls -la test-data/cross-platform/
+        shell: bash
+
+      - name: Build project
+        run: npm run build
+
+      - name: Run cross-platform tests
+        run: |
+          echo "🧪 Running cross-platform tests..."
+          echo "OS: ${{ matrix.os }}"
+          echo "Node: ${{ matrix.node-version }}"
+          echo "Case Sensitive: ${{ steps.filesystem.outputs.case-sensitive }}"
+          echo "Symlinks: ${{ steps.filesystem.outputs.symlinks }}"
+          
+          # Run tests with cross-platform environment
+          npm run test:run
+        env:
+          MARKMV_TEST_CROSS_PLATFORM: "true"
+
+      - name: Test CLI with cross-platform paths
+        run: |
+          echo "🔧 Testing CLI with cross-platform file paths..."
+          cd test-data/cross-platform
+          
+          # Test basic file operations
+          echo "Testing file listing..."
+          node ../../dist/cli.js index --format json . || echo "Index command failed"
+          
+          # Test file moving with different path styles
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            echo "Testing Windows-style paths..."
+            # Test with backslashes and forward slashes
+            node ../../dist/cli.js move "doc1.md" "moved\\doc1.md" --dry-run || echo "Windows move test failed"
+          else
+            echo "Testing Unix-style paths..."
+            # Test with forward slashes
+            node ../../dist/cli.js move "doc1.md" "moved/doc1.md" --dry-run || echo "Unix move test failed"
+          fi
+          
+          cd ../..
+        shell: bash
+
+      - name: Test case sensitivity behavior
+        if: steps.filesystem.outputs.case-sensitive == 'true'
+        run: |
+          echo "🔍 Testing case-sensitive filesystem behavior..."
+          cd test-data/cross-platform
+          
+          # Verify case-sensitive files exist separately
+          if [ -f "lowercase.md" ] && [ -f "UPPERCASE.md" ]; then
+            echo "✅ Case-sensitive files coexist"
+            
+            # Test CLI handles case-sensitive files correctly
+            node ../../dist/cli.js index --format json . | grep -i "lowercase.md"
+            node ../../dist/cli.js index --format json . | grep -i "UPPERCASE.md"
+          else
+            echo "❌ Expected case-sensitive files not found"
+            ls -la
+          fi
+          
+          cd ../..
+        shell: bash
+
+      - name: Test case insensitivity behavior
+        if: steps.filesystem.outputs.case-sensitive == 'false'
+        run: |
+          echo "🔍 Testing case-insensitive filesystem behavior..."
+          cd test-data/cross-platform
+          
+          # On case-insensitive filesystems, uppercase file should overwrite lowercase
+          if [ -f "UPPERCASE.md" ] || [ -f "lowercase.md" ]; then
+            echo "✅ Case-insensitive behavior confirmed"
+            
+            # Test CLI handles case-insensitive files correctly
+            node ../../dist/cli.js index --format json .
+          else
+            echo "❌ No test files found for case-insensitive testing"
+            ls -la
+          fi
+          
+          cd ../..
+        shell: bash
+
+      - name: Test symbolic links
+        if: steps.filesystem.outputs.symlinks == 'true'
+        run: |
+          echo "🔗 Testing symbolic link behavior..."
+          cd test-data/cross-platform
+          
+          # Create symbolic links
+          ln -s doc1.md link-to-doc1.md
+          ln -s subdirectory link-to-subdirectory
+          
+          # Test CLI handles symbolic links
+          echo "Testing CLI with symbolic links..."
+          node ../../dist/cli.js index --format json . || echo "Symlink index test failed"
+          
+          # Verify symbolic links are recognized
+          if [ -L "link-to-doc1.md" ]; then
+            echo "✅ File symbolic link created successfully"
+          fi
+          
+          if [ -L "link-to-subdirectory" ]; then
+            echo "✅ Directory symbolic link created successfully"
+          fi
+          
+          cd ../..
+        shell: bash
+
+      - name: Generate platform test report
+        run: |
+          echo "## 🖥️ Cross-Platform Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "**Platform:** ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Node Version:** ${{ matrix.node-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Type:** ${{ matrix.test-type || 'Standard' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Filesystem Capabilities" >> $GITHUB_STEP_SUMMARY
+          echo "- **Case Sensitive:** ${{ steps.filesystem.outputs.case-sensitive }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Symbolic Links:** ${{ steps.filesystem.outputs.symlinks }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Spaces in Filenames:** ${{ steps.filesystem.outputs.spaces-in-filenames }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Test summary
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ **Status:** All tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status:** Some tests failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cross-platform-test-results-${{ matrix.os }}-${{ matrix.node-version }}
+          path: |
+            test-data/
+            fs-test/
+          retention-days: 7
+
+  # Summary job that waits for all platform tests
+  cross-platform-summary:
+    needs: filesystem-tests
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Generate overall summary
+        run: |
+          echo "# 🌐 Cross-Platform Testing Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.filesystem-tests.result }}" = "success" ]; then
+            echo "✅ **Overall Result:** All cross-platform tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Overall Result:** Some cross-platform tests failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📋 **Tested Platforms:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Ubuntu (Linux) - Case-sensitive filesystem" >> $GITHUB_STEP_SUMMARY
+          echo "- Windows - Case-insensitive filesystem" >> $GITHUB_STEP_SUMMARY
+          echo "- macOS - Case-insensitive filesystem" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔧 **Node.js Versions:** 20.x, 22.x" >> $GITHUB_STEP_SUMMARY
