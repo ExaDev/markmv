@@ -246,13 +246,15 @@ export function getTempDirPatterns(): string[] {
 export const PLATFORM_TEST_PATHS = {
   windows: {
     absolute: ['C:\\Users\\test\\file.txt', 'D:\\projects\\readme.md'],
-    relative: ['..\\parent\\file.txt', 'subfolder\\document.md'],
+    relative: ['subfolder\\document.md', 'nested\\dir\\file.txt'],
     invalid: ['C:', 'C:\\con', 'C:\\prn', 'C:\\aux'],
+    traversal: ['..\\parent\\file.txt'], // Separate category for path traversal tests
   },
   unix: {
     absolute: ['/home/test/file.txt', '/usr/local/bin/script'],
-    relative: ['../parent/file.txt', 'subfolder/document.md'],
-    invalid: ['/dev/null/../file', ''],
+    relative: ['subfolder/document.md', 'nested/dir/file.txt'],
+    invalid: ['', '\0path'],
+    traversal: ['../parent/file.txt'], // Separate category for path traversal tests
   },
 };
 
