@@ -100,6 +100,10 @@ jobs:
             git push
           fi
         
+      # Generate required files before quality checks
+      - name: Generate schemas (required for TypeScript compilation)
+        run: npm run generate:schemas
+        
       # Quality checks (must pass for all further steps)
       - name: Run lint (fast fail)
         run: npm run lint

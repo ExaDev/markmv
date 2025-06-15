@@ -62,9 +62,11 @@ describe('API Server', () => {
       server = createApiServer(port);
 
       await new Promise<void>((resolve) => {
-        server!.on('listening', () => {
-          resolve();
-        });
+        if (server) {
+          server.on('listening', () => {
+            resolve();
+          });
+        }
       });
 
       expect(server.listening).toBe(true);
@@ -95,7 +97,9 @@ describe('API Server', () => {
     beforeEach(async () => {
       server = createApiServer(port);
       await new Promise<void>((resolve) => {
-        server!.on('listening', () => resolve());
+        if (server) {
+          server.on('listening', () => resolve());
+        }
       });
     });
 
@@ -140,7 +144,9 @@ describe('API Server', () => {
     beforeEach(async () => {
       server = createApiServer(port);
       await new Promise<void>((resolve) => {
-        server!.on('listening', () => resolve());
+        if (server) {
+          server.on('listening', () => resolve());
+        }
       });
     });
 
@@ -194,7 +200,9 @@ describe('API Server', () => {
     beforeEach(async () => {
       server = createApiServer(port);
       await new Promise<void>((resolve) => {
-        server!.on('listening', () => resolve());
+        if (server) {
+          server.on('listening', () => resolve());
+        }
       });
     });
 
@@ -241,7 +249,9 @@ describe('API Server', () => {
     beforeEach(async () => {
       server = createApiServer(port);
       await new Promise<void>((resolve) => {
-        server!.on('listening', () => resolve());
+        if (server) {
+          server.on('listening', () => resolve());
+        }
       });
     });
 
@@ -321,7 +331,9 @@ describe('API Server', () => {
     beforeEach(async () => {
       server = createApiServer(port);
       await new Promise<void>((resolve) => {
-        server!.on('listening', () => resolve());
+        if (server) {
+          server.on('listening', () => resolve());
+        }
       });
     });
 
@@ -404,7 +416,9 @@ describe('API Server', () => {
     beforeEach(async () => {
       server = createApiServer(port);
       await new Promise<void>((resolve) => {
-        server!.on('listening', () => resolve());
+        if (server) {
+          server.on('listening', () => resolve());
+        }
       });
     });
 
