@@ -1,3 +1,14 @@
+## [1.24.0](https://github.com/ExaDev/markmv/compare/v1.23.0...v1.24.0) (2025-06-15)
+
+### Features
+
+* **docs:** add typedoc-material-theme and docs:view script ([36a6b1a](https://github.com/ExaDev/markmv/commit/36a6b1a4bdf0a9d4f68d947425a9340161e2dfc8))
+* **docs:** configure typedoc-material-theme plugin ([73f18c0](https://github.com/ExaDev/markmv/commit/73f18c0670b295621e50c03953124f9640431666))
+
+### Code Refactoring
+
+* **docs:** remove custom CSS overrides ([53ae8b3](https://github.com/ExaDev/markmv/commit/53ae8b3b94a932f6f4ef41e366ca0242ee46bd13))
+
 ## [1.23.0](https://github.com/ExaDev/markmv/compare/v1.22.1...v1.23.0) (2025-06-15)
 
 ### Features
