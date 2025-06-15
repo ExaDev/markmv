@@ -1,3 +1,9 @@
+## [1.21.1](https://github.com/ExaDev/markmv/compare/v1.21.0...v1.21.1) (2025-06-15)
+
+### Bug Fixes
+
+* resolve semantic-release template error in GitHub successComment ([4172989](https://github.com/ExaDev/markmv/commit/4172989515bef1e76899c168f3e0be9ab19b0e9d))
+
 ## [1.21.0](https://github.com/ExaDev/markmv/compare/v1.20.3...v1.21.0) (2025-06-15)
 
 ### Features
