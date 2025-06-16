@@ -80,6 +80,7 @@ export {
 // Command functions for programmatic access
 export { convertCommand } from './commands/convert.js';
 export { indexCommand } from './commands/index.js';
+export { validateCommand, validateLinks } from './commands/validate.js';
 
 // Type definitions
 export type {
