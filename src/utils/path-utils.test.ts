@@ -36,7 +36,9 @@ describe('PathUtils', () => {
   describe('makeRelative', () => {
     it('should create relative path between directories', () => {
       const result = PathUtils.makeRelative('/project/docs/file.md', '/project');
-      expect(result).toBe('docs/file.md');
+      // Normalize path separators for cross-platform compatibility
+      const normalizedResult = result.replace(/\\/g, '/');
+      expect(normalizedResult).toBe('docs/file.md');
     });
 
     it('should create relative path for sibling files', () => {
@@ -52,7 +54,9 @@ describe('PathUtils', () => {
         '/project/docs/source.md',
         '/project/moved/source.md'
       );
-      expect(result).toBe('../docs/target.md');
+      // Normalize path separators for cross-platform compatibility
+      const normalizedResult = result.replace(/\\/g, '/');
+      expect(normalizedResult).toBe('../docs/target.md');
     });
 
     it('should not change absolute paths', () => {
@@ -81,7 +85,9 @@ describe('PathUtils', () => {
         '/project/docs/source.md',
         '/project/moved/source.md'
       );
-      expect(result).toBe('../docs/config.md');
+      // Normalize path separators for cross-platform compatibility
+      const normalizedResult = result.replace(/\\/g, '/');
+      expect(normalizedResult).toBe('../docs/config.md');
     });
 
     it('should preserve absolute Claude import paths', () => {
@@ -131,12 +137,16 @@ describe('PathUtils', () => {
     it('should find common base directory', () => {
       const paths = ['/project/docs/file1.md', '/project/docs/file2.md', '/project/src/file3.md'];
       const result = PathUtils.findCommonBase(paths);
-      expect(result).toBe('/project');
+      // Normalize path separators for cross-platform compatibility
+      const normalizedResult = result.replace(/\\/g, '/');
+      expect(normalizedResult).toBe('/project');
     });
 
     it('should handle single path', () => {
       const result = PathUtils.findCommonBase(['/project/docs/file.md']);
-      expect(result).toBe('/project/docs');
+      // Normalize path separators for cross-platform compatibility
+      const normalizedResult = result.replace(/\\/g, '/');
+      expect(normalizedResult).toBe('/project/docs');
     });
 
     it('should handle empty array', () => {
