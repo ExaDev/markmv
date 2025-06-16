@@ -7,6 +7,7 @@ import { joinCommand } from './commands/join.js';
 import { mergeCommand } from './commands/merge.js';
 import { moveCommand } from './commands/move.js';
 import { splitCommand } from './commands/split.js';
+import { validateCommand } from './commands/validate.js';
 
 const program = new Command();
 
@@ -124,5 +125,47 @@ program
   .option('-v, --verbose', 'Show detailed output')
   .option('--json', 'Output results in JSON format')
   .action(indexCommand);
+
+program
+  .command('validate')
+  .description('Find broken links in markdown files')
+  .argument('<files...>', 'Markdown files to validate (supports globs like *.md, **/*.md)')
+  .option(
+    '--link-types <types>',
+    'Comma-separated link types to check: internal,external,anchor,image,reference,claude-import'
+  )
+  .option('--check-external', 'Enable external HTTP/HTTPS link validation', false)
+  .option('--external-timeout <ms>', 'Timeout for external link validation (ms)', parseInt, 5000)
+  .option('--strict-internal', 'Treat missing internal files as errors', true)
+  .option('--check-claude-imports', 'Validate Claude import paths', true)
+  .option('--check-circular', 'Check for circular references in file dependencies', false)
+  .option('--max-depth <number>', 'Maximum depth to traverse subdirectories', parseInt)
+  .option('--only-broken', 'Show only broken links, not all validation results', true)
+  .option('--group-by <method>', 'Group results by: file|type', 'file')
+  .option('--include-context', 'Include line numbers and context in output', false)
+  .option('-v, --verbose', 'Show detailed output with processing information')
+  .option('--json', 'Output results in JSON format')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ markmv validate docs/**/*.md --check-external --verbose
+  $ markmv validate README.md --link-types internal,image --include-context
+  $ markmv validate **/*.md --group-by type --only-broken
+  $ markmv validate docs/ --check-circular --strict-internal
+
+Link Types:
+  internal        Links to other markdown files
+  external        HTTP/HTTPS URLs
+  anchor          Same-file section links (#heading)
+  image           Image references (local and external)
+  reference       Reference-style links ([text][ref])
+  claude-import   Claude @import syntax (@path/to/file)
+
+Output Options:
+  --group-by file    Group broken links by file (default)
+  --group-by type    Group broken links by link type`
+  )
+  .action(validateCommand);
 
 program.parse();
