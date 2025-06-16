@@ -95,7 +95,9 @@ describe('Schema Generation Script', () => {
         expect(content).toContain('export');
         expect(content).toContain('DO NOT EDIT MANUALLY');
         // Match timestamp that may be on the next line after "Generated on:"
-        expect(content).toMatch(/Generated on:[\s\r\n*]*\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/);
+        expect(content).toMatch(
+          /Generated on:[\s\r\n*]*\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/
+        );
       });
     });
 
