@@ -382,7 +382,9 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
       // Normalize path separators for cross-platform compatibility
       const normalizedNewValue = result.changes[0].newValue.replace(/\\/g, '/');
       expect(normalizedNewValue).toBe('../target.md');
-      expect(result.updatedContent).toContain('[Relative link](../target.md)');
+      // Normalize path separators for cross-platform compatibility
+      const normalizedContent = result.updatedContent.replace(/\\/g, '/');
+      expect(normalizedContent).toContain('[Relative link](../target.md)');
       expect(result.updatedContent).toContain('[Absolute link](/absolute/path.md)'); // Unchanged
       expect(result.updatedContent).toContain('[External link](https://example.com)'); // Unchanged
     });

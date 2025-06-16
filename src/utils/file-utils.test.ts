@@ -381,7 +381,7 @@ describe('FileUtils', () => {
       await mkdir(join(testDir, 'subdir'));
 
       const files = await FileUtils.listFiles(testDir, { includeDirectories: true });
-      const names = files.map((f) => f.split('/').pop());
+      const names = files.map((f) => f.replace(/\\/g, '/').split('/').pop());
 
       expect(names).toContain('file.md');
       expect(names).toContain('subdir');
@@ -393,7 +393,7 @@ describe('FileUtils', () => {
       await writeFile(join(testDir, 'doc.txt'), '');
 
       const files = await FileUtils.listFiles(testDir, { extensions: ['.md'] });
-      const names = files.map((f) => f.split('/').pop());
+      const names = files.map((f) => f.replace(/\\/g, '/').split('/').pop());
 
       expect(names).toContain('doc.md');
       expect(names).toContain('README.MD'); // Should find both due to case-insensitive extension matching
@@ -480,7 +480,9 @@ describe('FileUtils', () => {
       const result = FileUtils.getRelativePath(fromFile, toFile);
 
       // Should return relative path from docs/ to assets/
-      expect(result).toContain('../assets/image.png');
+      // Normalize path separators for cross-platform compatibility
+      const normalizedResult = result.replace(/\\/g, '/');
+      expect(normalizedResult).toContain('../assets/image.png');
     });
   });
 
