@@ -1,5 +1,5 @@
 import { existsSync, statSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { basename, join, relative, resolve, sep } from 'node:path';
 import { glob } from 'glob';
 import { FileUtils } from '../utils/file-utils.js';
 
@@ -317,7 +317,7 @@ async function discoverMarkdownFiles(
 
   for (const filePath of boundaryFilePaths) {
     // Skip existing index files if they match our naming pattern
-    const fileName = filePath.split('/').pop() || '';
+    const fileName = basename(filePath);
     if (fileName === options.name) {
       continue;
     }
@@ -328,7 +328,7 @@ async function discoverMarkdownFiles(
 
       files.push({
         path: filePath,
-        relativePath: relative(targetDir, filePath),
+        relativePath: relative(targetDir, filePath).replace(/\\/g, '/'),
         metadata,
         content,
       });
@@ -540,7 +540,7 @@ function generateIndexContent(
   options: IndexOptions
 ): string {
   const now = new Date().toISOString();
-  const indexDir = indexPath.split('/').slice(0, -1).join('/');
+  const indexDir = indexPath.replace(/\\/g, '/').split('/').slice(0, -1).join('/');
 
   let content = `---
 generated: true
@@ -566,7 +566,7 @@ updated: ${now}
     content += `## ${displayName}\n\n`;
 
     for (const file of files) {
-      const relativePath = relative(indexDir, file.path);
+      const relativePath = relative(indexDir, file.path).replace(/\\/g, '/');
       const title =
         file.metadata.title || file.relativePath.split('/').pop()?.replace('.md', '') || 'Untitled';
       const description = file.metadata.description;
