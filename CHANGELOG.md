@@ -1,3 +1,67 @@
+## [1.26.0](https://github.com/ExaDev/markmv/compare/v1.25.3...v1.26.0) (2025-06-16)
+
+### Features
+
+* add comprehensive broken link validation command ([0e95b09](https://github.com/ExaDev/markmv/commit/0e95b09b4d12dd9297c9b02566bbc9447a99c036))
+* add cross-platform test utilities for filesystem detection ([953f011](https://github.com/ExaDev/markmv/commit/953f011d0c9655c8a53473a4eaf080052533151c))
+* add local cross-platform testing script ([07e0130](https://github.com/ExaDev/markmv/commit/07e01302719aaf2da53824364c243b83b308fa89))
+* **cli:** integrate validate command with comprehensive options ([60c8941](https://github.com/ExaDev/markmv/commit/60c8941d67520059a599137aff4460fa7fb2ca5c))
+* **core:** enhance LinkValidator with anchor validation and new interfaces ([316c9a4](https://github.com/ExaDev/markmv/commit/316c9a47cd1e564397e56bfe410c41b95dff60ac))
+* **index:** export validate command and functions ([52436f8](https://github.com/ExaDev/markmv/commit/52436f8bcbc0377318fe551efc585324ce8232d3))
+
+### Bug Fixes
+
+* add proper TypeScript types for createConditionalTest function ([f88a487](https://github.com/ExaDev/markmv/commit/f88a487714042ed9cbb0b16801677079a56e5411))
+* add schema generation step to cross-platform tests workflow ([585111e](https://github.com/ExaDev/markmv/commit/585111edfcc8444a55a6afaf7ca68dfde81dc88c))
+* commit generated files for CI compatibility ([7906e26](https://github.com/ExaDev/markmv/commit/7906e26ddba81ea8904f221ae83cb89c521e3663))
+* eliminate type assertions to resolve linting errors ([5ad3709](https://github.com/ExaDev/markmv/commit/5ad37091eab5fc51b7ec290e21a9df79fd6a7dd5))
+* enhance TypeScript ESM module resolution for Windows compatibility ([6ef42c2](https://github.com/ExaDev/markmv/commit/6ef42c21a63cf43887451f27a741315bf87f5eeb))
+* handle Windows drive letters in path tests and improve regex for multiline timestamps ([055c492](https://github.com/ExaDev/markmv/commit/055c492810c8df79516ec3e599a97c2f9ac79582))
+* implement Windows-compatible dynamic imports for generated modules ([1f97c38](https://github.com/ExaDev/markmv/commit/1f97c38076f7f82d831af8321ab1d6fc17fda798))
+* make transaction-manager max retries test platform-specific ([ee9ae8c](https://github.com/ExaDev/markmv/commit/ee9ae8c64a82fc20bb82dd8d228a5e4201c8285f))
+* resolve additional Windows test failures in file-utils, link-refactorer, link-parser, and generate-schemas tests ([3576e40](https://github.com/ExaDev/markmv/commit/3576e40854be49c4c07dba305b2227f0786253d5))
+* resolve CI failures in cross-platform testing and Windows builds ([89b10a3](https://github.com/ExaDev/markmv/commit/89b10a395e9ecc689065eac127e6aecab030fa90))
+* resolve CI test failures ([1bf0e85](https://github.com/ExaDev/markmv/commit/1bf0e85a9fb64521cd61e80b9dc19565b5a86085))
+* resolve cross-platform test assertion failures ([efcb982](https://github.com/ExaDev/markmv/commit/efcb982f74969a3036768144db1db2f131031087))
+* resolve final Windows compatibility issues ([a83019a](https://github.com/ExaDev/markmv/commit/a83019a44837c9874a8859bda9f869864c482285))
+* resolve linting errors in cross-platform test utilities ([c22775e](https://github.com/ExaDev/markmv/commit/c22775eef10935f7e83cc3b2ff85fd57be1f9911))
+* resolve remaining linting issues in stub files ([a947c90](https://github.com/ExaDev/markmv/commit/a947c901f10b1cb7ae5933508f9c5889390a0293))
+* resolve remaining Windows path separator issues in tests ([57210e2](https://github.com/ExaDev/markmv/commit/57210e2ae72e6317dc6502b44ba4c70d0040a711))
+* resolve TypeScript errors in cross-platform test helpers ([8e10ba9](https://github.com/ExaDev/markmv/commit/8e10ba9056678ed913d838e5f0d65dff22113c20))
+* resolve TypeScript linting errors from Windows compatibility fix ([6182df2](https://github.com/ExaDev/markmv/commit/6182df29a5107b54f1567288d7a9650f26ac6735))
+* resolve Windows cross-platform test failures ([ebab4b3](https://github.com/ExaDev/markmv/commit/ebab4b35668e711980e11cadaa1bf0a3a6a1591f))
+* resolve Windows path separator issues and runtime module resolution ([53cc879](https://github.com/ExaDev/markmv/commit/53cc87987843d2830e1ed139ea2863e3eabc1c90))
+* resolve Windows TypeScript compilation with ESM imports ([6527884](https://github.com/ExaDev/markmv/commit/652788433053d5e0f6923690e4710f7c8fddf1be))
+* use require() with fallback stubs for Windows compatibility ([c56e0fe](https://github.com/ExaDev/markmv/commit/c56e0fe9485985a58514e5de5afbf6a03a5aaa29))
+
+### Documentation
+
+* add comprehensive cross-platform testing guide ([423d3e0](https://github.com/ExaDev/markmv/commit/423d3e042bd16019a150bbb3cdaca32799280473))
+
+### Styles
+
+* auto-fix linting issues ([4d9576f](https://github.com/ExaDev/markmv/commit/4d9576f5b29342d62b95c97616cb898ae5e507e2))
+* auto-fix linting issues ([b24cc9a](https://github.com/ExaDev/markmv/commit/b24cc9a2631b7a7fb6a7552cb023b4e78e2690d9))
+* auto-fix linting issues ([7e97998](https://github.com/ExaDev/markmv/commit/7e97998fef4351e0e854cbc3edc896518a0d3a38))
+* auto-fix linting issues ([5152a71](https://github.com/ExaDev/markmv/commit/5152a71a2bfcbf457d9e981a36e0a12aae20db84))
+* auto-fix linting issues ([a9e8460](https://github.com/ExaDev/markmv/commit/a9e8460879dc470c1356b3412dab0b59d01b43da))
+* auto-fix linting issues ([73079e0](https://github.com/ExaDev/markmv/commit/73079e0832b2d94092dc0ad71cdf836186124924))
+* auto-fix linting issues ([97f34be](https://github.com/ExaDev/markmv/commit/97f34beb9480cfc3d027039da4b4646ea7eec595))
+* auto-fix linting issues ([7d962b0](https://github.com/ExaDev/markmv/commit/7d962b0cb088ad056755aa0d04011bb5dadc21f7))
+* auto-fix linting issues ([b7b0575](https://github.com/ExaDev/markmv/commit/b7b057527136bac115b00b6785dc3edbb3a53cce))
+* auto-fix linting issues ([60ea599](https://github.com/ExaDev/markmv/commit/60ea5995d0a34a4c0a934f22be4df352d6c56da3))
+
+### Tests
+
+* add comprehensive tests for cross-platform utilities ([c216a00](https://github.com/ExaDev/markmv/commit/c216a000291cd7b5dcfe74f955f50dd001ca3343))
+* **cli:** update test to expect 7 commands including validate ([59ceb8f](https://github.com/ExaDev/markmv/commit/59ceb8f73481e614f775792c5e70697031505ed0))
+* enhance path utilities with cross-platform scenarios ([21a1b0a](https://github.com/ExaDev/markmv/commit/21a1b0a3e9521d4996bb1fe6ccf8794283d0e80b))
+
+### Continuous Integration
+
+* add dedicated cross-platform testing workflow ([eb91d16](https://github.com/ExaDev/markmv/commit/eb91d169ab2e25afd7c117f63871669d993a6411))
+* add multi-OS testing matrix to main workflow ([21a79ec](https://github.com/ExaDev/markmv/commit/21a79ecba0117b69367df6a7eb5e514404459915))
+
 ## [1.25.3](https://github.com/ExaDev/markmv/compare/v1.25.2...v1.25.3) (2025-06-15)
 
 ### Bug Fixes

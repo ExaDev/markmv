@@ -1,6 +1,6 @@
 {
   "name": "markmv",
-  "version": "1.25.3",
+  "version": "1.26.0",
   "description": "TypeScript CLI for markdown file operations with intelligent link refactoring",
   "type": "module",
   "main": "dist/index.js",
