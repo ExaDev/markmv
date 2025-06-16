@@ -1,5 +1,5 @@
 import { existsSync, statSync } from 'node:fs';
-import { basename, join, relative, resolve, sep } from 'node:path';
+import { basename, join, relative, resolve } from 'node:path';
 import { glob } from 'glob';
 import { FileUtils } from '../utils/file-utils.js';
 
