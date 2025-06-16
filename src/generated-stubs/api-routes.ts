@@ -1,6 +1,4 @@
-/**
- * Stub file for api-routes to resolve Windows compilation issues
- */
+/** Stub file for api-routes to resolve Windows compilation issues */
 
 interface ApiRoute {
   path: string;
