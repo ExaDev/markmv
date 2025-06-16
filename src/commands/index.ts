@@ -272,9 +272,9 @@ async function discoverMarkdownFiles(
   if (options.maxDepth !== undefined) {
     // Create depth-limited pattern
     const depthPattern = Array.from({ length: options.maxDepth }, () => '*').join('/');
-    globPattern = join(targetDir, depthPattern, '*.md');
+    globPattern = join(targetDir, depthPattern, '*.md').replace(/\\/g, '/');
   } else {
-    globPattern = join(targetDir, '**/*.md');
+    globPattern = join(targetDir, '**/*.md').replace(/\\/g, '/');
   }
 
   const globOptions: Parameters<typeof glob>[1] = {
@@ -290,9 +290,12 @@ async function discoverMarkdownFiles(
 
   // Filter files to respect boundary constraints and convert Path objects to strings
   const boundaryFilePaths = filePaths
-    .map((filePath) => (typeof filePath === 'string' ? filePath : filePath.toString()))
+    .map((filePath) => {
+      const pathStr = typeof filePath === 'string' ? filePath : filePath.toString();
+      return resolve(pathStr); // Ensure consistent absolute paths
+    })
     .filter((filePath) => {
-      const resolvedPath = resolve(filePath);
+      const resolvedPath = filePath;
 
       // Ensure file is within the boundary directory
       if (options.boundary) {
