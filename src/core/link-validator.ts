@@ -316,22 +316,26 @@ export class LinkValidator {
   }
 
   /**
-   * Check for circular references - overloaded method that supports both parsed files and file paths.
+   * Check for circular references - overloaded method that supports both parsed files and file
+   * paths.
    */
   async checkCircularReferences(files: ParsedMarkdownFile[]): Promise<string[][]>;
   async checkCircularReferences(files: string[]): Promise<{
     hasCircularReferences: boolean;
     circularPaths?: string[] | undefined;
   }>;
-  async checkCircularReferences(files: ParsedMarkdownFile[] | string[]): Promise<string[][] | {
-    hasCircularReferences: boolean;
-    circularPaths?: string[] | undefined;
-  }> {
+  async checkCircularReferences(files: ParsedMarkdownFile[] | string[]): Promise<
+    | string[][]
+    | {
+        hasCircularReferences: boolean;
+        circularPaths?: string[] | undefined;
+      }
+  > {
     // Check if we have ParsedMarkdownFile[] (test case) or string[] (normal case)
     if (files.length > 0 && typeof files[0] === 'object' && 'filePath' in files[0]) {
       // ParsedMarkdownFile[] case - check for circular dependencies
-      const parsedFiles = files.filter((f): f is ParsedMarkdownFile => 
-        typeof f === 'object' && f !== null && 'filePath' in f
+      const parsedFiles = files.filter(
+        (f): f is ParsedMarkdownFile => typeof f === 'object' && f !== null && 'filePath' in f
       );
       const visited = new Set<string>();
       const recursionStack = new Set<string>();
@@ -354,7 +358,7 @@ export class LinkValidator {
         recursionStack.add(filePath);
 
         // Find the file and check its dependencies
-        const file = parsedFiles.find(f => f.filePath === filePath);
+        const file = parsedFiles.find((f) => f.filePath === filePath);
         if (file && file.dependencies) {
           for (const dependency of file.dependencies) {
             detectCycle(dependency, [...path, filePath]);
