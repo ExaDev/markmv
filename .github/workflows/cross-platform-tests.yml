@@ -280,6 +280,7 @@ jobs:
             echo "❌ **Status:** Some tests failed" >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
+        shell: bash
 
       - name: Upload test artifacts
         if: always()
@@ -316,3 +317,4 @@ jobs:
           echo "- macOS - Case-insensitive filesystem" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "🔧 **Node.js Versions:** 20.x, 22.x" >> $GITHUB_STEP_SUMMARY
+        shell: bash
