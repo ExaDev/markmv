@@ -26,7 +26,7 @@ describe('Glob Pattern Support in Move Command', () => {
       await writeFile(join(testDir, 'file3.txt'), 'Not markdown');
 
       // Test glob expansion
-      const pattern = join(testDir, '*.md');
+      const pattern = join(testDir, '*.md').replace(/\\/g, '/');
       const results = await glob(pattern, { absolute: true });
 
       expect(results).toHaveLength(2);
@@ -46,7 +46,7 @@ describe('Glob Pattern Support in Move Command', () => {
       await writeFile(join(testDir, 'docs', 'readme.txt'), 'Not markdown');
 
       // Test recursive glob
-      const pattern = join(testDir, '**/*.md');
+      const pattern = join(testDir, '**/*.md').replace(/\\/g, '/');
       const results = await glob(pattern, { absolute: true });
 
       expect(results).toHaveLength(3);
@@ -66,8 +66,8 @@ describe('Glob Pattern Support in Move Command', () => {
       await writeFile(join(testDir, 'guides', 'guide1.md'), '# Guide 1');
 
       // Test multiple patterns
-      const rootPattern = join(testDir, '*.md');
-      const docsPattern = join(testDir, 'docs/*.md');
+      const rootPattern = join(testDir, '*.md').replace(/\\/g, '/');
+      const docsPattern = join(testDir, 'docs/*.md').replace(/\\/g, '/');
 
       const rootResults = await glob(rootPattern, { absolute: true });
       const docsResults = await glob(docsPattern, { absolute: true });
@@ -90,7 +90,7 @@ describe('Glob Pattern Support in Move Command', () => {
       await writeFile(join(testDir, '.git', 'bad.md'), '# Should be ignored');
       await writeFile(join(testDir, 'dist', 'bad.md'), '# Should be ignored');
 
-      const pattern = join(testDir, '**/*.md');
+      const pattern = join(testDir, '**/*.md').replace(/\\/g, '/');
       const results = await glob(pattern, {
         ignore: ['**/node_modules/**', '**/.git/**', '**/dist/**'],
         absolute: true,
@@ -136,7 +136,7 @@ describe('Glob Pattern Support in Move Command', () => {
 
   describe('Error scenarios', () => {
     it('should handle non-existent glob patterns gracefully', async () => {
-      const pattern = join(testDir, 'nonexistent/*.md');
+      const pattern = join(testDir, 'nonexistent/*.md').replace(/\\/g, '/');
       const results = await glob(pattern, { absolute: true });
 
       expect(results).toHaveLength(0);
@@ -145,7 +145,7 @@ describe('Glob Pattern Support in Move Command', () => {
     it('should handle empty directories', async () => {
       await mkdir(join(testDir, 'empty'));
 
-      const pattern = join(testDir, 'empty/*.md');
+      const pattern = join(testDir, 'empty/*.md').replace(/\\/g, '/');
       const results = await glob(pattern, { absolute: true });
 
       expect(results).toHaveLength(0);
@@ -188,9 +188,9 @@ describe('Glob Pattern Support in Move Command', () => {
       await writeFile(join(testDir, 'package.json'), '{}');
 
       // Test different patterns
-      const allMd = await glob(join(testDir, '**/*.md'), { absolute: true });
-      const docsOnly = await glob(join(testDir, 'docs/**/*.md'), { absolute: true });
-      const rootOnly = await glob(join(testDir, '*.md'), { absolute: true });
+      const allMd = await glob(join(testDir, '**/*.md').replace(/\\/g, '/'), { absolute: true });
+      const docsOnly = await glob(join(testDir, 'docs/**/*.md').replace(/\\/g, '/'), { absolute: true });
+      const rootOnly = await glob(join(testDir, '*.md').replace(/\\/g, '/'), { absolute: true });
 
       expect(allMd).toHaveLength(5);
       expect(docsOnly).toHaveLength(3);
@@ -205,7 +205,7 @@ describe('Glob Pattern Support in Move Command', () => {
         await writeFile(join(testDir, file), `# ${file}`);
       }
 
-      const pattern = join(testDir, '*.md');
+      const pattern = join(testDir, '*.md').replace(/\\/g, '/');
       const results1 = await glob(pattern, { absolute: true });
       const results2 = await glob(pattern, { absolute: true });
 

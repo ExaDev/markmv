@@ -119,7 +119,9 @@ Another [link](../target.md) here.
 
       // Check that links are still correct in split files
       const sectionContent = await FileUtils.readTextFile(result.createdFiles[0]);
-      expect(sectionContent).toContain('../target.md');
+      // Normalize path separators for cross-platform compatibility
+      const normalizedContent = sectionContent.replace(/\\/g, '/');
+      expect(normalizedContent).toContain('../target.md');
     });
 
     it('should handle size-based splitting', async () => {

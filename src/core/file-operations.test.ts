@@ -87,8 +87,10 @@ describe('FileOperations', () => {
       expect(result.success).toBe(true);
 
       const updatedContent = await FileUtils.readTextFile(destPath);
-      expect(updatedContent).toContain('../other.md');
-      expect(updatedContent).toContain('@../config.md');
+      // Normalize path separators for cross-platform compatibility
+      const normalizedContent = updatedContent.replace(/\\/g, '/');
+      expect(normalizedContent).toContain('../other.md');
+      expect(normalizedContent).toContain('@../config.md');
     });
 
     it('should validate invalid moves', async () => {

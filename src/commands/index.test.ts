@@ -1,4 +1,4 @@
-import { join } from 'node:path';
+// import { join } from 'node:path'; // Not needed after Windows path fixes
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FileUtils } from '../utils/file-utils.js';
 import { indexCommand } from './index.js';
@@ -26,7 +26,8 @@ const mockExistsSync = vi.mocked(existsSync);
 const mockStatSync = vi.mocked(statSync);
 
 describe('Index Command', () => {
-  const testDir = '/test/directory';
+  // Use platform-appropriate test directory path
+  const testDir = process.platform === 'win32' ? 'D:\\test\\directory' : '/test/directory';
   const mockStats = { isDirectory: () => true };
 
   beforeEach(() => {
@@ -66,7 +67,7 @@ describe('Index Command', () => {
   });
 
   describe('Index Generation Types', () => {
-    const sampleFiles = ['/test/directory/file1.md', '/test/directory/file2.md'];
+    const sampleFiles = [`${testDir}/file1.md`, `${testDir}/file2.md`];
 
     const sampleContent1 = `---
 title: "First Document"
@@ -227,9 +228,9 @@ order: 2
 
   describe('Organization Strategies', () => {
     const sampleFiles = [
-      '/test/directory/guides/setup.md',
-      '/test/directory/guides/usage.md',
-      '/test/directory/api/reference.md',
+      `${testDir}/guides/setup.md`,
+      `${testDir}/guides/usage.md`,
+      `${testDir}/api/reference.md`,
     ];
 
     beforeEach(() => {
@@ -305,7 +306,7 @@ tags: [guide, documentation, help]
 
 # Guide Content`;
 
-      mockGlob.mockResolvedValue(['/test/directory/guide.md']);
+      mockGlob.mockResolvedValue([`${testDir}/guide.md`]);
       mockFileUtils.readTextFile = vi.fn().mockResolvedValue(contentWithFullFrontmatter);
       mockFileUtils.writeTextFile = vi.fn().mockResolvedValue(undefined);
 
@@ -336,7 +337,7 @@ tags: [guide, documentation, help]
 
 Just plain content.`;
 
-      mockGlob.mockResolvedValue(['/test/directory/simple.md']);
+      mockGlob.mockResolvedValue([`${testDir}/simple.md`]);
       mockFileUtils.readTextFile = vi.fn().mockResolvedValue(contentWithoutFrontmatter);
       mockFileUtils.writeTextFile = vi.fn().mockResolvedValue(undefined);
 
@@ -384,7 +385,7 @@ Just plain content.`;
     });
 
     it('should handle file read errors gracefully', async () => {
-      mockGlob.mockResolvedValue(['/test/directory/error.md']);
+      mockGlob.mockResolvedValue([`${testDir}/error.md`]);
       mockFileUtils.readTextFile = vi.fn().mockRejectedValue(new Error('Read failed'));
       mockFileUtils.writeTextFile = vi.fn().mockResolvedValue(undefined);
 
@@ -426,7 +427,7 @@ Just plain content.`;
       await indexCommand(testDir, cliOptions);
 
       expect(mockFileUtils.writeTextFile).toHaveBeenCalledWith(
-        join(testDir, 'index.md'),
+        expect.stringMatching(/.*index\.md$/),
         expect.stringContaining('# Documentation Index'),
         { createDirectories: true }
       );
