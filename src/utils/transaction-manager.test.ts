@@ -356,10 +356,11 @@ describe('TransactionManager', () => {
       const manager = new TransactionManager({ maxRetries: 0 });
 
       // Use a path that should fail on all platforms - invalid characters
-      const invalidFile = process.platform === 'win32' 
-        ? 'C:\\invalid\\path\\with\\<>:"|?*\\file.txt'  // Invalid Windows characters
-        : '/invalid/non/existent/deeply/nested/path/file.txt';  // Non-existent deep path
-      
+      const invalidFile =
+        process.platform === 'win32'
+          ? 'C:\\invalid\\path\\with\\<>:"|?*\\file.txt' // Invalid Windows characters
+          : '/invalid/non/existent/deeply/nested/path/file.txt'; // Non-existent deep path
+
       manager.addFileCreate(invalidFile, 'content');
 
       const result = await manager.execute();
