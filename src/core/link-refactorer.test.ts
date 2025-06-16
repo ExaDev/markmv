@@ -379,7 +379,9 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
 
       expect(result.changes).toHaveLength(1);
       expect(result.changes[0].oldValue).toBe('./target.md');
-      expect(result.changes[0].newValue).toBe('../target.md');
+      // Normalize path separators for cross-platform compatibility
+      const normalizedNewValue = result.changes[0].newValue.replace(/\\/g, '/');
+      expect(normalizedNewValue).toBe('../target.md');
       expect(result.updatedContent).toContain('[Relative link](../target.md)');
       expect(result.updatedContent).toContain('[Absolute link](/absolute/path.md)'); // Unchanged
       expect(result.updatedContent).toContain('[External link](https://example.com)'); // Unchanged
@@ -423,8 +425,10 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
       );
 
       expect(result.changes).toHaveLength(2);
-      expect(result.updatedContent).toContain('@../target.md');
-      expect(result.updatedContent).toContain('@../../other.md');
+      // Normalize path separators for cross-platform compatibility
+      const normalizedContent = result.updatedContent.replace(/\\/g, '/');
+      expect(normalizedContent).toContain('@../target.md');
+      expect(normalizedContent).toContain('@../../other.md');
     });
 
     it('should skip Claude imports when disabled', async () => {
@@ -664,7 +668,10 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
 
       expect(result.changes).toHaveLength(1);
       // Should use absolute path when preferRelativePaths is false
-      expect(result.changes[0].newValue).toBe(newTargetFile);
+      // Normalize path separators for cross-platform compatibility
+      const normalizedNewValue = result.changes[0].newValue.replace(/\\/g, '/');
+      const normalizedExpected = newTargetFile.replace(/\\/g, '/');
+      expect(normalizedNewValue).toBe(normalizedExpected);
     });
 
     it('should preserve formatting when preserveFormatting is enabled', async () => {

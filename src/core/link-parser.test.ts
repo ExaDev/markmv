@@ -109,7 +109,9 @@ Some text with @inline-import.md in the middle.
       const homeImport = claudeImports.find((l) => l.href === '~/home/file.md');
       expect(homeImport?.type).toBe('claude-import');
       expect(homeImport?.absolute).toBe(true);
-      expect(homeImport?.resolvedPath).toMatch(/\/home\/file\.md$/);
+      // Normalize path separators for cross-platform compatibility
+      const normalizedPath = homeImport?.resolvedPath?.replace(/\\/g, '/');
+      expect(normalizedPath).toMatch(/\/home\/file\.md$/);
     });
 
     it('should parse image links', async () => {
