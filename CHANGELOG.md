@@ -1,3 +1,9 @@
+## [1.26.2](https://github.com/ExaDev/markmv/compare/v1.26.1...v1.26.2) (2025-06-16)
+
+### Bug Fixes
+
+* add missing shell bash directive to Windows PowerShell steps ([8c317e5](https://github.com/ExaDev/markmv/commit/8c317e5e1b4683c5510f91b5711ff88bebf022ad))
+
 ## [1.26.1](https://github.com/ExaDev/markmv/compare/v1.26.0...v1.26.1) (2025-06-16)
 
 ### Bug Fixes
