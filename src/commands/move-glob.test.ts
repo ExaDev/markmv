@@ -189,7 +189,9 @@ describe('Glob Pattern Support in Move Command', () => {
 
       // Test different patterns
       const allMd = await glob(join(testDir, '**/*.md').replace(/\\/g, '/'), { absolute: true });
-      const docsOnly = await glob(join(testDir, 'docs/**/*.md').replace(/\\/g, '/'), { absolute: true });
+      const docsOnly = await glob(join(testDir, 'docs/**/*.md').replace(/\\/g, '/'), {
+        absolute: true,
+      });
       const rootOnly = await glob(join(testDir, '*.md').replace(/\\/g, '/'), { absolute: true });
 
       expect(allMd).toHaveLength(5);

@@ -253,9 +253,10 @@ describe('Move Command', () => {
     it('should handle file operation errors gracefully', async () => {
       const sourceFile = join(testDir, 'source.md');
       // Use a platform-appropriate invalid path
-      const invalidDest = process.platform === 'win32' 
-        ? 'Z:\\invalid\\path\\that\\cannot\\be\\created.md'
-        : '/invalid/path/that/cannot/be/created.md';
+      const invalidDest =
+        process.platform === 'win32'
+          ? 'Z:\\invalid\\path\\that\\cannot\\be\\created.md'
+          : '/invalid/path/that/cannot/be/created.md';
 
       writeFileSync(sourceFile, '# Test Content');
 
@@ -265,9 +266,11 @@ describe('Move Command', () => {
         expect(mockConsoleError).toHaveBeenCalled();
       } catch (error) {
         // If it throws, it should be the expected error
-        expect(error).toEqual(expect.objectContaining({
-          message: expect.stringContaining('Process exit called with code 1')
-        }));
+        expect(error).toEqual(
+          expect.objectContaining({
+            message: expect.stringContaining('Process exit called with code 1'),
+          })
+        );
         expect(mockProcessExit).toHaveBeenCalledWith(1);
       }
     }, 10000); // Increase timeout to 10 seconds

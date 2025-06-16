@@ -1,7 +1,6 @@
 /**
- * Auto-generated AJV validators for markmv API methods
- * Generated on: 2025-06-16T10:45:51.940Z
- * 
+ * Auto-generated AJV validators for markmv API methods Generated on: 2025-06-16T10:45:51.940Z
+ *
  * DO NOT EDIT MANUALLY - This file is auto-generated
  */
 
