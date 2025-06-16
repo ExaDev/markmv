@@ -477,7 +477,11 @@ describe('LinkValidator', () => {
   });
 
   describe('Special Link Types', () => {
-    it('should always validate anchor links as valid', async () => {
+    it('should validate anchor links against existing headings', async () => {
+      // Create a source file with the expected heading
+      const sourceFile = join(testDir, 'source.md');
+      await writeFile(sourceFile, '# Section 1\n\nSome content here.');
+
       const link: MarkdownLink = {
         type: 'anchor',
         href: '#section-1',
@@ -486,8 +490,8 @@ describe('LinkValidator', () => {
         absolute: false,
       };
 
-      const result = await validator.validateLink(link, join(testDir, 'source.md'));
-      expect(result).toBeNull(); // Anchor links should always be valid
+      const result = await validator.validateLink(link, sourceFile);
+      expect(result).toBeNull(); // Should be valid since the heading exists
     });
 
     it('should always validate reference links as valid', async () => {

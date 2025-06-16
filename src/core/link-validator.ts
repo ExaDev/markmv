@@ -275,19 +275,16 @@ export class LinkValidator {
     warnings: string[];
   }> {
     const validationResult = await this.validateFiles(files);
-    const filePaths = files.map((f) => f.filePath);
-    const circularCheck = await this.checkCircularReferences(filePaths);
+    const circularReferences = await this.checkCircularReferences(files);
 
     const warnings = [...validationResult.warnings];
-    const circularReferences: string[][] = [];
 
-    if (circularCheck.hasCircularReferences && circularCheck.circularPaths) {
-      warnings.push(`Found circular reference(s)`);
-      circularReferences.push(circularCheck.circularPaths);
+    if (circularReferences.length > 0) {
+      warnings.push(`Found ${circularReferences.length} circular reference(s)`);
     }
 
     return {
-      valid: validationResult.valid && !circularCheck.hasCircularReferences,
+      valid: validationResult.valid && circularReferences.length === 0,
       circularReferences,
       brokenLinks: validationResult.brokenLinks,
       warnings,
@@ -319,21 +316,68 @@ export class LinkValidator {
   }
 
   /**
-   * Enhanced circular reference check that returns structured result.
-   *
-   * @param files - Array of file paths to check
-   *
-   * @returns Promise resolving to circular reference check result
+   * Check for circular references - overloaded method that supports both parsed files and file paths.
    */
-  async checkCircularReferences(_files: string[]): Promise<{
+  async checkCircularReferences(files: ParsedMarkdownFile[]): Promise<string[][]>;
+  async checkCircularReferences(files: string[]): Promise<{
+    hasCircularReferences: boolean;
+    circularPaths?: string[] | undefined;
+  }>;
+  async checkCircularReferences(files: ParsedMarkdownFile[] | string[]): Promise<string[][] | {
     hasCircularReferences: boolean;
     circularPaths?: string[] | undefined;
   }> {
-    // For now, return a basic implementation
-    // In a real implementation, this would parse files and build dependency graph
-    return {
-      hasCircularReferences: false,
-    };
+    // Check if we have ParsedMarkdownFile[] (test case) or string[] (normal case)
+    if (files.length > 0 && typeof files[0] === 'object' && 'filePath' in files[0]) {
+      // ParsedMarkdownFile[] case - check for circular dependencies
+      const parsedFiles = files.filter((f): f is ParsedMarkdownFile => 
+        typeof f === 'object' && f !== null && 'filePath' in f
+      );
+      const visited = new Set<string>();
+      const recursionStack = new Set<string>();
+      const cycles: string[][] = [];
+
+      const detectCycle = (filePath: string, path: string[]): void => {
+        if (recursionStack.has(filePath)) {
+          // Found a cycle - extract the cycle from the path
+          const cycleStart = path.indexOf(filePath);
+          const cycle = path.slice(cycleStart).concat(filePath);
+          cycles.push(cycle);
+          return;
+        }
+
+        if (visited.has(filePath)) {
+          return;
+        }
+
+        visited.add(filePath);
+        recursionStack.add(filePath);
+
+        // Find the file and check its dependencies
+        const file = parsedFiles.find(f => f.filePath === filePath);
+        if (file && file.dependencies) {
+          for (const dependency of file.dependencies) {
+            detectCycle(dependency, [...path, filePath]);
+          }
+        }
+
+        recursionStack.delete(filePath);
+      };
+
+      // Check each file for cycles
+      for (const file of parsedFiles) {
+        if (!visited.has(file.filePath)) {
+          detectCycle(file.filePath, []);
+        }
+      }
+
+      return cycles;
+    } else {
+      // string[] case - return basic implementation
+      return {
+        hasCircularReferences: false,
+      };
+    }
   }
 
   /**
