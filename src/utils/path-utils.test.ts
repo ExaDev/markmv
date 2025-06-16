@@ -139,14 +139,16 @@ describe('PathUtils', () => {
       const result = PathUtils.findCommonBase(paths);
       // Normalize path separators for cross-platform compatibility
       const normalizedResult = result.replace(/\\/g, '/');
-      expect(normalizedResult).toBe('/project');
+      // On Windows, absolute paths may include drive letters
+      expect(normalizedResult).toMatch(/^([A-Z]:)?\/project$/);
     });
 
     it('should handle single path', () => {
       const result = PathUtils.findCommonBase(['/project/docs/file.md']);
       // Normalize path separators for cross-platform compatibility
       const normalizedResult = result.replace(/\\/g, '/');
-      expect(normalizedResult).toBe('/project/docs');
+      // On Windows, absolute paths may include drive letters
+      expect(normalizedResult).toMatch(/^([A-Z]:)?\/project\/docs$/);
     });
 
     it('should handle empty array', () => {

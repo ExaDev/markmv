@@ -94,10 +94,8 @@ describe('Schema Generation Script', () => {
         expect(content).toContain('*/');
         expect(content).toContain('export');
         expect(content).toContain('DO NOT EDIT MANUALLY');
-        // Match timestamp with flexible whitespace/line breaks (handle Windows \r\n)
-        expect(content).toMatch(
-          /Generated on:[\s\r\n]*\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/
-        );
+        // Match timestamp that may be on the next line after "Generated on:"
+        expect(content).toMatch(/Generated on:[\s\r\n*]*\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/);
       });
     });
 
@@ -263,7 +261,7 @@ describe('Schema Generation Script', () => {
       files.forEach((file) => {
         const content = readFileSync(join(GENERATED_DIR, file), 'utf8');
         const timestampMatch = content.match(
-          /Generated on:[\s\r\n]*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)/
+          /Generated on:[\s\r\n*]*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)/
         );
 
         expect(timestampMatch).toBeTruthy();
