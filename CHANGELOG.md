@@ -1,3 +1,13 @@
+## [1.26.1](https://github.com/ExaDev/markmv/compare/v1.26.0...v1.26.1) (2025-06-16)
+
+### Bug Fixes
+
+* normalize glob patterns for Windows compatibility in CLI index command ([917e03c](https://github.com/ExaDev/markmv/commit/917e03c454d75b3be4e1cc32b269de95cfe8031b))
+
+### Styles
+
+* auto-fix linting issues ([355c291](https://github.com/ExaDev/markmv/commit/355c291349f36804454ac7aca2accd542466ebc8))
+
 ## [1.26.0](https://github.com/ExaDev/markmv/compare/v1.25.3...v1.26.0) (2025-06-16)
 
 ### Features
