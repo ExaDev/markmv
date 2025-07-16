@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { join } from 'node:path';
-import { mkdtemp, rmdir, writeFile } from 'node:fs/promises';
+import { mkdtemp, rmdir, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { validateLinks } from './validate.js';
-import type { ValidateOperationOptions } from './validate.js';
+import { validateLinks, validateCommand } from './validate.js';
+import type { ValidateOperationOptions, ValidateCliOptions } from './validate.js';
 
 describe('validate command', () => {
   let testDir: string;
@@ -209,6 +209,194 @@ Anchor link: [bad anchor](#non-existent)
 
       expect(result.brokenLinks).toBe(1); // Only the internal link should be checked
       expect(result.brokenLinksByFile[sourceFile][0].type).toBe('internal');
+    });
+  });
+
+  describe('validateCommand CLI', () => {
+    let originalCwd: string;
+    let originalConsoleLog: typeof console.log;
+    let logOutput: string[];
+
+    beforeEach(async () => {
+      originalCwd = process.cwd();
+      
+      // Mock console.log to capture output
+      logOutput = [];
+      originalConsoleLog = console.log;
+      console.log = vi.fn((...args) => {
+        logOutput.push(args.join(' '));
+      });
+
+      // Create test markdown files in testDir
+      await writeFile(join(testDir, 'test1.md'), '# Test 1\n\n[broken link](./missing.md)');
+      await writeFile(join(testDir, 'test2.md'), '# Test 2\n\n[valid link](./test1.md)');
+      
+      // Create subdirectory with markdown files
+      const subDir = join(testDir, 'subdirectory');
+      await mkdir(subDir);
+      await writeFile(join(subDir, 'sub1.md'), '# Sub 1\n\n[broken link](./missing.md)');
+    });
+
+    afterEach(() => {
+      process.chdir(originalCwd);
+      console.log = originalConsoleLog;
+    });
+
+    it('should default to current directory when no patterns provided', async () => {
+      // Change to test directory
+      process.chdir(testDir);
+
+      const options: ValidateCliOptions = {
+        checkExternal: false,
+        externalTimeout: 5000,
+        strictInternal: true,
+        checkClaudeImports: true,
+        checkCircular: false,
+        onlyBroken: true,
+        groupBy: 'file',
+        includeContext: false,
+        dryRun: false,
+        verbose: false,
+        force: false,
+      };
+
+      await validateCommand([], options);
+
+      // Should have processed files in current directory
+      const output = logOutput.join('\n');
+      expect(output).toContain('Files processed:');
+      expect(output).toContain('test1.md');
+      expect(output).toContain('sub1.md'); // Should find files in subdirectories
+    });
+
+    it('should handle explicit "." directory argument', async () => {
+      // Change to test directory
+      process.chdir(testDir);
+
+      const options: ValidateCliOptions = {
+        checkExternal: false,
+        externalTimeout: 5000,
+        strictInternal: true,
+        checkClaudeImports: true,
+        checkCircular: false,
+        onlyBroken: true,
+        groupBy: 'file',
+        includeContext: false,
+        dryRun: false,
+        verbose: false,
+        force: false,
+      };
+
+      await validateCommand(['.'], options);
+
+      // Should have processed files in current directory
+      const output = logOutput.join('\n');
+      expect(output).toContain('Files processed:');
+      expect(output).toContain('test1.md');
+    });
+
+    it('should handle explicit "./" directory argument', async () => {
+      // Change to test directory
+      process.chdir(testDir);
+
+      const options: ValidateCliOptions = {
+        checkExternal: false,
+        externalTimeout: 5000,
+        strictInternal: true,
+        checkClaudeImports: true,
+        checkCircular: false,
+        onlyBroken: true,
+        groupBy: 'file',
+        includeContext: false,
+        dryRun: false,
+        verbose: false,
+        force: false,
+      };
+
+      await validateCommand(['./'], options);
+
+      // Should have processed files in current directory
+      const output = logOutput.join('\n');
+      expect(output).toContain('Files processed:');
+      expect(output).toContain('test1.md');
+    });
+
+    it('should handle specific directory path argument', async () => {
+      const options: ValidateCliOptions = {
+        checkExternal: false,
+        externalTimeout: 5000,
+        strictInternal: true,
+        checkClaudeImports: true,
+        checkCircular: false,
+        onlyBroken: true,
+        groupBy: 'file',
+        includeContext: false,
+        dryRun: false,
+        verbose: false,
+        force: false,
+      };
+
+      // Test with subdirectory path
+      const subDir = join(testDir, 'subdirectory');
+      await validateCommand([subDir], options);
+
+      // Should have processed files only in the subdirectory
+      const output = logOutput.join('\n');
+      expect(output).toContain('Files processed:');
+      expect(output).toContain('sub1.md');
+      expect(output).not.toContain('test1.md'); // Should not include parent directory files
+    });
+
+    it('should handle non-directory patterns as file patterns', async () => {
+      const options: ValidateCliOptions = {
+        checkExternal: false,
+        externalTimeout: 5000,
+        strictInternal: true,
+        checkClaudeImports: true,
+        checkCircular: false,
+        onlyBroken: true,
+        groupBy: 'file',
+        includeContext: false,
+        dryRun: false,
+        verbose: false,
+        force: false,
+      };
+
+      // Test with specific file pattern
+      const filePattern = join(testDir, 'test1.md');
+      await validateCommand([filePattern], options);
+
+      // Should have processed only the specific file
+      const output = logOutput.join('\n');
+      expect(output).toContain('Files processed:');
+      expect(output).toContain('test1.md');
+      expect(output).not.toContain('test2.md');
+    });
+
+    it('should handle glob patterns properly', async () => {
+      const options: ValidateCliOptions = {
+        checkExternal: false,
+        externalTimeout: 5000,
+        strictInternal: true,
+        checkClaudeImports: true,
+        checkCircular: false,
+        onlyBroken: true,
+        groupBy: 'file',
+        includeContext: false,
+        dryRun: false,
+        verbose: false,
+        force: false,
+      };
+
+      // Test with glob pattern
+      const globPattern = join(testDir, '*.md');
+      await validateCommand([globPattern], options);
+
+      // Should have processed files matching the glob
+      const output = logOutput.join('\n');
+      expect(output).toContain('Files processed: 2'); // Should process both test1.md and test2.md
+      expect(output).toContain('test1.md'); // test1.md has broken links so should appear in output
+      expect(output).not.toContain('sub1.md'); // Should not include subdirectory files with this pattern
     });
   });
 });
