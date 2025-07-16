@@ -313,7 +313,7 @@ export async function validateCommand(
   finalPatterns = finalPatterns.map((pattern) => {
     // Always normalize paths for cross-platform compatibility
     const normalizedPattern = pattern.replace(/\\/g, '/');
-    
+
     try {
       const stat = statSync(pattern);
       if (stat.isDirectory()) {
