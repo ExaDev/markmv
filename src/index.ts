@@ -52,6 +52,7 @@ export { ContentSplitter } from './core/content-splitter.js';
 export { FileUtils } from './utils/file-utils.js';
 export { PathUtils } from './utils/path-utils.js';
 export { TransactionManager } from './utils/transaction-manager.js';
+export { TocGenerator } from './utils/toc-generator.js';
 
 // Strategy classes
 export {
@@ -103,6 +104,7 @@ export type {
 } from './types/operations.js';
 
 export type { IndexOptions, FileMetadata, IndexableFile } from './commands/index.js';
+export type { TocOptions, TocResult, MarkdownHeading } from './utils/toc-generator.js';
 
 // Re-export specific strategy types that might be useful
 export type {
@@ -232,6 +234,65 @@ export async function validateOperation(result: OperationResult): Promise<{
 }> {
   const fileOps = new FileOperations();
   return fileOps.validateOperation(result);
+}
+
+/**
+ * Generate table of contents for markdown content
+ *
+ * @example
+ *   ```typescript
+ *   import { generateToc } from 'markmv';
+ *
+ *   const content = '# Title\n## Section 1\n### Subsection';
+ *   const result = await generateToc(content, { minDepth: 2 });
+ *   console.log(result.toc);
+ *   ```;
+ *
+ * @param content - Markdown content to analyze
+ * @param options - TOC generation options
+ *
+ * @returns Promise resolving to TOC result
+ *
+ * @group Utilities
+ */
+export async function generateToc(
+  content: string,
+  options: import('./utils/toc-generator.js').TocOptions = {}
+): Promise<import('./utils/toc-generator.js').TocResult> {
+  const { TocGenerator } = await import('./utils/toc-generator.js');
+  const generator = new TocGenerator();
+  return generator.generateToc(content, options);
+}
+
+/**
+ * Generate index files with optional table of contents
+ *
+ * @example
+ *   ```typescript
+ *   import { generateIndex } from 'markmv';
+ *
+ *   const options = {
+ *     type: 'links',
+ *     strategy: 'directory',
+ *     generateToc: true,
+ *     tocOptions: { minDepth: 2 }
+ *   };
+ *   await generateIndex('.', options);
+ *   ```;
+ *
+ * @param directory - Directory to generate index for
+ * @param options - Index generation options
+ *
+ * @returns Promise resolving when index generation is complete
+ *
+ * @group Commands
+ */
+export async function generateIndex(
+  directory: string,
+  options: import('./commands/index.js').IndexOptions
+): Promise<void> {
+  const { indexCommand } = await import('./commands/index.js');
+  return indexCommand(directory, options);
 }
 
 /**
