@@ -1,6 +1,6 @@
 import { glob } from 'glob';
 import { statSync } from 'fs';
-import { join } from 'path';
+import { posix } from 'path';
 import { LinkValidator } from '../core/link-validator.js';
 import { LinkParser } from '../core/link-parser.js';
 import type { LinkType } from '../types/links.js';
@@ -308,13 +308,15 @@ export async function validateCommand(
 ): Promise<void> {
   // Default to current directory if no patterns provided
   let finalPatterns = patterns.length === 0 ? ['.'] : patterns;
-  
+
   // Convert directories to glob patterns
-  finalPatterns = finalPatterns.map(pattern => {
+  finalPatterns = finalPatterns.map((pattern) => {
     try {
       const stat = statSync(pattern);
       if (stat.isDirectory()) {
-        return join(pattern, '**/*.md');
+        // Use posix-style paths for glob patterns to ensure cross-platform compatibility
+        const normalizedPattern = pattern.replace(/\\/g, '/');
+        return posix.join(normalizedPattern, '**/*.md');
       }
       return pattern;
     } catch {
@@ -322,7 +324,7 @@ export async function validateCommand(
       return pattern;
     }
   });
-  
+
   // Convert CLI options to internal options
   const options: ValidateOperationOptions = {
     ...cliOptions,
