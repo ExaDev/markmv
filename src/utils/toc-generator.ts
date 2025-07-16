@@ -187,7 +187,12 @@ export class TocGenerator {
         if (node.type === 'text') {
           return node.value || '';
         } else if (node.children && Array.isArray(node.children)) {
-          return this.extractTextFromNodes(node.children as Array<{ type: string; value?: string; children?: unknown[] }>);
+          // Recursively extract text from children, filtering for valid node structure
+          const childNodes = node.children.filter(
+            (child): child is { type: string; value?: string; children?: unknown[] } =>
+              typeof child === 'object' && child !== null && 'type' in child
+          );
+          return this.extractTextFromNodes(childNodes);
         }
         return '';
       })
