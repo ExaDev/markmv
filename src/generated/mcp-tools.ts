@@ -1,6 +1,5 @@
 /**
  * Auto-generated MCP tool definitions for markmv API methods
- * Generated on: 2025-07-16T14:38:06.432Z
  * 
  * DO NOT EDIT MANUALLY - This file is auto-generated
  */
