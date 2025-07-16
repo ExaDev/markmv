@@ -260,7 +260,7 @@ describe('Schema Generation Script', () => {
 
       files.forEach((file) => {
         const content = readFileSync(join(GENERATED_DIR, file), 'utf8');
-        
+
         expect(content).not.toContain('Generated on:');
       });
     });

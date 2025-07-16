@@ -224,11 +224,15 @@ program
   .option('--min-depth <number>', 'Minimum heading level to include (1-6)', parseInt, 1)
   .option('--max-depth <number>', 'Maximum heading level to include (1-6)', parseInt, 6)
   .option('--include-line-numbers', 'Include line numbers in TOC entries')
-  .option('--position <position>', 'TOC position: top|after-title|before-content|replace', 'after-title')
+  .option(
+    '--position <position>',
+    'TOC position: top|after-title|before-content|replace',
+    'after-title'
+  )
   .option('--title <title>', 'TOC title', 'Table of Contents')
   .option('--heading-level <level>', 'TOC heading level (1-6)', parseInt, 2)
   .option('--marker <marker>', 'Custom marker for TOC replacement (requires --position replace)')
-  .option('--skip-empty', 'Skip files that don\'t have any headings', true)
+  .option('--skip-empty', "Skip files that don't have any headings", true)
   .option('-d, --dry-run', 'Show what would be changed without making changes')
   .option('-v, --verbose', 'Show detailed output')
   .option('--json', 'Output results in JSON format')
@@ -260,7 +264,10 @@ TOC Customization:
 program
   .command('validate')
   .description('Find broken links in markdown files')
-  .argument('[files...]', 'Markdown files to validate (supports globs like *.md, **/*.md, defaults to current directory)')
+  .argument(
+    '[files...]',
+    'Markdown files to validate (supports globs like *.md, **/*.md, defaults to current directory)'
+  )
   .option(
     '--link-types <types>',
     'Comma-separated link types to check: internal,external,anchor,image,reference,claude-import'

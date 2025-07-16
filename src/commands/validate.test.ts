@@ -219,7 +219,7 @@ Anchor link: [bad anchor](#non-existent)
 
     beforeEach(async () => {
       originalCwd = process.cwd();
-      
+
       // Mock console.log to capture output
       logOutput = [];
       originalConsoleLog = console.log;
@@ -230,7 +230,7 @@ Anchor link: [bad anchor](#non-existent)
       // Create test markdown files in testDir
       await writeFile(join(testDir, 'test1.md'), '# Test 1\n\n[broken link](./missing.md)');
       await writeFile(join(testDir, 'test2.md'), '# Test 2\n\n[valid link](./test1.md)');
-      
+
       // Create subdirectory with markdown files
       const subDir = join(testDir, 'subdirectory');
       await mkdir(subDir);

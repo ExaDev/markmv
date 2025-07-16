@@ -107,7 +107,11 @@ export type {
 
 export type { IndexOptions, FileMetadata, IndexableFile } from './commands/index.js';
 export type { TocOperationOptions, TocCliOptions, TocResult } from './commands/toc.js';
-export type { TocOptions, TocResult as TocGeneratorResult, MarkdownHeading } from './utils/toc-generator.js';
+export type {
+  TocOptions,
+  TocResult as TocGeneratorResult,
+  MarkdownHeading,
+} from './utils/toc-generator.js';
 
 // Re-export specific strategy types that might be useful
 export type {

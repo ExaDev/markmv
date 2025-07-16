@@ -74,7 +74,9 @@ Content here.
       expect(result.filesModified).toBe(1);
 
       const modifiedContent = await readFile(filePath, 'utf-8');
-      expect(modifiedContent).toMatch(/^### Contents\n\n.*- \[Main Title\]\(#main-title\).*- \[Section 1\]\(#section-1\).*# Main Title/s);
+      expect(modifiedContent).toMatch(
+        /^### Contents\n\n.*- \[Main Title\]\(#main-title\).*- \[Section 1\]\(#section-1\).*# Main Title/s
+      );
     });
 
     it('should handle position "before-content"', async () => {
@@ -129,7 +131,9 @@ Content here.
 
       const modifiedContent = await readFile(filePath, 'utf-8');
       expect(modifiedContent).not.toContain('Old TOC content');
-      expect(modifiedContent).toContain('<!-- TOC -->\n## Table of Contents\n\n- [Main Title](#main-title)\n  - [Section 1](#section-1)\n<!-- TOC -->');
+      expect(modifiedContent).toContain(
+        '<!-- TOC -->\n## Table of Contents\n\n- [Main Title](#main-title)\n  - [Section 1](#section-1)\n<!-- TOC -->'
+      );
     });
 
     it('should handle position "replace" with auto-detection', async () => {
@@ -239,7 +243,7 @@ Content here.
       // The original content should still contain the deep subsection
       // but it should not appear in the TOC
       expect(modifiedContent).toContain('#### Deep subsection');
-      
+
       // Check that the TOC doesn't contain the deep subsection as a link
       const tocSection = modifiedContent.substring(
         modifiedContent.indexOf('## Table of Contents'),
@@ -347,7 +351,9 @@ Content here.
       expect(result.filesModified).toBe(1);
 
       const modifiedContent = await readFile(filePath, 'utf-8');
-      expect(modifiedContent).toContain('#### Document Contents\n\n- [Main Title](#main-title)\n  - [Section 1](#section-1)');
+      expect(modifiedContent).toContain(
+        '#### Document Contents\n\n- [Main Title](#main-title)\n  - [Section 1](#section-1)'
+      );
     });
   });
 
@@ -394,17 +400,19 @@ Content here.
       const filePath = join(tempDir, 'test.md');
       await writeFile(filePath, '# Test', 'utf-8');
 
-      await expect(tocCommand([filePath], {
-        position: 'invalid-position',
-        minDepth: 1,
-        maxDepth: 6,
-        includeLineNumbers: false,
-        title: 'Table of Contents',
-        headingLevel: 2,
-        skipEmpty: true,
-        dryRun: false,
-        verbose: false,
-      })).rejects.toThrow('Invalid position: invalid-position');
+      await expect(
+        tocCommand([filePath], {
+          position: 'invalid-position',
+          minDepth: 1,
+          maxDepth: 6,
+          includeLineNumbers: false,
+          title: 'Table of Contents',
+          headingLevel: 2,
+          skipEmpty: true,
+          dryRun: false,
+          verbose: false,
+        })
+      ).rejects.toThrow('Invalid position: invalid-position');
     });
 
     it('should output JSON when requested', async () => {
