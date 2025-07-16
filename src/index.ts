@@ -81,6 +81,7 @@ export {
 // Command functions for programmatic access
 export { convertCommand } from './commands/convert.js';
 export { indexCommand } from './commands/index.js';
+export { tocCommand, generateToc as generateTocForFiles } from './commands/toc.js';
 export { validateCommand, validateLinks } from './commands/validate.js';
 
 // Type definitions
@@ -105,7 +106,8 @@ export type {
 } from './types/operations.js';
 
 export type { IndexOptions, FileMetadata, IndexableFile } from './commands/index.js';
-export type { TocOptions, TocResult, MarkdownHeading } from './utils/toc-generator.js';
+export type { TocOperationOptions, TocCliOptions, TocResult } from './commands/toc.js';
+export type { TocOptions, TocResult as TocGeneratorResult, MarkdownHeading } from './utils/toc-generator.js';
 
 // Re-export specific strategy types that might be useful
 export type {
