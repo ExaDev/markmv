@@ -1,4 +1,6 @@
 import { glob } from 'glob';
+import { statSync } from 'fs';
+import { join } from 'path';
 import { LinkValidator } from '../core/link-validator.js';
 import { LinkParser } from '../core/link-parser.js';
 import type { LinkType } from '../types/links.js';
@@ -304,6 +306,23 @@ export async function validateCommand(
   patterns: string[],
   cliOptions: ValidateCliOptions
 ): Promise<void> {
+  // Default to current directory if no patterns provided
+  let finalPatterns = patterns.length === 0 ? ['.'] : patterns;
+  
+  // Convert directories to glob patterns
+  finalPatterns = finalPatterns.map(pattern => {
+    try {
+      const stat = statSync(pattern);
+      if (stat.isDirectory()) {
+        return join(pattern, '**/*.md');
+      }
+      return pattern;
+    } catch {
+      // If stat fails, treat as a file pattern
+      return pattern;
+    }
+  });
+  
   // Convert CLI options to internal options
   const options: ValidateOperationOptions = {
     ...cliOptions,
@@ -318,7 +337,7 @@ export async function validateCommand(
   };
 
   try {
-    const result = await validateLinks(patterns, options);
+    const result = await validateLinks(finalPatterns, options);
 
     if (cliOptions.json) {
       console.log(JSON.stringify(result, null, 2));
