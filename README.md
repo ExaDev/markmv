@@ -193,7 +193,7 @@ multiple index types including links, imports, embeds, and hybrid modes.
 function createMarkMv(): FileOperations;
 ```
 
-Defined in: [index.ts:149](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L149)
+Defined in: [index.ts:155](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L155)
 
 Main entry point for the markmv library
 
@@ -226,7 +226,7 @@ function moveFile(
 options: MoveOperationOptions): Promise<OperationResult>;
 ```
 
-Defined in: [index.ts:173](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L173)
+Defined in: [index.ts:179](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L179)
 
 Convenience function for moving a single markdown file
 
@@ -274,7 +274,7 @@ Promise resolving to operation result
 function moveFiles(moves: object[], options: MoveOperationOptions): Promise<OperationResult>;
 ```
 
-Defined in: [index.ts:202](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L202)
+Defined in: [index.ts:208](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L208)
 
 Convenience function for moving multiple markdown files
 
@@ -321,7 +321,7 @@ function validateOperation(result: OperationResult): Promise<{
 }>;
 ```
 
-Defined in: [index.ts:231](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L231)
+Defined in: [index.ts:237](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L237)
 
 Convenience function for validating markdown file operations
 

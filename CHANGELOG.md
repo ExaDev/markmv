@@ -1,3 +1,44 @@
+## [1.29.0](https://github.com/ExaDev/markmv/compare/v1.28.0...v1.29.0) (2025-07-16)
+
+### Features
+
+* add default directory handling to validate command ([8f55b7c](https://github.com/ExaDev/markmv/commit/8f55b7c22f68cebbef927730fede916ca0f8b354))
+* add table of contents generation command ([fde93e0](https://github.com/ExaDev/markmv/commit/fde93e02175fad026d660baf3a98852476bfdc38))
+* export toc command from main index ([adfd303](https://github.com/ExaDev/markmv/commit/adfd30332303c16727057b40da5390d0c041dc28))
+* integrate toc command into CLI ([4d3ed63](https://github.com/ExaDev/markmv/commit/4d3ed6375d18c992232e5e62504e68b3ed023e76))
+* make validate command files argument optional ([f7782fa](https://github.com/ExaDev/markmv/commit/f7782fac559999d27cd1c3f0464638361db0df68))
+
+### Bug Fixes
+
+* handle optional marker parameter in toc command ([2bf81ce](https://github.com/ExaDev/markmv/commit/2bf81ceeb67029a6070be7434cfef1b356ff54d1))
+* improve cross-platform path handling in validate command ([c72b987](https://github.com/ExaDev/markmv/commit/c72b987cf08136b7232762fa5c5c1e42857c5bc6))
+* normalize all patterns for Windows glob compatibility ([60ef497](https://github.com/ExaDev/markmv/commit/60ef4978e48916d02746fbcc1901f9fed41d10c6))
+
+### Styles
+
+* apply consistent code formatting ([da47c78](https://github.com/ExaDev/markmv/commit/da47c7867e7affc0ecd2d7f8cb1a878bf89b3acf))
+* auto-fix linting issues ([cbb05a2](https://github.com/ExaDev/markmv/commit/cbb05a249c904a647cc03d260809529b1164e3ed))
+* auto-fix linting issues ([e3be3a1](https://github.com/ExaDev/markmv/commit/e3be3a195019b03b02f9999cdb2dd33eed0245e1))
+
+### Code Refactoring
+
+* add type safety improvements to TOC command ([53d7cb9](https://github.com/ExaDev/markmv/commit/53d7cb9d9981d282ae01e349dc733f6af3b65ec5))
+* **scripts:** remove timestamp generation from schema files ([f2830e6](https://github.com/ExaDev/markmv/commit/f2830e6f5d7107a3d611f2265461feacf20766d6))
+
+### Tests
+
+* add comprehensive CLI tests for validate command ([e877b2f](https://github.com/ExaDev/markmv/commit/e877b2f82d25e94d9371baba193a05c28e5cafae))
+* update CLI test for new toc command ([68ac86e](https://github.com/ExaDev/markmv/commit/68ac86e18ceefd53b7b2042d9909e38aa7e243ee))
+* update schema tests to verify no timestamps ([9ea8ae9](https://github.com/ExaDev/markmv/commit/9ea8ae9673df1ffef5e70d23feee00690ad80f26))
+
+### Build System
+
+* regenerate API schemas and validators ([b22494b](https://github.com/ExaDev/markmv/commit/b22494b9fabb51fcb7eed8e38d16f59b825060dc))
+* regenerate schemas without timestamps ([20656e6](https://github.com/ExaDev/markmv/commit/20656e63fdc8ae928484f6265550a04a48f6647a))
+* regenerate schemas without timestamps ([6348bdb](https://github.com/ExaDev/markmv/commit/6348bdbc6bdedee121f6a910367e4fe53444e888))
+* update generated files after TypeScript fix ([5adcb24](https://github.com/ExaDev/markmv/commit/5adcb24e25f6c65dbd60cb16a2d7c8ca926a2d20))
+* update generated files after validate command changes ([e7d49b8](https://github.com/ExaDev/markmv/commit/e7d49b8e1de99aecf6f70cf3eab986836793fac8))
+
 ## [1.28.0](https://github.com/ExaDev/markmv/compare/v1.27.0...v1.28.0) (2025-07-16)
 
 ### Features
