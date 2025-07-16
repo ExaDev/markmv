@@ -413,15 +413,29 @@ export async function tocCommand(
   cliOptions: TocCliOptions
 ): Promise<void> {
   // Validate position option
-  const validPositions = ['top', 'after-title', 'before-content', 'replace'];
-  if (cliOptions.position && !validPositions.includes(cliOptions.position)) {
-    throw new Error(`Invalid position: ${cliOptions.position}. Must be one of: ${validPositions.join(', ')}`);
+  const validPositions: readonly TocOperationOptions['position'][] = [
+    'top',
+    'after-title',
+    'before-content',
+    'replace',
+  ];
+  const isValidPosition = (pos: string): pos is TocOperationOptions['position'] => {
+    return pos === 'top' || pos === 'after-title' || pos === 'before-content' || pos === 'replace';
+  };
+
+  if (cliOptions.position && !isValidPosition(cliOptions.position)) {
+    throw new Error(
+      `Invalid position: ${cliOptions.position}. Must be one of: ${validPositions.join(', ')}`
+    );
   }
 
   // Convert CLI options to internal options
   const options: TocOperationOptions = {
     ...cliOptions,
-    position: (cliOptions.position as TocOperationOptions['position']) ?? 'after-title',
+    position:
+      cliOptions.position && isValidPosition(cliOptions.position)
+        ? cliOptions.position
+        : 'after-title',
   };
 
   try {
