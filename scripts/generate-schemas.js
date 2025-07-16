@@ -232,7 +232,6 @@ function generateAJVValidators(schemas) {
   
   const validatorCode = `/**
  * Auto-generated AJV validators for markmv API methods
- * Generated on: ${new Date().toISOString()}
  * 
  * DO NOT EDIT MANUALLY - This file is auto-generated
  */
@@ -309,7 +308,6 @@ function generateMCPTools(schemas) {
   
   const mcpCode = `/**
  * Auto-generated MCP tool definitions for markmv API methods
- * Generated on: ${new Date().toISOString()}
  * 
  * DO NOT EDIT MANUALLY - This file is auto-generated
  */
@@ -355,7 +353,6 @@ function generateAPIRoutes(schemas) {
   
   const apiCode = `/**
  * Auto-generated REST API route definitions for markmv API methods
- * Generated on: ${new Date().toISOString()}
  * 
  * DO NOT EDIT MANUALLY - This file is auto-generated
  */
