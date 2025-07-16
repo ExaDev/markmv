@@ -121,9 +121,45 @@ program
   .option('--max-depth <number>', 'Maximum depth to traverse subdirectories', parseInt)
   .option('--no-traverse-up', 'Prevent traversing above the specified directory')
   .option('--boundary <path>', 'Explicit boundary path to limit scanning scope')
+  .option('--generate-toc', 'Generate table of contents for each indexed file')
+  .option('--toc-min-depth <number>', 'Minimum heading level for TOC (1-6)', parseInt, 1)
+  .option('--toc-max-depth <number>', 'Maximum heading level for TOC (1-6)', parseInt, 6)
+  .option('--toc-include-line-numbers', 'Include line numbers in table of contents')
   .option('-d, --dry-run', 'Show what would be generated without creating files')
   .option('-v, --verbose', 'Show detailed output')
   .option('--json', 'Output results in JSON format')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ markmv index --type links --strategy directory --generate-toc
+  $ markmv index docs/ --type hybrid --generate-toc --toc-min-depth 2 --toc-max-depth 4
+  $ markmv index --generate-toc --toc-include-line-numbers --dry-run
+  $ markmv index --type links --strategy metadata --location all --generate-toc
+
+Table of Contents Options:
+  --generate-toc               Enable TOC generation for indexed files
+  --toc-min-depth <number>     Minimum heading level to include (1-6, default: 1)
+  --toc-max-depth <number>     Maximum heading level to include (1-6, default: 6)
+  --toc-include-line-numbers   Include line numbers in TOC entries
+
+Index Types:
+  links     Generate simple link lists with optional TOC
+  import    Generate Claude import syntax (@path)
+  embed     Generate embedded content (Obsidian style)
+  hybrid    Generate linked headers with descriptions and optional TOC
+
+Organization Strategies:
+  directory  Group by directory structure
+  metadata   Group by frontmatter categories
+  manual     Custom organization (extensible)
+
+Index Placement:
+  all       Create index in every directory
+  root      Create index only in root directory
+  branch    Create index in directories with subdirectories
+  existing  Update only existing index files`
+  )
   .action(indexCommand);
 
 program

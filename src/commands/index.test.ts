@@ -445,4 +445,214 @@ Just plain content.`;
       expect(mockFileUtils.writeTextFile).not.toHaveBeenCalled();
     });
   });
+
+  describe('Table of Contents Generation', () => {
+    const contentWithHeadings = `---
+title: "Test Document"
+description: "A test document"
+---
+
+# Main Title
+
+Some introductory content.
+
+## Section 1
+
+Content for section 1.
+
+### Subsection 1.1
+
+More detailed content.
+
+## Section 2
+
+Content for section 2.
+
+### Subsection 2.1
+
+Another subsection.
+
+#### Deep Subsection
+
+Very detailed content.
+`;
+
+    beforeEach(() => {
+      mockGlob.mockResolvedValue([`${testDir}/document.md`]);
+      mockFileUtils.readTextFile = vi.fn().mockResolvedValue(contentWithHeadings);
+      mockFileUtils.writeTextFile = vi.fn().mockResolvedValue(undefined);
+    });
+
+    it('should generate table of contents for links type when enabled', async () => {
+      const cliOptions = {
+        type: 'links',
+        strategy: 'directory',
+        location: 'root',
+        generateToc: true,
+        dryRun: true,
+        verbose: true,
+      };
+
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      await indexCommand(testDir, cliOptions);
+
+      const logCalls = consoleSpy.mock.calls;
+      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
+      const actualContent = logCalls[contentIndex + 1][0];
+
+      expect(actualContent).toContain('- [Test Document](document.md) - A test document');
+      expect(actualContent).toContain('- Table of Contents:');
+      expect(actualContent).toContain('- [Main Title](#main-title)');
+      expect(actualContent).toContain('  - [Section 1](#section-1)');
+      expect(actualContent).toContain('    - [Subsection 1.1](#subsection-1-1)');
+      expect(actualContent).toContain('  - [Section 2](#section-2)');
+      expect(actualContent).toContain('    - [Subsection 2.1](#subsection-2-1)');
+      expect(actualContent).toContain('      - [Deep Subsection](#deep-subsection)');
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should generate table of contents for hybrid type when enabled', async () => {
+      const cliOptions = {
+        type: 'hybrid',
+        strategy: 'directory',
+        location: 'root',
+        generateToc: true,
+        dryRun: true,
+        verbose: true,
+      };
+
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      await indexCommand(testDir, cliOptions);
+
+      const logCalls = consoleSpy.mock.calls;
+      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
+      const actualContent = logCalls[contentIndex + 1][0];
+
+      expect(actualContent).toContain('### [Test Document](document.md)');
+      expect(actualContent).toContain('> A test document');
+      expect(actualContent).toContain('#### Table of Contents');
+      expect(actualContent).toContain('- [Main Title](#main-title)');
+      expect(actualContent).toContain('  - [Section 1](#section-1)');
+      expect(actualContent).toContain('    - [Subsection 1.1](#subsection-1-1)');
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should not generate table of contents when disabled', async () => {
+      const cliOptions = {
+        type: 'links',
+        strategy: 'directory',
+        location: 'root',
+        generateToc: false,
+        dryRun: true,
+        verbose: true,
+      };
+
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      await indexCommand(testDir, cliOptions);
+
+      const logCalls = consoleSpy.mock.calls;
+      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
+      const actualContent = logCalls[contentIndex + 1][0];
+
+      expect(actualContent).toContain('- [Test Document](document.md) - A test document');
+      expect(actualContent).not.toContain('- Table of Contents:');
+      expect(actualContent).not.toContain('- [Main Title](#main-title)');
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should respect TOC depth options', async () => {
+      const cliOptions = {
+        type: 'links',
+        strategy: 'directory',
+        location: 'root',
+        generateToc: true,
+        tocMinDepth: 2,
+        tocMaxDepth: 3,
+        dryRun: true,
+        verbose: true,
+      };
+
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      await indexCommand(testDir, cliOptions);
+
+      const logCalls = consoleSpy.mock.calls;
+      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
+      const actualContent = logCalls[contentIndex + 1][0];
+
+      expect(actualContent).toContain('- Table of Contents:');
+      expect(actualContent).not.toContain('- [Main Title](#main-title)'); // Level 1, excluded
+      expect(actualContent).toContain('- [Section 1](#section-1)'); // Level 2, included
+      expect(actualContent).toContain('  - [Subsection 1.1](#subsection-1-1)'); // Level 3, included
+      expect(actualContent).not.toContain('- [Deep Subsection](#deep-subsection)'); // Level 4, excluded
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should include line numbers in TOC when requested', async () => {
+      const cliOptions = {
+        type: 'hybrid',
+        strategy: 'directory',
+        location: 'root',
+        generateToc: true,
+        tocIncludeLineNumbers: true,
+        dryRun: true,
+        verbose: true,
+      };
+
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      await indexCommand(testDir, cliOptions);
+
+      const logCalls = consoleSpy.mock.calls;
+      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
+      const actualContent = logCalls[contentIndex + 1][0];
+
+      expect(actualContent).toContain('#### Table of Contents');
+      expect(actualContent).toContain('- [Main Title](#main-title) (line 6)');
+      expect(actualContent).toContain('  - [Section 1](#section-1) (line 10)');
+      expect(actualContent).toContain('    - [Subsection 1.1](#subsection-1-1) (line 14)');
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should handle files with no headings gracefully', async () => {
+      const contentWithoutHeadings = `This is just plain content with no headings.
+
+Some more content here.
+
+No headings at all in this content.
+`;
+
+      mockFileUtils.readTextFile = vi.fn().mockResolvedValue(contentWithoutHeadings);
+
+      const cliOptions = {
+        type: 'links',
+        strategy: 'directory',
+        location: 'root',
+        generateToc: true,
+        dryRun: true,
+        verbose: true,
+      };
+
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      await indexCommand(testDir, cliOptions);
+
+      const logCalls = consoleSpy.mock.calls;
+      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
+      const actualContent = logCalls[contentIndex + 1][0];
+
+      expect(actualContent).toContain('- [document](document.md)');
+      expect(actualContent).not.toContain('- Table of Contents:');
+
+      consoleSpy.mockRestore();
+    });
+  });
 });
