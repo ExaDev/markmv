@@ -70,16 +70,16 @@ export interface TocResult {
 /**
  * Generate and insert table of contents into markdown files.
  *
- * Analyzes markdown files to extract headings and generates a formatted table of contents
- * that can be inserted at various positions within the file.
+ * Analyzes markdown files to extract headings and generates a formatted table of contents that can
+ * be inserted at various positions within the file.
  *
  * @example
  *   Basic TOC generation
  *   ```typescript
  *   const result = await generateToc(['README.md'], {
- *     position: 'after-title',
- *     minDepth: 2,
- *     maxDepth: 4
+ *   position: 'after-title',
+ *   minDepth: 2,
+ *   maxDepth: 4
  *   });
  *
  *   console.log(`Added TOC to ${result.filesModified} files`);
@@ -89,9 +89,9 @@ export interface TocResult {
  *   Replace existing TOC
  *   ```typescript
  *   const result = await generateToc(['docs/*.md'], {
- *     position: 'replace',
- *     marker: '<!-- TOC -->',
- *     skipEmpty: true
+ *   position: 'replace',
+ *   marker: '<!-- TOC -->',
+ *   skipEmpty: true
  *   });
  *   ```
  *
@@ -168,7 +168,7 @@ export async function generateToc(
 
       // Generate TOC markdown
       const tocMarkdown = generateTocMarkdown(tocResult.toc, opts.title, opts.headingLevel);
-      
+
       // Insert TOC into content
       const modifiedContent = insertTocIntoContent(content, tocMarkdown, opts);
 
@@ -176,7 +176,7 @@ export async function generateToc(
       if (!opts.dryRun && modifiedContent !== content) {
         await writeFile(filePath, modifiedContent, 'utf-8');
         result.filesModified++;
-        
+
         if (opts.verbose) {
           console.log(`  ✅ TOC added/updated`);
         }
@@ -196,7 +196,6 @@ export async function generateToc(
         tocLength: tocResult.toc.length,
         position: opts.position,
       });
-
     } catch (error) {
       result.fileErrors.push({
         file: filePath,
@@ -213,17 +212,13 @@ export async function generateToc(
   return result;
 }
 
-/**
- * Generate formatted TOC markdown with title and heading level.
- */
+/** Generate formatted TOC markdown with title and heading level. */
 function generateTocMarkdown(toc: string, title: string, headingLevel: number): string {
   const headingPrefix = '#'.repeat(headingLevel);
   return `${headingPrefix} ${title}\n\n${toc}`;
 }
 
-/**
- * Insert TOC into content at the specified position.
- */
+/** Insert TOC into content at the specified position. */
 function insertTocIntoContent(
   content: string,
   tocMarkdown: string,
@@ -249,12 +244,10 @@ function insertTocIntoContent(
   }
 }
 
-/**
- * Insert TOC after the first heading (title).
- */
+/** Insert TOC after the first heading (title). */
 function insertAfterTitle(lines: string[], tocMarkdown: string): string {
-  const titleIndex = lines.findIndex(line => line.trim().startsWith('#'));
-  
+  const titleIndex = lines.findIndex((line) => line.trim().startsWith('#'));
+
   if (titleIndex === -1) {
     // No title found, insert at top
     return `${tocMarkdown}\n\n${lines.join('\n')}`;
@@ -269,19 +262,11 @@ function insertAfterTitle(lines: string[], tocMarkdown: string): string {
   // Insert TOC
   const before = lines.slice(0, insertIndex);
   const after = lines.slice(insertIndex);
-  
-  return [
-    ...before,
-    '',
-    tocMarkdown,
-    '',
-    ...after
-  ].join('\n');
+
+  return [...before, '', tocMarkdown, '', ...after].join('\n');
 }
 
-/**
- * Insert TOC before the main content (after frontmatter if present).
- */
+/** Insert TOC before the main content (after frontmatter if present). */
 function insertBeforeContent(lines: string[], tocMarkdown: string): string {
   let insertIndex = 0;
 
@@ -304,18 +289,11 @@ function insertBeforeContent(lines: string[], tocMarkdown: string): string {
   // Insert TOC
   const before = lines.slice(0, insertIndex);
   const after = lines.slice(insertIndex);
-  
-  return [
-    ...before,
-    tocMarkdown,
-    '',
-    ...after
-  ].join('\n');
+
+  return [...before, tocMarkdown, '', ...after].join('\n');
 }
 
-/**
- * Replace existing TOC using marker or heuristic detection.
- */
+/** Replace existing TOC using marker or heuristic detection. */
 function replaceExistingToc(
   content: string,
   tocMarkdown: string,
@@ -323,7 +301,10 @@ function replaceExistingToc(
 ): string {
   // Try marker-based replacement first
   if (options.marker) {
-    const markerRegex = new RegExp(`${escapeRegExp(options.marker)}[\\s\\S]*?${escapeRegExp(options.marker)}`, 'g');
+    const markerRegex = new RegExp(
+      `${escapeRegExp(options.marker)}[\\s\\S]*?${escapeRegExp(options.marker)}`,
+      'g'
+    );
     if (markerRegex.test(content)) {
       return content.replace(markerRegex, `${options.marker}\n${tocMarkdown}\n${options.marker}`);
     }
@@ -332,24 +313,24 @@ function replaceExistingToc(
   // Try to detect existing TOC by looking for "Table of Contents" heading
   const tocHeadingRegex = /^#{1,6}\s+table\s+of\s+contents\s*$/im;
   const match = content.match(tocHeadingRegex);
-  
+
   if (match) {
     const lines = content.split('\n');
-    const tocLineIndex = lines.findIndex(line => tocHeadingRegex.test(line));
-    
+    const tocLineIndex = lines.findIndex((line) => tocHeadingRegex.test(line));
+
     if (tocLineIndex !== -1) {
       // Find the end of the TOC (next heading or two consecutive empty lines)
       let endIndex = tocLineIndex + 1;
       let emptyLineCount = 0;
-      
+
       while (endIndex < lines.length) {
         const line = lines[endIndex];
-        
+
         // If we hit another heading, that's the end
         if (line.trim().startsWith('#')) {
           break;
         }
-        
+
         // Count empty lines
         if (line.trim() === '') {
           emptyLineCount++;
@@ -359,20 +340,15 @@ function replaceExistingToc(
         } else {
           emptyLineCount = 0;
         }
-        
+
         endIndex++;
       }
-      
+
       // Replace the TOC section
       const before = lines.slice(0, tocLineIndex);
       const after = lines.slice(endIndex);
-      
-      return [
-        ...before,
-        tocMarkdown,
-        '',
-        ...after
-      ].join('\n');
+
+      return [...before, tocMarkdown, '', ...after].join('\n');
     }
   }
 
@@ -380,9 +356,7 @@ function replaceExistingToc(
   return insertAfterTitle(content.split('\n'), tocMarkdown);
 }
 
-/**
- * Escape special regex characters.
- */
+/** Escape special regex characters. */
 function escapeRegExp(string: string): string {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -390,8 +364,8 @@ function escapeRegExp(string: string): string {
 /**
  * CLI command handler for TOC operations.
  *
- * Processes markdown files to generate and insert table of contents. Supports various
- * positioning options and customization.
+ * Processes markdown files to generate and insert table of contents. Supports various positioning
+ * options and customization.
  *
  * @example
  *   ```bash
@@ -403,15 +377,12 @@ function escapeRegExp(string: string): string {
  *
  *   # Replace existing TOC using marker
  *   markmv toc file.md --position replace --marker "<!-- TOC -->"
- *   ```
+ *   ```;
  *
  * @param filePaths - Array of file paths to process
  * @param cliOptions - CLI-specific options
  */
-export async function tocCommand(
-  filePaths: string[],
-  cliOptions: TocCliOptions
-): Promise<void> {
+export async function tocCommand(filePaths: string[], cliOptions: TocCliOptions): Promise<void> {
   // Validate position option
   const validPositions: readonly TocOperationOptions['position'][] = [
     'top',
@@ -466,7 +437,9 @@ export async function tocCommand(
       for (const detail of result.fileDetails) {
         const status = detail.tocGenerated ? '✅' : '⏭️';
         console.log(`  ${status} ${detail.file}`);
-        console.log(`    Headings: ${detail.headingsFound}, TOC lines: ${detail.tocLength}, Position: ${detail.position}`);
+        console.log(
+          `    Headings: ${detail.headingsFound}, TOC lines: ${detail.tocLength}, Position: ${detail.position}`
+        );
       }
     }
 
@@ -475,7 +448,6 @@ export async function tocCommand(
     } else if (result.filesModified > 0) {
       console.log(`✅ Successfully added/updated TOC in ${result.filesModified} files`);
     }
-
   } catch (error) {
     console.error('TOC generation failed:', error);
     process.exitCode = 1;
