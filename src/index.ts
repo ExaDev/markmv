@@ -101,6 +101,7 @@ export type {
   JoinOperationOptions,
   MergeOperationOptions,
   ConvertOperationOptions,
+  BarrelOperationOptions,
 } from './types/operations.js';
 
 export type { IndexOptions, FileMetadata, IndexableFile } from './commands/index.js';
@@ -294,6 +295,31 @@ export async function generateIndex(
   const { indexCommand } = await import('./commands/index.js');
   return indexCommand(directory, options);
 }
+
+/**
+ * Generate barrel files for themed content aggregation (alias for generateIndex)
+ *
+ * @example
+ *   ```typescript
+ *   import { generateBarrel } from 'markmv';
+ *
+ *   const options = {
+ *     type: 'links',
+ *     strategy: 'directory',
+ *     name: 'api-docs.md',
+ *     generateToc: true
+ *   };
+ *   await generateBarrel('docs/', options);
+ *   ```;
+ *
+ * @param directory - Directory to generate barrel files for
+ * @param options - Barrel generation options (same as IndexOptions)
+ *
+ * @returns Promise resolving when barrel generation is complete
+ *
+ * @group Commands
+ */
+export const generateBarrel = generateIndex;
 
 /**
  * Test function to demonstrate auto-exposure pattern
