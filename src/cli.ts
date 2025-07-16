@@ -163,6 +163,60 @@ Index Placement:
   .action(indexCommand);
 
 program
+  .command('barrel')
+  .description('Generate barrel files for themed content aggregation (alias for index)')
+  .argument('[directory]', 'Directory to generate barrel files for', '.')
+  .option('-t, --type <type>', 'Barrel type: links|import|embed|hybrid', 'links')
+  .option(
+    '-s, --strategy <strategy>',
+    'Organization strategy: directory|metadata|manual',
+    'directory'
+  )
+  .option('-l, --location <location>', 'Barrel placement: all|root|branch|existing', 'root')
+  .option('-n, --name <name>', 'Barrel filename', 'index.md')
+  .option('--embed-style <style>', 'Embed style for embed type: obsidian|markdown', 'obsidian')
+  .option('--template <file>', 'Custom template file')
+  .option('--max-depth <number>', 'Maximum depth to traverse subdirectories', parseInt)
+  .option('--no-traverse-up', 'Prevent traversing above the specified directory')
+  .option('--boundary <path>', 'Explicit boundary path to limit scanning scope')
+  .option('--generate-toc', 'Generate table of contents for each indexed file')
+  .option('--toc-min-depth <number>', 'Minimum heading level for TOC (1-6)', parseInt, 1)
+  .option('--toc-max-depth <number>', 'Maximum heading level for TOC (1-6)', parseInt, 6)
+  .option('--toc-include-line-numbers', 'Include line numbers in table of contents')
+  .option('-d, --dry-run', 'Show what would be generated without creating files')
+  .option('-v, --verbose', 'Show detailed output')
+  .option('--json', 'Output results in JSON format')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ markmv barrel --type links --strategy directory --generate-toc
+  $ markmv barrel docs/ --type hybrid --generate-toc --toc-min-depth 2 --toc-max-depth 4
+  $ markmv barrel --generate-toc --toc-include-line-numbers --dry-run
+  $ markmv barrel --type links --strategy metadata --location all --generate-toc
+
+Barrel Types:
+  links     Generate simple link lists with optional TOC
+  import    Generate Claude import syntax (@path)
+  embed     Generate embedded content (Obsidian style)
+  hybrid    Generate linked headers with descriptions and optional TOC
+
+Organization Strategies:
+  directory  Group by directory structure
+  metadata   Group by frontmatter categories
+  manual     Custom organization (extensible)
+
+Barrel Placement:
+  all       Create barrel in every directory
+  root      Create barrel only in root directory
+  branch    Create barrel in directories with subdirectories
+  existing  Update only existing barrel files
+
+Note: This is an alias for the 'index' command with barrel-focused terminology.`
+  )
+  .action(indexCommand);
+
+program
   .command('validate')
   .description('Find broken links in markdown files')
   .argument('<files...>', 'Markdown files to validate (supports globs like *.md, **/*.md)')
