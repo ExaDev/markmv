@@ -1,3 +1,9 @@
+## [1.28.0](https://github.com/ExaDev/markmv/compare/v1.27.0...v1.28.0) (2025-07-16)
+
+### Features
+
+* add barrel command for themed content aggregation ([#30](https://github.com/ExaDev/markmv/issues/30)) ([f149927](https://github.com/ExaDev/markmv/commit/f149927405a17c564666b8f462f2086cfd851f62))
+
 ## [1.27.0](https://github.com/ExaDev/markmv/compare/v1.26.2...v1.27.0) (2025-07-16)
 
 ### Features

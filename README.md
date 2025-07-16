@@ -21,7 +21,6 @@ npx markmv --help
 - 🔗 **Join multiple files** with conflict resolution
 - 🧠 **Merge content** with interactive conflict handling
 - 📚 **Generate indexes** for documentation organization
-- 🗂️ **Create barrel files** for themed content aggregation
 - 🌐 **Multiple access methods**: CLI, REST API, MCP, and programmatic
 
 ## 📦 Installation
@@ -53,9 +52,6 @@ npx markmv join intro.md setup.md usage.md --output complete-guide.md
 
 # Generate documentation index
 npx markmv index --type links --strategy directory
-
-# Generate barrel files for themed content aggregation
-npx markmv barrel --type hybrid --strategy metadata --generate-toc
 ```
 
 ## 🌐 Access Methods
@@ -119,7 +115,7 @@ Once configured, Claude can use these markmv tools:
 - **`move_files`** - Move multiple files in batch  
 - **`validate_operation`** - Check for broken links
 
-*Note: Additional tools (split, join, merge, convert, index, barrel) will be added in future releases.*
+*Note: Additional tools (split, join, merge, convert, index) will be added in future releases.*
 
 ### Example Usage with Claude
 
@@ -197,7 +193,7 @@ multiple index types including links, imports, embeds, and hybrid modes.
 function createMarkMv(): FileOperations;
 ```
 
-Defined in: [index.ts:148](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L148)
+Defined in: [index.ts:149](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L149)
 
 Main entry point for the markmv library
 
@@ -230,7 +226,7 @@ function moveFile(
 options: MoveOperationOptions): Promise<OperationResult>;
 ```
 
-Defined in: [index.ts:172](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L172)
+Defined in: [index.ts:173](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L173)
 
 Convenience function for moving a single markdown file
 
@@ -278,7 +274,7 @@ Promise resolving to operation result
 function moveFiles(moves: object[], options: MoveOperationOptions): Promise<OperationResult>;
 ```
 
-Defined in: [index.ts:201](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L201)
+Defined in: [index.ts:202](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L202)
 
 Convenience function for moving multiple markdown files
 
@@ -325,7 +321,7 @@ function validateOperation(result: OperationResult): Promise<{
 }>;
 ```
 
-Defined in: [index.ts:230](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L230)
+Defined in: [index.ts:231](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L231)
 
 Convenience function for validating markdown file operations
 
