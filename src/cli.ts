@@ -260,7 +260,7 @@ TOC Customization:
 program
   .command('validate')
   .description('Find broken links in markdown files')
-  .argument('<files...>', 'Markdown files to validate (supports globs like *.md, **/*.md)')
+  .argument('[files...]', 'Markdown files to validate (supports globs like *.md, **/*.md, defaults to current directory)')
   .option(
     '--link-types <types>',
     'Comma-separated link types to check: internal,external,anchor,image,reference,claude-import'
@@ -280,6 +280,9 @@ program
     'after',
     `
 Examples:
+  $ markmv validate                                         # Validate current directory
+  $ markmv validate .                                       # Validate current directory  
+  $ markmv validate ./                                      # Validate current directory
   $ markmv validate docs/**/*.md --check-external --verbose
   $ markmv validate README.md --link-types internal,image --include-context
   $ markmv validate **/*.md --group-by type --only-broken
