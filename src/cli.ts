@@ -7,6 +7,7 @@ import { joinCommand } from './commands/join.js';
 import { mergeCommand } from './commands/merge.js';
 import { moveCommand } from './commands/move.js';
 import { splitCommand } from './commands/split.js';
+import { tocCommand } from './commands/toc.js';
 import { validateCommand } from './commands/validate.js';
 
 const program = new Command();
@@ -215,6 +216,46 @@ Barrel Placement:
 Note: This is an alias for the 'index' command with barrel-focused terminology.`
   )
   .action(indexCommand);
+
+program
+  .command('toc')
+  .description('Generate and insert table of contents into markdown files')
+  .argument('<files...>', 'Markdown files to process (supports globs like *.md, **/*.md)')
+  .option('--min-depth <number>', 'Minimum heading level to include (1-6)', parseInt, 1)
+  .option('--max-depth <number>', 'Maximum heading level to include (1-6)', parseInt, 6)
+  .option('--include-line-numbers', 'Include line numbers in TOC entries')
+  .option('--position <position>', 'TOC position: top|after-title|before-content|replace', 'after-title')
+  .option('--title <title>', 'TOC title', 'Table of Contents')
+  .option('--heading-level <level>', 'TOC heading level (1-6)', parseInt, 2)
+  .option('--marker <marker>', 'Custom marker for TOC replacement (requires --position replace)')
+  .option('--skip-empty', 'Skip files that don\'t have any headings', true)
+  .option('-d, --dry-run', 'Show what would be changed without making changes')
+  .option('-v, --verbose', 'Show detailed output')
+  .option('--json', 'Output results in JSON format')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ markmv toc README.md
+  $ markmv toc docs/*.md --position after-title --min-depth 2 --max-depth 4
+  $ markmv toc file.md --position replace --marker "<!-- TOC -->"
+  $ markmv toc **/*.md --title "Contents" --heading-level 3 --include-line-numbers
+
+Position Options:
+  top            Insert TOC at the very beginning of the file
+  after-title    Insert TOC after the first heading (default)
+  before-content Insert TOC before main content (after frontmatter)
+  replace        Replace existing TOC using marker or auto-detection
+
+TOC Customization:
+  --title <title>          Custom TOC title (default: "Table of Contents")
+  --heading-level <level>  TOC heading level 1-6 (default: 2, creates ## title)
+  --marker <marker>        Custom marker for replacement (e.g., "<!-- TOC -->")
+  --min-depth <number>     Minimum heading level to include (1-6, default: 1)
+  --max-depth <number>     Maximum heading level to include (1-6, default: 6)
+  --include-line-numbers   Include line numbers in TOC entries`
+  )
+  .action(tocCommand);
 
 program
   .command('validate')
