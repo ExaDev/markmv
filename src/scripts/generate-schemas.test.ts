@@ -94,10 +94,8 @@ describe('Schema Generation Script', () => {
         expect(content).toContain('*/');
         expect(content).toContain('export');
         expect(content).toContain('DO NOT EDIT MANUALLY');
-        // Match timestamp that may be on the next line after "Generated on:"
-        expect(content).toMatch(
-          /Generated on:[\s\r\n*]*\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/
-        );
+        // Should not contain timestamp
+        expect(content).not.toContain('Generated on:');
       });
     });
 
@@ -252,22 +250,18 @@ describe('Schema Generation Script', () => {
         expect(content).toContain('/**');
         expect(content).toContain('Auto-generated');
         expect(content).toContain('DO NOT EDIT MANUALLY');
-        expect(content).toContain('Generated on:');
+        expect(content).not.toContain('Generated on:');
         expect(content).toContain('*/');
       });
     });
 
-    it('should include proper generation timestamps', () => {
+    it('should not include generation timestamps', () => {
       const files = ['ajv-validators.ts', 'mcp-tools.ts', 'api-routes.ts'];
 
       files.forEach((file) => {
         const content = readFileSync(join(GENERATED_DIR, file), 'utf8');
-        const timestampMatch = content.match(
-          /Generated on:[\s\r\n*]*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)/
-        );
-
-        expect(timestampMatch).toBeTruthy();
-        expect(new Date(timestampMatch[1])).toBeInstanceOf(Date);
+        
+        expect(content).not.toContain('Generated on:');
       });
     });
   });
