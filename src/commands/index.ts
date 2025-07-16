@@ -2,6 +2,7 @@ import { existsSync, statSync } from 'node:fs';
 import { basename, join, relative, resolve } from 'node:path';
 import { glob } from 'glob';
 import { FileUtils } from '../utils/file-utils.js';
+import { TocGenerator, type TocOptions } from '../utils/toc-generator.js';
 
 // Test PR creation with trailing spaces on main branch
 
@@ -36,6 +37,10 @@ export interface IndexOptions {
   noTraverseUp: boolean;
   /** Explicit boundary path to limit scanning scope */
   boundary?: string;
+  /** Generate table of contents for each indexed file */
+  generateToc: boolean;
+  /** Table of contents generation options */
+  tocOptions: TocOptions;
 }
 
 /**
@@ -103,6 +108,10 @@ interface IndexCliOptions {
   maxDepth?: number;
   noTraverseUp?: boolean;
   boundary?: string;
+  generateToc?: boolean;
+  tocMinDepth?: number;
+  tocMaxDepth?: number;
+  tocIncludeLineNumbers?: boolean;
 }
 
 /**
@@ -141,6 +150,12 @@ export async function indexCommand(
     dryRun: cliOptions.dryRun || false,
     verbose: cliOptions.verbose || false,
     noTraverseUp: cliOptions.noTraverseUp || false,
+    generateToc: cliOptions.generateToc || false,
+    tocOptions: {
+      minDepth: cliOptions.tocMinDepth || 1,
+      maxDepth: cliOptions.tocMaxDepth || 6,
+      includeLineNumbers: cliOptions.tocIncludeLineNumbers || false,
+    },
     ...(cliOptions.template && { template: cliOptions.template }),
     ...(cliOptions.maxDepth !== undefined && { maxDepth: cliOptions.maxDepth }),
     ...(cliOptions.boundary && { boundary: cliOptions.boundary }),
@@ -239,7 +254,7 @@ async function generateIndexFiles(options: IndexOptions, directory: string): Pro
     // Generate each index file
     for (const indexPath of indexPaths) {
       const relevantFiles = getRelevantFilesForIndex(indexPath, organizedFiles, options);
-      const indexContent = generateIndexContent(indexPath, relevantFiles, options);
+      const indexContent = await generateIndexContent(indexPath, relevantFiles, options);
 
       if (options.dryRun) {
         console.log(`Would create: ${indexPath}`);
@@ -537,13 +552,14 @@ function getRelevantFilesForIndex(
 }
 
 /** Generate the content for an index file */
-function generateIndexContent(
+async function generateIndexContent(
   indexPath: string,
   organizedFiles: Map<string, IndexableFile[]>,
   options: IndexOptions
-): string {
+): Promise<string> {
   const now = new Date().toISOString();
   const indexDir = indexPath.replace(/\\/g, '/').split('/').slice(0, -1).join('/');
+  const tocGenerator = new TocGenerator();
 
   let content = `---
 generated: true
@@ -581,6 +597,16 @@ updated: ${now}
             content += ` - ${description}`;
           }
           content += '\n';
+          
+          // Add TOC if enabled and file has headings
+          if (options.generateToc) {
+            const tocResult = await tocGenerator.generateToc(file.content, options.tocOptions);
+            if (tocResult.toc && tocResult.headings.length > 0) {
+              content += `  - Table of Contents:\n`;
+              const indentedToc = tocResult.toc.split('\n').map(line => `    ${line}`).join('\n');
+              content += `${indentedToc}\n`;
+            }
+          }
           break;
 
         case 'import':
@@ -603,6 +629,15 @@ updated: ${now}
             content += `> ${description}\n\n`;
           } else {
             content += '\n';
+          }
+          
+          // Add TOC if enabled and file has headings
+          if (options.generateToc) {
+            const tocResult = await tocGenerator.generateToc(file.content, options.tocOptions);
+            if (tocResult.toc && tocResult.headings.length > 0) {
+              content += `#### Table of Contents\n\n`;
+              content += `${tocResult.toc}\n\n`;
+            }
           }
           break;
       }
