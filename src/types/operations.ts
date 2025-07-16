@@ -98,6 +98,41 @@ export interface ConvertOperationOptions extends OperationOptions {
 }
 
 /**
+ * Configuration options specific to barrel file operations.
+ *
+ * Extends base operation options with barrel-specific settings for generating themed content
+ * aggregation files across multiple directories with pattern matching and metadata filtering.
+ *
+ * @category Types
+ */
+export interface BarrelOperationOptions extends OperationOptions {
+  /** Output file path for the barrel file */
+  output: string;
+  /** Glob pattern for file matching */
+  pattern: string;
+  /** Custom title for the barrel file */
+  title?: string;
+  /** Custom description for the barrel file */
+  description?: string;
+  /** Metadata filtering criteria */
+  filter?: Record<string, string>;
+  /** Grouping strategy for results */
+  groupBy?: 'directory' | 'metadata' | 'type' | 'none';
+  /** Path to custom template file */
+  template?: string;
+  /** Maximum depth to traverse subdirectories */
+  maxDepth?: number;
+  /** Base directory to start scanning from */
+  baseDir?: string;
+  /** Whether to include file modification dates */
+  includeModified?: boolean;
+  /** Whether to include file sizes */
+  includeSize?: boolean;
+  /** Whether to track updates automatically */
+  trackUpdates?: boolean;
+}
+
+/**
  * Result of any file operation containing comprehensive status information.
  *
  * Provides detailed information about what was changed, created, or deleted during an operation,

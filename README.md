@@ -21,6 +21,7 @@ npx markmv --help
 - 🔗 **Join multiple files** with conflict resolution
 - 🧠 **Merge content** with interactive conflict handling
 - 📚 **Generate indexes** for documentation organization
+- 🗂️ **Create barrel files** for themed content aggregation
 - 🌐 **Multiple access methods**: CLI, REST API, MCP, and programmatic
 
 ## 📦 Installation
@@ -52,6 +53,9 @@ npx markmv join intro.md setup.md usage.md --output complete-guide.md
 
 # Generate documentation index
 npx markmv index --type links --strategy directory
+
+# Generate barrel files for themed content aggregation
+npx markmv barrel --type hybrid --strategy metadata --generate-toc
 ```
 
 ## 🌐 Access Methods
@@ -115,7 +119,7 @@ Once configured, Claude can use these markmv tools:
 - **`move_files`** - Move multiple files in batch  
 - **`validate_operation`** - Check for broken links
 
-*Note: Additional tools (split, join, merge, convert, index) will be added in future releases.*
+*Note: Additional tools (split, join, merge, convert, index, barrel) will be added in future releases.*
 
 ### Example Usage with Claude
 
