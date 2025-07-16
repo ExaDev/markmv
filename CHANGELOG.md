@@ -1,3 +1,13 @@
+## [1.27.0](https://github.com/ExaDev/markmv/compare/v1.26.2...v1.27.0) (2025-07-16)
+
+### Features
+
+* add table of contents generation to index command ([#28](https://github.com/ExaDev/markmv/issues/28)) ([6bd9679](https://github.com/ExaDev/markmv/commit/6bd9679fa8e1c5c04ee116680482a052e5907bb9)), closes [#27](https://github.com/ExaDev/markmv/issues/27)
+
+### Styles
+
+* auto-fix linting issues ([bb0b951](https://github.com/ExaDev/markmv/commit/bb0b9513b9bd7a837950d6c418a133a3512226c7))
+
 ## [1.26.2](https://github.com/ExaDev/markmv/compare/v1.26.1...v1.26.2) (2025-06-16)
 
 ### Bug Fixes

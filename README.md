@@ -165,7 +165,7 @@ options. Supports dry run mode, verbose output, and various conversion strategie
 function indexCommand(directory: undefined | string, cliOptions: IndexCliOptions): Promise<void>;
 ```
 
-Defined in: [commands/index.ts:131](https://github.com/ExaDev/markmv/blob/main/src/commands/index.ts#L131)
+Defined in: [commands/index.ts:140](https://github.com/ExaDev/markmv/blob/main/src/commands/index.ts#L140)
 
 CLI command handler for generating documentation indexes.
 
@@ -193,7 +193,7 @@ multiple index types including links, imports, embeds, and hybrid modes.
 function createMarkMv(): FileOperations;
 ```
 
-Defined in: [index.ts:146](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L146)
+Defined in: [index.ts:148](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L148)
 
 Main entry point for the markmv library
 
@@ -226,7 +226,7 @@ function moveFile(
 options: MoveOperationOptions): Promise<OperationResult>;
 ```
 
-Defined in: [index.ts:170](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L170)
+Defined in: [index.ts:172](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L172)
 
 Convenience function for moving a single markdown file
 
@@ -274,7 +274,7 @@ Promise resolving to operation result
 function moveFiles(moves: object[], options: MoveOperationOptions): Promise<OperationResult>;
 ```
 
-Defined in: [index.ts:199](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L199)
+Defined in: [index.ts:201](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L201)
 
 Convenience function for moving multiple markdown files
 
@@ -321,7 +321,7 @@ function validateOperation(result: OperationResult): Promise<{
 }>;
 ```
 
-Defined in: [index.ts:228](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L228)
+Defined in: [index.ts:230](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L230)
 
 Convenience function for validating markdown file operations
 
