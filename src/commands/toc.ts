@@ -113,7 +113,7 @@ export async function generateToc(
     position: options.position ?? 'after-title',
     title: options.title ?? 'Table of Contents',
     headingLevel: options.headingLevel ?? 2,
-    marker: options.marker,
+    marker: options.marker ?? '',
     skipEmpty: options.skipEmpty ?? true,
     dryRun: options.dryRun ?? false,
     verbose: options.verbose ?? false,
