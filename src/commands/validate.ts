@@ -311,17 +311,19 @@ export async function validateCommand(
 
   // Convert directories to glob patterns
   finalPatterns = finalPatterns.map((pattern) => {
+    // Always normalize paths for cross-platform compatibility
+    const normalizedPattern = pattern.replace(/\\/g, '/');
+    
     try {
       const stat = statSync(pattern);
       if (stat.isDirectory()) {
         // Use posix-style paths for glob patterns to ensure cross-platform compatibility
-        const normalizedPattern = pattern.replace(/\\/g, '/');
         return posix.join(normalizedPattern, '**/*.md');
       }
-      return pattern;
+      return normalizedPattern;
     } catch {
-      // If stat fails, treat as a file pattern
-      return pattern;
+      // If stat fails, treat as a file pattern (could be a glob)
+      return normalizedPattern;
     }
   });
 
