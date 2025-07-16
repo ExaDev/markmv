@@ -9,7 +9,6 @@ interface HeadingNode extends Node {
   children: Array<{ type: string; value?: string }>;
 }
 
-
 /**
  * Represents a heading extracted from markdown content.
  *
@@ -57,8 +56,8 @@ export interface TocResult {
 /**
  * Utility for generating table of contents from markdown content.
  *
- * This class extracts headings from markdown content and generates formatted
- * table of contents with proper indentation and anchor links.
+ * This class extracts headings from markdown content and generates formatted table of contents with
+ * proper indentation and anchor links.
  *
  * @category Utils
  *
@@ -68,7 +67,7 @@ export interface TocResult {
  *   const generator = new TocGenerator();
  *   const content = `# Title\n## Section 1\n### Subsection\n## Section 2`;
  *   const result = await generator.generateToc(content);
- *   
+ *
  *   console.log(result.toc);
  *   // Output:
  *   // - [Title](#title)
@@ -82,9 +81,9 @@ export interface TocResult {
  *   ```typescript
  *   const generator = new TocGenerator();
  *   const options = {
- *     minDepth: 2,
- *     maxDepth: 4,
- *     includeLineNumbers: true
+ *   minDepth: 2,
+ *   maxDepth: 4,
+ *   includeLineNumbers: true
  *   };
  *   const result = await generator.generateToc(content, options);
  *   ```
@@ -97,6 +96,7 @@ export class TocGenerator {
    *
    * @param content - Markdown content to analyze
    * @param options - Configuration options
+   *
    * @returns Promise resolving to TOC result
    */
   async generateToc(content: string, options: TocOptions = {}): Promise<TocResult> {
@@ -113,7 +113,7 @@ export class TocGenerator {
     // Extract headings from AST
     visit(tree, 'heading', (node: HeadingNode) => {
       if (!node.position) return;
-      
+
       // Skip headings outside depth range
       if (node.depth < minDepth || node.depth > maxDepth) return;
 
@@ -143,6 +143,7 @@ export class TocGenerator {
    *
    * @param content - Markdown content to analyze
    * @param options - Configuration options
+   *
    * @returns Promise resolving to array of headings
    */
   async extractHeadings(content: string, options: TocOptions = {}): Promise<MarkdownHeading[]> {
@@ -155,6 +156,7 @@ export class TocGenerator {
    *
    * @param headings - Array of extracted headings
    * @param includeLineNumbers - Whether to include line numbers
+   *
    * @returns Formatted TOC markdown
    */
   private formatToc(headings: MarkdownHeading[], includeLineNumbers: boolean): string {
@@ -179,9 +181,12 @@ export class TocGenerator {
    * Extract text content from AST nodes recursively.
    *
    * @param nodes - Array of AST nodes
+   *
    * @returns Combined text content
    */
-  private extractTextFromNodes(nodes: Array<{ type: string; value?: string; children?: unknown[] }>): string {
+  private extractTextFromNodes(
+    nodes: Array<{ type: string; value?: string; children?: unknown[] }>
+  ): string {
     return nodes
       .map((node) => {
         if (node.type === 'text') {
@@ -203,6 +208,7 @@ export class TocGenerator {
    * Default slugify function that converts text to URL-friendly anchors.
    *
    * @param text - Text to slugify
+   *
    * @returns URL-friendly slug
    */
   private defaultSlugify(text: string): string {

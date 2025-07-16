@@ -597,13 +597,16 @@ updated: ${now}
             content += ` - ${description}`;
           }
           content += '\n';
-          
+
           // Add TOC if enabled and file has headings
           if (options.generateToc) {
             const tocResult = await tocGenerator.generateToc(file.content, options.tocOptions);
             if (tocResult.toc && tocResult.headings.length > 0) {
               content += `  - Table of Contents:\n`;
-              const indentedToc = tocResult.toc.split('\n').map(line => `    ${line}`).join('\n');
+              const indentedToc = tocResult.toc
+                .split('\n')
+                .map((line) => `    ${line}`)
+                .join('\n');
               content += `${indentedToc}\n`;
             }
           }
@@ -630,7 +633,7 @@ updated: ${now}
           } else {
             content += '\n';
           }
-          
+
           // Add TOC if enabled and file has headings
           if (options.generateToc) {
             const tocResult = await tocGenerator.generateToc(file.content, options.tocOptions);

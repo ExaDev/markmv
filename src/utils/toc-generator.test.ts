@@ -224,11 +224,17 @@ And even more content.
         { input: 'Simple Title', expected: 'simple-title' },
         { input: 'Title with UPPERCASE', expected: 'title-with-uppercase' },
         { input: 'Title with    multiple    spaces', expected: 'title-with-multiple-spaces' },
-        { input: 'Title with "quotes" and punctuation!', expected: 'title-with-quotes-and-punctuation' },
+        {
+          input: 'Title with "quotes" and punctuation!',
+          expected: 'title-with-quotes-and-punctuation',
+        },
         { input: 'Title with números and émojis', expected: 'title-with-n-meros-and-mojis' },
         { input: '---Leading and trailing hyphens---', expected: 'leading-and-trailing-hyphens' },
         { input: 'Title--with--double--hyphens', expected: 'title-with-double-hyphens' },
-        { input: 'Title with $pecial ch@rs & symbols', expected: 'title-with-pecial-ch-rs-symbols' },
+        {
+          input: 'Title with $pecial ch@rs & symbols',
+          expected: 'title-with-pecial-ch-rs-symbols',
+        },
       ];
 
       for (const { input, expected } of testCases) {
