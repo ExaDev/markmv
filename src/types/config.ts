@@ -104,9 +104,12 @@ export interface BrokenLink {
     | 'external-error'
     | 'invalid-format'
     | 'circular-reference'
-    | 'content-stale';
+    | 'content-stale'
+    | 'auth-required';
   /** Additional error details */
   details?: string;
   /** Content freshness information for external links */
   freshnessInfo?: import('../utils/content-freshness.js').ContentFreshnessInfo;
+  /** Authentication information if applicable */
+  authInfo?: import('../utils/auth-detection.js').AuthInfo;
 }

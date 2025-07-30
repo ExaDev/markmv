@@ -10,7 +10,7 @@ import { mergeCommand } from './commands/merge.js';
 import { moveCommand } from './commands/move.js';
 import { splitCommand } from './commands/split.js';
 import { tocCommand } from './commands/toc.js';
-import { validateCommand } from './commands/validate.js';
+import { validateCommand, type ValidateCliOptions } from './commands/validate.js';
 import { refactorHeadingsCommand } from './commands/refactor-headings.js';
 import { checkLinksCommand } from './commands/check-links.js';
 
@@ -359,6 +359,13 @@ program
   .option('--cache-dir <dir>', 'Cache directory path', '.markmv-cache')
   .option('--fail-fast', 'Exit immediately on first broken link found')
   .option('--include-dependencies', 'Include files that depend on changed files', true)
+  .option('--enable-auth-detection', 'Enable authentication-aware link validation', false)
+  .option('--disallow-auth-required', 'Treat auth-required links as broken instead of valid', false)
+  .option(
+    '--auth-credentials <json>',
+    'JSON object with domain:credential mapping for authentication'
+  )
+  .option('--auth-headers <json>', 'JSON object with domain-specific headers for authentication')
   .option('-v, --verbose', 'Show detailed output with processing information')
   .option('--json', 'Output results in JSON format')
   .addHelpText(
@@ -369,6 +376,19 @@ Examples:
   $ markmv validate docs/**/*.md --check-external --verbose
   $ markmv validate README.md --link-types internal,image --include-context
   $ markmv validate **/*.md --group-by type --only-broken
+
+Authentication Examples:
+  $ markmv validate docs/ --check-external --enable-auth-detection
+  $ markmv validate README.md --check-external --enable-auth-detection --verbose
+  $ markmv validate docs/ --check-external --enable-auth-detection --disallow-auth-required
+  $ markmv validate docs/ --check-external --auth-credentials '{"api.github.com":"Bearer token123"}'
+  $ markmv validate docs/ --check-external --auth-headers '{"api.example.com":{"X-API-Key":"key123"}}'
+
+Authentication Options:
+  --enable-auth-detection     Distinguish auth-protected from truly broken links
+  --disallow-auth-required    Treat auth-required links as broken (default: treat as valid)
+  --auth-credentials          Provide API keys/tokens for authenticated validation
+  --auth-headers              Provide custom headers for domain-specific authentication
   $ markmv validate docs/ --check-circular --strict-internal
 
 Git Integration Examples:
@@ -405,7 +425,100 @@ Output Options:
   --group-by file    Group broken links by file (default)
   --group-by type    Group broken links by link type`
   )
-  .action(validateCommand);
+  .action(
+    (
+      files: string[],
+      options: {
+        linkTypes?: string;
+        checkExternal?: boolean;
+        externalTimeout?: number;
+        strictInternal?: boolean;
+        checkClaudeImports?: boolean;
+        checkCircular?: boolean;
+        maxDepth?: number;
+        checkContentFreshness?: boolean;
+        freshnessThreshold?: number;
+        onlyBroken?: boolean;
+        groupBy?: string;
+        includeContext?: boolean;
+        enableAuthDetection?: boolean;
+        disallowAuthRequired?: boolean;
+        authCredentials?: string;
+        authHeaders?: string;
+        verbose?: boolean;
+        json?: boolean;
+      }
+    ) => {
+      // Validate the group-by option before it enters the typed options
+      const groupBy = options.groupBy || 'file';
+      if (groupBy !== 'file' && groupBy !== 'type') {
+        console.error(`Invalid grouping: ${groupBy}. Valid groupings: file, type`);
+        process.exitCode = 1;
+        return;
+      }
+
+      // Parse JSON options
+      let authCredentials: Record<string, string> | undefined;
+      let authHeaders: Record<string, Record<string, string>> | undefined;
+
+      try {
+        if (options.authCredentials) {
+          authCredentials = JSON.parse(options.authCredentials);
+        }
+      } catch (error) {
+        console.error(
+          'Error parsing auth-credentials JSON:',
+          error instanceof Error ? error.message : String(error)
+        );
+        process.exit(1);
+      }
+
+      try {
+        if (options.authHeaders) {
+          authHeaders = JSON.parse(options.authHeaders);
+        }
+      } catch (error) {
+        console.error(
+          'Error parsing auth-headers JSON:',
+          error instanceof Error ? error.message : String(error)
+        );
+        process.exit(1);
+      }
+
+      // Map commander's options onto ValidateCliOptions; every declared flag appears here so
+      // nothing is silently dropped, and optional fields are only set when present
+      const validationOptions: ValidateCliOptions = {
+        checkExternal: options.checkExternal ?? false,
+        externalTimeout: options.externalTimeout ?? 5000,
+        strictInternal: options.strictInternal ?? true,
+        checkClaudeImports: options.checkClaudeImports ?? true,
+        checkCircular: options.checkCircular ?? false,
+        checkContentFreshness: options.checkContentFreshness ?? false,
+        freshnessThreshold: options.freshnessThreshold ?? 730,
+        onlyBroken: options.onlyBroken ?? true,
+        includeContext: options.includeContext ?? false,
+        verbose: options.verbose ?? false,
+        json: options.json ?? false,
+        groupBy,
+        enableAuthDetection: options.enableAuthDetection ?? false,
+        allowAuthRequired: !options.disallowAuthRequired, // Invert the flag
+      };
+      if (options.linkTypes !== undefined) {
+        validationOptions.linkTypes = options.linkTypes;
+      }
+      if (options.maxDepth !== undefined) {
+        validationOptions.maxDepth = options.maxDepth;
+      }
+      if (authCredentials !== undefined) {
+        validationOptions.authCredentials = authCredentials;
+      }
+      if (authHeaders !== undefined) {
+        validationOptions.authHeaders = authHeaders;
+      }
+
+      return validateCommand(files, validationOptions);
+    }
+  );
 
 program
   .command('refactor-headings')

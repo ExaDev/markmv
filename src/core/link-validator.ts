@@ -1,6 +1,7 @@
 import { constants, access } from 'node:fs/promises';
 import { readFile } from 'node:fs/promises';
 import { ContentFreshnessDetector, type FreshnessConfig } from '../utils/content-freshness.js';
+import { AuthDetector, type AuthConfig } from '../utils/auth-detection.js';
 import type { BrokenLink, ValidationResult } from '../types/config.js';
 import type { MarkdownLink, ParsedMarkdownFile } from '../types/links.js';
 
@@ -25,6 +26,12 @@ export interface LinkValidatorOptions {
   checkContentFreshness?: boolean;
   /** Configuration for content freshness detection */
   freshnessConfig?: Partial<FreshnessConfig>;
+  /** Enable authentication-aware link validation */
+  enableAuthDetection?: boolean;
+  /** Configuration for authentication detection */
+  authConfig?: Partial<AuthConfig>;
+  /** Treat auth-required links as valid (not broken) */
+  allowAuthRequired?: boolean;
 }
 
 /**
@@ -67,10 +74,12 @@ export interface LinkValidatorOptions {
  *   ```
  */
 export class LinkValidator {
-  private options: Required<Omit<LinkValidatorOptions, 'freshnessConfig'>> & {
+  private options: Required<Omit<LinkValidatorOptions, 'freshnessConfig' | 'authConfig'>> & {
     freshnessConfig?: Partial<FreshnessConfig>;
+    authConfig?: Partial<AuthConfig>;
   };
   private freshnessDetector?: ContentFreshnessDetector;
+  private authDetector?: AuthDetector;
 
   constructor(options: LinkValidatorOptions = {}) {
     this.options = {
@@ -79,11 +88,18 @@ export class LinkValidator {
       strictInternal: options.strictInternal ?? true,
       checkClaudeImports: options.checkClaudeImports ?? true,
       checkContentFreshness: options.checkContentFreshness ?? false,
+      enableAuthDetection: options.enableAuthDetection ?? false,
+      allowAuthRequired: options.allowAuthRequired ?? true,
       ...(options.freshnessConfig && { freshnessConfig: options.freshnessConfig }),
+      ...(options.authConfig && { authConfig: options.authConfig }),
     };
 
     if (this.options.checkContentFreshness) {
       this.freshnessDetector = new ContentFreshnessDetector(this.options.freshnessConfig);
+    }
+
+    if (this.options.enableAuthDetection) {
+      this.authDetector = new AuthDetector(this.options.authConfig);
     }
   }
 
@@ -223,20 +239,101 @@ export class LinkValidator {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.options.externalTimeout);
 
-      // For freshness detection, we need to make a GET request to get content
-      const method = this.options.checkContentFreshness ? 'GET' : 'HEAD';
+      // Prepare headers for request
+      const headers: Record<string, string> = {};
 
-      const response = await fetch(link.href, {
+      // Check if authentication detection is enabled and analyze the URL first
+      let authInfo;
+      if (this.authDetector && this.options.enableAuthDetection) {
+        headers['User-Agent'] = 'markmv-validator/1.0 (authentication-aware)';
+
+        authInfo = await this.authDetector.analyzeAuth(link.href);
+
+        // If URL is known to require auth via domain detection, return immediately
+        if (authInfo.requiresAuth && authInfo.detectionMethod === 'domain') {
+          clearTimeout(timeoutId);
+          return {
+            sourceFile,
+            link,
+            reason: 'auth-required',
+            details: authInfo.warning || 'Link requires authentication',
+            authInfo,
+          };
+        }
+
+        // Add authentication headers if available
+        if (this.authDetector.shouldAttemptAuth(link.href)) {
+          const authHeaders = this.authDetector.getAuthHeaders(link.href);
+          Object.assign(headers, authHeaders);
+          if (authInfo) {
+            authInfo.authAttempted = true;
+          }
+        }
+      }
+
+      // For freshness detection, we need a GET request to read the content
+      const method = this.options.checkContentFreshness ? 'GET' : 'HEAD';
+      headers['User-Agent'] ??= 'markmv-validator/1.0 (content-freshness-detection)';
+
+      const fetchOptions: RequestInit = {
         method,
         signal: controller.signal,
-        headers: {
-          'User-Agent': 'markmv-validator/1.0 (content-freshness-detection)',
-        },
-      });
+      };
+
+      if (Object.keys(headers).length > 0) {
+        fetchOptions.headers = headers;
+      }
+
+      if (this.options.enableAuthDetection) {
+        fetchOptions.redirect = 'follow'; // Follow redirects to detect auth redirects
+      }
+
+      const response = await fetch(link.href, fetchOptions);
 
       clearTimeout(timeoutId);
 
+      // Analyze response for authentication indicators if auth detection is enabled
+      if (this.authDetector && this.options.enableAuthDetection && authInfo) {
+        const finalAuthInfo = await this.authDetector.analyzeAuth(link.href, response);
+        Object.assign(authInfo, finalAuthInfo);
+
+        if (finalAuthInfo.requiresAuth && this.options.allowAuthRequired) {
+          return {
+            sourceFile,
+            link,
+            reason: 'auth-required',
+            details: finalAuthInfo.warning || 'Link requires authentication',
+            authInfo: finalAuthInfo,
+          };
+        }
+      }
+
       if (!response.ok) {
+        // Check if this is an auth-related error (only if auth detection is enabled)
+        if (
+          this.options.enableAuthDetection &&
+          (response.status === 401 || response.status === 403) &&
+          this.options.allowAuthRequired
+        ) {
+          const authErrorInfo = {
+            url: link.href,
+            requiresAuth: true,
+            redirectCount: 0,
+            authAttempted: this.authDetector?.shouldAttemptAuth(link.href) || false,
+            detectionMethod: 'status-code' as const,
+            warning: `HTTP ${response.status}: Authentication required`,
+            suggestion: 'Provide appropriate credentials or API keys to validate this link',
+          };
+
+          return {
+            sourceFile,
+            link,
+            reason: 'auth-required',
+            details: authErrorInfo.warning,
+            authInfo: authErrorInfo,
+          };
+        }
+
         return {
           sourceFile,
           link,
@@ -248,16 +345,16 @@ export class LinkValidator {
       // Check content freshness if enabled
       if (this.options.checkContentFreshness && this.freshnessDetector) {
         const content = method === 'GET' ? await response.text() : '';
-        const headers: Record<string, string> = {};
+        const responseHeaders: Record<string, string> = {};
 
         // Convert Headers to plain object
         response.headers.forEach((value, key) => {
-          headers[key] = value;
+          responseHeaders[key] = value;
         });
 
         const freshnessInfo = await this.freshnessDetector.analyzeContentFreshness(link.href, {
           status: response.status,
-          headers,
+          headers: responseHeaders,
           content,
           finalUrl: response.url,
         });
@@ -274,7 +371,12 @@ export class LinkValidator {
         }
       }
 
-      return null; // Link is valid and fresh
+      // Mark auth as succeeded if we attempted it
+      if (authInfo?.authAttempted) {
+        authInfo.authSucceeded = true;
+      }
+
+      return null; // Link is valid, fresh, and accessible
     } catch (error) {
       return {
         sourceFile,
