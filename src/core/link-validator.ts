@@ -1,5 +1,6 @@
 import { constants, access } from 'node:fs/promises';
 import { readFile } from 'node:fs/promises';
+import { ContentFreshnessDetector, type FreshnessConfig } from '../utils/content-freshness.js';
 import type { BrokenLink, ValidationResult } from '../types/config.js';
 import type { MarkdownLink, ParsedMarkdownFile } from '../types/links.js';
 
@@ -20,6 +21,10 @@ export interface LinkValidatorOptions {
   strictInternal?: boolean;
   /** Check Claude import links */
   checkClaudeImports?: boolean;
+  /** Enable content freshness detection for external links */
+  checkContentFreshness?: boolean;
+  /** Configuration for content freshness detection */
+  freshnessConfig?: Partial<FreshnessConfig>;
 }
 
 /**
@@ -62,7 +67,10 @@ export interface LinkValidatorOptions {
  *   ```
  */
 export class LinkValidator {
-  private options: Required<LinkValidatorOptions>;
+  private options: Required<Omit<LinkValidatorOptions, 'freshnessConfig'>> & {
+    freshnessConfig?: Partial<FreshnessConfig>;
+  };
+  private freshnessDetector?: ContentFreshnessDetector;
 
   constructor(options: LinkValidatorOptions = {}) {
     this.options = {
@@ -70,7 +78,13 @@ export class LinkValidator {
       externalTimeout: options.externalTimeout ?? 5000,
       strictInternal: options.strictInternal ?? true,
       checkClaudeImports: options.checkClaudeImports ?? true,
+      checkContentFreshness: options.checkContentFreshness ?? false,
+      ...(options.freshnessConfig && { freshnessConfig: options.freshnessConfig }),
     };
+
+    if (this.options.checkContentFreshness) {
+      this.freshnessDetector = new ContentFreshnessDetector(this.options.freshnessConfig);
+    }
   }
 
   async validateFiles(files: ParsedMarkdownFile[]): Promise<ValidationResult> {
@@ -209,9 +223,15 @@ export class LinkValidator {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.options.externalTimeout);
 
+      // For freshness detection, we need to make a GET request to get content
+      const method = this.options.checkContentFreshness ? 'GET' : 'HEAD';
+      
       const response = await fetch(link.href, {
-        method: 'HEAD',
+        method,
         signal: controller.signal,
+        headers: {
+          'User-Agent': 'markmv-validator/1.0 (content-freshness-detection)',
+        },
       });
 
       clearTimeout(timeoutId);
@@ -225,7 +245,36 @@ export class LinkValidator {
         };
       }
 
-      return null; // Link is valid
+      // Check content freshness if enabled
+      if (this.options.checkContentFreshness && this.freshnessDetector) {
+        const content = method === 'GET' ? await response.text() : '';
+        const headers: Record<string, string> = {};
+        
+        // Convert Headers to plain object
+        response.headers.forEach((value, key) => {
+          headers[key] = value;
+        });
+
+        const freshnessInfo = await this.freshnessDetector.analyzeContentFreshness(link.href, {
+          status: response.status,
+          headers,
+          content,
+          finalUrl: response.url,
+        });
+
+        // If content is stale, return as a broken link with freshness info
+        if (!freshnessInfo.isFresh) {
+          return {
+            sourceFile,
+            link,
+            reason: 'content-stale',
+            details: freshnessInfo.warning || 'Content appears to be outdated',
+            freshnessInfo,
+          };
+        }
+      }
+
+      return null; // Link is valid and fresh
     } catch (error) {
       return {
         sourceFile,
