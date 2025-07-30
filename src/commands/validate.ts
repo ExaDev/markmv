@@ -53,6 +53,10 @@ export interface ValidateOperationOptions extends OperationOptions {
   failFast?: boolean;
   /** Include dependency tracking for changed files */
   includeDependencies?: boolean;
+  /** Enable content freshness detection for external links */
+  checkContentFreshness?: boolean;
+  /** Default staleness threshold in days */
+  freshnessThreshold?: number;
 }
 
 /**
@@ -122,6 +126,10 @@ export interface ValidateResult {
     /** Current git commit */
     currentCommit?: string;
   };
+  /** Number of stale links found */
+  staleLinks?: number;
+  /** Number of fresh links found */
+  freshLinks?: number;
 }
 
 /**
@@ -180,6 +188,8 @@ export async function validateLinks(
     onlyBroken: options.onlyBroken ?? true,
     groupBy: options.groupBy ?? 'file',
     includeContext: options.includeContext ?? false,
+    checkContentFreshness: options.checkContentFreshness ?? false,
+    freshnessThreshold: options.freshnessThreshold ?? 730, // 2 years in days
     dryRun: options.dryRun ?? false,
     verbose: options.verbose ?? false,
     force: options.force ?? false,
@@ -313,6 +323,10 @@ export async function validateLinks(
     externalTimeout: opts.externalTimeout,
     strictInternal: opts.strictInternal,
     checkClaudeImports: opts.checkClaudeImports,
+    checkContentFreshness: opts.checkContentFreshness,
+    freshnessConfig: {
+      defaultThreshold: opts.freshnessThreshold * 24 * 60 * 60 * 1000, // Convert days to milliseconds
+    },
   });
 
   const parser = new LinkParser();
@@ -326,6 +340,8 @@ export async function validateLinks(
     fileErrors: [],
     hasCircularReferences: false,
     processingTime: 0,
+    staleLinks: 0,
+    freshLinks: 0,
   };
   if (gitInfo !== undefined) {
     result.gitInfo = gitInfo;
@@ -357,6 +373,9 @@ export async function validateLinks(
 
       let validation: { brokenLinks: BrokenLink[] } | undefined;
       let totalLinksForFile = 0;
+      // External-link count for freshness statistics; a cache hit has no link list, so the
+      // fresh-external total under-counts cached files by design
+      let externalLinkCount = 0;
 
       // Try to get from cache first; a failing cache read degrades to a miss rather than
       // skipping the file
@@ -389,6 +408,7 @@ export async function validateLinks(
         const parsedFile = await parser.parseFile(filePath);
         const relevantLinks = parsedFile.links.filter((link) => opts.linkTypes.includes(link.type));
         totalLinksForFile = relevantLinks.length;
+        externalLinkCount = relevantLinks.filter((link) => link.type === 'external').length;
 
         if (relevantLinks.length === 0) {
           // Store empty result in cache
@@ -445,6 +465,17 @@ export async function validateLinks(
       result.filesProcessed++;
 
       const brokenLinks = validation.brokenLinks;
+
+      // Count freshness statistics
+      if (opts.checkContentFreshness) {
+        const staleLinks = brokenLinks.filter((bl) => bl.reason === 'content-stale').length;
+        const freshExternalLinks = externalLinkCount - staleLinks;
+
+        result.staleLinks = (result.staleLinks || 0) + staleLinks;
+        if (freshExternalLinks > 0) {
+          result.freshLinks = (result.freshLinks || 0) + freshExternalLinks;
+        }
+      }
 
       if (brokenLinks.length > 0) {
         result.brokenLinks += brokenLinks.length;
@@ -619,6 +650,20 @@ export async function validateCommand(
       console.log(`Cache performance: ${result.gitInfo.cacheHitRate}% hit rate${savedTime}`);
     }
     console.log();
+    
+    // Show freshness information if enabled
+    if (options.checkContentFreshness) {
+      const staleCount = result.staleLinks || 0;
+      const freshCount = result.freshLinks || 0;
+      const externalTotal = staleCount + freshCount;
+      
+      if (externalTotal > 0) {
+        console.log(`Fresh external links: ${freshCount}`);
+        console.log(`Stale external links: ${staleCount}`);
+      }
+    }
+    
+    console.log(`Processing time: ${result.processingTime}ms\n`);
 
     if (result.fileErrors.length > 0) {
       console.log(`⚠️  File Errors (${result.fileErrors.length}):`);
@@ -654,9 +699,25 @@ export async function validateCommand(
             const context =
               options.includeContext && brokenLink.line ? ` (line ${brokenLink.line})` : '';
             const file = brokenLink.filePath ? ` in ${brokenLink.filePath}` : '';
-            console.log(`    ❌ ${brokenLink.url}${context}${file}`);
+            const freshness = brokenLink.reason === 'content-stale' ? ' [STALE]' : '';
+            console.log(`    ❌ ${brokenLink.url}${context}${file}${freshness}`);
             if (brokenLink.reason && options.verbose) {
               console.log(`       Reason: ${brokenLink.reason}`);
+            }
+            if (brokenLink.freshnessInfo && (options.verbose || brokenLink.reason === 'content-stale')) {
+              const info = brokenLink.freshnessInfo;
+              if (info.warning) {
+                console.log(`       Warning: ${info.warning}`);
+              }
+              if (info.suggestion) {
+                console.log(`       Suggestion: ${info.suggestion}`);
+              }
+              if (info.lastModified && options.verbose) {
+                console.log(`       Last Modified: ${info.lastModified.toDateString()}`);
+              }
+              if (info.stalePatterns.length > 0 && options.verbose) {
+                console.log(`       Detected patterns: ${info.stalePatterns.join(', ')}`);
+              }
             }
           }
         }
@@ -668,9 +729,25 @@ export async function validateCommand(
         for (const brokenLink of brokenLinks) {
           const context =
             options.includeContext && brokenLink.line ? ` (line ${brokenLink.line})` : '';
-          console.log(`    ❌ [${brokenLink.type}] ${brokenLink.url}${context}`);
+          const freshness = brokenLink.reason === 'content-stale' ? ' [STALE]' : '';
+          console.log(`    ❌ [${brokenLink.type}] ${brokenLink.url}${context}${freshness}`);
           if (brokenLink.reason && options.verbose) {
             console.log(`       Reason: ${brokenLink.reason}`);
+          }
+          if (brokenLink.freshnessInfo && (options.verbose || brokenLink.reason === 'content-stale')) {
+            const info = brokenLink.freshnessInfo;
+            if (info.warning) {
+              console.log(`       Warning: ${info.warning}`);
+            }
+            if (info.suggestion) {
+              console.log(`       Suggestion: ${info.suggestion}`);
+            }
+            if (info.lastModified && options.verbose) {
+              console.log(`       Last Modified: ${info.lastModified.toDateString()}`);
+            }
+            if (info.stalePatterns.length > 0 && options.verbose) {
+              console.log(`       Detected patterns: ${info.stalePatterns.join(', ')}`);
+            }
           }
         }
       }
