@@ -281,6 +281,12 @@ program
   .option('--only-broken', 'Show only broken links, not all validation results', true)
   .option('--group-by <method>', 'Group results by: file|type', 'file')
   .option('--include-context', 'Include line numbers and context in output', false)
+  .option('--git-diff <ref>', 'Only validate files changed since the specified git reference')
+  .option('--git-staged', 'Only validate files currently staged in git')
+  .option('--cache', 'Enable validation result caching for faster subsequent runs')
+  .option('--cache-dir <dir>', 'Cache directory path', '.markmv-cache')
+  .option('--fail-fast', 'Exit immediately on first broken link found')
+  .option('--include-dependencies', 'Include files that depend on changed files', true)
   .option('-v, --verbose', 'Show detailed output with processing information')
   .option('--json', 'Output results in JSON format')
   .addHelpText(
@@ -288,12 +294,24 @@ program
     `
 Examples:
   $ markmv validate                                         # Validate current directory
-  $ markmv validate .                                       # Validate current directory  
-  $ markmv validate ./                                      # Validate current directory
   $ markmv validate docs/**/*.md --check-external --verbose
   $ markmv validate README.md --link-types internal,image --include-context
   $ markmv validate **/*.md --group-by type --only-broken
   $ markmv validate docs/ --check-circular --strict-internal
+
+Git Integration Examples:
+  $ markmv validate --git-diff HEAD~1                      # Only files changed since last commit
+  $ markmv validate --git-diff main..HEAD                  # Files changed in current branch vs main
+  $ markmv validate --git-staged                           # Only staged files
+  $ markmv validate --git-diff HEAD~1 --cache              # Use caching for faster validation
+  $ markmv validate --git-staged --fail-fast --cache       # Fast pre-commit validation
+
+Performance Options:
+  --cache                 Enable result caching for faster subsequent runs
+  --cache-dir <dir>       Custom cache directory (default: .markmv-cache)
+  --fail-fast             Exit on first broken link (faster feedback)
+  --git-diff <ref>        Only validate files changed since git reference
+  --git-staged            Only validate currently staged files
 
 Link Types:
   internal        Links to other markdown files
