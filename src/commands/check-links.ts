@@ -296,27 +296,29 @@ export async function checkLinks(
         (link.type === 'image' && (link.href.startsWith('http://') || link.href.startsWith('https://')))
       );
 
-      if (options.verbose && externalLinks.length > 0) {
-        console.log(`\n📄 ${filePath}: found ${externalLinks.length} external links`);
+      // Filter out ignored external links first
+      const filteredExternalLinks = externalLinks.filter(link => {
+        const shouldIgnore = options.ignorePatterns.some(pattern => {
+          const regex = new RegExp(pattern);
+          return regex.test(link.href);
+        });
+        
+        if (shouldIgnore && options.verbose) {
+          console.log(`  ⏭️  Ignoring ${link.href} (matches ignore pattern)`);
+        }
+        
+        return !shouldIgnore;
+      });
+
+      if (options.verbose && filteredExternalLinks.length > 0) {
+        console.log(`\n📄 ${filePath}: found ${filteredExternalLinks.length} external links (after filtering)`);
       }
 
-      result.totalExternalLinks += externalLinks.length;
+      result.totalExternalLinks += filteredExternalLinks.length;
 
       // Validate each external link
-      for (const link of externalLinks) {
+      for (const link of filteredExternalLinks) {
         try {
-          // Apply ignore patterns
-          const shouldIgnore = options.ignorePatterns.some(pattern => {
-            const regex = new RegExp(pattern);
-            return regex.test(link.href);
-          });
-
-          if (shouldIgnore) {
-            if (options.verbose) {
-              console.log(`  ⏭️  Ignoring ${link.href} (matches ignore pattern)`);
-            }
-            continue;
-          }
 
           // Validate the link with retry logic
           const linkResult = await validateExternalLinkWithRetry(
