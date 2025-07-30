@@ -2,6 +2,7 @@
 
 import { Command } from 'commander';
 import { convertCommand } from './commands/convert.js';
+import { graphCommand } from './commands/graph.js';
 import { indexCommand } from './commands/index.js';
 import { joinCommand } from './commands/join.js';
 import { mergeCommand } from './commands/merge.js';
@@ -308,5 +309,50 @@ Output Options:
   --group-by type    Group broken links by link type`
   )
   .action(validateCommand);
+
+program
+  .command('graph')
+  .description('Generate interactive link graphs from markdown file relationships')
+  .argument(
+    '[files...]',
+    'Markdown files to analyze (supports globs like *.md, **/*.md, defaults to current directory)'
+  )
+  .option('-f, --format <format>', 'Output format: json|mermaid|dot|html', 'json')
+  .option('-o, --output <file>', 'Output file path')
+  .option('--include-external', 'Include external links in the graph', false)
+  .option('--include-images', 'Include image links in the graph', true)
+  .option('--include-anchors', 'Include anchor links in the graph', false)
+  .option('--max-depth <number>', 'Maximum depth for dependency traversal', parseInt, 10)
+  .option('--base-dir <path>', 'Base directory for relative path calculations')
+  .option('-v, --verbose', 'Show detailed output with processing information')
+  .option('--json', 'Output results in JSON format')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ markmv graph                                    # Generate JSON graph for current directory
+  $ markmv graph docs/**/*.md --format mermaid     # Create Mermaid diagram
+  $ markmv graph . --format html --output viz.html # Interactive HTML visualization
+  $ markmv graph **/*.md --format dot --output graph.dot # GraphViz DOT format
+
+Output Formats:
+  json      JSON data structure for programmatic use
+  mermaid   Mermaid diagram syntax for documentation
+  dot       GraphViz DOT format for advanced layouts
+  html      Interactive D3.js visualization
+
+Graph Options:
+  --include-external    Include HTTP/HTTPS links
+  --include-images      Include image references (default: true)
+  --include-anchors     Include same-file section links
+  --max-depth <number>  Limit dependency traversal depth
+
+Analysis Features:
+  • Hub detection (highly connected files)
+  • Orphan detection (unconnected files)
+  • Circular reference detection
+  • Strongly connected components`
+  )
+  .action(graphCommand);
 
 program.parse();
