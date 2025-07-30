@@ -281,6 +281,10 @@ program
   .option('--only-broken', 'Show only broken links, not all validation results', true)
   .option('--group-by <method>', 'Group results by: file|type', 'file')
   .option('--include-context', 'Include line numbers and context in output', false)
+  .option('--enable-auth-detection', 'Enable authentication-aware link validation', false)
+  .option('--disallow-auth-required', 'Treat auth-required links as broken instead of valid', false)
+  .option('--auth-credentials <json>', 'JSON object with domain:credential mapping for authentication')
+  .option('--auth-headers <json>', 'JSON object with domain-specific headers for authentication')
   .option('-v, --verbose', 'Show detailed output with processing information')
   .option('--json', 'Output results in JSON format')
   .addHelpText(
@@ -293,6 +297,19 @@ Examples:
   $ markmv validate docs/**/*.md --check-external --verbose
   $ markmv validate README.md --link-types internal,image --include-context
   $ markmv validate **/*.md --group-by type --only-broken
+
+Authentication Examples:
+  $ markmv validate docs/ --check-external --enable-auth-detection
+  $ markmv validate README.md --check-external --enable-auth-detection --verbose
+  $ markmv validate docs/ --check-external --enable-auth-detection --disallow-auth-required
+  $ markmv validate docs/ --check-external --auth-credentials '{"api.github.com":"Bearer token123"}'
+  $ markmv validate docs/ --check-external --auth-headers '{"api.example.com":{"X-API-Key":"key123"}}'
+
+Authentication Options:
+  --enable-auth-detection     Distinguish auth-protected from truly broken links
+  --disallow-auth-required    Treat auth-required links as broken (default: treat as valid)
+  --auth-credentials          Provide API keys/tokens for authenticated validation
+  --auth-headers              Provide custom headers for domain-specific authentication
   $ markmv validate docs/ --check-circular --strict-internal
 
 Link Types:
@@ -307,6 +324,56 @@ Output Options:
   --group-by file    Group broken links by file (default)
   --group-by type    Group broken links by link type`
   )
-  .action(validateCommand);
+  .action((files: string[], options: {
+    linkTypes?: string;
+    checkExternal?: boolean;
+    externalTimeout?: number;
+    strictInternal?: boolean;
+    checkClaudeImports?: boolean;
+    checkCircular?: boolean;
+    maxDepth?: number;
+    onlyBroken?: boolean;
+    groupBy?: string;
+    includeContext?: boolean;
+    enableAuthDetection?: boolean;
+    disallowAuthRequired?: boolean;
+    authCredentials?: string;
+    authHeaders?: string;
+    verbose?: boolean;
+    json?: boolean;
+  }) => {
+    // Parse JSON options
+    let authCredentials: Record<string, string> | undefined;
+    let authHeaders: Record<string, Record<string, string>> | undefined;
+    
+    try {
+      if (options.authCredentials) {
+        authCredentials = JSON.parse(options.authCredentials);
+      }
+    } catch (error) {
+      console.error('Error parsing auth-credentials JSON:', error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
+    
+    try {
+      if (options.authHeaders) {
+        authHeaders = JSON.parse(options.authHeaders);
+      }
+    } catch (error) {
+      console.error('Error parsing auth-headers JSON:', error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
+    
+    // Convert options to match ValidateCliOptions interface
+    const validationOptions = {
+      ...options,
+      enableAuthDetection: options.enableAuthDetection,
+      allowAuthRequired: !options.disallowAuthRequired, // Invert the flag
+      authCredentials,
+      authHeaders,
+    };
+    
+    return validateCommand(files, validationOptions);
+  });
 
 program.parse();

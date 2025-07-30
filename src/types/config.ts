@@ -99,7 +99,9 @@ export interface BrokenLink {
   /** The broken link */
   link: import('./links.js').MarkdownLink;
   /** Reason the link is broken */
-  reason: 'file-not-found' | 'external-error' | 'invalid-format' | 'circular-reference';
+  reason: 'file-not-found' | 'external-error' | 'invalid-format' | 'circular-reference' | 'auth-required';
   /** Additional error details */
   details?: string;
+  /** Authentication information if applicable */
+  authInfo?: import('../utils/auth-detection.js').AuthInfo;
 }

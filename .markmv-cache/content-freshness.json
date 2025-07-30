@@ -1,0 +1,227 @@
+{
+  "https://firebase.google.com/docs/functions": {
+    "url": "https://firebase.google.com/docs/functions",
+    "contentHash": "8dc5a6ffd9f76e6da7490b234efb43616f76162e245ef01b40abd56f660c9d1c",
+    "lastChecked": 1753888688926,
+    "lastModified": 1733152688000,
+    "headers": {
+      "last-modified": "Mon, 02 Dec 2024 15:18:08 GMT",
+      "etag": "",
+      "cache-control": ""
+    }
+  },
+  "https://example.com/slow": {
+    "url": "https://example.com/slow",
+    "contentHash": "c50e7f179e9366e760b31ffe10b58e3df864c032b5dd2da1f0d9b60707f0b460",
+    "lastChecked": 1753888583655,
+    "headers": {
+      "last-modified": "",
+      "etag": "",
+      "cache-control": ""
+    }
+  },
+  "https://example.com/fresh-docs": {
+    "url": "https://example.com/fresh-docs",
+    "contentHash": "3b69da73bdd19811ae8a16a2eb6413367741c8761ffe3e86ad31a2a00624dd2a",
+    "lastChecked": 1753888688919,
+    "lastModified": 1751296688000,
+    "headers": {
+      "last-modified": "Mon, 30 Jun 2025 15:18:08 GMT",
+      "etag": "",
+      "cache-control": ""
+    }
+  },
+  "https://api.example.com/guide": {
+    "url": "https://api.example.com/guide",
+    "contentHash": "e917e3371a256e90b7eef332373b43b2035aa54aeed29d8fadda414cbdf9fefb",
+    "lastChecked": 1753888688919,
+    "lastModified": 1751296688000,
+    "headers": {
+      "last-modified": "Mon, 30 Jun 2025 15:18:08 GMT",
+      "etag": "",
+      "cache-control": ""
+    }
+  },
+  "https://example.com/old-tutorial": {
+    "url": "https://example.com/old-tutorial",
+    "contentHash": "1e711ab811d6dcb97befaa1206204f6d6d2f6f248d5f5aa8805b8ce336206ae4",
+    "lastChecked": 1753888688923,
+    "lastModified": 1659280688000,
+    "headers": {
+      "last-modified": "Sun, 31 Jul 2022 15:18:08 GMT",
+      "etag": "",
+      "cache-control": ""
+    }
+  },
+  "https://api.example.com/deprecated": {
+    "url": "https://api.example.com/deprecated",
+    "contentHash": "7ad24bf8be8e4195e3de8f0cd359269e3a1d05d83ce3f9f1ee55e15cef8fca54",
+    "lastChecked": 1753888688936,
+    "headers": {
+      "last-modified": "",
+      "etag": "",
+      "cache-control": ""
+    }
+  },
+  "https://docs.github.com/actions/reference": {
+    "url": "https://docs.github.com/actions/reference",
+    "contentHash": "1815e9484fc1cdbe07884330f12a39ed025ff58e17e256bfc07b2096d5b3d171",
+    "lastChecked": 1753888688927,
+    "lastModified": 1733152688000,
+    "headers": {
+      "last-modified": "Mon, 02 Dec 2024 15:18:08 GMT",
+      "etag": "",
+      "cache-control": ""
+    }
+  },
+  "https://example.com/docs": {
+    "url": "https://example.com/docs",
+    "contentHash": "a2c40fe2789303214ac611b2054bf2dcb9470fae22302e70bb884584a1260bb0",
+    "lastChecked": 1753888688927,
+    "lastModified": 1733152688000,
+    "headers": {
+      "last-modified": "Mon, 02 Dec 2024 15:18:08 GMT",
+      "etag": "",
+      "cache-control": ""
+    }
+  },
+  "https://example.com/fresh": {
+    "url": "https://example.com/fresh",
+    "contentHash": "12f9aed8bfb23cb0af37687b72356ac080f9ce9b737396e4a5ff60f20243c735",
+    "lastChecked": 1753888688940,
+    "lastModified": 1753024688000,
+    "headers": {
+      "last-modified": "Sun, 20 Jul 2025 15:18:08 GMT",
+      "etag": "",
+      "cache-control": ""
+    }
+  },
+  "https://example.com/stale": {
+    "url": "https://example.com/stale",
+    "contentHash": "3cdb12f564205d58dbaf4ecd059812df827cfa7eb0164ca2f7e44c20ca4a28ec",
+    "lastChecked": 1753888688930,
+    "lastModified": 1659280688000,
+    "headers": {
+      "last-modified": "Sun, 31 Jul 2022 15:18:08 GMT",
+      "etag": "",
+      "cache-control": ""
+    }
+  },
+  "https://example.com/fresh1": {
+    "url": "https://example.com/fresh1",
+    "contentHash": "8e888eb1312d5ec40c7dcd67f7f55d9666a795afaccb821100ad13cf571ffb64",
+    "lastChecked": 1753888688933,
+    "lastModified": 1753024688000,
+    "headers": {
+      "last-modified": "Sun, 20 Jul 2025 15:18:08 GMT",
+      "etag": "",
+      "cache-control": ""
+    }
+  },
+  "https://example.com/stale1": {
+    "url": "https://example.com/stale1",
+    "contentHash": "eada896fb00741ff2c46accd0b511a02fd76b11bde60f5cf04e3e58a930403dd",
+    "lastChecked": 1753888688933,
+    "lastModified": 1659280688000,
+    "headers": {
+      "last-modified": "Sun, 31 Jul 2022 15:18:08 GMT",
+      "etag": "",
+      "cache-control": ""
+    }
+  },
+  "https://example.com/fresh2": {
+    "url": "https://example.com/fresh2",
+    "contentHash": "9898a36d7f3c43cc6ed6191c8794488ad62dc3caf6e1b8ef79e4f01965d3e4b8",
+    "lastChecked": 1753888688934,
+    "lastModified": 1753024688000,
+    "headers": {
+      "last-modified": "Sun, 20 Jul 2025 15:18:08 GMT",
+      "etag": "",
+      "cache-control": ""
+    }
+  },
+  "https://example.com/stale2": {
+    "url": "https://example.com/stale2",
+    "contentHash": "c345ffd82648c3bb85ec1d524049cdd685f37288c1d340799dcf6d9c61413a1d",
+    "lastChecked": 1753888688934,
+    "lastModified": 1659280688000,
+    "headers": {
+      "last-modified": "Sun, 31 Jul 2022 15:18:08 GMT",
+      "etag": "",
+      "cache-control": ""
+    }
+  },
+  "https://example.com/moved": {
+    "url": "https://example.com/moved",
+    "contentHash": "932e682c4b20853f89677667b32aec382d4c93b397bc7496c6b5fb9e59fafd42",
+    "lastChecked": 1753888688937,
+    "headers": {
+      "last-modified": "",
+      "etag": "",
+      "cache-control": ""
+    }
+  },
+  "https://docs.example.com/legacy": {
+    "url": "https://docs.example.com/legacy",
+    "contentHash": "86c55d8e8308af17f1c66bde2fdc46e7d24d63d16aa6442115e43192aac79f5a",
+    "lastChecked": 1753888688937,
+    "headers": {
+      "last-modified": "",
+      "etag": "",
+      "cache-control": ""
+    }
+  },
+  "https://products.example.com/eol": {
+    "url": "https://products.example.com/eol",
+    "contentHash": "b6edbdb7828f6c7a6bf78b73e527b672c504fe2486686792938825ab76d87a36",
+    "lastChecked": 1753888688937,
+    "headers": {
+      "last-modified": "",
+      "etag": "",
+      "cache-control": ""
+    }
+  },
+  "https://example.com/working": {
+    "url": "https://example.com/working",
+    "contentHash": "3419c14b50e29ca75fea91fedeeac29f8c50e48395fdfe01f5971c87edcb7c2c",
+    "lastChecked": 1753888688939,
+    "lastModified": 1753024688000,
+    "headers": {
+      "last-modified": "Sun, 20 Jul 2025 15:18:08 GMT",
+      "etag": "",
+      "cache-control": ""
+    }
+  },
+  "https://example.com/first": {
+    "url": "https://example.com/first",
+    "contentHash": "836e2b28f5521489cc2b489882b969827ca3b7a149b7b45b067bf379bee2c029",
+    "lastChecked": 1753888688942,
+    "lastModified": 1753024688000,
+    "headers": {
+      "last-modified": "Sun, 20 Jul 2025 15:18:08 GMT",
+      "etag": "",
+      "cache-control": ""
+    }
+  },
+  "https://example.com/last": {
+    "url": "https://example.com/last",
+    "contentHash": "e749d33997a9bdf62bf39325be8e650d4768e29fcbd399761a7fb672dec2e327",
+    "lastChecked": 1753888688942,
+    "lastModified": 1753024688000,
+    "headers": {
+      "last-modified": "Sun, 20 Jul 2025 15:18:08 GMT",
+      "etag": "",
+      "cache-control": ""
+    }
+  },
+  "https://example.com/changing": {
+    "url": "https://example.com/changing",
+    "contentHash": "53fb2035e869162a809aa54c0c7c964fef06b6a7619734de975284c35ddea95b",
+    "lastChecked": 1753888688948,
+    "headers": {
+      "last-modified": "",
+      "etag": "",
+      "cache-control": ""
+    }
+  }
+}
