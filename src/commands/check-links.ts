@@ -4,6 +4,7 @@ import { posix } from 'path';
 import { LinkValidator } from '../core/link-validator.js';
 import { LinkParser } from '../core/link-parser.js';
 import type { OperationOptions } from '../types/operations.js';
+import type { MarkdownLink } from '../types/links.js';
 
 /**
  * Configuration options for external link checking operations.
@@ -388,7 +389,8 @@ export async function checkLinks(
   if (result.linkResults.length > 0) {
     const responseTimes = result.linkResults
       .filter(r => r.responseTime !== undefined)
-      .map(r => r.responseTime!);
+      .map(r => r.responseTime)
+      .filter((time): time is number => time !== undefined);
     
     if (responseTimes.length > 0) {
       result.averageResponseTime = Math.round(
@@ -419,7 +421,7 @@ export async function checkLinks(
  */
 async function validateExternalLinkWithRetry(
   validator: LinkValidator,
-  link: any,
+  link: MarkdownLink,
   filePath: string,
   options: CheckLinksOperationOptions
 ): Promise<ExternalLinkResult | null> {
@@ -475,7 +477,7 @@ async function validateExternalLinkWithRetry(
         };
       }
     } catch (error) {
-      lastError = error as Error;
+      lastError = error instanceof Error ? error : new Error(String(error));
       
       if (attempt < options.retry) {
         if (options.verbose) {
@@ -739,7 +741,7 @@ function formatAsCSV(result: CheckLinksResult, _options: CheckLinksOperationOpti
  */
 export async function checkLinksCommand(
   files: string[] = ['.'],
-  options: any
+  options: CheckLinksCliOptions
 ): Promise<void> {
   try {
     // Parse CLI options into CheckLinksOperationOptions
