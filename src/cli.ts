@@ -9,6 +9,7 @@ import { moveCommand } from './commands/move.js';
 import { splitCommand } from './commands/split.js';
 import { tocCommand } from './commands/toc.js';
 import { validateCommand } from './commands/validate.js';
+import { checkLinksCommand } from './commands/check-links.js';
 
 const program = new Command();
 
@@ -308,5 +309,66 @@ Output Options:
   --group-by type    Group broken links by link type`
   )
   .action(validateCommand);
+
+program
+  .command('check-links')
+  .description('Check external HTTP/HTTPS links in markdown files')
+  .argument('[files...]', 'Markdown files to check (supports globs, defaults to current directory)')
+  .option('--timeout <ms>', 'Timeout for external link validation (ms)', parseInt, 10000)
+  .option('--retry <count>', 'Number of retry attempts for failed requests', parseInt, 3)
+  .option('--retry-delay <ms>', 'Delay between retry attempts (ms)', parseInt, 1000)
+  .option('--concurrency <count>', 'Maximum concurrent requests', parseInt, 10)
+  .option('--method <method>', 'HTTP method to use (HEAD|GET)', 'HEAD')
+  .option('--no-follow-redirects', 'Do not follow HTTP redirects')
+  .option('--ignore-status <codes>', 'Comma-separated HTTP status codes to ignore', '403,999')
+  .option('--ignore-patterns <patterns>', 'Comma-separated regex patterns to ignore')
+  .option('--no-cache', 'Disable result caching')
+  .option('--cache-duration <minutes>', 'Cache duration in minutes', parseInt, 60)
+  .option('--no-progress', 'Hide progress indicator')
+  .option('--format <format>', 'Output format: text|json|markdown|csv', 'text')
+  .option('--include-response-times', 'Include response times in output')
+  .option('--include-headers', 'Include HTTP headers in detailed output')
+  .option('--max-depth <number>', 'Maximum depth to traverse subdirectories', parseInt)
+  .option('--group-by <method>', 'Group results by: file|status|domain', 'file')
+  .option('--output <file>', 'Output file path for results')
+  .option('--config <file>', 'Configuration file path')
+  .option('-v, --verbose', 'Show detailed output with processing information')
+  .option('-d, --dry-run', 'Show what would be checked without making requests')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ markmv check-links                                    # Check current directory
+  $ markmv check-links docs/**/*.md --verbose            # Check with detailed output
+  $ markmv check-links README.md --timeout 15000         # Custom timeout
+  $ markmv check-links --retry 5 --retry-delay 2000      # Custom retry logic
+  $ markmv check-links --format json > results.json      # JSON output
+  $ markmv check-links --format markdown > report.md     # Markdown report
+  $ markmv check-links --group-by domain --verbose       # Group by domain
+  $ markmv check-links --ignore-patterns "localhost,127.0.0.1" # Ignore patterns
+  $ markmv check-links --concurrency 20 --method GET     # High concurrency with GET
+
+Features:
+  🔄 Smart retry logic for temporary failures
+  ⚡ Configurable concurrency for parallel checking  
+  🗄️  Response caching to avoid re-checking recently validated URLs
+  📊 Multiple output formats (text, JSON, markdown, CSV)
+  📈 Progress indicators for large documentation sets
+  🤖 Bot-detection handling (ignores 403s by default)
+  ⏱️  Response time measurement and statistics
+  🌐 Domain-based grouping and analysis
+
+Output Formats:
+  text      Human-readable console output (default)
+  json      Structured JSON for programmatic use
+  markdown  Formatted markdown report
+  csv       Comma-separated values for spreadsheets
+
+Grouping Options:
+  file      Group results by file (default)
+  status    Group results by HTTP status code
+  domain    Group results by domain name`
+  )
+  .action(checkLinksCommand);
 
 program.parse();
