@@ -9,6 +9,7 @@ import { moveCommand } from './commands/move.js';
 import { splitCommand } from './commands/split.js';
 import { tocCommand } from './commands/toc.js';
 import { validateCommand } from './commands/validate.js';
+import { refactorHeadingsCommand } from './commands/refactor-headings.js';
 
 const program = new Command();
 
@@ -308,5 +309,51 @@ Output Options:
   --group-by type    Group broken links by link type`
   )
   .action(validateCommand);
+
+program
+  .command('refactor-headings')
+  .description('Refactor markdown headings and update all affected links')
+  .argument('[files...]', 'Markdown files to process (supports globs, defaults to current directory)')
+  .option('--old-heading <text>', 'Original heading text to find and replace')
+  .option('--new-heading <text>', 'New heading text to replace with')
+  .option('-r, --recursive', 'Process directories recursively')
+  .option('--max-depth <number>', 'Maximum depth to traverse subdirectories', parseInt)
+  .option('--no-update-cross-references', 'Skip updating cross-file references')
+  .option('-d, --dry-run', 'Show what would be changed without making changes')
+  .option('-v, --verbose', 'Show detailed output with processing information')
+  .option('--json', 'Output results in JSON format')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ markmv refactor-headings docs/ --old-heading "API Reference" --new-heading "API Documentation" --recursive
+  $ markmv refactor-headings README.md --old-heading "Getting Started" --new-heading "Quick Start Guide"
+  $ markmv refactor-headings **/*.md --old-heading "Installation" --new-heading "Setup" --dry-run
+  $ markmv refactor-headings . --old-heading "Configuration" --new-heading "Settings" --verbose
+  $ markmv refactor-headings docs/ --old-heading "Usage" --new-heading "How to Use" --no-update-cross-references
+
+Features:
+  📝 Updates heading text in place
+  🔗 Automatically updates anchor links (#old-slug → #new-slug)
+  🌐 Updates cross-file heading references
+  🔄 Maintains link integrity across the entire project
+  🔍 Dry-run support for safe preview
+  📊 Comprehensive change reporting
+  ⚡ Leverages existing TocGenerator for consistent slug generation
+
+The command will:
+1. Find all instances of the specified old heading text
+2. Replace them with the new heading text
+3. Generate old and new anchor slugs automatically
+4. Update all anchor links that reference the old slug
+5. Update cross-file references (unless --no-update-cross-references is used)
+6. Provide detailed reporting of all changes made
+
+Slug Generation:
+Headings are converted to URL-friendly anchor slugs using the same algorithm
+as the toc command: lowercase, special characters become hyphens, spaces
+become hyphens, multiple hyphens collapsed to single hyphens.`
+  )
+  .action(refactorHeadingsCommand);
 
 program.parse();
