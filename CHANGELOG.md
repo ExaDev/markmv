@@ -1,3 +1,13 @@
+## [1.29.1](https://github.com/ExaDev/markmv/compare/v1.29.0...v1.29.1) (2025-07-30)
+
+### Documentation
+
+* update CI badge workflow reference ([0fc892d](https://github.com/ExaDev/markmv/commit/0fc892d0607ae25611b57e3eaa03c695ca723c76))
+
+### Chores
+
+* ignore test-data directory ([7061388](https://github.com/ExaDev/markmv/commit/706138808acc0dbf41c40cd9f361c5591037889c))
+
 ## [1.29.0](https://github.com/ExaDev/markmv/compare/v1.28.0...v1.29.0) (2025-07-16)
 
 ### Features

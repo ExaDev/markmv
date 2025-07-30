@@ -4,7 +4,7 @@
 npx markmv --help
 ```
 
-[![CI](https://github.com/ExaDev/markmv/actions/workflows/main.yml/badge.svg)](https://github.com/ExaDev/markmv/actions/workflows/main.yml)
+[![CI](https://github.com/ExaDev/markmv/actions/workflows/ci.yml/badge.svg)](https://github.com/ExaDev/markmv/actions/workflows/ci.yml)
 [![npm version](https://badge.fury.io/js/markmv.svg)](https://badge.fury.io/js/markmv)
 [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
