@@ -57,6 +57,14 @@ export interface ValidateOperationOptions extends OperationOptions {
   checkContentFreshness?: boolean;
   /** Default staleness threshold in days */
   freshnessThreshold?: number;
+  /** Enable authentication-aware link validation */
+  enableAuthDetection?: boolean;
+  /** Treat auth-required links as valid (not broken) */
+  allowAuthRequired?: boolean;
+  /** API keys/credentials for authenticated requests */
+  authCredentials?: Record<string, string>;
+  /** Custom headers for specific domains */
+  authHeaders?: Record<string, Record<string, string>>;
 }
 
 /**
@@ -130,6 +138,10 @@ export interface ValidateResult {
   staleLinks?: number;
   /** Number of fresh links found */
   freshLinks?: number;
+  /** Number of auth-required links found */
+  authRequiredLinks?: number;
+  /** Number of successfully authenticated links */
+  authenticatedLinks?: number;
 }
 
 /**
@@ -170,7 +182,13 @@ export async function validateLinks(
 ): Promise<ValidateResult> {
   const startTime = Date.now();
 
-  const opts: Required<ValidateOperationOptions> = {
+  const opts: Required<
+    Omit<ValidateOperationOptions, 'maxDepth' | 'authCredentials' | 'authHeaders'>
+  > & {
+    maxDepth?: number;
+    authCredentials?: Record<string, string>;
+    authHeaders?: Record<string, Record<string, string>>;
+  } = {
     linkTypes: options.linkTypes || [
       'internal',
       'external',
@@ -184,12 +202,13 @@ export async function validateLinks(
     strictInternal: options.strictInternal ?? true,
     checkClaudeImports: options.checkClaudeImports ?? true,
     checkCircular: options.checkCircular ?? false,
-    maxDepth: options.maxDepth,
     onlyBroken: options.onlyBroken ?? true,
     groupBy: options.groupBy ?? 'file',
     includeContext: options.includeContext ?? false,
     checkContentFreshness: options.checkContentFreshness ?? false,
     freshnessThreshold: options.freshnessThreshold ?? 730, // 2 years in days
+    enableAuthDetection: options.enableAuthDetection ?? false,
+    allowAuthRequired: options.allowAuthRequired ?? true,
     dryRun: options.dryRun ?? false,
     verbose: options.verbose ?? false,
     force: options.force ?? false,
@@ -200,6 +219,15 @@ export async function validateLinks(
     failFast: options.failFast ?? false,
     includeDependencies: options.includeDependencies ?? true,
   };
+  if (options.maxDepth !== undefined) {
+    opts.maxDepth = options.maxDepth;
+  }
+  if (options.authCredentials !== undefined) {
+    opts.authCredentials = options.authCredentials;
+  }
+  if (options.authHeaders !== undefined) {
+    opts.authHeaders = options.authHeaders;
+  }
 
   // Initialize git utils and cache if needed
   let gitUtils: GitUtils | undefined;
@@ -327,6 +355,12 @@ export async function validateLinks(
     freshnessConfig: {
       defaultThreshold: opts.freshnessThreshold * 24 * 60 * 60 * 1000, // Convert days to milliseconds
     },
+    enableAuthDetection: opts.enableAuthDetection,
+    allowAuthRequired: opts.allowAuthRequired,
+    authConfig: {
+      credentials: opts.authCredentials || {},
+      customHeaders: opts.authHeaders || {},
+    },
   });
 
   const parser = new LinkParser();
@@ -342,6 +376,8 @@ export async function validateLinks(
     processingTime: 0,
     staleLinks: 0,
     freshLinks: 0,
+    authRequiredLinks: 0,
+    authenticatedLinks: 0,
   };
   if (gitInfo !== undefined) {
     result.gitInfo = gitInfo;
@@ -474,6 +510,22 @@ export async function validateLinks(
         result.staleLinks = (result.staleLinks || 0) + staleLinks;
         if (freshExternalLinks > 0) {
           result.freshLinks = (result.freshLinks || 0) + freshExternalLinks;
+        }
+      }
+
+      // Count authentication statistics if auth detection is enabled
+      if (opts.enableAuthDetection) {
+        if (brokenLinks.length > 0) {
+          // Count auth-required links
+          const authRequiredCount = brokenLinks.filter(
+            (bl) => bl.reason === 'auth-required'
+          ).length;
+          const authenticatedCount = brokenLinks.filter(
+            (bl) => bl.authInfo?.authAttempted && bl.authInfo?.authSucceeded
+          ).length;
+
+          result.authRequiredLinks = (result.authRequiredLinks || 0) + authRequiredCount;
+          result.authenticatedLinks = (result.authenticatedLinks || 0) + authenticatedCount;
         }
       }
 
@@ -663,6 +715,23 @@ export async function validateCommand(
       }
     }
 
+    // Show authentication information if enabled
+    if (options.enableAuthDetection) {
+      const authRequiredCount = result.authRequiredLinks || 0;
+      const authenticatedCount = result.authenticatedLinks || 0;
+      const realBrokenCount = result.brokenLinks - authRequiredCount;
+
+      if (authRequiredCount > 0) {
+        console.log(`🔒 Authentication-protected links: ${authRequiredCount}`);
+      }
+      if (authenticatedCount > 0) {
+        console.log(`✅ Successfully authenticated links: ${authenticatedCount}`);
+      }
+      if (realBrokenCount > 0) {
+        console.log(`❌ Truly broken links: ${realBrokenCount}`);
+      }
+    }
+
     console.log(`Processing time: ${result.processingTime}ms\n`);
 
     if (result.fileErrors.length > 0) {
@@ -700,7 +769,8 @@ export async function validateCommand(
               options.includeContext && brokenLink.line ? ` (line ${brokenLink.line})` : '';
             const file = brokenLink.filePath ? ` in ${brokenLink.filePath}` : '';
             const freshness = brokenLink.reason === 'content-stale' ? ' [STALE]' : '';
-            console.log(`    ❌ ${brokenLink.url}${context}${file}${freshness}`);
+            const authIndicator = brokenLink.reason === 'auth-required' ? ' 🔒' : '';
+            console.log(`    ❌ ${brokenLink.url}${context}${file}${freshness}${authIndicator}`);
             if (brokenLink.reason && options.verbose) {
               console.log(`       Reason: ${brokenLink.reason}`);
             }
@@ -712,7 +782,7 @@ export async function validateCommand(
               if (info.warning) {
                 console.log(`       Warning: ${info.warning}`);
               }
-              if (info.suggestion) {
+              if (info.suggestion && options.verbose) {
                 console.log(`       Suggestion: ${info.suggestion}`);
               }
               if (info.lastModified && options.verbose) {
@@ -720,6 +790,18 @@ export async function validateCommand(
               }
               if (info.stalePatterns.length > 0 && options.verbose) {
                 console.log(`       Detected patterns: ${info.stalePatterns.join(', ')}`);
+              }
+            }
+            if (brokenLink.authInfo && (options.verbose || brokenLink.reason === 'auth-required')) {
+              const info = brokenLink.authInfo;
+              if (info.warning) {
+                console.log(`       Auth: ${info.warning}`);
+              }
+              if (info.authProvider && options.verbose) {
+                console.log(`       Provider: ${info.authProvider}`);
+              }
+              if (info.suggestion) {
+                console.log(`       Suggestion: ${info.suggestion}`);
               }
             }
           }
@@ -733,7 +815,10 @@ export async function validateCommand(
           const context =
             options.includeContext && brokenLink.line ? ` (line ${brokenLink.line})` : '';
           const freshness = brokenLink.reason === 'content-stale' ? ' [STALE]' : '';
-          console.log(`    ❌ [${brokenLink.type}] ${brokenLink.url}${context}${freshness}`);
+          const authIndicator = brokenLink.reason === 'auth-required' ? ' 🔒' : '';
+          console.log(
+            `    ❌ [${brokenLink.type}] ${brokenLink.url}${context}${freshness}${authIndicator}`
+          );
           if (brokenLink.reason && options.verbose) {
             console.log(`       Reason: ${brokenLink.reason}`);
           }
@@ -745,7 +830,7 @@ export async function validateCommand(
             if (info.warning) {
               console.log(`       Warning: ${info.warning}`);
             }
-            if (info.suggestion) {
+            if (info.suggestion && options.verbose) {
               console.log(`       Suggestion: ${info.suggestion}`);
             }
             if (info.lastModified && options.verbose) {
@@ -753,6 +838,18 @@ export async function validateCommand(
             }
             if (info.stalePatterns.length > 0 && options.verbose) {
               console.log(`       Detected patterns: ${info.stalePatterns.join(', ')}`);
+            }
+          }
+          if (brokenLink.authInfo && (options.verbose || brokenLink.reason === 'auth-required')) {
+            const info = brokenLink.authInfo;
+            if (info.warning) {
+              console.log(`       Auth: ${info.warning}`);
+            }
+            if (info.authProvider && options.verbose) {
+              console.log(`       Provider: ${info.authProvider}`);
+            }
+            if (info.suggestion) {
+              console.log(`       Suggestion: ${info.suggestion}`);
             }
           }
         }
