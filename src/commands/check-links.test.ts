@@ -90,8 +90,8 @@ Some text content.`;
       const { LinkParser } = await import('../core/link-parser.js');
       const { LinkValidator } = await import('../core/link-validator.js');
       
-      (LinkParser as any).mockImplementation(() => mockParser);
-      (LinkValidator as any).mockImplementation(() => mockValidator);
+      vi.mocked(LinkParser).mockImplementation(() => mockParser);
+      vi.mocked(LinkValidator).mockImplementation(() => mockValidator);
 
       const result = await checkLinks([testFile], DEFAULT_CHECK_LINKS_OPTIONS);
 
@@ -147,8 +147,8 @@ Some text content.`;
       const { LinkParser } = await import('../core/link-parser.js');
       const { LinkValidator } = await import('../core/link-validator.js');
       
-      (LinkParser as any).mockImplementation(() => mockParser);
-      (LinkValidator as any).mockImplementation(() => mockValidator);
+      vi.mocked(LinkParser).mockImplementation(() => mockParser);
+      vi.mocked(LinkValidator).mockImplementation(() => mockValidator);
 
       const result = await checkLinks([testFile], DEFAULT_CHECK_LINKS_OPTIONS);
 
@@ -160,8 +160,10 @@ Some text content.`;
       
       const brokenLink = result.linkResults.find(link => link.isBroken);
       expect(brokenLink).toBeDefined();
-      expect(brokenLink!.href).toBe('https://nonexistent-domain-12345.com');
-      expect(brokenLink!.domain).toBe('nonexistent-domain-12345.com');
+      if (brokenLink) {
+        expect(brokenLink.href).toBe('https://nonexistent-domain-12345.com');
+        expect(brokenLink.domain).toBe('nonexistent-domain-12345.com');
+      }
     });
 
     it('should support glob patterns for file discovery', async () => {
@@ -198,8 +200,8 @@ Some text content.`;
       const { LinkParser } = await import('../core/link-parser.js');
       const { LinkValidator } = await import('../core/link-validator.js');
       
-      (LinkParser as any).mockImplementation(() => mockParser);
-      (LinkValidator as any).mockImplementation(() => mockValidator);
+      vi.mocked(LinkParser).mockImplementation(() => mockParser);
+      vi.mocked(LinkValidator).mockImplementation(() => mockValidator);
 
       const result = await checkLinks([TEST_DIR], {
         ...DEFAULT_CHECK_LINKS_OPTIONS,
@@ -253,8 +255,8 @@ Some text content.`;
       const { LinkParser } = await import('../core/link-parser.js');
       const { LinkValidator } = await import('../core/link-validator.js');
       
-      (LinkParser as any).mockImplementation(() => mockParser);
-      (LinkValidator as any).mockImplementation(() => mockValidator);
+      vi.mocked(LinkParser).mockImplementation(() => mockParser);
+      vi.mocked(LinkValidator).mockImplementation(() => mockValidator);
 
       const options: CheckLinksOperationOptions = {
         ...DEFAULT_CHECK_LINKS_OPTIONS,
@@ -299,8 +301,8 @@ Some text content.`;
       const { LinkParser } = await import('../core/link-parser.js');
       const { LinkValidator } = await import('../core/link-validator.js');
       
-      (LinkParser as any).mockImplementation(() => mockParser);
-      (LinkValidator as any).mockImplementation(() => mockValidator);
+      vi.mocked(LinkParser).mockImplementation(() => mockParser);
+      vi.mocked(LinkValidator).mockImplementation(() => mockValidator);
 
       const options: CheckLinksOperationOptions = {
         ...DEFAULT_CHECK_LINKS_OPTIONS,
@@ -580,8 +582,8 @@ No external links here.`;
       const { LinkParser } = await import('../core/link-parser.js');
       const { LinkValidator } = await import('../core/link-validator.js');
       
-      (LinkParser as any).mockImplementation(() => mockParser);
-      (LinkValidator as any).mockImplementation(() => mockValidator);
+      vi.mocked(LinkParser).mockImplementation(() => mockParser);
+      vi.mocked(LinkValidator).mockImplementation(() => mockValidator);
 
       const result = await checkLinks([testFile], DEFAULT_CHECK_LINKS_OPTIONS);
 
