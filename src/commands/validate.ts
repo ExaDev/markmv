@@ -35,6 +35,10 @@ export interface ValidateOperationOptions extends OperationOptions {
   groupBy: 'file' | 'type';
   /** Include line numbers and context in output */
   includeContext: boolean;
+  /** Enable content freshness detection for external links */
+  checkContentFreshness?: boolean;
+  /** Default staleness threshold in days */
+  freshnessThreshold?: number;
 }
 
 /**
@@ -89,6 +93,10 @@ export interface ValidateResult {
   circularReferences?: string[];
   /** Processing time in milliseconds */
   processingTime: number;
+  /** Number of stale links found */
+  staleLinks?: number;
+  /** Number of fresh links found */
+  freshLinks?: number;
 }
 
 /**
@@ -147,6 +155,8 @@ export async function validateLinks(
     onlyBroken: options.onlyBroken ?? true,
     groupBy: options.groupBy ?? 'file',
     includeContext: options.includeContext ?? false,
+    checkContentFreshness: options.checkContentFreshness ?? false,
+    freshnessThreshold: options.freshnessThreshold ?? 730, // 2 years in days
     dryRun: options.dryRun ?? false,
     verbose: options.verbose ?? false,
     force: options.force ?? false,
@@ -183,6 +193,10 @@ export async function validateLinks(
     externalTimeout: opts.externalTimeout,
     strictInternal: opts.strictInternal,
     checkClaudeImports: opts.checkClaudeImports,
+    checkContentFreshness: opts.checkContentFreshness,
+    freshnessConfig: {
+      defaultThreshold: opts.freshnessThreshold * 24 * 60 * 60 * 1000, // Convert days to milliseconds
+    },
   });
 
   const parser = new LinkParser();
@@ -196,6 +210,8 @@ export async function validateLinks(
     fileErrors: [],
     hasCircularReferences: false,
     processingTime: 0,
+    staleLinks: 0,
+    freshLinks: 0,
   };
 
   // Initialize broken links by type
@@ -224,6 +240,25 @@ export async function validateLinks(
       // Validate links
       const validation = await validator.validateLinks(relevantLinks, filePath);
       const brokenLinks = validation.brokenLinks;
+
+      // Count freshness statistics
+      if (opts.checkContentFreshness) {
+        const externalLinks = relevantLinks.filter(link => link.type === 'external');
+        
+        if (brokenLinks.length > 0) {
+          // Count stale links
+          const staleLinks = brokenLinks.filter(bl => bl.reason === 'content-stale').length;
+          const freshExternalLinks = externalLinks.length - staleLinks;
+          
+          result.staleLinks = (result.staleLinks || 0) + staleLinks;
+          if (freshExternalLinks > 0) {
+            result.freshLinks = (result.freshLinks || 0) + freshExternalLinks;
+          }
+        } else if (externalLinks.length > 0) {
+          // All external links are fresh
+          result.freshLinks = (result.freshLinks || 0) + externalLinks.length;
+        }
+      }
 
       if (brokenLinks.length > 0) {
         result.brokenLinks += brokenLinks.length;
@@ -353,6 +388,19 @@ export async function validateCommand(
     console.log(`Files processed: ${result.filesProcessed}`);
     console.log(`Total links found: ${result.totalLinks}`);
     console.log(`Broken links: ${result.brokenLinks}`);
+    
+    // Show freshness information if enabled
+    if (options.checkContentFreshness) {
+      const staleCount = result.staleLinks || 0;
+      const freshCount = result.freshLinks || 0;
+      const externalTotal = staleCount + freshCount;
+      
+      if (externalTotal > 0) {
+        console.log(`Fresh external links: ${freshCount}`);
+        console.log(`Stale external links: ${staleCount}`);
+      }
+    }
+    
     console.log(`Processing time: ${result.processingTime}ms\n`);
 
     if (result.fileErrors.length > 0) {
@@ -389,9 +437,25 @@ export async function validateCommand(
             const context =
               options.includeContext && brokenLink.line ? ` (line ${brokenLink.line})` : '';
             const file = brokenLink.filePath ? ` in ${brokenLink.filePath}` : '';
-            console.log(`    ❌ ${brokenLink.url}${context}${file}`);
+            const freshness = brokenLink.reason === 'content-stale' ? ' [STALE]' : '';
+            console.log(`    ❌ ${brokenLink.url}${context}${file}${freshness}`);
             if (brokenLink.reason && options.verbose) {
               console.log(`       Reason: ${brokenLink.reason}`);
+            }
+            if (brokenLink.freshnessInfo && (options.verbose || brokenLink.reason === 'content-stale')) {
+              const info = brokenLink.freshnessInfo;
+              if (info.warning) {
+                console.log(`       Warning: ${info.warning}`);
+              }
+              if (info.suggestion) {
+                console.log(`       Suggestion: ${info.suggestion}`);
+              }
+              if (info.lastModified && options.verbose) {
+                console.log(`       Last Modified: ${info.lastModified.toDateString()}`);
+              }
+              if (info.stalePatterns.length > 0 && options.verbose) {
+                console.log(`       Detected patterns: ${info.stalePatterns.join(', ')}`);
+              }
             }
           }
         }
@@ -403,9 +467,25 @@ export async function validateCommand(
         for (const brokenLink of brokenLinks) {
           const context =
             options.includeContext && brokenLink.line ? ` (line ${brokenLink.line})` : '';
-          console.log(`    ❌ [${brokenLink.type}] ${brokenLink.url}${context}`);
+          const freshness = brokenLink.reason === 'content-stale' ? ' [STALE]' : '';
+          console.log(`    ❌ [${brokenLink.type}] ${brokenLink.url}${context}${freshness}`);
           if (brokenLink.reason && options.verbose) {
             console.log(`       Reason: ${brokenLink.reason}`);
+          }
+          if (brokenLink.freshnessInfo && (options.verbose || brokenLink.reason === 'content-stale')) {
+            const info = brokenLink.freshnessInfo;
+            if (info.warning) {
+              console.log(`       Warning: ${info.warning}`);
+            }
+            if (info.suggestion) {
+              console.log(`       Suggestion: ${info.suggestion}`);
+            }
+            if (info.lastModified && options.verbose) {
+              console.log(`       Last Modified: ${info.lastModified.toDateString()}`);
+            }
+            if (info.stalePatterns.length > 0 && options.verbose) {
+              console.log(`       Detected patterns: ${info.stalePatterns.join(', ')}`);
+            }
           }
         }
       }
