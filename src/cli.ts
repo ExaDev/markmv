@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
+import { clipCommand } from './commands/clip.js';
 import { convertCommand } from './commands/convert.js';
 import { indexCommand } from './commands/index.js';
 import { joinCommand } from './commands/join.js';
@@ -16,6 +17,68 @@ program
   .name('markmv')
   .description('CLI for markdown file operations with intelligent link refactoring')
   .version('0.1.0');
+
+program
+  .command('clip')
+  .description('Convert web pages to markdown (web clipper)')
+  .argument('<urls...>', 'URLs to clip or paths to files containing URLs (use --batch)')
+  .option('-o, --output <file>', 'Output file name (single URL only)')
+  .option('--output-dir <dir>', 'Output directory for clipped files')
+  .option('--batch', 'Process multiple URLs from input files')
+  .option(
+    '--strategy <strategy>',
+    'Extraction strategy: auto|readability|manual|full|structured',
+    'auto'
+  )
+  .option(
+    '--image-strategy <strategy>',
+    'Image handling: skip|link-only|download|base64',
+    'link-only'
+  )
+  .option('--image-dir <dir>', 'Directory for downloaded images', './images')
+  .option('--selectors <selectors>', 'CSS selectors for manual extraction (comma-separated)')
+  .option('--no-frontmatter', 'Skip frontmatter generation')
+  .option('--timeout <ms>', 'Request timeout in milliseconds', parseInt, 30000)
+  .option('--user-agent <agent>', 'Custom User-Agent string')
+  .option('--headers <headers>', 'Custom HTTP headers (JSON format)')
+  .option('--cookies <file>', 'Path to cookies file')
+  .option('--no-follow-redirects', 'Don\'t follow HTTP redirects')
+  .option('--max-redirects <count>', 'Maximum redirects to follow', parseInt, 5)
+  .option('-d, --dry-run', 'Show what would be clipped without creating files')
+  .option('-v, --verbose', 'Show detailed output with processing information')
+  .option('--json', 'Output results in JSON format')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ markmv clip https://example.com/article
+  $ markmv clip https://example.com/article -o article.md
+  $ markmv clip urls.txt --batch --output-dir ./clipped
+  $ markmv clip https://docs.site.com --strategy manual --selectors "article,.content"
+  $ markmv clip https://blog.com/post --strategy readability --image-strategy download
+  $ markmv clip https://example.com --dry-run --verbose
+
+Extraction Strategies:
+  auto         Automatically choose best strategy based on content
+  readability  Mozilla Readability algorithm (best for articles/blogs)
+  manual       Extract using custom CSS selectors
+  full         Extract entire page content
+  structured   Use Schema.org and semantic markup
+
+Image Strategies:
+  skip         Don't process images at all
+  link-only    Keep images as external links (fastest)
+  download     Download images locally and update paths
+  base64       Embed small images as base64 (increases file size)
+
+Advanced Features:
+  --headers '{"Authorization": "Bearer token"}'    Custom headers for auth
+  --cookies cookies.txt                            Use cookies for protected content
+  --selectors "article,.post-content,main"        Custom content selectors
+  --timeout 60000                                  Extended timeout for slow sites
+  --user-agent "Custom Bot 1.0"                   Custom user agent string`
+  )
+  .action(clipCommand);
 
 program
   .command('convert')
