@@ -44,6 +44,7 @@ export { LinkParser } from './core/link-parser.js';
 export { LinkRefactorer } from './core/link-refactorer.js';
 export { LinkValidator } from './core/link-validator.js';
 export { LinkConverter } from './core/link-converter.js';
+export { LinkGraphGenerator } from './core/link-graph-generator.js';
 export { DependencyGraph } from './core/dependency-graph.js';
 export { ContentJoiner } from './core/content-joiner.js';
 export { ContentSplitter } from './core/content-splitter.js';
@@ -80,6 +81,7 @@ export {
 
 // Command functions for programmatic access
 export { convertCommand } from './commands/convert.js';
+export { graphCommand, generateGraph } from './commands/graph.js';
 export { indexCommand } from './commands/index.js';
 export { tocCommand, generateToc as generateTocForFiles } from './commands/toc.js';
 export { validateCommand, validateLinks } from './commands/validate.js';
@@ -105,6 +107,18 @@ export type {
   BarrelOperationOptions,
 } from './types/operations.js';
 
+export type {
+  GraphOperationOptions,
+  GraphCliOptions,
+  GraphResult,
+} from './commands/graph.js';
+export type {
+  LinkGraphOptions,
+  GraphNode,
+  GraphEdge,
+  LinkGraph,
+  GraphOutputFormat,
+} from './core/link-graph-generator.js';
 export type { IndexOptions, FileMetadata, IndexableFile } from './commands/index.js';
 export type { TocOperationOptions, TocCliOptions, TocResult } from './commands/toc.js';
 export type {
@@ -326,6 +340,52 @@ export async function generateIndex(
  * @group Commands
  */
 export const generateBarrel = generateIndex;
+
+/**
+ * Generate interactive link graphs from markdown file relationships
+ *
+ * @example
+ *   Basic graph generation
+ *   ```typescript
+ *   import { generateLinkGraph } from 'markmv';
+ *
+ *   const result = await generateLinkGraph(['docs/**\/*.md'], {
+ *     format: 'mermaid',
+ *     includeExternal: false
+ *   });
+ *
+ *   console.log('Generated Mermaid diagram:');
+ *   console.log(result.content);
+ *   ```
+ *
+ * @example
+ *   Interactive HTML visualization
+ *   ```typescript
+ *   import { generateLinkGraph } from 'markmv';
+ *
+ *   const result = await generateLinkGraph(['**\/*.md'], {
+ *     format: 'html',
+ *     output: 'visualization.html',
+ *     includeImages: true
+ *   });
+ *
+ *   console.log('Interactive graph saved to: ' + result.outputFile);
+ *   ```
+ *
+ * @param patterns - File patterns to analyze (supports globs)
+ * @param options - Graph generation options
+ *
+ * @returns Promise resolving to graph generation result
+ *
+ * @group Commands
+ */
+export async function generateLinkGraph(
+  patterns: string[],
+  options: import('./commands/graph.js').GraphOperationOptions = { format: 'json' }
+): Promise<import('./commands/graph.js').GraphResult> {
+  const { generateGraph } = await import('./commands/graph.js');
+  return generateGraph(patterns, options);
+}
 
 /**
  * Test function to demonstrate auto-exposure pattern
