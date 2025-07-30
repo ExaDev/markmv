@@ -277,6 +277,8 @@ program
   .option('--strict-internal', 'Treat missing internal files as errors', true)
   .option('--check-claude-imports', 'Validate Claude import paths', true)
   .option('--check-circular', 'Check for circular references in file dependencies', false)
+  .option('--check-content-freshness', 'Enable content freshness detection for external links', false)
+  .option('--freshness-threshold <days>', 'Content staleness threshold in days', parseInt, 730)
   .option('--max-depth <number>', 'Maximum depth to traverse subdirectories', parseInt)
   .option('--only-broken', 'Show only broken links, not all validation results', true)
   .option('--group-by <method>', 'Group results by: file|type', 'file')
@@ -295,6 +297,11 @@ Examples:
   $ markmv validate **/*.md --group-by type --only-broken
   $ markmv validate docs/ --check-circular --strict-internal
 
+Content Freshness Examples:
+  $ markmv validate --check-external --check-content-freshness
+  $ markmv validate docs/ --check-content-freshness --freshness-threshold 365
+  $ markmv validate README.md --check-external --check-content-freshness --verbose
+
 Link Types:
   internal        Links to other markdown files
   external        HTTP/HTTPS URLs
@@ -302,6 +309,10 @@ Link Types:
   image           Image references (local and external)
   reference       Reference-style links ([text][ref])
   claude-import   Claude @import syntax (@path/to/file)
+
+Content Freshness Options:
+  --check-content-freshness     Enable staleness detection for external links
+  --freshness-threshold <days>  Content staleness threshold (default: 730 days)
 
 Output Options:
   --group-by file    Group broken links by file (default)
