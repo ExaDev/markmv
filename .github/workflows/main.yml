@@ -304,7 +304,7 @@ jobs:
         run: npm ci --legacy-peer-deps
         
       - name: Download coverage artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: coverage-reports
         continue-on-error: true
@@ -326,7 +326,7 @@ jobs:
           node dist/cli.js --version || echo "CLI not yet ready"
         
       - name: Generate SBOM for NPM attestations
-        uses: anchore/sbom-action@v0.17.8
+        uses: anchore/sbom-action@v0.20.4
         with:
           path: ./
           format: spdx-json
@@ -687,7 +687,7 @@ jobs:
         
       - name: Setup Pages
         id: pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
