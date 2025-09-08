@@ -41,7 +41,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
@@ -60,7 +60,7 @@ jobs:
         shell: bash
 
       - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
@@ -283,7 +283,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
@@ -294,7 +294,7 @@ jobs:
       # GitHub Packages npm registry doesn't support GitHub App installation tokens
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20.x'
           cache: 'npm'
@@ -304,7 +304,7 @@ jobs:
         run: npm ci --legacy-peer-deps
         
       - name: Download coverage artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: coverage-reports
         continue-on-error: true
@@ -326,7 +326,7 @@ jobs:
           node dist/cli.js --version || echo "CLI not yet ready"
         
       - name: Generate SBOM for NPM attestations
-        uses: anchore/sbom-action@v0.17.8
+        uses: anchore/sbom-action@v0.20.5
         with:
           path: ./
           format: spdx-json
@@ -656,14 +656,14 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # Get the latest commit (including version updates from release)
           ref: main
           fetch-depth: 1
           
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20.x'
           cache: 'npm'
@@ -687,10 +687,10 @@ jobs:
         
       - name: Setup Pages
         id: pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
         
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: ./docs
           
