@@ -47,10 +47,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        run: corepack enable
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: pnpm install --frozen-lockfile
 
       - name: Detect filesystem capabilities
         id: filesystem
@@ -152,10 +155,10 @@ jobs:
         shell: bash
 
       - name: Generate schemas (required for TypeScript compilation)
-        run: npm run generate:schemas
+        run: pnpm run generate:schemas
         
       - name: Build project
-        run: npm run build
+        run: pnpm run build
 
       - name: Run cross-platform tests
         run: |
@@ -166,7 +169,7 @@ jobs:
           echo "Symlinks: ${{ steps.filesystem.outputs.symlinks }}"
           
           # Run tests with cross-platform environment
-          npm run test:run
+          pnpm run test:run
         env:
           MARKMV_TEST_CROSS_PLATFORM: "true"
 

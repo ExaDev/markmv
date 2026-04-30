@@ -3,6 +3,7 @@
   "version": "1.29.1",
   "description": "TypeScript CLI for markdown file operations with intelligent link refactoring",
   "type": "module",
+  "packageManager": "pnpm@10.33.1",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
@@ -114,7 +115,8 @@
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
     "unified": "^11.0.0",
-    "unist-util-visit": "^5.0.0"
+    "unist-util-visit": "^5.0.0",
+    "zod": "4.3.6"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -63,7 +63,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        run: corepack enable
           
       - name: Cache TypeScript build
         uses: actions/cache@v4
@@ -88,7 +91,7 @@ jobs:
             ${{ runner.os }}-test-
           
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: pnpm install --frozen-lockfile
         
       # Auto-fix linting issues (only on push to main, only on Node.js 22.x and Ubuntu to avoid race conditions)
       - name: Check for fixable linting issues
@@ -96,8 +99,8 @@ jobs:
         id: check-fixes
         run: |
           git status --porcelain > before.txt
-          npm run lint:fix || true
-          npm run format || true
+          pnpm run lint:fix || true
+          pnpm run format || true
           git status --porcelain > after.txt
           
           if ! diff before.txt after.txt >/dev/null; then
@@ -112,8 +115,8 @@ jobs:
       - name: Auto-fix linting issues
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest' && steps.check-fixes.outputs.fixes-available == 'true'
         run: |
-          npm run lint:fix
-          npm run format
+          pnpm run lint:fix
+          pnpm run format
           
       - name: Commit auto-fixes
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest' && steps.check-fixes.outputs.fixes-available == 'true'
@@ -129,27 +132,27 @@ jobs:
         
       # Generate required files before quality checks
       - name: Generate schemas (required for TypeScript compilation)
-        run: npm run generate:schemas
+        run: pnpm run generate:schemas
         
       - name: Format generated files
-        run: npm run format
+        run: pnpm run format
         
       # Quality checks (must pass for all further steps)
       - name: Run lint (fast fail)
-        run: npm run lint
+        run: pnpm run lint
         
       - name: Check formatting (fast fail)
-        run: npm run format:check
+        run: pnpm run format:check
         
       - name: Run type check (fast fail)
-        run: npm run typecheck
+        run: pnpm run typecheck
         
       - name: Run security audit
-        run: npm audit --audit-level=high
+        run: pnpm audit --audit-level=high
         continue-on-error: true
         
       - name: Build
-        run: npm run build
+        run: pnpm run build
         
       - name: Create filesystem test environment
         run: |
@@ -216,7 +219,7 @@ jobs:
         env:
           MARKMV_TEST_FILESYSTEM_CASE_SENSITIVE: ${{ env.FILESYSTEM_IS_CASE_SENSITIVE }}
           MARKMV_TEST_SUPPORTS_SYMLINKS: ${{ env.FILESYSTEM_SUPPORTS_SYMLINKS }}
-        run: npm run test:run
+        run: pnpm run test:run
 
       - name: Report filesystem test results
         run: |
@@ -231,7 +234,7 @@ jobs:
       - name: Generate test coverage
         if: matrix.node-version == '20.x' && matrix.os == 'ubuntu-latest'
         run: |
-          npm run test:coverage | tee coverage-output.txt
+          pnpm run test:coverage | tee coverage-output.txt
           
           # Extract overall coverage percentage
           COVERAGE=$(grep "All files" coverage-output.txt | awk '{print $4}' | head -1)
@@ -242,7 +245,7 @@ jobs:
         if: matrix.node-version == '20.x' && matrix.os == 'ubuntu-latest'
         run: |
           # Generate regular report for summary
-          npm run docs:coverage
+          pnpm run docs:coverage
           
           # Generate JSON report for programmatic access (suppress all output to avoid warnings in JSON)
           DOCS_COVERAGE=$(OUTPUT_JSON=true node scripts/check-docs-coverage.js 2>/dev/null | jq -r '.overallCoverage')
@@ -297,11 +300,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-          cache: 'npm'
+          cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
+
+      - name: Setup pnpm
+        run: corepack enable
           
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: pnpm install --frozen-lockfile
         
       - name: Download coverage artifacts
         uses: actions/download-artifact@v4
@@ -318,7 +324,7 @@ jobs:
         continue-on-error: true
         
       - name: Build
-        run: npm run build
+        run: pnpm run build
         
       - name: Verify build output
         run: |
@@ -354,7 +360,7 @@ jobs:
       - name: Generate updated README for release
         run: |
           echo "🔄 Generating README from TypeScript documentation..."
-          npm run docs:readme-generate
+          pnpm run docs:readme-generate
           
       - name: Extract coverage data for badges
         id: coverage
@@ -515,7 +521,7 @@ jobs:
           # Copy .npmrc to dist-github for GitHub Packages authentication
           cp .npmrc dist-github/
           
-          npm run release
+          pnpm run release
           echo "✅ Release completed - version tagged and prepared for publishing"
           
       # Temporarily disabled - attestation verification step
@@ -666,13 +672,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-          cache: 'npm'
+          cache: 'pnpm'
+
+      - name: Setup pnpm
+        run: corepack enable
           
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: pnpm install --frozen-lockfile
         
       - name: Build project
-        run: npm run build
+        run: pnpm run build
         
       - name: Show current project status
         run: |
@@ -683,7 +692,7 @@ jobs:
           grep -E "(Test Coverage|Documentation Coverage)" README.md >> $GITHUB_STEP_SUMMARY || echo "No coverage badges found" >> $GITHUB_STEP_SUMMARY
         
       - name: Generate documentation
-        run: npm run docs
+        run: pnpm run docs
         
       - name: Setup Pages
         id: pages
