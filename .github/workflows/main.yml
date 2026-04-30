@@ -130,13 +130,6 @@ jobs:
             git push
           fi
         
-      # Generate required files before quality checks
-      - name: Generate schemas (required for TypeScript compilation)
-        run: pnpm run generate:schemas
-        
-      - name: Format generated files
-        run: pnpm run format
-        
       # Quality checks (must pass for all further steps)
       - name: Run lint (fast fail)
         run: pnpm run lint
