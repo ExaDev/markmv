@@ -29,7 +29,6 @@ interface TextNode extends Node {
   value: string;
 }
 
-
 /**
  * Core class for converting markdown link formats and path resolution.
  *
@@ -358,10 +357,10 @@ export class LinkConverter {
 
     const url = node.url;
     const text = this.extractLinkText(node);
-    
+
     // Determine current style
     const currentStyle = this.detectCurrentLinkStyle(node, text, url);
-    
+
     // If already in target style, no changes needed
     if (currentStyle === targetStyle) {
       return false;
@@ -382,35 +381,29 @@ export class LinkConverter {
     }
   }
 
-  /**
-   * Extract text content from link node children.
-   */
+  /** Extract text content from link node children. */
   private extractLinkText(node: LinkNode): string {
     if (!node.children) return '';
-    
+
     return node.children
-      .filter(child => child.type === 'text')
-      .map(child => child.value || '')
+      .filter((child) => child.type === 'text')
+      .map((child) => child.value || '')
       .join('');
   }
 
-  /**
-   * Detect the current link style of a node.
-   */
+  /** Detect the current link style of a node. */
   private detectCurrentLinkStyle(_node: LinkNode, text: string, _url: string): string {
     // Check for combined format: text starting with @
     if (text.startsWith('@')) {
       return 'combined';
     }
-    
+
     // For now, assume standard markdown if it's a regular link node
     // More sophisticated detection could be added here
     return 'markdown';
   }
 
-  /**
-   * Convert link to combined format [@url](url).
-   */
+  /** Convert link to combined format [@url](url). */
   private convertToCombined(node: LinkNode, text: string, url: string): boolean {
     if (!node.children || !this.isInternalLink(url)) return false;
 
@@ -421,7 +414,7 @@ export class LinkConverter {
 
     // Set text to @url format
     const newText = `@${url}`;
-    
+
     // Update the text node
     if (node.children.length > 0 && node.children[0].type === 'text') {
       node.children[0].value = newText;
@@ -432,9 +425,8 @@ export class LinkConverter {
   }
 
   /**
-   * Convert link to Claude import format @url.
-   * Note: This requires AST restructuring which is complex.
-   * For now, this returns false to indicate no changes made.
+   * Convert link to Claude import format @url. Note: This requires AST restructuring which is
+   * complex. For now, this returns false to indicate no changes made.
    */
   private convertToClaude(_node: LinkNode, _text: string, url: string): boolean {
     if (!this.isInternalLink(url)) return false;
@@ -442,14 +434,13 @@ export class LinkConverter {
     // TODO: Implement proper AST restructuring for Claude imports
     // This would require parent node access to replace the link node with a text node
     // For now, we indicate no changes to maintain type safety
-    
+
     return false;
   }
 
   /**
-   * Convert link to wikilink format [[url]].
-   * Note: This requires AST restructuring which is complex.
-   * For now, this returns false to indicate no changes made.
+   * Convert link to wikilink format [[url]]. Note: This requires AST restructuring which is
+   * complex. For now, this returns false to indicate no changes made.
    */
   private convertToWikilink(_node: LinkNode, _text: string, url: string): boolean {
     if (!this.isInternalLink(url)) return false;
@@ -457,20 +448,18 @@ export class LinkConverter {
     // TODO: Implement proper AST restructuring for wikilinks
     // This would require parent node access to replace the link node with a text node
     // For now, we indicate no changes to maintain type safety
-    
+
     return false;
   }
 
-  /**
-   * Convert link to standard markdown format [text](url).
-   */
+  /** Convert link to standard markdown format [text](url). */
   private convertToMarkdown(node: LinkNode, text: string, _url: string): boolean {
     if (!node.children) return false;
 
     // If text starts with @, remove it for standard markdown
     if (text.startsWith('@')) {
       const newText = text.substring(1);
-      
+
       if (node.children.length > 0 && node.children[0].type === 'text') {
         node.children[0].value = newText;
         return true;
