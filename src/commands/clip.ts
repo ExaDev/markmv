@@ -1,7 +1,9 @@
 /**
  * Web clipper command for converting web pages to markdown.
  *
- * @fileoverview Implements comprehensive web page to markdown conversion with multiple extraction strategies
+ * @file Implements comprehensive web page to markdown conversion with multiple extraction
+ *   strategies
+ *
  * @category Commands
  */
 
@@ -81,19 +83,14 @@ export interface ClipResult extends OperationResult {
 /**
  * Clip web pages to markdown files.
  *
- * @param urls - URLs to clip or paths to files containing URLs
- * @param options - Clipping options
- *
- * @returns Promise resolving to clipping results
- *
  * @category Commands
  *
  * @example
  *   Basic usage
  *   ```typescript
  *   await clipCommand(['https://example.com/article'], {
- *     output: 'article.md',
- *     strategy: 'readability'
+ *   output: 'article.md',
+ *   strategy: 'readability'
  *   });
  *   ```
  *
@@ -101,11 +98,16 @@ export interface ClipResult extends OperationResult {
  *   Batch processing
  *   ```typescript
  *   await clipCommand(['urls.txt'], {
- *     batch: true,
- *     outputDir: './clipped',
- *     downloadImages: true
+ *   batch: true,
+ *   outputDir: './clipped',
+ *   downloadImages: true
  *   });
  *   ```
+ *
+ * @param urls - URLs to clip or paths to files containing URLs
+ * @param options - Clipping options
+ *
+ * @returns Promise resolving to clipping results
  */
 export async function clipCommand(urls: string[], options: ClipCliOptions = {}): Promise<void> {
   try {
@@ -117,21 +119,23 @@ export async function clipCommand(urls: string[], options: ClipCliOptions = {}):
 
     // Parse CLI options into WebClipperOptions
     const webClipperOptions: WebClipperOptions = {};
-    
+
     if (options.strategy) webClipperOptions.strategy = options.strategy;
     if (options.imageStrategy) webClipperOptions.imageStrategy = options.imageStrategy;
     if (options.imageDir) webClipperOptions.imageDir = options.imageDir;
-    if (options.frontmatter !== undefined) webClipperOptions.includeFrontmatter = options.frontmatter;
+    if (options.frontmatter !== undefined)
+      webClipperOptions.includeFrontmatter = options.frontmatter;
     if (options.timeout) webClipperOptions.timeout = options.timeout;
     if (options.userAgent) webClipperOptions.userAgent = options.userAgent;
-    if (options.followRedirects !== undefined) webClipperOptions.followRedirects = options.followRedirects;
+    if (options.followRedirects !== undefined)
+      webClipperOptions.followRedirects = options.followRedirects;
     if (options.maxRedirects) webClipperOptions.maxRedirects = options.maxRedirects;
     if (options.verbose) webClipperOptions.verbose = options.verbose;
     if (options.dryRun) webClipperOptions.dryRun = options.dryRun;
 
     // Parse selectors if provided
     if (options.selectors) {
-      webClipperOptions.selectors = options.selectors.split(',').map(s => s.trim());
+      webClipperOptions.selectors = options.selectors.split(',').map((s) => s.trim());
     }
 
     // Parse headers if provided
@@ -151,7 +155,7 @@ export async function clipCommand(urls: string[], options: ClipCliOptions = {}):
 
     // Initialize web clipper
     const clipper = new WebClipper(webClipperOptions);
-    
+
     // Process URLs
     const result = await processUrls(urls, options, clipper);
 
@@ -198,9 +202,9 @@ async function processUrls(
   };
 
   // Determine if batch processing
-  const urlsToProcess = options.batch 
+  const urlsToProcess = options.batch
     ? await loadUrlsFromFiles(urls)
-    : urls.filter(url => isValidUrl(url));
+    : urls.filter((url) => isValidUrl(url));
 
   if (urlsToProcess.length === 0) {
     throw new Error('No valid URLs found to process');
@@ -220,13 +224,13 @@ async function processUrls(
 
       // Clip the URL
       const clipResult = await clipper.clip(url);
-      
+
       // Determine output file path
       const outputPath = determineOutputPath(url, options, clipResult.title);
-      
+
       // Ensure output directory exists
       await mkdir(dirname(outputPath), { recursive: true });
-      
+
       // Write markdown file
       if (!options.dryRun) {
         await writeFile(outputPath, clipResult.markdown, 'utf-8');
@@ -236,7 +240,7 @@ async function processUrls(
       // Track success
       result.clippedUrls.push(url);
       result.generatedFiles.push(outputPath);
-      
+
       const metadata: {
         url: string;
         title?: string;
@@ -244,11 +248,11 @@ async function processUrls(
         publishedDate?: string;
         extractionStrategy: string;
       } = { url, extractionStrategy: clipResult.strategy };
-      
+
       if (clipResult.title) metadata.title = clipResult.title;
       if (clipResult.author) metadata.author = clipResult.author;
       if (clipResult.publishedDate) metadata.publishedDate = clipResult.publishedDate;
-      
+
       result.metadata.push(metadata);
 
       if (options.verbose) {
@@ -279,16 +283,16 @@ async function processUrls(
  */
 async function loadUrlsFromFiles(filePaths: string[]): Promise<string[]> {
   const urls: string[] = [];
-  
+
   for (const filePath of filePaths) {
     try {
       const { readFile } = await import('node:fs/promises');
       const content = await readFile(filePath, 'utf-8');
       const fileUrls = content
         .split('\n')
-        .map(line => line.trim())
-        .filter(line => line && !line.startsWith('#') && isValidUrl(line));
-      
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith('#') && isValidUrl(line));
+
       urls.push(...fileUrls);
     } catch (error) {
       console.warn(`⚠️ Could not read URL file ${filePath}: ${error}`);
@@ -382,8 +386,8 @@ function formatClipResults(result: ClipResult, options: ClipCliOptions): string 
   if (result.clippedUrls.length > 0) {
     lines.push('\n✅ Successfully Clipped:');
     lines.push(''.padEnd(30, '-'));
-    
-    result.metadata.forEach(meta => {
+
+    result.metadata.forEach((meta) => {
       lines.push(`\n🌐 ${meta.url}`);
       if (meta.title) {
         lines.push(`   📄 Title: ${meta.title}`);
@@ -395,7 +399,7 @@ function formatClipResults(result: ClipResult, options: ClipCliOptions): string 
         lines.push(`   📅 Published: ${meta.publishedDate}`);
       }
       lines.push(`   🔧 Strategy: ${meta.extractionStrategy}`);
-      
+
       const outputFile = result.generatedFiles[result.metadata.indexOf(meta)];
       if (outputFile) {
         lines.push(`   💾 Saved to: ${outputFile}`);
@@ -407,8 +411,8 @@ function formatClipResults(result: ClipResult, options: ClipCliOptions): string 
   if (result.failedUrls.length > 0) {
     lines.push('\n❌ Failed to Clip:');
     lines.push(''.padEnd(30, '-'));
-    
-    result.failedUrls.forEach(failed => {
+
+    result.failedUrls.forEach((failed) => {
       lines.push(`\n🌐 ${failed.url}`);
       lines.push(`   💥 Error: ${failed.error}`);
     });
@@ -418,7 +422,7 @@ function formatClipResults(result: ClipResult, options: ClipCliOptions): string 
   if (result.warnings.length > 0) {
     lines.push('\n⚠️  Warnings:');
     lines.push(''.padEnd(30, '-'));
-    result.warnings.forEach(warning => {
+    result.warnings.forEach((warning) => {
       lines.push(`   ⚠️  ${warning}`);
     });
   }

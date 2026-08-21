@@ -1,7 +1,7 @@
 /**
  * Tests for the web clipper command.
  *
- * @fileoverview Comprehensive tests for web page to markdown conversion functionality
+ * @file Comprehensive tests for web page to markdown conversion functionality
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -14,7 +14,7 @@ import { clipCommand } from './clip.js';
 vi.mock('../core/web-clipper.js', () => {
   const mockWebClipper = vi.fn();
   mockWebClipper.prototype.clip = vi.fn();
-  
+
   return {
     WebClipper: mockWebClipper,
   };
@@ -55,13 +55,15 @@ describe('Clip Command', () => {
       }
 
       expect(exitCode).toBe(1);
-      expect(errors.some(error => error.includes('At least one URL must be specified'))).toBe(true);
+      expect(errors.some((error) => error.includes('At least one URL must be specified'))).toBe(
+        true
+      );
     });
 
     it('should process a single URL successfully', async () => {
       const { WebClipper } = await import('../core/web-clipper.js');
       const mockClip = vi.mocked(WebClipper.prototype.clip);
-      
+
       mockClip.mockResolvedValue({
         markdown: '# Test Article\n\nThis is test content.',
         title: 'Test Article',
@@ -100,18 +102,18 @@ describe('Clip Command', () => {
 
       expect(exitCode).toBe(0);
       expect(mockClip).toHaveBeenCalledWith('https://example.com/article');
-      
+
       // Check that file was created
       const content = await readFile(join(testDir, 'article.md'), 'utf-8');
       expect(content).toBe('# Test Article\n\nThis is test content.');
-      
-      expect(logs.some(log => log.includes('Successfully clipped: 1'))).toBe(true);
+
+      expect(logs.some((log) => log.includes('Successfully clipped: 1'))).toBe(true);
     });
 
     it('should handle dry run mode', async () => {
       const { WebClipper } = await import('../core/web-clipper.js');
       const mockClip = vi.mocked(WebClipper.prototype.clip);
-      
+
       mockClip.mockResolvedValue({
         markdown: '# Test Article\n\nContent',
         title: 'Test Article',
@@ -146,8 +148,10 @@ describe('Clip Command', () => {
       }
 
       expect(exitCode).toBe(0);
-      expect(logs.some(log => log.includes('Dry run - no files were actually created'))).toBe(true);
-      
+      expect(logs.some((log) => log.includes('Dry run - no files were actually created'))).toBe(
+        true
+      );
+
       // File should not exist in dry run
       try {
         await readFile(join(testDir, 'article.md'), 'utf-8');
@@ -160,7 +164,7 @@ describe('Clip Command', () => {
     it('should output JSON when requested', async () => {
       const { WebClipper } = await import('../core/web-clipper.js');
       const mockClip = vi.mocked(WebClipper.prototype.clip);
-      
+
       mockClip.mockResolvedValue({
         markdown: '# Test',
         title: 'Test',
@@ -194,11 +198,11 @@ describe('Clip Command', () => {
       }
 
       expect(exitCode).toBe(0);
-      
+
       // Should output valid JSON
       const jsonOutput = logs.join('\n');
       expect(() => JSON.parse(jsonOutput)).not.toThrow();
-      
+
       const result = JSON.parse(jsonOutput);
       expect(result.clippedUrls).toContain('https://example.com/test');
       expect(result.generatedFiles).toContain(join(testDir, 'test.md'));
@@ -208,11 +212,14 @@ describe('Clip Command', () => {
   describe('Batch processing', () => {
     it('should process multiple URLs from a file', async () => {
       const urlsFile = join(testDir, 'urls.txt');
-      await writeFile(urlsFile, 'https://example.com/page1\nhttps://example.com/page2\n# Comment line\n\nhttps://example.com/page3');
+      await writeFile(
+        urlsFile,
+        'https://example.com/page1\nhttps://example.com/page2\n# Comment line\n\nhttps://example.com/page3'
+      );
 
       const { WebClipper } = await import('../core/web-clipper.js');
       const mockClip = vi.mocked(WebClipper.prototype.clip);
-      
+
       mockClip
         .mockResolvedValueOnce({
           markdown: '# Page 1',
@@ -268,17 +275,20 @@ describe('Clip Command', () => {
       expect(mockClip).toHaveBeenCalledWith('https://example.com/page1');
       expect(mockClip).toHaveBeenCalledWith('https://example.com/page2');
       expect(mockClip).toHaveBeenCalledWith('https://example.com/page3');
-      
-      expect(logs.some(log => log.includes('Successfully clipped: 3'))).toBe(true);
+
+      expect(logs.some((log) => log.includes('Successfully clipped: 3'))).toBe(true);
     });
 
     it('should handle mixed valid and invalid URLs in batch mode', async () => {
       const urlsFile = join(testDir, 'mixed-urls.txt');
-      await writeFile(urlsFile, 'https://example.com/valid\ninvalid-url\nhttps://example.com/another-valid');
+      await writeFile(
+        urlsFile,
+        'https://example.com/valid\ninvalid-url\nhttps://example.com/another-valid'
+      );
 
       const { WebClipper } = await import('../core/web-clipper.js');
       const mockClip = vi.mocked(WebClipper.prototype.clip);
-      
+
       mockClip
         .mockResolvedValueOnce({
           markdown: '# Valid Page',
@@ -325,8 +335,8 @@ describe('Clip Command', () => {
       expect(mockClip).toHaveBeenCalledTimes(2);
       expect(mockClip).toHaveBeenCalledWith('https://example.com/valid');
       expect(mockClip).toHaveBeenCalledWith('https://example.com/another-valid');
-      
-      expect(logs.some(log => log.includes('Successfully clipped: 2'))).toBe(true);
+
+      expect(logs.some((log) => log.includes('Successfully clipped: 2'))).toBe(true);
     });
   });
 
@@ -335,7 +345,7 @@ describe('Clip Command', () => {
       const { WebClipper } = await import('../core/web-clipper.js');
       const mockConstructor = vi.mocked(WebClipper);
       const mockClip = vi.mocked(WebClipper.prototype.clip);
-      
+
       mockClip.mockResolvedValue({
         markdown: '# Test',
         sourceUrl: 'https://example.com/test',
@@ -409,7 +419,7 @@ describe('Clip Command', () => {
       }
 
       expect(exitCode).toBe(1);
-      expect(errors.some(error => error.includes('Invalid JSON format for headers'))).toBe(true);
+      expect(errors.some((error) => error.includes('Invalid JSON format for headers'))).toBe(true);
     });
   });
 
@@ -417,7 +427,7 @@ describe('Clip Command', () => {
     it('should handle clipping failures gracefully', async () => {
       const { WebClipper } = await import('../core/web-clipper.js');
       const mockClip = vi.mocked(WebClipper.prototype.clip);
-      
+
       mockClip.mockRejectedValue(new Error('Failed to fetch URL'));
 
       let exitCode = 0;
@@ -444,23 +454,21 @@ describe('Clip Command', () => {
       }
 
       expect(exitCode).toBe(1);
-      expect(logs.some(log => log.includes('Failed: 1'))).toBe(true);
-      expect(logs.some(log => log.includes('Failed to fetch URL'))).toBe(true);
+      expect(logs.some((log) => log.includes('Failed: 1'))).toBe(true);
+      expect(logs.some((log) => log.includes('Failed to fetch URL'))).toBe(true);
     });
 
     it('should continue processing other URLs when one fails', async () => {
       const { WebClipper } = await import('../core/web-clipper.js');
       const mockClip = vi.mocked(WebClipper.prototype.clip);
-      
-      mockClip
-        .mockRejectedValueOnce(new Error('First URL failed'))
-        .mockResolvedValueOnce({
-          markdown: '# Success',
-          sourceUrl: 'https://example.com/success',
-          strategy: 'readability',
-          images: [],
-          links: [],
-        });
+
+      mockClip.mockRejectedValueOnce(new Error('First URL failed')).mockResolvedValueOnce({
+        markdown: '# Success',
+        sourceUrl: 'https://example.com/success',
+        strategy: 'readability',
+        images: [],
+        links: [],
+      });
 
       let exitCode = 0;
       const originalExit = process.exit;
@@ -487,8 +495,8 @@ describe('Clip Command', () => {
 
       expect(exitCode).toBe(1); // Should exit with error because one failed
       expect(mockClip).toHaveBeenCalledTimes(2);
-      expect(logs.some(log => log.includes('Successfully clipped: 1'))).toBe(true);
-      expect(logs.some(log => log.includes('Failed: 1'))).toBe(true);
+      expect(logs.some((log) => log.includes('Successfully clipped: 1'))).toBe(true);
+      expect(logs.some((log) => log.includes('Failed: 1'))).toBe(true);
     });
   });
 
@@ -496,7 +504,7 @@ describe('Clip Command', () => {
     it('should generate appropriate filenames from URLs', async () => {
       const { WebClipper } = await import('../core/web-clipper.js');
       const mockClip = vi.mocked(WebClipper.prototype.clip);
-      
+
       mockClip.mockResolvedValue({
         markdown: '# Article',
         sourceUrl: 'https://example.com/path/to/article',
@@ -521,7 +529,7 @@ describe('Clip Command', () => {
       }
 
       expect(exitCode).toBe(0);
-      
+
       // Should create a file based on the URL path
       const content = await readFile(join(testDir, 'article.md'), 'utf-8');
       expect(content).toBe('# Article');
@@ -530,7 +538,7 @@ describe('Clip Command', () => {
     it('should use title for filename when available', async () => {
       const { WebClipper } = await import('../core/web-clipper.js');
       const mockClip = vi.mocked(WebClipper.prototype.clip);
-      
+
       mockClip.mockResolvedValue({
         markdown: '# My Great Article',
         title: 'My Great Article with Special Characters!',
@@ -556,12 +564,12 @@ describe('Clip Command', () => {
       }
 
       expect(exitCode).toBe(0);
-      
+
       // Check what file was actually created
       const { readdir } = await import('node:fs/promises');
       const files = await readdir(testDir);
       expect(files.length).toBe(1);
-      
+
       const content = await readFile(join(testDir, files[0]), 'utf-8');
       expect(content).toBe('# My Great Article');
     });
@@ -569,7 +577,7 @@ describe('Clip Command', () => {
     it('should create output directories as needed', async () => {
       const { WebClipper } = await import('../core/web-clipper.js');
       const mockClip = vi.mocked(WebClipper.prototype.clip);
-      
+
       mockClip.mockResolvedValue({
         markdown: '# Test',
         sourceUrl: 'https://example.com/test',
@@ -596,7 +604,7 @@ describe('Clip Command', () => {
       }
 
       expect(exitCode).toBe(0);
-      
+
       // Should create nested directories and file
       const content = await readFile(join(nestedDir, 'test.md'), 'utf-8');
       expect(content).toBe('# Test');
@@ -607,7 +615,7 @@ describe('Clip Command', () => {
     it('should format results with comprehensive summary', async () => {
       const { WebClipper } = await import('../core/web-clipper.js');
       const mockClip = vi.mocked(WebClipper.prototype.clip);
-      
+
       mockClip
         .mockResolvedValueOnce({
           markdown: '# Success 1',

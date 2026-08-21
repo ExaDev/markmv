@@ -1,7 +1,7 @@
 /**
  * Tests for the WebClipper core class.
  *
- * @fileoverview Tests for web page content extraction and processing
+ * @file Tests for web page content extraction and processing
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -47,33 +47,39 @@ vi.mock('node-html-parser', () => ({
       querySelectorAll: vi.fn().mockImplementation((selector: string) => {
         if (selector === 'img') {
           return [
-            { getAttribute: vi.fn().mockImplementation((attr: string) => {
-              if (attr === 'src') return '/image1.jpg';
-              if (attr === 'alt') return 'Image 1';
-              return null;
-            })},
-            { getAttribute: vi.fn().mockImplementation((attr: string) => {
-              if (attr === 'src') return 'https://external.com/image2.png';
-              if (attr === 'alt') return 'Image 2';
-              return null;
-            })},
-            { getAttribute: vi.fn().mockImplementation((attr: string) => {
-              if (attr === 'src') return 'relative-image.gif';
-              if (attr === 'alt') return null;
-              return null;
-            })},
+            {
+              getAttribute: vi.fn().mockImplementation((attr: string) => {
+                if (attr === 'src') return '/image1.jpg';
+                if (attr === 'alt') return 'Image 1';
+                return null;
+              }),
+            },
+            {
+              getAttribute: vi.fn().mockImplementation((attr: string) => {
+                if (attr === 'src') return 'https://external.com/image2.png';
+                if (attr === 'alt') return 'Image 2';
+                return null;
+              }),
+            },
+            {
+              getAttribute: vi.fn().mockImplementation((attr: string) => {
+                if (attr === 'src') return 'relative-image.gif';
+                if (attr === 'alt') return null;
+                return null;
+              }),
+            },
           ];
         }
         if (selector === 'a[href]') {
           return [
-            { 
+            {
               getAttribute: vi.fn().mockImplementation((attr: string) => {
                 if (attr === 'href') return '/internal-page';
                 return null;
               }),
               text: 'this internal link',
             },
-            { 
+            {
               getAttribute: vi.fn().mockImplementation((attr: string) => {
                 if (attr === 'href') return 'https://external.com';
                 return null;
@@ -119,7 +125,8 @@ vi.mock('node-html-parser', () => ({
         if (selector === 'script[type="application/ld+json"]') {
           if (html.includes('application/ld+json')) {
             return {
-              innerHTML: '{"@context": "http://schema.org", "@type": "Article", "headline": "Test"}',
+              innerHTML:
+                '{"@context": "http://schema.org", "@type": "Article", "headline": "Test"}',
             };
           }
           return null;
@@ -129,33 +136,39 @@ vi.mock('node-html-parser', () => ({
       querySelectorAll: vi.fn().mockImplementation((selector: string) => {
         if (selector === 'img') {
           return [
-            { getAttribute: vi.fn().mockImplementation((attr: string) => {
-              if (attr === 'src') return '/image1.jpg';
-              if (attr === 'alt') return 'Image 1';
-              return null;
-            })},
-            { getAttribute: vi.fn().mockImplementation((attr: string) => {
-              if (attr === 'src') return 'https://external.com/image2.png';
-              if (attr === 'alt') return 'Image 2';
-              return null;
-            })},
-            { getAttribute: vi.fn().mockImplementation((attr: string) => {
-              if (attr === 'src') return 'relative-image.gif';
-              if (attr === 'alt') return null;
-              return null;
-            })},
+            {
+              getAttribute: vi.fn().mockImplementation((attr: string) => {
+                if (attr === 'src') return '/image1.jpg';
+                if (attr === 'alt') return 'Image 1';
+                return null;
+              }),
+            },
+            {
+              getAttribute: vi.fn().mockImplementation((attr: string) => {
+                if (attr === 'src') return 'https://external.com/image2.png';
+                if (attr === 'alt') return 'Image 2';
+                return null;
+              }),
+            },
+            {
+              getAttribute: vi.fn().mockImplementation((attr: string) => {
+                if (attr === 'src') return 'relative-image.gif';
+                if (attr === 'alt') return null;
+                return null;
+              }),
+            },
           ];
         }
         if (selector === 'a[href]') {
           return [
-            { 
+            {
               getAttribute: vi.fn().mockImplementation((attr: string) => {
                 if (attr === 'href') return '/internal-page';
                 return null;
               }),
               text: 'this internal link',
             },
-            { 
+            {
               getAttribute: vi.fn().mockImplementation((attr: string) => {
                 if (attr === 'href') return 'https://external.com';
                 return null;
@@ -208,16 +221,19 @@ describe('WebClipper', () => {
         ok: true,
         text: vi.fn().mockResolvedValue('<html><body><h1>Test</h1></body></html>'),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
       const result = await clipper.clip('https://example.com/article');
 
-      expect(fetch).toHaveBeenCalledWith('https://example.com/article', expect.objectContaining({
-        headers: expect.objectContaining({
-          'User-Agent': expect.stringContaining('markmv-clipper'),
-          'Accept': expect.stringContaining('text/html'),
-        }),
-      }));
+      expect(fetch).toHaveBeenCalledWith(
+        'https://example.com/article',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'User-Agent': expect.stringContaining('markmv-clipper'),
+            Accept: expect.stringContaining('text/html'),
+          }),
+        })
+      );
       expect(result.sourceUrl).toBe('https://example.com/article');
     });
 
@@ -227,24 +243,26 @@ describe('WebClipper', () => {
         status: 404,
         statusText: 'Not Found',
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
-      await expect(clipper.clip('https://example.com/nonexistent')).rejects.toThrow('HTTP 404: Not Found');
+      await expect(clipper.clip('https://example.com/nonexistent')).rejects.toThrow(
+        'HTTP 404: Not Found'
+      );
     });
 
     it('should handle network errors', async () => {
       vi.mocked(fetch).mockRejectedValue(new Error('Network error'));
 
-      await expect(clipper.clip('https://example.com/unreachable')).rejects.toThrow('Network error');
+      await expect(clipper.clip('https://example.com/unreachable')).rejects.toThrow(
+        'Network error'
+      );
     });
 
     it('should respect timeout', async () => {
       const timeoutClipper = new WebClipper({ timeout: 100 });
-      
+
       // Mock a slow response
-      vi.mocked(fetch).mockImplementation(() => 
-        new Promise(resolve => setTimeout(resolve, 200))
-      );
+      vi.mocked(fetch).mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 200)));
 
       await expect(timeoutClipper.clip('https://slow.example.com')).rejects.toThrow();
     });
@@ -252,7 +270,7 @@ describe('WebClipper', () => {
     it('should use custom headers when provided', async () => {
       const headerClipper = new WebClipper({
         headers: {
-          'Authorization': 'Bearer token123',
+          Authorization: 'Bearer token123',
           'Custom-Header': 'custom-value',
         },
         userAgent: 'Custom Bot 1.0',
@@ -262,24 +280,27 @@ describe('WebClipper', () => {
         ok: true,
         text: vi.fn().mockResolvedValue('<html><body><h1>Test</h1></body></html>'),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
       await headerClipper.clip('https://example.com/protected');
 
-      expect(fetch).toHaveBeenCalledWith('https://example.com/protected', expect.objectContaining({
-        headers: expect.objectContaining({
-          'Authorization': 'Bearer token123',
-          'Custom-Header': 'custom-value',
-          'User-Agent': 'Custom Bot 1.0',
-        }),
-      }));
+      expect(fetch).toHaveBeenCalledWith(
+        'https://example.com/protected',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer token123',
+            'Custom-Header': 'custom-value',
+            'User-Agent': 'Custom Bot 1.0',
+          }),
+        })
+      );
     });
   });
 
   describe('Strategy determination', () => {
     it('should auto-detect readability strategy for articles', async () => {
       const autoClipper = new WebClipper({ strategy: 'auto' });
-      
+
       const mockResponse = {
         ok: true,
         text: vi.fn().mockResolvedValue(`
@@ -293,7 +314,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
       const result = await autoClipper.clip('https://blog.example.com/post');
       expect(result.strategy).toBe('readability');
@@ -301,7 +322,7 @@ describe('WebClipper', () => {
 
     it('should auto-detect manual strategy for documentation', async () => {
       const autoClipper = new WebClipper({ strategy: 'auto' });
-      
+
       const mockResponse = {
         ok: true,
         text: vi.fn().mockResolvedValue(`
@@ -315,7 +336,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
       const result = await autoClipper.clip('https://example.com/docs/api');
       expect(result.strategy).toBe('manual');
@@ -323,7 +344,7 @@ describe('WebClipper', () => {
 
     it('should auto-detect structured strategy for schema.org content', async () => {
       const autoClipper = new WebClipper({ strategy: 'auto' });
-      
+
       const mockResponse = {
         ok: true,
         text: vi.fn().mockResolvedValue(`
@@ -337,7 +358,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
       const result = await autoClipper.clip('https://example.com/structured');
       expect(result.strategy).toBe('structured');
@@ -346,16 +367,20 @@ describe('WebClipper', () => {
 
   describe('Content extraction strategies', () => {
     it('should extract content using readability strategy', async () => {
-      const readabilityClipper = new WebClipper({ 
+      const readabilityClipper = new WebClipper({
         strategy: 'readability',
         includeFrontmatter: false,
       });
-      
+
       const mockResponse = {
         ok: true,
-        text: vi.fn().mockResolvedValue('<html><body><article><h1>Test</h1><p>Content</p></article></body></html>'),
+        text: vi
+          .fn()
+          .mockResolvedValue(
+            '<html><body><article><h1>Test</h1><p>Content</p></article></body></html>'
+          ),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
       const result = await readabilityClipper.clip('https://example.com/article');
 
@@ -372,7 +397,7 @@ describe('WebClipper', () => {
         selectors: ['.article-content', 'main'],
         includeFrontmatter: false,
       });
-      
+
       const mockResponse = {
         ok: true,
         text: vi.fn().mockResolvedValue(`
@@ -386,7 +411,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
       const result = await manualClipper.clip('https://example.com/manual');
 
@@ -395,11 +420,11 @@ describe('WebClipper', () => {
     });
 
     it('should extract content using full page strategy', async () => {
-      const fullClipper = new WebClipper({ 
+      const fullClipper = new WebClipper({
         strategy: 'full',
         includeFrontmatter: false,
       });
-      
+
       const mockResponse = {
         ok: true,
         text: vi.fn().mockResolvedValue(`
@@ -412,7 +437,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
       const result = await fullClipper.clip('https://example.com/full');
 
@@ -421,11 +446,11 @@ describe('WebClipper', () => {
     });
 
     it('should extract content using structured strategy', async () => {
-      const structuredClipper = new WebClipper({ 
+      const structuredClipper = new WebClipper({
         strategy: 'structured',
         includeFrontmatter: false,
       });
-      
+
       const mockResponse = {
         ok: true,
         text: vi.fn().mockResolvedValue(`
@@ -447,7 +472,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
       const result = await structuredClipper.clip('https://example.com/structured');
 
@@ -475,7 +500,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
       const result = await clipper.clip('https://example.com/metadata');
       expect(result.title).toBe('Test Article');
@@ -498,7 +523,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
       const result = await clipper.clip('https://example.com/dated-article');
       expect(result.publishedDate).toBe('2024-01-01T12:00:00Z');
@@ -519,7 +544,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
       const result = await clipper.clip('https://example.com/authored-article');
       expect(result.author).toBe('Test Author');
@@ -542,14 +567,14 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
       const result = await clipper.clip('https://example.com/article-with-links');
 
       expect(result.links).toBeDefined();
       expect(result.links.length).toBeGreaterThan(0);
-      expect(result.links.some(link => link.type === 'internal')).toBe(true);
-      expect(result.links.some(link => link.type === 'external')).toBe(true);
+      expect(result.links.some((link) => link.type === 'internal')).toBe(true);
+      expect(result.links.some((link) => link.type === 'external')).toBe(true);
     });
 
     it('should extract images with metadata', async () => {
@@ -568,7 +593,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
       const result = await clipper.clip('https://example.com/article-with-images');
 
@@ -583,12 +608,14 @@ describe('WebClipper', () => {
     it('should handle different image strategies', async () => {
       const skipImagesClipper = new WebClipper({ imageStrategy: 'skip' });
       const linkOnlyClipper = new WebClipper({ imageStrategy: 'link-only' });
-      
+
       const mockResponse = {
         ok: true,
-        text: vi.fn().mockResolvedValue('<html><body><article><img src="test.jpg" /></article></body></html>'),
+        text: vi
+          .fn()
+          .mockResolvedValue('<html><body><article><img src="test.jpg" /></article></body></html>'),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
       const skipResult = await skipImagesClipper.clip('https://example.com/images');
       const linkResult = await linkOnlyClipper.clip('https://example.com/images');
@@ -600,16 +627,18 @@ describe('WebClipper', () => {
 
   describe('Frontmatter generation', () => {
     it('should generate frontmatter when enabled', async () => {
-      const frontmatterClipper = new WebClipper({ 
+      const frontmatterClipper = new WebClipper({
         includeFrontmatter: true,
         strategy: 'readability',
       });
-      
+
       const mockResponse = {
         ok: true,
-        text: vi.fn().mockResolvedValue('<html><body><article><h1>Test</h1></article></body></html>'),
+        text: vi
+          .fn()
+          .mockResolvedValue('<html><body><article><h1>Test</h1></article></body></html>'),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
       const result = await frontmatterClipper.clip('https://example.com/frontmatter-test');
 
@@ -620,16 +649,18 @@ describe('WebClipper', () => {
     });
 
     it('should skip frontmatter when disabled', async () => {
-      const noFrontmatterClipper = new WebClipper({ 
+      const noFrontmatterClipper = new WebClipper({
         includeFrontmatter: false,
         strategy: 'readability',
       });
-      
+
       const mockResponse = {
         ok: true,
-        text: vi.fn().mockResolvedValue('<html><body><article><h1>Test</h1></article></body></html>'),
+        text: vi
+          .fn()
+          .mockResolvedValue('<html><body><article><h1>Test</h1></article></body></html>'),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
       const result = await noFrontmatterClipper.clip('https://example.com/no-frontmatter');
 
@@ -641,21 +672,23 @@ describe('WebClipper', () => {
   describe('Error handling', () => {
     it('should handle Readability parsing failures', async () => {
       const failingClipper = new WebClipper({ strategy: 'readability' });
-      
+
       // Mock the existing Readability mock to return null for parse()
       const { Readability } = await import('@mozilla/readability');
       const mockInstance = {
         parse: vi.fn().mockReturnValue(null),
       };
-      vi.mocked(Readability).mockImplementationOnce(() => mockInstance as any);
+      vi.mocked(Readability).mockImplementationOnce(() => mockInstance as Readability);
 
       const mockResponse = {
         ok: true,
         text: vi.fn().mockResolvedValue('<html><body><p>Unparseable content</p></body></html>'),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
-      await expect(failingClipper.clip('https://example.com/unparseable')).rejects.toThrow('Could not extract article content using Readability');
+      await expect(failingClipper.clip('https://example.com/unparseable')).rejects.toThrow(
+        'Could not extract article content using Readability'
+      );
     });
 
     it('should handle selector not found in manual strategy', async () => {
@@ -663,7 +696,7 @@ describe('WebClipper', () => {
         strategy: 'manual',
         selectors: ['.nonexistent-selector'],
       });
-      
+
       // Create a custom mock that returns null for the nonexistent selector
       const customParse = vi.fn().mockReturnValue({
         querySelector: vi.fn().mockImplementation((selector: string) => {
@@ -673,23 +706,25 @@ describe('WebClipper', () => {
         }),
         querySelectorAll: vi.fn().mockReturnValue([]),
       });
-      
+
       // Override the parse function temporarily
       const { parse } = await import('node-html-parser');
       vi.mocked(parse).mockImplementationOnce(customParse);
-      
+
       const mockResponse = {
         ok: true,
         text: vi.fn().mockResolvedValue('<html><body><p>No matching selectors</p></body></html>'),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
-      await expect(manualClipper.clip('https://example.com/no-selectors')).rejects.toThrow('Could not find content with specified selectors');
+      await expect(manualClipper.clip('https://example.com/no-selectors')).rejects.toThrow(
+        'Could not find content with specified selectors'
+      );
     });
 
     it('should handle missing body element in full strategy', async () => {
       const fullClipper = new WebClipper({ strategy: 'full' });
-      
+
       // Create a custom mock that returns null for body
       const customParse = vi.fn().mockReturnValue({
         querySelector: vi.fn().mockImplementation((selector: string) => {
@@ -698,23 +733,25 @@ describe('WebClipper', () => {
         }),
         querySelectorAll: vi.fn().mockReturnValue([]),
       });
-      
+
       // Override the parse function temporarily
       const { parse } = await import('node-html-parser');
       vi.mocked(parse).mockImplementationOnce(customParse);
-      
+
       const mockResponse = {
         ok: true,
         text: vi.fn().mockResolvedValue('<html><head><title>No Body</title></head></html>'),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
-      await expect(fullClipper.clip('https://example.com/no-body')).rejects.toThrow('Could not find body element');
+      await expect(fullClipper.clip('https://example.com/no-body')).rejects.toThrow(
+        'Could not find body element'
+      );
     });
 
     it('should handle invalid JSON-LD structured data gracefully', async () => {
       const structuredClipper = new WebClipper({ strategy: 'structured' });
-      
+
       // Create a custom mock that returns invalid JSON
       const customParse = vi.fn().mockReturnValue({
         querySelector: vi.fn().mockImplementation((selector: string) => {
@@ -733,11 +770,11 @@ describe('WebClipper', () => {
         }),
         querySelectorAll: vi.fn().mockReturnValue([]),
       });
-      
+
       // Override the parse function temporarily
       const { parse } = await import('node-html-parser');
       vi.mocked(parse).mockImplementationOnce(customParse);
-      
+
       const mockResponse = {
         ok: true,
         text: vi.fn().mockResolvedValue(`
@@ -751,7 +788,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
       // Should not throw, just ignore invalid JSON
       const result = await structuredClipper.clip('https://example.com/invalid-json');
@@ -763,23 +800,26 @@ describe('WebClipper', () => {
   describe('Configuration options', () => {
     it('should respect redirect settings', async () => {
       const noRedirectClipper = new WebClipper({ followRedirects: false });
-      
+
       const mockResponse = {
         ok: true,
         text: vi.fn().mockResolvedValue('<html><body><h1>Test</h1></body></html>'),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
       await noRedirectClipper.clip('https://example.com/test');
 
-      expect(fetch).toHaveBeenCalledWith('https://example.com/test', expect.objectContaining({
-        redirect: 'manual',
-      }));
+      expect(fetch).toHaveBeenCalledWith(
+        'https://example.com/test',
+        expect.objectContaining({
+          redirect: 'manual',
+        })
+      );
     });
 
     it('should handle verbose logging', async () => {
       const verboseClipper = new WebClipper({ verbose: true });
-      
+
       const originalLog = console.log;
       const logs: string[] = [];
       console.log = vi.fn((message: string) => {
@@ -790,12 +830,12 @@ describe('WebClipper', () => {
         ok: true,
         text: vi.fn().mockResolvedValue('<html><body><h1>Test</h1></body></html>'),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as any);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
 
       try {
         await verboseClipper.clip('https://example.com/verbose');
-        expect(logs.some(log => log.includes('Fetching:'))).toBe(true);
-        expect(logs.some(log => log.includes('Using strategy:'))).toBe(true);
+        expect(logs.some((log) => log.includes('Fetching:'))).toBe(true);
+        expect(logs.some((log) => log.includes('Using strategy:'))).toBe(true);
       } finally {
         console.log = originalLog;
       }
