@@ -1,3 +1,15 @@
+## [1.33.0](https://github.com/ExaDev/markmv/compare/v1.32.0...v1.33.0) (2026-08-21)
+
+### Features
+
+* add git integration for incremental validation ([#36](https://github.com/ExaDev/markmv/issues/36)) ([e7b5bf0](https://github.com/ExaDev/markmv/commit/e7b5bf0023608431914a655b75eb9424a5bf0302))
+
+### Bug Fixes
+
+* complete cache and git integration against current lint and test reality ([5fdf4dc](https://github.com/ExaDev/markmv/commit/5fdf4dc9d9f27340abb7ef41675b6338f473673a))
+* derive expected git roots from resolve() on the running platform ([e70caa4](https://github.com/ExaDev/markmv/commit/e70caa4a63c188c75db611acd070253ae2ac7a0a))
+* type mock casts and normalise resolved paths across platforms ([7bc2eec](https://github.com/ExaDev/markmv/commit/7bc2eec64f86698945d9a8eb9ea00efc251c81e1))
+
 ## [1.32.0](https://github.com/ExaDev/markmv/compare/v1.31.0...v1.32.0) (2026-08-21)
 
 ### Features
