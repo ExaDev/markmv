@@ -1,7 +1,7 @@
 /**
  * Tests for git integration utilities.
  *
- * @fileoverview Tests for git operations and repository management
+ * @file Tests for git operations and repository management
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -29,7 +29,7 @@ describe('GitUtils', () => {
 
   describe('Repository Detection', () => {
     it('should detect git repository correctly', () => {
-      mockExecSync.mockReturnValue(Buffer.from('.git'));
+      mockExecSync.mockReturnValue('.git');
 
       const result = gitUtils.isGitRepository();
 
@@ -52,7 +52,7 @@ describe('GitUtils', () => {
     });
 
     it('should get repository root directory', () => {
-      mockExecSync.mockReturnValue(Buffer.from('/test/repo\n'));
+      mockExecSync.mockReturnValue('/test/repo\n');
 
       const result = gitUtils.getRepositoryRoot();
 
@@ -75,7 +75,7 @@ describe('GitUtils', () => {
 
   describe('Git Status Information', () => {
     it('should get current branch name', () => {
-      mockExecSync.mockReturnValue(Buffer.from('main\n'));
+      mockExecSync.mockReturnValue('main\n');
 
       const result = gitUtils.getCurrentBranch();
 
@@ -89,10 +89,8 @@ describe('GitUtils', () => {
 
     it('should fallback to commit hash for detached HEAD', () => {
       mockExecSync
-        .mockImplementationOnce(() => {
-          throw new Error('Not on any branch');
-        })
-        .mockReturnValueOnce(Buffer.from('abc123\n'));
+        .mockReturnValueOnce('') // detached HEAD: --show-current prints nothing, exits 0
+        .mockReturnValueOnce('abc123\n');
 
       const result = gitUtils.getCurrentBranch();
 
@@ -105,7 +103,7 @@ describe('GitUtils', () => {
     });
 
     it('should get current commit hash', () => {
-      mockExecSync.mockReturnValue(Buffer.from('abc123def456\n'));
+      mockExecSync.mockReturnValue('abc123def456\n');
 
       const result = gitUtils.getCurrentCommit();
 
@@ -118,7 +116,7 @@ describe('GitUtils', () => {
     });
 
     it('should detect uncommitted changes', () => {
-      mockExecSync.mockReturnValue(Buffer.from('M  file1.md\n?? file2.md\n'));
+      mockExecSync.mockReturnValue('M  file1.md\n?? file2.md\n');
 
       const result = gitUtils.hasUncommittedChanges();
 
@@ -131,7 +129,7 @@ describe('GitUtils', () => {
     });
 
     it('should return false when no uncommitted changes', () => {
-      mockExecSync.mockReturnValue(Buffer.from(''));
+      mockExecSync.mockReturnValue('');
 
       const result = gitUtils.hasUncommittedChanges();
 
@@ -140,10 +138,10 @@ describe('GitUtils', () => {
 
     it('should get complete status information', () => {
       mockExecSync
-        .mockReturnValueOnce(Buffer.from('/test/repo\n'))  // rev-parse --show-toplevel
-        .mockReturnValueOnce(Buffer.from('main\n'))        // branch --show-current
-        .mockReturnValueOnce(Buffer.from('abc123\n'))      // rev-parse HEAD
-        .mockReturnValueOnce(Buffer.from(''));             // status --porcelain
+        .mockReturnValueOnce('/test/repo\n') // rev-parse --show-toplevel
+        .mockReturnValueOnce('main\n') // branch --show-current
+        .mockReturnValueOnce('abc123\n') // rev-parse HEAD
+        .mockReturnValueOnce(''); // status --porcelain
 
       const result = gitUtils.getStatus();
 
@@ -160,8 +158,8 @@ describe('GitUtils', () => {
     it('should get changed files between references', () => {
       const diffOutput = 'M\tdocs/readme.md\nA\tdocs/new-file.md\nD\toldfile.md';
       mockExecSync
-        .mockReturnValueOnce(Buffer.from('/test/repo\n'))  // getRepositoryRoot
-        .mockReturnValueOnce(Buffer.from(diffOutput));
+        .mockReturnValueOnce('/test/repo\n') // getRepositoryRoot
+        .mockReturnValueOnce(diffOutput);
 
       const result = gitUtils.getChangedFiles('HEAD~1', 'HEAD');
 
@@ -191,9 +189,7 @@ describe('GitUtils', () => {
 
     it('should handle renamed files', () => {
       const diffOutput = 'R100\told-name.md\tnew-name.md';
-      mockExecSync
-        .mockReturnValueOnce(Buffer.from('/test/repo\n'))
-        .mockReturnValueOnce(Buffer.from(diffOutput));
+      mockExecSync.mockReturnValueOnce('/test/repo\n').mockReturnValueOnce(diffOutput);
 
       const result = gitUtils.getChangedFiles('HEAD~1');
 
@@ -207,9 +203,7 @@ describe('GitUtils', () => {
 
     it('should get staged files', () => {
       const stagedOutput = 'M\tstaged-file.md\nA\tnew-staged.md';
-      mockExecSync
-        .mockReturnValueOnce(Buffer.from('/test/repo\n'))
-        .mockReturnValueOnce(Buffer.from(stagedOutput));
+      mockExecSync.mockReturnValueOnce('/test/repo\n').mockReturnValueOnce(stagedOutput);
 
       const result = gitUtils.getStagedFiles();
 
@@ -226,9 +220,7 @@ describe('GitUtils', () => {
 
     it('should get unstaged files', () => {
       const unstagedOutput = 'M\tunstaged-file.md';
-      mockExecSync
-        .mockReturnValueOnce(Buffer.from('/test/repo\n'))
-        .mockReturnValueOnce(Buffer.from(unstagedOutput));
+      mockExecSync.mockReturnValueOnce('/test/repo\n').mockReturnValueOnce(unstagedOutput);
 
       const result = gitUtils.getUnstagedFiles();
 
@@ -243,9 +235,7 @@ describe('GitUtils', () => {
     });
 
     it('should handle empty diff output', () => {
-      mockExecSync
-        .mockReturnValueOnce(Buffer.from('/test/repo\n'))
-        .mockReturnValueOnce(Buffer.from(''));
+      mockExecSync.mockReturnValueOnce('/test/repo\n').mockReturnValueOnce('');
 
       const result = gitUtils.getChangedFiles('HEAD~1');
 
@@ -256,9 +246,7 @@ describe('GitUtils', () => {
   describe('Tracked Files', () => {
     it('should get all tracked files', () => {
       const lsFilesOutput = 'README.md\ndocs/guide.md\nsrc/main.ts';
-      mockExecSync
-        .mockReturnValueOnce(Buffer.from('/test/repo\n'))
-        .mockReturnValueOnce(Buffer.from(lsFilesOutput));
+      mockExecSync.mockReturnValueOnce('/test/repo\n').mockReturnValueOnce(lsFilesOutput);
 
       const result = gitUtils.getTrackedFiles();
 
@@ -276,9 +264,7 @@ describe('GitUtils', () => {
 
     it('should get tracked files with pattern', () => {
       const lsFilesOutput = 'docs/guide.md\ndocs/api.md';
-      mockExecSync
-        .mockReturnValueOnce(Buffer.from('/test/repo\n'))
-        .mockReturnValueOnce(Buffer.from(lsFilesOutput));
+      mockExecSync.mockReturnValueOnce('/test/repo\n').mockReturnValueOnce(lsFilesOutput);
 
       const result = gitUtils.getTrackedFiles('*.md');
 
@@ -294,7 +280,7 @@ describe('GitUtils', () => {
 
   describe('Reference Operations', () => {
     it('should check if reference exists', () => {
-      mockExecSync.mockReturnValue(Buffer.from('abc123\n'));
+      mockExecSync.mockReturnValue('abc123\n');
 
       const result = gitUtils.refExists('main');
 
@@ -317,7 +303,7 @@ describe('GitUtils', () => {
     });
 
     it('should get merge base', () => {
-      mockExecSync.mockReturnValue(Buffer.from('abc123def\n'));
+      mockExecSync.mockReturnValue('abc123def\n');
 
       const result = gitUtils.getMergeBase('main', 'feature');
 
@@ -333,29 +319,25 @@ describe('GitUtils', () => {
   describe('Combined Operations', () => {
     it('should get all modified files including staged, unstaged, and committed', () => {
       mockExecSync
-        .mockReturnValueOnce(Buffer.from('/test/repo\n'))  // getRepositoryRoot for staged
-        .mockReturnValueOnce(Buffer.from('M\tstaged.md'))  // getStagedFiles
-        .mockReturnValueOnce(Buffer.from('/test/repo\n'))  // getRepositoryRoot for unstaged
-        .mockReturnValueOnce(Buffer.from('M\tunstaged.md')) // getUnstagedFiles
-        .mockReturnValueOnce(Buffer.from('/test/repo\n'))  // getRepositoryRoot for since
-        .mockReturnValueOnce(Buffer.from('M\tcommitted.md')); // getChangedFiles
+        .mockReturnValueOnce('/test/repo\n') // getRepositoryRoot (cached across the three calls)
+        .mockReturnValueOnce('M\tstaged.md') // getStagedFiles
+        .mockReturnValueOnce('M\tunstaged.md') // getUnstagedFiles
+        .mockReturnValueOnce('M\tcommitted.md'); // getChangedFiles
 
       const result = gitUtils.getAllModifiedFiles('HEAD~1');
 
       expect(result).toHaveLength(3);
-      expect(result.some(f => f.path.endsWith('staged.md'))).toBe(true);
-      expect(result.some(f => f.path.endsWith('unstaged.md'))).toBe(true);
-      expect(result.some(f => f.path.endsWith('committed.md'))).toBe(true);
+      expect(result.some((f) => f.path.endsWith('staged.md'))).toBe(true);
+      expect(result.some((f) => f.path.endsWith('unstaged.md'))).toBe(true);
+      expect(result.some((f) => f.path.endsWith('committed.md'))).toBe(true);
     });
 
     it('should deduplicate files in getAllModifiedFiles', () => {
       mockExecSync
-        .mockReturnValueOnce(Buffer.from('/test/repo\n'))
-        .mockReturnValueOnce(Buffer.from('M\tsame-file.md'))  // staged
-        .mockReturnValueOnce(Buffer.from('/test/repo\n'))
-        .mockReturnValueOnce(Buffer.from('M\tsame-file.md'))  // unstaged
-        .mockReturnValueOnce(Buffer.from('/test/repo\n'))
-        .mockReturnValueOnce(Buffer.from('M\tsame-file.md')); // committed
+        .mockReturnValueOnce('/test/repo\n') // getRepositoryRoot (cached across the three calls)
+        .mockReturnValueOnce('M\tsame-file.md') // staged
+        .mockReturnValueOnce('M\tsame-file.md') // unstaged
+        .mockReturnValueOnce('M\tsame-file.md'); // committed
 
       const result = gitUtils.getAllModifiedFiles('HEAD~1');
 
@@ -368,11 +350,13 @@ describe('GitUtils', () => {
     it('should provide helpful error messages for git command failures', () => {
       mockExecSync.mockImplementation(() => {
         const error = new Error('Command failed') as any;
-        error.stderr = Buffer.from('fatal: not a git repository');
+        error.stderr = 'fatal: not a git repository';
         throw error;
       });
 
-      expect(() => gitUtils.getCurrentBranch()).toThrow('Git command failed: git branch --show-current');
+      expect(() => gitUtils.getCurrentBranch()).toThrow(
+        'Git command failed: git branch --show-current'
+      );
     });
 
     it('should handle non-Error exceptions', () => {
