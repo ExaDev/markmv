@@ -756,7 +756,8 @@ External links (should not be converted):
       };
 
       try {
-        await convertCommand([join(testDir, '*.md')], {
+        // Use forward slashes so the glob expands on Windows, where join produces backslashes
+        await convertCommand([join(testDir, '*.md').replace(/\\/g, '/')], {
           linkStyle: 'combined',
           verbose: true,
         });
