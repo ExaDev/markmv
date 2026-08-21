@@ -313,7 +313,10 @@ Output Options:
 program
   .command('refactor-headings')
   .description('Refactor markdown headings and update all affected links')
-  .argument('[files...]', 'Markdown files to process (supports globs, defaults to current directory)')
+  .argument(
+    '[files...]',
+    'Markdown files to process (supports globs, defaults to current directory)'
+  )
   .option('--old-heading <text>', 'Original heading text to find and replace')
   .option('--new-heading <text>', 'New heading text to replace with')
   .option('-r, --recursive', 'Process directories recursively')
