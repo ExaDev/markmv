@@ -107,11 +107,7 @@ export type {
   BarrelOperationOptions,
 } from './types/operations.js';
 
-export type {
-  GraphOperationOptions,
-  GraphCliOptions,
-  GraphResult,
-} from './commands/graph.js';
+export type { GraphOperationOptions, GraphCliOptions, GraphResult } from './commands/graph.js';
 export type {
   LinkGraphOptions,
   GraphNode,
@@ -353,8 +349,8 @@ export const generateBarrel = generateIndex;
  *   import { generateLinkGraph } from 'markmv';
  *
  *   const result = await generateLinkGraph(['docs/**\/*.md'], {
- *     format: 'mermaid',
- *     includeExternal: false
+ *   format: 'mermaid',
+ *   includeExternal: false
  *   });
  *
  *   console.log('Generated Mermaid diagram:');
@@ -367,9 +363,9 @@ export const generateBarrel = generateIndex;
  *   import { generateLinkGraph } from 'markmv';
  *
  *   const result = await generateLinkGraph(['**\/*.md'], {
- *     format: 'html',
- *     output: 'visualization.html',
- *     includeImages: true
+ *   format: 'html',
+ *   output: 'visualization.html',
+ *   includeImages: true
  *   });
  *
  *   console.log('Interactive graph saved to: ' + result.outputFile);

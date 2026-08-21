@@ -123,9 +123,9 @@ export type GraphOutputFormat = 'json' | 'mermaid' | 'dot' | 'html';
 /**
  * Generates interactive link graphs from markdown file relationships.
  *
- * The LinkGraphGenerator analyzes markdown files to extract internal links and builds
- * directed graphs of file relationships. Supports multiple output formats including
- * JSON data, Mermaid diagrams, and interactive HTML visualizations.
+ * The LinkGraphGenerator analyzes markdown files to extract internal links and builds directed
+ * graphs of file relationships. Supports multiple output formats including JSON data, Mermaid
+ * diagrams, and interactive HTML visualizations.
  *
  * @category Core
  *
@@ -133,8 +133,8 @@ export type GraphOutputFormat = 'json' | 'mermaid' | 'dot' | 'html';
  *   Basic graph generation
  *   ```typescript
  *   const generator = new LinkGraphGenerator({
- *     includeExternal: false,
- *     maxDepth: 5
+ *   includeExternal: false,
+ *   maxDepth: 5
  *   });
  *
  *   const graph = await generator.generateGraph(['docs/**\/*.md']);
@@ -176,16 +176,16 @@ export class LinkGraphGenerator {
    * Generates a complete link graph from markdown files.
    *
    * @param patterns - File patterns to process (supports globs)
+   *
    * @returns Promise resolving to the generated link graph
    */
   async generateGraph(patterns: string[]): Promise<LinkGraph> {
-
     // Parse all files to extract links
     const parsedFiles = await this.parseFiles(patterns);
-    
+
     // Build graph nodes and edges
     const { nodes, edges } = await this.buildGraph(parsedFiles);
-    
+
     // Perform graph analysis
     const analysis = this.analyzeGraph(nodes, edges);
 
@@ -208,6 +208,7 @@ export class LinkGraphGenerator {
    *
    * @param graph - The link graph to export
    * @param format - Output format
+   *
    * @returns Formatted graph representation
    */
   exportGraph(graph: LinkGraph, format: GraphOutputFormat): string {
@@ -225,10 +226,12 @@ export class LinkGraphGenerator {
     }
   }
 
-  private async parseFiles(patterns: string[]): Promise<Array<{
-    filePath: string;
-    links: MarkdownLink[];
-  }>> {
+  private async parseFiles(patterns: string[]): Promise<
+    Array<{
+      filePath: string;
+      links: MarkdownLink[];
+    }>
+  > {
     const { glob } = await import('glob');
     const files: string[] = [];
 
@@ -238,7 +241,7 @@ export class LinkGraphGenerator {
         absolute: true,
         ignore: ['**/node_modules/**', '**/dist/**', '**/coverage/**'],
       });
-      files.push(...matches.filter(f => f.endsWith('.md')));
+      files.push(...matches.filter((f) => f.endsWith('.md')));
     }
 
     // Parse each file
@@ -259,10 +262,12 @@ export class LinkGraphGenerator {
     return parsedFiles;
   }
 
-  private async buildGraph(parsedFiles: Array<{
-    filePath: string;
-    links: MarkdownLink[];
-  }>): Promise<{ nodes: GraphNode[]; edges: GraphEdge[] }> {
+  private async buildGraph(
+    parsedFiles: Array<{
+      filePath: string;
+      links: MarkdownLink[];
+    }>
+  ): Promise<{ nodes: GraphNode[]; edges: GraphEdge[] }> {
     const nodeMap = new Map<string, GraphNode>();
     const edges: GraphEdge[] = [];
 
@@ -291,13 +296,21 @@ export class LinkGraphGenerator {
 
         // Create edge - filter out unsupported link types
         const edgeType = link.type === 'reference' ? 'internal' : link.type;
-        
+
         // Type guard to ensure we only create edges with valid types
-        if (edgeType === 'internal' || edgeType === 'external' || edgeType === 'image' || 
-            edgeType === 'anchor' || edgeType === 'claude-import') {
+        if (
+          edgeType === 'internal' ||
+          edgeType === 'external' ||
+          edgeType === 'image' ||
+          edgeType === 'anchor' ||
+          edgeType === 'claude-import'
+        ) {
+          const targetNode = nodeMap.get(targetPath);
+          if (targetNode === undefined) continue;
+
           const edge: GraphEdge = {
             source: sourceNode.id,
-            target: nodeMap.get(targetPath)!.id,
+            target: targetNode.id,
             type: edgeType,
             weight: 1,
           };
@@ -435,8 +448,8 @@ export class LinkGraphGenerator {
 
     // Count edges
     for (const edge of edges) {
-      const sourceNode = nodes.find(n => n.id === edge.source);
-      const targetNode = nodes.find(n => n.id === edge.target);
+      const sourceNode = nodes.find((n) => n.id === edge.source);
+      const targetNode = nodes.find((n) => n.id === edge.target);
 
       if (sourceNode) {
         sourceNode.stats.outbound++;
@@ -455,13 +468,9 @@ export class LinkGraphGenerator {
   }
 
   private analyzeGraph(nodes: GraphNode[], edges: GraphEdge[]): LinkGraph['analysis'] {
-    const hubs = nodes
-      .filter(n => n.properties.isHub)
-      .map(n => n.id);
+    const hubs = nodes.filter((n) => n.properties.isHub).map((n) => n.id);
 
-    const orphans = nodes
-      .filter(n => n.properties.isOrphan)
-      .map(n => n.id);
+    const orphans = nodes.filter((n) => n.properties.isOrphan).map((n) => n.id);
 
     // Simple circular reference detection
     const circularReferences = this.detectCircularReferences(nodes, edges);
@@ -499,7 +508,7 @@ export class LinkGraphGenerator {
       recursionStack.add(nodeId);
 
       // Find outgoing edges
-      const outgoingEdges = edges.filter(e => e.source === nodeId);
+      const outgoingEdges = edges.filter((e) => e.source === nodeId);
       for (const edge of outgoingEdges) {
         dfs(edge.target, [...path, nodeId]);
       }
@@ -530,9 +539,7 @@ export class LinkGraphGenerator {
       component.push(nodeId);
 
       // Find all connected nodes (both directions)
-      const connectedEdges = edges.filter(
-        e => e.source === nodeId || e.target === nodeId
-      );
+      const connectedEdges = edges.filter((e) => e.source === nodeId || e.target === nodeId);
 
       for (const edge of connectedEdges) {
         const connectedNode = edge.source === nodeId ? edge.target : edge.source;
@@ -559,7 +566,7 @@ export class LinkGraphGenerator {
 
   private exportToMermaid(graph: LinkGraph): string {
     const lines = ['graph TD'];
-    
+
     // Add nodes with labels
     for (const node of graph.nodes) {
       const shape = this.getMermaidNodeShape(node);
@@ -605,7 +612,7 @@ export class LinkGraphGenerator {
   private exportToDot(graph: LinkGraph): string {
     const lines = ['digraph LinkGraph {'];
     lines.push('  node [shape=box];');
-    
+
     // Add nodes
     for (const node of graph.nodes) {
       const style = this.getDotNodeStyle(node);
@@ -624,11 +631,11 @@ export class LinkGraphGenerator {
 
   private getDotNodeStyle(node: GraphNode): string {
     const styles = [];
-    
+
     if (node.properties.isHub) {
       styles.push('color=red');
     }
-    
+
     if (node.properties.isOrphan) {
       styles.push('color=gray');
     }
@@ -647,7 +654,7 @@ export class LinkGraphGenerator {
 
   private getDotEdgeStyle(edge: GraphEdge): string {
     const styles = [];
-    
+
     switch (edge.type) {
       case 'external':
         styles.push('style=dashed');
@@ -662,7 +669,7 @@ export class LinkGraphGenerator {
 
   private exportToHtml(graph: LinkGraph): string {
     const graphDataJson = JSON.stringify(graph, null, 2);
-    
+
     return `<!DOCTYPE html>
 <html>
 <head>

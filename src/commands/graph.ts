@@ -68,16 +68,16 @@ export interface GraphResult {
 /**
  * Generates interactive link graphs from markdown file relationships.
  *
- * Creates visual representations of how markdown files link to each other, supporting
- * multiple output formats including JSON data, Mermaid diagrams, GraphViz DOT, and
- * interactive HTML visualizations.
+ * Creates visual representations of how markdown files link to each other, supporting multiple
+ * output formats including JSON data, Mermaid diagrams, GraphViz DOT, and interactive HTML
+ * visualizations.
  *
  * @example
  *   Basic graph generation
  *   ```typescript
  *   const result = await generateGraph(['docs/**\/*.md'], {
- *     format: 'mermaid',
- *     includeExternal: false
+ *   format: 'mermaid',
+ *   includeExternal: false
  *   });
  *
  *   console.log('Generated Mermaid diagram:');
@@ -88,9 +88,9 @@ export interface GraphResult {
  *   Generate interactive HTML visualization
  *   ```typescript
  *   const result = await generateGraph(['**\/*.md'], {
- *     format: 'html',
- *     output: 'graph.html',
- *     includeImages: true
+ *   format: 'html',
+ *   output: 'graph.html',
+ *   includeImages: true
  *   });
  *
  *   console.log('Interactive graph saved to: ' + result.outputFile);
@@ -194,10 +194,13 @@ export async function generateGraph(
     }
 
     if (opts.verbose) {
-      console.log('Graph generated: ' + result.nodeCount + ' nodes, ' + result.edgeCount + ' edges');
-      console.log('Hubs: ' + result.analysis.hubCount + ', Orphans: ' + result.analysis.orphanCount);
+      console.log(
+        'Graph generated: ' + result.nodeCount + ' nodes, ' + result.edgeCount + ' edges'
+      );
+      console.log(
+        'Hubs: ' + result.analysis.hubCount + ', Orphans: ' + result.analysis.orphanCount
+      );
     }
-
   } catch (error) {
     result.errors.push(error instanceof Error ? error.message : String(error));
     if (opts.verbose) {
@@ -212,9 +215,8 @@ export async function generateGraph(
 /**
  * CLI command handler for graph operations.
  *
- * Processes markdown files to generate interactive link graphs in various formats.
- * Supports JSON data export, Mermaid diagrams, GraphViz DOT format, and interactive
- * HTML visualizations.
+ * Processes markdown files to generate interactive link graphs in various formats. Supports JSON
+ * data export, Mermaid diagrams, GraphViz DOT format, and interactive HTML visualizations.
  *
  * @example
  *   ```bash
@@ -229,25 +231,23 @@ export async function generateGraph(
  *
  *   # Generate GraphViz DOT file
  *   markmv graph "**\/*.md" --format dot --include-images --output graph.dot
- *   ```
+ *   ```;
  *
  * @param patterns - File patterns to process
  * @param cliOptions - CLI-specific options
  */
-export async function graphCommand(
-  patterns: string[],
-  cliOptions: GraphCliOptions
-): Promise<void> {
+function isGraphOutputFormat(value: string): value is GraphOutputFormat {
+  return ['json', 'mermaid', 'dot', 'html'].some((valid) => valid === value);
+}
+
+export async function graphCommand(patterns: string[], cliOptions: GraphCliOptions): Promise<void> {
   // Default to current directory if no patterns provided
   const finalPatterns = patterns.length === 0 ? ['.'] : patterns;
 
-  // Convert CLI options to internal options
-  const format = (cliOptions.format || 'json') as GraphOutputFormat;
-  
-  // Validate format
-  const validFormats: GraphOutputFormat[] = ['json', 'mermaid', 'dot', 'html'];
-  if (!validFormats.includes(format)) {
-    console.error('Invalid format: ' + format + '. Valid formats: ' + validFormats.join(', '));
+  // Validate the format before using it as a GraphOutputFormat
+  const format = cliOptions.format || 'json';
+  if (!isGraphOutputFormat(format)) {
+    console.error('Invalid format: ' + format + '. Valid formats: json, mermaid, dot, html');
     process.exitCode = 1;
     return;
   }
@@ -312,12 +312,13 @@ export async function graphCommand(
       console.log('📋 Generated ' + format.toUpperCase() + ':');
       console.log(result.content);
     } else if (!result.outputFile) {
-      console.log('📋 Generated ' + format.toUpperCase() + ' (' + result.content.length + ' characters)');
+      console.log(
+        '📋 Generated ' + format.toUpperCase() + ' (' + result.content.length + ' characters)'
+      );
       console.log(result.content.substring(0, 500) + '...');
     }
 
     console.log('✅ Graph generation completed successfully!');
-
   } catch (error) {
     console.error('Graph generation failed:', error);
     process.exitCode = 1;
