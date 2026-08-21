@@ -1,3 +1,25 @@
+## [1.31.0](https://github.com/ExaDev/markmv/compare/v1.30.1...v1.31.0) (2026-08-21)
+
+### Features
+
+* Add heading refactoring command with comprehensive link updates ([e735478](https://github.com/ExaDev/markmv/commit/e73547885f87df6eed20adcde43952f9b911367e)), closes [#31](https://github.com/ExaDev/markmv/issues/31)
+
+### Bug Fixes
+
+* expand the multi-file convert test glob with forward slashes ([89c7d24](https://github.com/ExaDev/markmv/commit/89c7d24175431baeb8a798494289891ce170de9d))
+* implement link style conversion in convert command ([697d71e](https://github.com/ExaDev/markmv/commit/697d71e47e8824fe21201a7a6de3d84d7100d8da))
+* resolve TypeScript linting errors in link converter ([7d20e76](https://github.com/ExaDev/markmv/commit/7d20e76360c35a278e71c41acb50236ee515390d))
+* type link-update accumulator, optional maxDepth, and CLI command count ([06d241c](https://github.com/ExaDev/markmv/commit/06d241cc8b927c7e7dc46f7baf368a656d9bab9a))
+* type the link-update accumulator and satisfy exactOptionalPropertyTypes ([6d7fa53](https://github.com/ExaDev/markmv/commit/6d7fa534438448237c8eef5ac06fb81dd9175b3e))
+
+### Styles
+
+* format link converter and convert tests ([ab3d76b](https://github.com/ExaDev/markmv/commit/ab3d76b999bf482a41fb8779801575053ef0b222))
+
+### Tests
+
+* add comprehensive tests for convert command link style fixes ([b52a25a](https://github.com/ExaDev/markmv/commit/b52a25ac83c8a9e611ceefd8cf303b0a79c8ef13)), closes [#32](https://github.com/ExaDev/markmv/issues/32) [#40](https://github.com/ExaDev/markmv/issues/40)
+
 ## [1.30.1](https://github.com/ExaDev/markmv/compare/v1.30.0...v1.30.1) (2026-08-21)
 
 ### Continuous Integration
