@@ -117,7 +117,8 @@ async function expandSourcePatterns(
       }
     } catch (error) {
       throw new Error(
-        `Invalid glob pattern "${pattern}": ${error instanceof Error ? error.message : String(error)}`
+        `Invalid glob pattern "${pattern}": ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error }
       );
     }
   }

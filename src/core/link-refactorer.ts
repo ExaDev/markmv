@@ -109,7 +109,6 @@ export class LinkRefactorer {
     const changes: OperationChange[] = [];
     const errors: string[] = [];
 
-    let updatedContent = content;
     const lines = content.split('\n');
 
     // Sort links by line and column in reverse order to avoid offset issues
@@ -170,7 +169,7 @@ export class LinkRefactorer {
       }
     }
 
-    updatedContent = lines.join('\n');
+    const updatedContent = lines.join('\n');
 
     return {
       updatedContent,
@@ -188,7 +187,6 @@ export class LinkRefactorer {
     const changes: OperationChange[] = [];
     const errors: string[] = [];
 
-    let updatedContent = content;
     const lines = content.split('\n');
 
     // Sort links by line and column in reverse order
@@ -250,7 +248,7 @@ export class LinkRefactorer {
       }
     }
 
-    updatedContent = lines.join('\n');
+    const updatedContent = lines.join('\n');
 
     return {
       updatedContent,
@@ -268,7 +266,6 @@ export class LinkRefactorer {
     const changes: OperationChange[] = [];
     const errors: string[] = [];
 
-    let updatedContent = content;
     const lines = content.split('\n');
 
     // Sort links by line and column in reverse order
@@ -330,7 +327,7 @@ export class LinkRefactorer {
       }
     }
 
-    updatedContent = lines.join('\n');
+    const updatedContent = lines.join('\n');
 
     return {
       updatedContent,
@@ -484,7 +481,6 @@ export class LinkRefactorer {
     const changes: OperationChange[] = [];
     const errors: string[] = [];
 
-    let updatedContent = content;
     const lines = content.split('\n');
 
     // Update reference definitions that point to the moved file
@@ -540,7 +536,7 @@ export class LinkRefactorer {
       }
     }
 
-    updatedContent = lines.join('\n');
+    const updatedContent = lines.join('\n');
 
     return {
       updatedContent,

@@ -216,7 +216,7 @@ async function generateIndexFilesJson(options: IndexOptions, directory: string):
     console.log(JSON.stringify(jsonOutput, null, 2));
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(`Failed to generate index: ${error.message}`);
+      throw new Error(`Failed to generate index: ${error.message}`, { cause: error });
     }
     throw error;
   }
