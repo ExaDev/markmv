@@ -6,6 +6,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { execSync } from 'node:child_process';
+import { resolve } from 'node:path';
 import { GitUtils } from './git-utils.js';
 
 // Mock child_process
@@ -15,6 +16,13 @@ vi.mock('node:child_process', () => ({
 
 /** Normalise a resolved path to forward slashes so assertions hold on every platform */
 const toPosix = (path: string): string => path.replace(/\\/g, '/');
+
+/**
+ * The repository root the mocked `rev-parse --show-toplevel` reports, as resolve() shapes it on the
+ * current platform: '/test/repo' on unix, but drive-prefixed ('D:/test/repo') on Windows, which
+ * resolves the mocked POSIX root against the current drive.
+ */
+const resolvedRoot = toPosix(resolve('/test/repo'));
 
 describe('GitUtils', () => {
   let gitUtils: GitUtils;
@@ -168,11 +176,11 @@ describe('GitUtils', () => {
 
       expect(result).toHaveLength(3);
       const [first, second, third] = result;
-      expect(toPosix(first?.path ?? '')).toBe('/test/repo/docs/readme.md');
+      expect(toPosix(first?.path ?? '')).toBe(`${resolvedRoot}/docs/readme.md`);
       expect(first?.status).toBe('modified');
-      expect(toPosix(second?.path ?? '')).toBe('/test/repo/docs/new-file.md');
+      expect(toPosix(second?.path ?? '')).toBe(`${resolvedRoot}/docs/new-file.md`);
       expect(second?.status).toBe('added');
-      expect(toPosix(third?.path ?? '')).toBe('/test/repo/oldfile.md');
+      expect(toPosix(third?.path ?? '')).toBe(`${resolvedRoot}/oldfile.md`);
       expect(third?.status).toBe('deleted');
 
       expect(mockExecSync).toHaveBeenCalledWith('git diff --name-status HEAD~1..HEAD', {
@@ -190,9 +198,9 @@ describe('GitUtils', () => {
 
       expect(result).toHaveLength(1);
       const [rename] = result;
-      expect(toPosix(rename?.path ?? '')).toBe('/test/repo/new-name.md');
+      expect(toPosix(rename?.path ?? '')).toBe(`${resolvedRoot}/new-name.md`);
       expect(rename?.status).toBe('renamed');
-      expect(toPosix(rename?.previousPath ?? '')).toBe('/test/repo/old-name.md');
+      expect(toPosix(rename?.previousPath ?? '')).toBe(`${resolvedRoot}/old-name.md`);
     });
 
     it('should get staged files', () => {
@@ -245,9 +253,9 @@ describe('GitUtils', () => {
       const result = gitUtils.getTrackedFiles();
 
       expect(result).toHaveLength(3);
-      expect(toPosix(result[0] ?? '')).toBe('/test/repo/README.md');
-      expect(toPosix(result[1] ?? '')).toBe('/test/repo/docs/guide.md');
-      expect(toPosix(result[2] ?? '')).toBe('/test/repo/src/main.ts');
+      expect(toPosix(result[0] ?? '')).toBe(`${resolvedRoot}/README.md`);
+      expect(toPosix(result[1] ?? '')).toBe(`${resolvedRoot}/docs/guide.md`);
+      expect(toPosix(result[2] ?? '')).toBe(`${resolvedRoot}/src/main.ts`);
 
       expect(mockExecSync).toHaveBeenCalledWith('git ls-files', {
         cwd: '/test/repo',
@@ -336,7 +344,7 @@ describe('GitUtils', () => {
       const result = gitUtils.getAllModifiedFiles('HEAD~1');
 
       expect(result).toHaveLength(1);
-      expect(toPosix(result[0]?.path ?? '')).toBe('/test/repo/same-file.md');
+      expect(toPosix(result[0]?.path ?? '')).toBe(`${resolvedRoot}/same-file.md`);
     });
   });
 
