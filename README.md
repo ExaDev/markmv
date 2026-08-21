@@ -4,7 +4,7 @@
 npx markmv --help
 ```
 
-[![CI](https://github.com/ExaDev/markmv/actions/workflows/main.yml/badge.svg)](https://github.com/ExaDev/markmv/actions/workflows/main.yml)
+[![CI](https://github.com/ExaDev/markmv/actions/workflows/ci.yml/badge.svg)](https://github.com/ExaDev/markmv/actions/workflows/ci.yml)
 [![npm version](https://badge.fury.io/js/markmv.svg)](https://badge.fury.io/js/markmv)
 [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
@@ -139,7 +139,7 @@ Restart Claude Desktop and look for the 🔧 MCP icon in the chat. If configured
 function convertCommand(patterns: string[], options: ConvertOptions): Promise<void>;
 ```
 
-Defined in: [commands/convert.ts:244](https://github.com/ExaDev/markmv/blob/main/src/commands/convert.ts#L244)
+Defined in: [commands/convert.ts:245](https://github.com/ExaDev/markmv/blob/main/src/commands/convert.ts#L245)
 
 CLI command handler for convert operations.
 
@@ -162,7 +162,7 @@ options. Supports dry run mode, verbose output, and various conversion strategie
 ### indexCommand()
 
 ```typescript
-function indexCommand(directory: undefined | string, cliOptions: IndexCliOptions): Promise<void>;
+function indexCommand(directory: string | undefined, cliOptions: IndexCliOptions): Promise<void>;
 ```
 
 Defined in: [commands/index.ts:140](https://github.com/ExaDev/markmv/blob/main/src/commands/index.ts#L140)
@@ -223,12 +223,14 @@ A new FileOperations instance
 function moveFile(
    sourcePath: string, 
    destinationPath: string, 
-options: MoveOperationOptions): Promise<OperationResult>;
+options?: MoveOperationOptions): Promise<OperationResult>;
 ```
 
-Defined in: [index.ts:179](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L179)
+Defined in: [index.ts:181](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L181)
 
-Convenience function for moving a single markdown file
+Convenience function for moving a single file: a markdown file or a non-markdown asset (such as
+an image) that markdown files link to. Any markdown file that references the moved file has its
+link updated to the new location.
 
 #### Parameters
 
@@ -244,7 +246,7 @@ The current file path
 
 The target file path
 
-##### options
+##### options?
 
 [`MoveOperationOptions`](#moveoperationoptions) = `{}`
 
@@ -271,12 +273,13 @@ Promise resolving to operation result
 ### moveFiles()
 
 ```ts
-function moveFiles(moves: object[], options: MoveOperationOptions): Promise<OperationResult>;
+function moveFiles(moves: object[], options?: MoveOperationOptions): Promise<OperationResult>;
 ```
 
-Defined in: [index.ts:208](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L208)
+Defined in: [index.ts:211](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L211)
 
-Convenience function for moving multiple markdown files
+Convenience function for moving multiple files (markdown files, non-markdown assets, or a mix of
+both) in a single batch
 
 #### Parameters
 
@@ -286,7 +289,7 @@ Convenience function for moving multiple markdown files
 
 Array of source/destination pairs
 
-##### options
+##### options?
 
 [`MoveOperationOptions`](#moveoperationoptions) = `{}`
 
@@ -321,7 +324,7 @@ function validateOperation(result: OperationResult): Promise<{
 }>;
 ```
 
-Defined in: [index.ts:237](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L237)
+Defined in: [index.ts:240](https://github.com/ExaDev/markmv/blob/main/src/index.ts#L240)
 
 Convenience function for validating markdown file operations
 

@@ -1,3 +1,30 @@
+## [1.30.0](https://github.com/ExaDev/markmv/compare/v1.29.1...v1.30.0) (2026-08-21)
+
+### Features
+
+* **move:** relocate non-markdown linked assets and update their references ([e370806](https://github.com/ExaDev/markmv/commit/e3708068d818f1a73c3b8414af8176f813f2f6be)), closes [#71](https://github.com/ExaDev/markmv/issues/71)
+
+### Bug Fixes
+
+* **core:** preserve caught-error causes and drop dead content assignments ([1e9a871](https://github.com/ExaDev/markmv/commit/1e9a87161dc2253fc8fdd4f7cd57d9d0c637b65b))
+
+### Code Refactoring
+
+* replace JSON Schema + AJV with Zod-first architecture ([c58e264](https://github.com/ExaDev/markmv/commit/c58e2645be969a24de493a96af15a3ffcd5abd91))
+* **schemas:** replace type assertions with generics and type guards ([2da88d2](https://github.com/ExaDev/markmv/commit/2da88d2471957797c2d4f5c001d02e384c4fc1b0))
+
+### Build System
+
+* switch from npm to pnpm ([1e40388](https://github.com/ExaDev/markmv/commit/1e403882fca354aef3f8666299b1804d380aa4ab))
+
+### Continuous Integration
+
+* install pnpm before setup-node, update actions, drop EOL Node 20 ([f575a23](https://github.com/ExaDev/markmv/commit/f575a237c21e82c4437961783031676486b69ce3))
+
+### Chores
+
+* enforce LF line endings on checkout across platforms ([08535fd](https://github.com/ExaDev/markmv/commit/08535fd4608bc0d9d9bd724d414fd06d3b812375))
+
 ## [1.29.1](https://github.com/ExaDev/markmv/compare/v1.29.0...v1.29.1) (2025-07-30)
 
 ### Documentation
