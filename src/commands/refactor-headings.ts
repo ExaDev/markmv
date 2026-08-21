@@ -485,13 +485,16 @@ export function formatRefactorHeadingsResults(
     lines.push('\n🔗 Link Updates:');
     lines.push(''.padEnd(30, '-'));
     
-    const linksByFile = result.linkUpdates.reduce((acc, update) => {
-      if (!acc[update.filePath]) {
-        acc[update.filePath] = [];
-      }
-      acc[update.filePath].push(update);
-      return acc;
-    }, {} satisfies Record<string, LinkUpdate[]>);
+    const linksByFile: Record<string, LinkUpdate[]> = result.linkUpdates.reduce(
+      (acc: Record<string, LinkUpdate[]>, update) => {
+        if (!acc[update.filePath]) {
+          acc[update.filePath] = [];
+        }
+        acc[update.filePath].push(update);
+        return acc;
+      },
+      {}
+    );
 
     Object.entries(linksByFile).forEach(([file, updates]) => {
       lines.push(`\n📄 ${file}:`);
