@@ -9,8 +9,8 @@ import type { MarkdownLink } from '../types/links.js';
 /**
  * Configuration options for external link checking operations.
  *
- * Optimized specifically for external HTTP/HTTPS link validation with
- * smart defaults for common use cases.
+ * Optimized specifically for external HTTP/HTTPS link validation with smart defaults for common use
+ * cases.
  *
  * @category Commands
  */
@@ -54,7 +54,50 @@ export interface CheckLinksOperationOptions extends OperationOptions {
  *
  * @category Commands
  */
-export interface CheckLinksCliOptions extends CheckLinksOperationOptions {
+/**
+ * Options as commander produces them for the check-links command: numeric options are already
+ * parsed, negated flags appear as their positive boolean, and list options arrive as raw
+ * comma-separated strings.
+ *
+ * @category Commands
+ */
+export interface CheckLinksCliOptions {
+  /** Show what would be checked without making requests */
+  dryRun?: boolean;
+  /** Show detailed output */
+  verbose?: boolean;
+  /** Timeout for external link validation in milliseconds */
+  timeout?: number;
+  /** Number of retry attempts for failed requests */
+  retry?: number;
+  /** Delay between retry attempts in milliseconds */
+  retryDelay?: number;
+  /** Maximum concurrent requests */
+  concurrency?: number;
+  /** HTTP method to use */
+  method?: string;
+  /** Follow HTTP redirects unless --no-follow-redirects is passed */
+  followRedirects?: boolean;
+  /** Comma-separated HTTP status codes to ignore */
+  ignoreStatus?: string;
+  /** Comma-separated regex patterns to ignore */
+  ignorePatterns?: string;
+  /** Cache results unless --no-cache is passed */
+  cache?: boolean;
+  /** Cache duration in minutes */
+  cacheDuration?: number;
+  /** Show progress unless --no-progress is passed */
+  progress?: boolean;
+  /** Output format */
+  format?: string;
+  /** Include response times in output */
+  includeResponseTimes?: boolean;
+  /** Include HTTP headers in detailed output */
+  includeHeaders?: boolean;
+  /** Maximum depth to traverse subdirectories */
+  maxDepth?: number;
+  /** Group results by file, status, or domain */
+  groupBy?: string;
   /** Output file path for results */
   output?: string;
   /** Configuration file path */
@@ -131,9 +174,7 @@ export interface CheckLinksResult {
   averageResponseTime?: number;
 }
 
-/**
- * Default configuration for external link checking.
- */
+/** Default configuration for external link checking. */
 const DEFAULT_CHECK_LINKS_OPTIONS: CheckLinksOperationOptions = {
   dryRun: false,
   verbose: false,
@@ -158,6 +199,7 @@ const DEFAULT_CHECK_LINKS_OPTIONS: CheckLinksOperationOptions = {
  * Validates external links in markdown files with optimized defaults and advanced features.
  *
  * This command is specifically designed for checking HTTP/HTTPS URLs with features like:
+ *
  * - Smart retry logic for temporary failures
  * - Configurable concurrency for parallel checking
  * - Response caching to avoid re-checking recently validated URLs
@@ -167,26 +209,27 @@ const DEFAULT_CHECK_LINKS_OPTIONS: CheckLinksOperationOptions = {
  * - Response time measurement and statistics
  *
  * @example
- * ```typescript
- * // Check all external links in current directory
- * const result = await checkLinks(['.'], {
- *   ...DEFAULT_CHECK_LINKS_OPTIONS,
- *   verbose: true
- * });
- * 
- * // Check with custom timeout and retry logic
- * const result = await checkLinks(['docs/**\/*.md'], {
- *   ...DEFAULT_CHECK_LINKS_OPTIONS,
- *   timeout: 15000,
- *   retry: 5,
- *   retryDelay: 2000
- * });
- * ```
+ *   ```typescript
+ *   // Check all external links in current directory
+ *   const result = await checkLinks(['.'], {
+ *     ...DEFAULT_CHECK_LINKS_OPTIONS,
+ *     verbose: true
+ *   });
+ *
+ *   // Check with custom timeout and retry logic
+ *   const result = await checkLinks(['docs/**\/*.md'], {
+ *     ...DEFAULT_CHECK_LINKS_OPTIONS,
+ *     timeout: 15000,
+ *     retry: 5,
+ *     retryDelay: 2000
+ *   });
+ *   ```;
  *
  * @param files - Array of file paths or glob patterns to check
  * @param options - Configuration options for the checking operation
+ *
  * @returns Promise resolving to detailed results of the link checking operation
- * 
+ *
  * @group Commands
  */
 export async function checkLinks(
@@ -194,7 +237,7 @@ export async function checkLinks(
   options: CheckLinksOperationOptions = DEFAULT_CHECK_LINKS_OPTIONS
 ): Promise<CheckLinksResult> {
   const startTime = Date.now();
-  
+
   if (options.verbose) {
     console.log('🔗 Starting external link validation...');
     console.log(`📋 Configuration:
@@ -230,24 +273,24 @@ export async function checkLinks(
       if (statSync(filePattern).isDirectory()) {
         // If it's a directory, search for markdown files
         const dirPattern = posix.join(filePattern, '**/*.md');
-        const globOptions: Parameters<typeof glob>[1] = { 
-          ignore: ['node_modules/**', '.git/**']
+        const globOptions: Parameters<typeof glob>[1] = {
+          ignore: ['node_modules/**', '.git/**'],
         };
         if (options.maxDepth !== undefined) {
           globOptions.maxDepth = options.maxDepth;
         }
         const matches = await glob(dirPattern, globOptions);
-        matches.forEach(file => resolvedFiles.add(file.toString()));
+        matches.forEach((file) => resolvedFiles.add(file.toString()));
       } else if (filePattern.includes('*')) {
         // It's a glob pattern
-        const globOptions2: Parameters<typeof glob>[1] = { 
-          ignore: ['node_modules/**', '.git/**']
+        const globOptions2: Parameters<typeof glob>[1] = {
+          ignore: ['node_modules/**', '.git/**'],
         };
         if (options.maxDepth !== undefined) {
           globOptions2.maxDepth = options.maxDepth;
         }
         const matches = await glob(filePattern, globOptions2);
-        matches.forEach(file => resolvedFiles.add(file.toString()));
+        matches.forEach((file) => resolvedFiles.add(file.toString()));
       } else {
         // It's a specific file
         resolvedFiles.add(filePattern);
@@ -255,7 +298,7 @@ export async function checkLinks(
     } catch (error) {
       result.fileErrors.push({
         file: filePattern,
-        error: `Failed to resolve file pattern: ${error instanceof Error ? error.message : String(error)}`
+        error: `Failed to resolve file pattern: ${error instanceof Error ? error.message : String(error)}`,
       });
     }
   }
@@ -272,7 +315,9 @@ export async function checkLinks(
   const updateProgress = () => {
     if (options.showProgress && fileList.length > 1) {
       const percent = Math.round((processedFiles / fileList.length) * 100);
-      process.stdout.write(`\r🔍 Processing files: ${processedFiles}/${fileList.length} (${percent}%)`);
+      process.stdout.write(
+        `\r🔍 Processing files: ${processedFiles}/${fileList.length} (${percent}%)`
+      );
     }
   };
 
@@ -290,29 +335,33 @@ export async function checkLinks(
       // Parse links from the file
       const parser = new LinkParser();
       const parseResult = await parser.parseFile(filePath);
-      
+
       // Filter to only external links
-      const externalLinks = parseResult.links.filter(link => 
-        link.type === 'external' || 
-        (link.type === 'image' && (link.href.startsWith('http://') || link.href.startsWith('https://')))
+      const externalLinks = parseResult.links.filter(
+        (link) =>
+          link.type === 'external' ||
+          (link.type === 'image' &&
+            (link.href.startsWith('http://') || link.href.startsWith('https://')))
       );
 
       // Filter out ignored external links first
-      const filteredExternalLinks = externalLinks.filter(link => {
-        const shouldIgnore = options.ignorePatterns.some(pattern => {
+      const filteredExternalLinks = externalLinks.filter((link) => {
+        const shouldIgnore = options.ignorePatterns.some((pattern) => {
           const regex = new RegExp(pattern);
           return regex.test(link.href);
         });
-        
+
         if (shouldIgnore && options.verbose) {
           console.log(`  ⏭️  Ignoring ${link.href} (matches ignore pattern)`);
         }
-        
+
         return !shouldIgnore;
       });
 
       if (options.verbose && filteredExternalLinks.length > 0) {
-        console.log(`\n📄 ${filePath}: found ${filteredExternalLinks.length} external links (after filtering)`);
+        console.log(
+          `\n📄 ${filePath}: found ${filteredExternalLinks.length} external links (after filtering)`
+        );
       }
 
       result.totalExternalLinks += filteredExternalLinks.length;
@@ -320,7 +369,6 @@ export async function checkLinks(
       // Validate each external link
       for (const link of filteredExternalLinks) {
         try {
-
           // Validate the link with retry logic
           const linkResult = await validateExternalLinkWithRetry(
             validator,
@@ -331,7 +379,7 @@ export async function checkLinks(
 
           if (linkResult) {
             result.linkResults.push(linkResult);
-            
+
             // Group by file
             if (!result.resultsByFile[filePath]) {
               result.resultsByFile[filePath] = [];
@@ -355,7 +403,11 @@ export async function checkLinks(
             // Update counters
             if (linkResult.isBroken) {
               result.brokenLinks++;
-            } else if (linkResult.statusCode && linkResult.statusCode >= 300 && linkResult.statusCode < 400) {
+            } else if (
+              linkResult.statusCode &&
+              linkResult.statusCode >= 300 &&
+              linkResult.statusCode < 400
+            ) {
               result.warningLinks++; // Redirects
             } else {
               result.workingLinks++;
@@ -364,14 +416,14 @@ export async function checkLinks(
         } catch (error) {
           result.fileErrors.push({
             file: filePath,
-            error: `Failed to validate link ${link.href}: ${error instanceof Error ? error.message : String(error)}`
+            error: `Failed to validate link ${link.href}: ${error instanceof Error ? error.message : String(error)}`,
           });
         }
       }
     } catch (error) {
       result.fileErrors.push({
         file: filePath,
-        error: `Failed to process file: ${error instanceof Error ? error.message : String(error)}`
+        error: `Failed to process file: ${error instanceof Error ? error.message : String(error)}`,
       });
     }
 
@@ -385,26 +437,28 @@ export async function checkLinks(
 
   // Calculate statistics
   result.processingTime = Date.now() - startTime;
-  
+
   if (result.linkResults.length > 0) {
     const responseTimes = result.linkResults
-      .filter(r => r.responseTime !== undefined)
-      .map(r => r.responseTime)
+      .filter((r) => r.responseTime !== undefined)
+      .map((r) => r.responseTime)
       .filter((time): time is number => time !== undefined);
-    
+
     if (responseTimes.length > 0) {
       result.averageResponseTime = Math.round(
         responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length
       );
     }
 
-    const cachedResults = result.linkResults.filter(r => r.cached).length;
+    const cachedResults = result.linkResults.filter((r) => r.cached).length;
     result.cacheHitRate = Math.round((cachedResults / result.linkResults.length) * 100);
   }
 
   if (options.verbose) {
     console.log(`✅ Completed in ${result.processingTime}ms`);
-    console.log(`📊 Summary: ${result.workingLinks} working, ${result.brokenLinks} broken, ${result.warningLinks} warnings`);
+    console.log(
+      `📊 Summary: ${result.workingLinks} working, ${result.brokenLinks} broken, ${result.warningLinks} warnings`
+    );
     if (result.averageResponseTime) {
       console.log(`⚡ Average response time: ${result.averageResponseTime}ms`);
     }
@@ -416,9 +470,7 @@ export async function checkLinks(
   return result;
 }
 
-/**
- * Validates a single external link with retry logic and detailed error handling.
- */
+/** Validates a single external link with retry logic and detailed error handling. */
 async function validateExternalLinkWithRetry(
   validator: LinkValidator,
   link: MarkdownLink,
@@ -427,7 +479,7 @@ async function validateExternalLinkWithRetry(
 ): Promise<ExternalLinkResult | null> {
   const domain = extractDomain(link.href);
   let lastError: Error | null = null;
-  
+
   for (let attempt = 0; attempt <= options.retry; attempt++) {
     try {
       const startTime = Date.now();
@@ -438,7 +490,7 @@ async function validateExternalLinkWithRetry(
         // Convert to ExternalLinkResult
         const result: ExternalLinkResult = {
           filePath,
-          line: link.position?.start.line,
+          line: link.line,
           text: link.text || '',
           href: link.href,
           reason: validationResult.reason || '',
@@ -464,8 +516,8 @@ async function validateExternalLinkWithRetry(
         // Link is valid
         return {
           filePath,
-          line: link.position?.start.line,
-          text: link.text,
+          line: link.line,
+          text: link.text ?? '',
           href: link.href,
           reason: '',
           isBroken: false,
@@ -478,12 +530,14 @@ async function validateExternalLinkWithRetry(
       }
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       if (attempt < options.retry) {
         if (options.verbose) {
-          console.log(`  ⚠️  Attempt ${attempt + 1} failed for ${link.href}, retrying in ${options.retryDelay}ms...`);
+          console.log(
+            `  ⚠️  Attempt ${attempt + 1} failed for ${link.href}, retrying in ${options.retryDelay}ms...`
+          );
         }
-        await new Promise(resolve => setTimeout(resolve, options.retryDelay));
+        await new Promise((resolve) => setTimeout(resolve, options.retryDelay));
       }
     }
   }
@@ -491,8 +545,8 @@ async function validateExternalLinkWithRetry(
   // All retries failed
   return {
     filePath,
-    line: link.position?.start.line,
-    text: link.text,
+    line: link.line,
+    text: link.text ?? '',
     href: link.href,
     reason: lastError?.message || 'Failed after all retry attempts',
     isBroken: true,
@@ -502,9 +556,7 @@ async function validateExternalLinkWithRetry(
   };
 }
 
-/**
- * Extracts domain name from a URL.
- */
+/** Extracts domain name from a URL. */
 function extractDomain(url: string): string {
   try {
     const urlObj = new URL(url);
@@ -514,9 +566,7 @@ function extractDomain(url: string): string {
   }
 }
 
-/**
- * Formats the check-links results for display.
- */
+/** Formats the check-links results for display. */
 export function formatCheckLinksResults(
   result: CheckLinksResult,
   options: CheckLinksOperationOptions
@@ -524,28 +574,26 @@ export function formatCheckLinksResults(
   switch (options.format) {
     case 'json':
       return JSON.stringify(result, null, 2);
-    
+
     case 'markdown':
       return formatAsMarkdown(result, options);
-    
+
     case 'csv':
       return formatAsCSV(result, options);
-    
+
     default:
       return formatAsText(result, options);
   }
 }
 
-/**
- * Formats results as human-readable text.
- */
+/** Formats results as human-readable text. */
 function formatAsText(result: CheckLinksResult, options: CheckLinksOperationOptions): string {
   const lines: string[] = [];
-  
+
   lines.push('🔗 External Link Check Results');
   lines.push(''.padEnd(50, '='));
   lines.push('');
-  
+
   // Summary
   lines.push(`📊 Summary:`);
   lines.push(`  Files processed: ${result.filesProcessed}`);
@@ -554,28 +602,28 @@ function formatAsText(result: CheckLinksResult, options: CheckLinksOperationOpti
   lines.push(`  Broken links: ${result.brokenLinks}`);
   lines.push(`  Warning links: ${result.warningLinks}`);
   lines.push(`  Processing time: ${result.processingTime}ms`);
-  
+
   if (result.averageResponseTime) {
     lines.push(`  Average response time: ${result.averageResponseTime}ms`);
   }
-  
+
   if (result.cacheHitRate !== undefined && result.cacheHitRate > 0) {
     lines.push(`  Cache hit rate: ${result.cacheHitRate}%`);
   }
-  
+
   lines.push('');
 
   // Show broken links only if any exist
   if (result.brokenLinks > 0) {
     lines.push('❌ Broken Links:');
     lines.push(''.padEnd(30, '-'));
-    
+
     if (options.groupBy === 'file') {
       Object.entries(result.resultsByFile).forEach(([file, links]) => {
-        const brokenInFile = links.filter(l => l.isBroken);
+        const brokenInFile = links.filter((l) => l.isBroken);
         if (brokenInFile.length > 0) {
           lines.push(`\n📄 ${file}:`);
-          brokenInFile.forEach(link => {
+          brokenInFile.forEach((link) => {
             lines.push(`  ❌ ${link.href}`);
             if (link.line) lines.push(`     Line ${link.line}`);
             if (link.statusCode) lines.push(`     Status: ${link.statusCode}`);
@@ -588,10 +636,10 @@ function formatAsText(result: CheckLinksResult, options: CheckLinksOperationOpti
       });
     } else if (options.groupBy === 'status') {
       Object.entries(result.resultsByStatus).forEach(([status, links]) => {
-        const brokenLinks = links.filter(l => l.isBroken);
+        const brokenLinks = links.filter((l) => l.isBroken);
         if (brokenLinks.length > 0) {
           lines.push(`\n🔢 Status ${status}:`);
-          brokenLinks.forEach(link => {
+          brokenLinks.forEach((link) => {
             lines.push(`  ❌ ${link.href} (${link.filePath})`);
             if (link.reason) lines.push(`     ${link.reason}`);
           });
@@ -599,10 +647,10 @@ function formatAsText(result: CheckLinksResult, options: CheckLinksOperationOpti
       });
     } else if (options.groupBy === 'domain') {
       Object.entries(result.resultsByDomain).forEach(([domain, links]) => {
-        const brokenLinks = links.filter(l => l.isBroken);
+        const brokenLinks = links.filter((l) => l.isBroken);
         if (brokenLinks.length > 0) {
           lines.push(`\n🌐 ${domain}:`);
-          brokenLinks.forEach(link => {
+          brokenLinks.forEach((link) => {
             lines.push(`  ❌ ${link.href} (${link.filePath})`);
             if (link.statusCode) lines.push(`     Status: ${link.statusCode}`);
           });
@@ -615,12 +663,12 @@ function formatAsText(result: CheckLinksResult, options: CheckLinksOperationOpti
   if (result.warningLinks > 0) {
     lines.push('\n⚠️  Warnings:');
     lines.push(''.padEnd(30, '-'));
-    
-    const warningLinks = result.linkResults.filter(l => 
-      !l.isBroken && l.statusCode && l.statusCode >= 300 && l.statusCode < 400
+
+    const warningLinks = result.linkResults.filter(
+      (l) => !l.isBroken && l.statusCode && l.statusCode >= 300 && l.statusCode < 400
     );
-    
-    warningLinks.forEach(link => {
+
+    warningLinks.forEach((link) => {
       lines.push(`  ⚠️  ${link.href} (${link.filePath})`);
       lines.push(`     Status: ${link.statusCode} (redirect)`);
       if (link.finalUrl && link.finalUrl !== link.href) {
@@ -633,7 +681,7 @@ function formatAsText(result: CheckLinksResult, options: CheckLinksOperationOpti
   if (result.fileErrors.length > 0) {
     lines.push('\n💥 Errors:');
     lines.push(''.padEnd(30, '-'));
-    result.fileErrors.forEach(error => {
+    result.fileErrors.forEach((error) => {
       lines.push(`  💥 ${error.file}: ${error.error}`);
     });
   }
@@ -641,15 +689,13 @@ function formatAsText(result: CheckLinksResult, options: CheckLinksOperationOpti
   return lines.join('\n');
 }
 
-/**
- * Formats results as markdown.
- */
+/** Formats results as markdown. */
 function formatAsMarkdown(result: CheckLinksResult, options: CheckLinksOperationOptions): string {
   const lines: string[] = [];
-  
+
   lines.push('# 🔗 External Link Check Results');
   lines.push('');
-  
+
   // Summary table
   lines.push('## 📊 Summary');
   lines.push('');
@@ -661,29 +707,29 @@ function formatAsMarkdown(result: CheckLinksResult, options: CheckLinksOperation
   lines.push(`| Broken links | ${result.brokenLinks} |`);
   lines.push(`| Warning links | ${result.warningLinks} |`);
   lines.push(`| Processing time | ${result.processingTime}ms |`);
-  
+
   if (result.averageResponseTime) {
     lines.push(`| Average response time | ${result.averageResponseTime}ms |`);
   }
-  
+
   if (result.cacheHitRate !== undefined && result.cacheHitRate > 0) {
     lines.push(`| Cache hit rate | ${result.cacheHitRate}% |`);
   }
-  
+
   lines.push('');
 
   // Broken links section
   if (result.brokenLinks > 0) {
     lines.push('## ❌ Broken Links');
     lines.push('');
-    
+
     if (options.groupBy === 'file') {
       Object.entries(result.resultsByFile).forEach(([file, links]) => {
-        const brokenInFile = links.filter(l => l.isBroken);
+        const brokenInFile = links.filter((l) => l.isBroken);
         if (brokenInFile.length > 0) {
           lines.push(`### 📄 ${file}`);
           lines.push('');
-          brokenInFile.forEach(link => {
+          brokenInFile.forEach((link) => {
             lines.push(`- ❌ **${link.href}**`);
             if (link.line) lines.push(`  - Line: ${link.line}`);
             if (link.statusCode) lines.push(`  - Status: ${link.statusCode}`);
@@ -698,12 +744,10 @@ function formatAsMarkdown(result: CheckLinksResult, options: CheckLinksOperation
   return lines.join('\n');
 }
 
-/**
- * Formats results as CSV.
- */
+/** Formats results as CSV. */
 function formatAsCSV(result: CheckLinksResult, _options: CheckLinksOperationOptions): string {
   const lines: string[] = [];
-  
+
   // CSV headers
   const headers = [
     'File',
@@ -713,13 +757,13 @@ function formatAsCSV(result: CheckLinksResult, _options: CheckLinksOperationOpti
     'Response Time',
     'Domain',
     'Line',
-    'Reason'
+    'Reason',
   ];
-  
+
   lines.push(headers.join(','));
-  
+
   // Data rows
-  result.linkResults.forEach(link => {
+  result.linkResults.forEach((link) => {
     const row = [
       `"${link.filePath || ''}"`,
       `"${link.href}"`,
@@ -728,22 +772,50 @@ function formatAsCSV(result: CheckLinksResult, _options: CheckLinksOperationOpti
       link.responseTime?.toString() || '',
       `"${link.domain}"`,
       link.line?.toString() || '',
-      `"${link.reason || ''}"`
+      `"${link.reason || ''}"`,
     ];
     lines.push(row.join(','));
   });
-  
+
   return lines.join('\n');
 }
 
-/**
- * Command handler for the check-links CLI command.
- */
+function isOutputFormat(value: string): value is CheckLinksOperationOptions['format'] {
+  return ['text', 'json', 'markdown', 'csv'].some((valid) => valid === value);
+}
+
+function isGroupingMethod(value: string): value is CheckLinksOperationOptions['groupBy'] {
+  return ['file', 'status', 'domain'].some((valid) => valid === value);
+}
+
+/** Command handler for the check-links CLI command. */
 export async function checkLinksCommand(
   files: string[] = ['.'],
   options: CheckLinksCliOptions
 ): Promise<void> {
   try {
+    // Validate string-typed options before they enter the operation options
+    const format = options.format || DEFAULT_CHECK_LINKS_OPTIONS.format;
+    if (!isOutputFormat(format)) {
+      console.error(`Invalid format: ${format}. Valid formats: text, json, markdown, csv`);
+      process.exitCode = 1;
+      return;
+    }
+
+    const groupBy = options.groupBy || DEFAULT_CHECK_LINKS_OPTIONS.groupBy;
+    if (!isGroupingMethod(groupBy)) {
+      console.error(`Invalid grouping: ${groupBy}. Valid groupings: file, status, domain`);
+      process.exitCode = 1;
+      return;
+    }
+
+    const method = options.method || DEFAULT_CHECK_LINKS_OPTIONS.method;
+    if (method !== 'HEAD' && method !== 'GET') {
+      console.error(`Invalid method: ${method}. Valid methods: HEAD, GET`);
+      process.exitCode = 1;
+      return;
+    }
+
     // Parse CLI options into CheckLinksOperationOptions
     const operationOptions: CheckLinksOperationOptions = {
       dryRun: options.dryRun || false,
@@ -752,23 +824,25 @@ export async function checkLinksCommand(
       retry: options.retry || DEFAULT_CHECK_LINKS_OPTIONS.retry,
       retryDelay: options.retryDelay || DEFAULT_CHECK_LINKS_OPTIONS.retryDelay,
       concurrency: options.concurrency || DEFAULT_CHECK_LINKS_OPTIONS.concurrency,
-      method: options.method || DEFAULT_CHECK_LINKS_OPTIONS.method,
-      followRedirects: !options.noFollowRedirects,
-      ignoreStatusCodes: options.ignoreStatus ? 
-        options.ignoreStatus.split(',').map((s: string) => parseInt(s.trim(), 10)) :
-        DEFAULT_CHECK_LINKS_OPTIONS.ignoreStatusCodes,
-      ignorePatterns: options.ignorePatterns ? 
-        options.ignorePatterns.split(',').map((s: string) => s.trim()) :
-        DEFAULT_CHECK_LINKS_OPTIONS.ignorePatterns,
-      useCache: !options.noCache,
+      method,
+      followRedirects: options.followRedirects !== false,
+      ignoreStatusCodes: options.ignoreStatus
+        ? options.ignoreStatus.split(',').map((code) => parseInt(code.trim(), 10))
+        : DEFAULT_CHECK_LINKS_OPTIONS.ignoreStatusCodes,
+      ignorePatterns: options.ignorePatterns
+        ? options.ignorePatterns.split(',').map((pattern) => pattern.trim())
+        : DEFAULT_CHECK_LINKS_OPTIONS.ignorePatterns,
+      useCache: options.cache !== false,
       cacheDuration: options.cacheDuration || DEFAULT_CHECK_LINKS_OPTIONS.cacheDuration,
-      showProgress: !options.noProgress,
-      format: options.format || DEFAULT_CHECK_LINKS_OPTIONS.format,
+      showProgress: options.progress !== false,
+      format,
       includeResponseTimes: options.includeResponseTimes || false,
       includeHeaders: options.includeHeaders || false,
-      maxDepth: options.maxDepth,
-      groupBy: options.groupBy || DEFAULT_CHECK_LINKS_OPTIONS.groupBy,
+      groupBy,
     };
+    if (options.maxDepth !== undefined) {
+      operationOptions.maxDepth = options.maxDepth;
+    }
 
     // Show dry-run information if requested
     if (operationOptions.dryRun) {
@@ -781,15 +855,15 @@ export async function checkLinksCommand(
   - Method: ${operationOptions.method}
   - Format: ${operationOptions.format}
   - Group by: ${operationOptions.groupBy}`);
-      
+
       if (operationOptions.ignoreStatusCodes.length > 0) {
         console.log(`  - Ignore status codes: [${operationOptions.ignoreStatusCodes.join(', ')}]`);
       }
-      
+
       if (operationOptions.ignorePatterns.length > 0) {
         console.log(`  - Ignore patterns: [${operationOptions.ignorePatterns.join(', ')}]`);
       }
-      
+
       return;
     }
 
@@ -798,7 +872,7 @@ export async function checkLinksCommand(
 
     // Format and display results
     const formattedOutput = formatCheckLinksResults(result, operationOptions);
-    
+
     if (options.output) {
       // Write to file
       const fs = await import('fs/promises');
@@ -813,16 +887,15 @@ export async function checkLinksCommand(
     if (result.brokenLinks > 0) {
       process.exit(1);
     }
-
   } catch (error) {
     console.error('💥 Error running check-links command:');
     console.error(error instanceof Error ? error.message : String(error));
-    
+
     if (options.verbose && error instanceof Error && error.stack) {
       console.error('\nStack trace:');
       console.error(error.stack);
     }
-    
+
     process.exit(1);
   }
 }

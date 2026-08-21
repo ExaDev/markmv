@@ -146,8 +146,8 @@ describe('CLI Entry Point', () => {
     it('should set action handlers for commands', async () => {
       await import('./cli.js');
 
-      // Should call action 11 times (once for each command: convert, move, split, join, merge, index, barrel, toc, validate, refactor-headings, graph)
-      expect(mockAction).toHaveBeenCalledTimes(11);
+      // Should call action 12 times (once for each command: convert, move, split, join, merge, index, barrel, toc, validate, refactor-headings, graph, check-links)
+      expect(mockAction).toHaveBeenCalledTimes(12);
     });
 
     it('should add help text for convert command', async () => {
