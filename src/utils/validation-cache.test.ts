@@ -8,7 +8,12 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ValidationCache, calculateFileHash, calculateConfigHash } from './validation-cache.js';
+import {
+  ValidationCache,
+  calculateFileHash,
+  calculateConfigHash,
+  type ValidationResult,
+} from './validation-cache.js';
 
 describe('ValidationCache', () => {
   let tempDir: string;
@@ -54,7 +59,8 @@ describe('ValidationCache', () => {
     const testResult = {
       brokenLinks: [],
       totalLinks: 5,
-    } as any;
+      hasExternalLinks: false,
+    } as ValidationResult;
 
     it('should store and retrieve cache entries', async () => {
       // Store in cache
@@ -117,7 +123,7 @@ describe('ValidationCache', () => {
         {
           ...testResult,
           hasExternalLinks: true,
-        } as any,
+        } as ValidationResult,
         testConfigHash
       );
 
@@ -132,7 +138,11 @@ describe('ValidationCache', () => {
 
   describe('Cache Management', () => {
     it('should invalidate specific cache entry', async () => {
-      const testResult = { brokenLinks: [], totalLinks: 1 } as any;
+      const testResult = {
+        brokenLinks: [],
+        totalLinks: 1,
+        hasExternalLinks: false,
+      } as ValidationResult;
       await cache.set('/test/file.md', 'hash1', testResult, 'config1');
 
       await cache.invalidate('/test/file.md');
@@ -142,7 +152,11 @@ describe('ValidationCache', () => {
     });
 
     it('should clear entire cache', async () => {
-      const testResult = { brokenLinks: [], totalLinks: 1 } as any;
+      const testResult = {
+        brokenLinks: [],
+        totalLinks: 1,
+        hasExternalLinks: false,
+      } as ValidationResult;
       await cache.set('/test/file1.md', 'hash1', testResult, 'config1');
       await cache.set('/test/file2.md', 'hash2', testResult, 'config1');
 
@@ -156,7 +170,11 @@ describe('ValidationCache', () => {
     });
 
     it('should get cache metadata', async () => {
-      const testResult = { brokenLinks: [], totalLinks: 3 } as any;
+      const testResult = {
+        brokenLinks: [],
+        totalLinks: 3,
+        hasExternalLinks: false,
+      } as ValidationResult;
       await cache.set('/test/file1.md', 'hash1', testResult, 'config1');
       await cache.set('/test/file2.md', 'hash2', testResult, 'config1');
 
@@ -279,7 +297,7 @@ describe('ValidationCache', () => {
 
       // Should not throw, just log warning
       await expect(
-        invalidCache.set('/test.md', 'hash', {} as any, 'config')
+        invalidCache.set('/test.md', 'hash', {} as ValidationResult, 'config')
       ).resolves.not.toThrow();
     });
 
@@ -294,7 +312,7 @@ describe('ValidationCache', () => {
       await malformedCache.set(
         '/test.md',
         'hash',
-        { brokenLinks: [], totalLinks: 0, hasExternalLinks: false } as any,
+        { brokenLinks: [], totalLinks: 0, hasExternalLinks: false } as ValidationResult,
         'config'
       );
 
@@ -311,7 +329,11 @@ describe('ValidationCache', () => {
 
   describe('Cache Performance', () => {
     it('should handle multiple concurrent operations', async () => {
-      const testResult = { brokenLinks: [], totalLinks: 1 } as any;
+      const testResult = {
+        brokenLinks: [],
+        totalLinks: 1,
+        hasExternalLinks: false,
+      } as ValidationResult;
       const operations = [];
 
       // Create multiple concurrent cache operations
@@ -339,7 +361,8 @@ describe('ValidationCache', () => {
             reason: `Test reason ${i}`,
           })),
         totalLinks: 1000,
-      } as any;
+        hasExternalLinks: false,
+      } as ValidationResult;
 
       await cache.set('/test/large.md', 'hash', largeResult, 'config');
 

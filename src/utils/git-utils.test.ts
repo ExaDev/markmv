@@ -13,6 +13,9 @@ vi.mock('node:child_process', () => ({
   execSync: vi.fn(),
 }));
 
+/** Normalise a resolved path to forward slashes so assertions hold on every platform */
+const toPosix = (path: string): string => path.replace(/\\/g, '/');
+
 describe('GitUtils', () => {
   let gitUtils: GitUtils;
   let mockExecSync: ReturnType<typeof vi.mocked>;
@@ -164,21 +167,13 @@ describe('GitUtils', () => {
       const result = gitUtils.getChangedFiles('HEAD~1', 'HEAD');
 
       expect(result).toHaveLength(3);
-      expect(result[0]).toEqual({
-        path: '/test/repo/docs/readme.md',
-        status: 'modified',
-        previousPath: undefined,
-      });
-      expect(result[1]).toEqual({
-        path: '/test/repo/docs/new-file.md',
-        status: 'added',
-        previousPath: undefined,
-      });
-      expect(result[2]).toEqual({
-        path: '/test/repo/oldfile.md',
-        status: 'deleted',
-        previousPath: undefined,
-      });
+      const [first, second, third] = result;
+      expect(toPosix(first?.path ?? '')).toBe('/test/repo/docs/readme.md');
+      expect(first?.status).toBe('modified');
+      expect(toPosix(second?.path ?? '')).toBe('/test/repo/docs/new-file.md');
+      expect(second?.status).toBe('added');
+      expect(toPosix(third?.path ?? '')).toBe('/test/repo/oldfile.md');
+      expect(third?.status).toBe('deleted');
 
       expect(mockExecSync).toHaveBeenCalledWith('git diff --name-status HEAD~1..HEAD', {
         cwd: '/test/repo',
@@ -194,11 +189,10 @@ describe('GitUtils', () => {
       const result = gitUtils.getChangedFiles('HEAD~1');
 
       expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
-        path: '/test/repo/new-name.md',
-        status: 'renamed',
-        previousPath: '/test/repo/old-name.md',
-      });
+      const [rename] = result;
+      expect(toPosix(rename?.path ?? '')).toBe('/test/repo/new-name.md');
+      expect(rename?.status).toBe('renamed');
+      expect(toPosix(rename?.previousPath ?? '')).toBe('/test/repo/old-name.md');
     });
 
     it('should get staged files', () => {
@@ -251,9 +245,9 @@ describe('GitUtils', () => {
       const result = gitUtils.getTrackedFiles();
 
       expect(result).toHaveLength(3);
-      expect(result[0]).toBe('/test/repo/README.md');
-      expect(result[1]).toBe('/test/repo/docs/guide.md');
-      expect(result[2]).toBe('/test/repo/src/main.ts');
+      expect(toPosix(result[0] ?? '')).toBe('/test/repo/README.md');
+      expect(toPosix(result[1] ?? '')).toBe('/test/repo/docs/guide.md');
+      expect(toPosix(result[2] ?? '')).toBe('/test/repo/src/main.ts');
 
       expect(mockExecSync).toHaveBeenCalledWith('git ls-files', {
         cwd: '/test/repo',
@@ -342,14 +336,14 @@ describe('GitUtils', () => {
       const result = gitUtils.getAllModifiedFiles('HEAD~1');
 
       expect(result).toHaveLength(1);
-      expect(result[0].path).toBe('/test/repo/same-file.md');
+      expect(toPosix(result[0]?.path ?? '')).toBe('/test/repo/same-file.md');
     });
   });
 
   describe('Error Handling', () => {
     it('should provide helpful error messages for git command failures', () => {
       mockExecSync.mockImplementation(() => {
-        const error = new Error('Command failed') as any;
+        const error = new Error('Command failed') as Error & { stderr: string };
         error.stderr = 'fatal: not a git repository';
         throw error;
       });
