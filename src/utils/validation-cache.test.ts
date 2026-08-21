@@ -1,11 +1,11 @@
 /**
  * Tests for validation result caching system.
  *
- * @fileoverview Tests for caching validation results and cache management
+ * @file Tests for caching validation results and cache management
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ValidationCache, calculateFileHash, calculateConfigHash } from './validation-cache.js';
@@ -111,15 +111,22 @@ describe('ValidationCache', () => {
         externalLinksTtl: 1, // 1ms
       });
 
-      await shortTtlCache.set(testFilePath, testContentHash, testResult, testConfigHash);
+      await shortTtlCache.set(
+        testFilePath,
+        testContentHash,
+        {
+          ...testResult,
+          hasExternalLinks: true,
+        } as any,
+        testConfigHash
+      );
 
       // Wait for TTL to expire
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
-      // Should be invalidated due to TTL (assuming external links exist)
+      // External-link results are re-checked once the TTL passes, so the entry is gone
       const cached = await shortTtlCache.get(testFilePath, testContentHash, testConfigHash);
-      // Note: This test assumes the hasExternalLinks method returns true
-      // In real implementation, this would depend on the actual result content
+      expect(cached).toBeUndefined();
     });
   });
 
@@ -251,10 +258,10 @@ describe('ValidationCache', () => {
         options: {
           validation: {
             types: ['internal', 'external'],
-            settings: { strict: true, timeout: 1000 }
-          }
+            settings: { strict: true, timeout: 1000 },
+          },
         },
-        features: ['cache', 'git']
+        features: ['cache', 'git'],
       };
 
       const hash = calculateConfigHash(config);
@@ -267,11 +274,13 @@ describe('ValidationCache', () => {
     it('should handle cache write failures gracefully', async () => {
       // Create cache with invalid directory (read-only)
       const invalidCache = new ValidationCache({
-        cacheDir: '/invalid/readonly/path'
+        cacheDir: '/invalid/readonly/path',
       });
 
       // Should not throw, just log warning
-      await expect(invalidCache.set('/test.md', 'hash', {} as any, 'config')).resolves.not.toThrow();
+      await expect(
+        invalidCache.set('/test.md', 'hash', {} as any, 'config')
+      ).resolves.not.toThrow();
     });
 
     it('should handle cache read failures gracefully', async () => {
@@ -280,12 +289,22 @@ describe('ValidationCache', () => {
     });
 
     it('should handle malformed cache files', async () => {
-      // Create malformed cache file
-      const cacheDir = join(tempDir, 'cache');
-      await writeFile(join(cacheDir, 'malformed.json'), 'invalid json', 'utf-8');
+      // Write a real entry first so the file exists under the name the cache will read back
+      const malformedCache = new ValidationCache({ cacheDir: join(tempDir, 'malformed-cache') });
+      await malformedCache.set(
+        '/test.md',
+        'hash',
+        { brokenLinks: [], totalLinks: 0, hasExternalLinks: false } as any,
+        'config'
+      );
+
+      const files = await readdir(join(tempDir, 'malformed-cache'));
+      const entryFile = files.find((file) => file.endsWith('.json'));
+      expect(entryFile).toBeDefined();
+      await writeFile(join(tempDir, 'malformed-cache', entryFile ?? ''), 'invalid json', 'utf-8');
 
       // Should handle gracefully
-      const result = await cache.get('/test.md', 'hash', 'config');
+      const result = await malformedCache.get('/test.md', 'hash', 'config');
       expect(result).toBeUndefined();
     });
   });
@@ -297,9 +316,7 @@ describe('ValidationCache', () => {
 
       // Create multiple concurrent cache operations
       for (let i = 0; i < 10; i++) {
-        operations.push(
-          cache.set(`/test/file${i}.md`, `hash${i}`, testResult, 'config')
-        );
+        operations.push(cache.set(`/test/file${i}.md`, `hash${i}`, testResult, 'config'));
       }
 
       // All operations should complete successfully
@@ -315,11 +332,13 @@ describe('ValidationCache', () => {
     it('should handle large cache entries', async () => {
       // Create large result object
       const largeResult = {
-        brokenLinks: Array(1000).fill(null).map((_, i) => ({
-          link: { href: `https://example.com/link${i}`, type: 'external' },
-          reason: `Test reason ${i}`
-        })),
-        totalLinks: 1000
+        brokenLinks: Array(1000)
+          .fill(null)
+          .map((_, i) => ({
+            link: { href: `https://example.com/link${i}`, type: 'external' },
+            reason: `Test reason ${i}`,
+          })),
+        totalLinks: 1000,
       } as any;
 
       await cache.set('/test/large.md', 'hash', largeResult, 'config');

@@ -1,12 +1,12 @@
 /**
  * Git integration utilities for incremental validation.
  *
- * @fileoverview Provides git operations for detecting changed files and managing validation caching
+ * @file Provides git operations for detecting changed files and managing validation caching
+ *
  * @category Utils
  */
 
 import { execSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 /**
@@ -42,8 +42,8 @@ export interface GitStatus {
 /**
  * Git integration utility class.
  *
- * Provides methods for detecting file changes, managing git state,
- * and integrating with validation workflows.
+ * Provides methods for detecting file changes, managing git state, and integrating with validation
+ * workflows.
  *
  * @category Utils
  *
@@ -51,10 +51,10 @@ export interface GitStatus {
  *   Basic usage
  *   ```typescript
  *   const git = new GitUtils();
- *   
+ *
  *   if (git.isGitRepository()) {
- *     const changes = git.getChangedFiles('HEAD~1');
- *     console.log(`Found ${changes.length} changed files`);
+ *   const changes = git.getChangedFiles('HEAD~1');
+ *   console.log(`Found ${changes.length} changed files`);
  *   }
  *   ```
  *
@@ -89,6 +89,7 @@ export class GitUtils {
    * Get git repository root directory.
    *
    * @returns Absolute path to git root directory
+   *
    * @throws Error if not in a git repository
    */
   getRepositoryRoot(): string {
@@ -101,7 +102,7 @@ export class GitUtils {
       this.rootDir = output.trim();
       return this.rootDir;
     } catch (error) {
-      throw new Error(`Not in a git repository: ${error}`);
+      throw new Error(`Not in a git repository: ${error}`, { cause: error });
     }
   }
 
@@ -130,12 +131,13 @@ export class GitUtils {
    * @returns Current branch name
    */
   getCurrentBranch(): string {
-    try {
-      return this.execGit('branch --show-current').trim();
-    } catch {
-      // Fallback for detached HEAD
-      return this.execGit('rev-parse --short HEAD').trim();
+    const branch = this.execGit('branch --show-current').trim();
+    if (branch.length > 0) {
+      return branch;
     }
+
+    // Detached HEAD prints nothing for --show-current; report the short commit hash instead
+    return this.execGit('rev-parse --short HEAD').trim();
   }
 
   /**
@@ -164,25 +166,27 @@ export class GitUtils {
   /**
    * Get files changed between two git references.
    *
-   * @param base - Base reference (commit, branch, tag)
-   * @param head - Head reference (defaults to current HEAD)
-   * @returns Array of changed files
-   *
    * @example
    *   ```typescript
    *   // Files changed since last commit
    *   const changes = git.getChangedFiles('HEAD~1');
-   *   
+   *
    *   // Files changed in current branch vs main
    *   const branchChanges = git.getChangedFiles('main', 'HEAD');
-   *   ```
+   *   ```;
+   *
+   * @param base - Base reference (commit, branch, tag)
+   * @param head - Head reference (defaults to current HEAD)
+   *
+   * @returns Array of changed files
    */
   getChangedFiles(base: string, head: string = 'HEAD'): GitFileChange[] {
     try {
+      const repositoryRoot = this.getRepositoryRoot();
       const output = this.execGit(`diff --name-status ${base}..${head}`);
-      return this.parseFileChanges(output);
+      return this.parseFileChanges(output, repositoryRoot);
     } catch (error) {
-      throw new Error(`Failed to get changed files: ${error}`);
+      throw new Error(`Failed to get changed files: ${error}`, { cause: error });
     }
   }
 
@@ -193,10 +197,11 @@ export class GitUtils {
    */
   getStagedFiles(): GitFileChange[] {
     try {
+      const repositoryRoot = this.getRepositoryRoot();
       const output = this.execGit('diff --cached --name-status');
-      return this.parseFileChanges(output);
+      return this.parseFileChanges(output, repositoryRoot);
     } catch (error) {
-      throw new Error(`Failed to get staged files: ${error}`);
+      throw new Error(`Failed to get staged files: ${error}`, { cause: error });
     }
   }
 
@@ -207,10 +212,11 @@ export class GitUtils {
    */
   getUnstagedFiles(): GitFileChange[] {
     try {
+      const repositoryRoot = this.getRepositoryRoot();
       const output = this.execGit('diff --name-status');
-      return this.parseFileChanges(output);
+      return this.parseFileChanges(output, repositoryRoot);
     } catch (error) {
-      throw new Error(`Failed to get unstaged files: ${error}`);
+      throw new Error(`Failed to get unstaged files: ${error}`, { cause: error });
     }
   }
 
@@ -218,19 +224,21 @@ export class GitUtils {
    * Get list of all tracked files.
    *
    * @param pattern - Optional file pattern to filter
+   *
    * @returns Array of tracked file paths
    */
   getTrackedFiles(pattern?: string): string[] {
     try {
+      const repositoryRoot = this.getRepositoryRoot();
       const cmd = pattern ? `ls-files ${pattern}` : 'ls-files';
       const output = this.execGit(cmd);
       return output
         .split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length > 0)
-        .map(path => resolve(this.getRepositoryRoot(), path));
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+        .map((path) => resolve(repositoryRoot, path));
     } catch (error) {
-      throw new Error(`Failed to get tracked files: ${error}`);
+      throw new Error(`Failed to get tracked files: ${error}`, { cause: error });
     }
   }
 
@@ -238,6 +246,7 @@ export class GitUtils {
    * Check if a specific commit exists.
    *
    * @param ref - Git reference to check
+   *
    * @returns True if reference exists
    */
   refExists(ref: string): boolean {
@@ -254,37 +263,39 @@ export class GitUtils {
    *
    * @param ref1 - First reference
    * @param ref2 - Second reference
+   *
    * @returns Merge base commit hash
    */
   getMergeBase(ref1: string, ref2: string): string {
     try {
       return this.execGit(`merge-base ${ref1} ${ref2}`).trim();
     } catch (error) {
-      throw new Error(`Failed to get merge base: ${error}`);
+      throw new Error(`Failed to get merge base: ${error}`, { cause: error });
     }
   }
 
   /**
-   * Get files that have been modified since a specific commit.
-   * Includes both staged and unstaged changes.
+   * Get files that have been modified since a specific commit. Includes both staged and unstaged
+   * changes.
    *
    * @param since - Commit to compare against
+   *
    * @returns Array of all modified files
    */
   getAllModifiedFiles(since?: string): GitFileChange[] {
     const changes: GitFileChange[] = [];
-    
+
     // Get staged changes
     changes.push(...this.getStagedFiles());
-    
+
     // Get unstaged changes
     changes.push(...this.getUnstagedFiles());
-    
+
     // Get committed changes since specified commit
     if (since) {
       changes.push(...this.getChangedFiles(since));
     }
-    
+
     // Remove duplicates (prefer staged over unstaged over committed)
     const uniqueChanges = new Map<string, GitFileChange>();
     for (const change of changes.reverse()) {
@@ -292,7 +303,7 @@ export class GitUtils {
         uniqueChanges.set(change.path, change);
       }
     }
-    
+
     return Array.from(uniqueChanges.values());
   }
 
@@ -310,7 +321,7 @@ export class GitUtils {
       });
     } catch (error) {
       if (error instanceof Error) {
-        throw new Error(`Git command failed: git ${command}\n${error.message}`);
+        throw new Error(`Git command failed: git ${command}\n${error.message}`, { cause: error });
       }
       throw error;
     }
@@ -321,18 +332,18 @@ export class GitUtils {
    *
    * @private
    */
-  private parseFileChanges(output: string): GitFileChange[] {
+  private parseFileChanges(output: string, repositoryRoot: string): GitFileChange[] {
     if (!output.trim()) {
       return [];
     }
 
     return output
       .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0)
-      .map(line => {
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .map((line) => {
         const [status, ...pathParts] = line.split('\t');
-        const path = pathParts.join('\t'); // Handle paths with tabs
+        let path = pathParts.join('\t'); // Handle paths with tabs
 
         let changeStatus: GitFileChange['status'];
         let previousPath: string | undefined;
@@ -347,19 +358,17 @@ export class GitUtils {
           case 'D':
             changeStatus = 'deleted';
             break;
-          case 'R':
+          case 'R': {
             changeStatus = 'renamed';
-            // For renames, git shows "R<score>\toldpath\tnewpath"
-            const paths = pathParts;
-            if (paths.length >= 2) {
-              previousPath = paths[0];
-              return {
-                path: resolve(this.getRepositoryRoot(), paths[1]),
-                status: changeStatus,
-                previousPath: resolve(this.getRepositoryRoot(), previousPath),
-              };
+            // For renames, git shows "R<score>\toldpath\tnewpath": the new path is the
+            // file's path and the old one becomes previousPath
+            const [oldPath, newPath] = pathParts;
+            if (oldPath !== undefined && newPath !== undefined) {
+              previousPath = oldPath;
+              path = newPath;
             }
             break;
+          }
           case 'C':
             changeStatus = 'copied';
             break;
@@ -367,11 +376,14 @@ export class GitUtils {
             changeStatus = 'modified';
         }
 
-        return {
-          path: resolve(this.getRepositoryRoot(), path),
+        const change: GitFileChange = {
+          path: resolve(repositoryRoot, path),
           status: changeStatus,
-          previousPath: previousPath ? resolve(this.getRepositoryRoot(), previousPath) : undefined,
         };
+        if (previousPath !== undefined) {
+          change.previousPath = resolve(repositoryRoot, previousPath);
+        }
+        return change;
       });
   }
 }

@@ -1,7 +1,8 @@
 /**
  * Validation result caching system for incremental validation.
  *
- * @fileoverview Provides caching capabilities for link validation results to improve performance
+ * @file Provides caching capabilities for link validation results to improve performance
+ *
  * @category Utils
  */
 
@@ -9,7 +10,21 @@ import { createHash } from 'node:crypto';
 import { readFile, writeFile, mkdir, stat } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { existsSync } from 'node:fs';
-import type { ValidationResult } from '../types/operations.js';
+import type { BrokenLink } from '../types/config.js';
+
+/**
+ * The per-file validation outcome stored in the cache.
+ *
+ * @category Utils
+ */
+export interface ValidationResult {
+  /** Broken links found in the file */
+  brokenLinks: BrokenLink[];
+  /** Total number of links checked in the file */
+  totalLinks: number;
+  /** Whether any of the checked links were external, which the TTL gate re-checks over time */
+  hasExternalLinks: boolean;
+}
 
 /**
  * Cached validation result for a file.
@@ -74,8 +89,17 @@ export interface CacheConfig {
 }
 
 /**
- * Default cache configuration.
+ * Narrow untrusted cache-file JSON into a CachedValidationResult. Structure beyond the marker
+ * fields is not deeply validated; the content/config/version checks in isCacheValid reject stale or
+ * incompatible entries.
  */
+function isCachedValidationResult(value: unknown): value is CachedValidationResult {
+  if (typeof value !== 'object' || value === null) return false;
+  if (!('filePath' in value) || !('contentHash' in value) || !('result' in value)) return false;
+  return true;
+}
+
+/** Default cache configuration. */
 const DEFAULT_CACHE_CONFIG: CacheConfig = {
   cacheDir: '.markmv-cache',
   externalLinksTtl: 24 * 60 * 60 * 1000, // 24 hours
@@ -87,8 +111,8 @@ const DEFAULT_CACHE_CONFIG: CacheConfig = {
 /**
  * Validation result caching system.
  *
- * Provides efficient caching of validation results with content-based invalidation,
- * TTL for external links, and automatic cleanup of stale entries.
+ * Provides efficient caching of validation results with content-based invalidation, TTL for
+ * external links, and automatic cleanup of stale entries.
  *
  * @category Utils
  *
@@ -96,28 +120,27 @@ const DEFAULT_CACHE_CONFIG: CacheConfig = {
  *   Basic usage
  *   ```typescript
  *   const cache = new ValidationCache();
- *   
+ *
  *   // Check for cached result
  *   const cached = await cache.get('/path/to/file.md', contentHash);
  *   if (cached) {
- *     console.log('Using cached validation result');
- *     return cached.result;
+ *   console.log('Using cached validation result');
+ *   return cached.result;
  *   }
- *   
+ *
  *   // Perform validation and cache result
  *   const result = await validateFile('/path/to/file.md');
  *   await cache.set('/path/to/file.md', contentHash, result);
  *   ```
  *
  * @example
- *   Configuration
- *   ```typescript
+ *   Configuration```typescript
  *   const cache = new ValidationCache({
  *     cacheDir: '.custom-cache',
  *     externalLinksTtl: 12 * 60 * 60 * 1000, // 12 hours
  *     maxSizeBytes: 50 * 1024 * 1024, // 50MB
  *   });
- *   ```
+ *   ```;
  */
 export class ValidationCache {
   private config: CacheConfig;
@@ -136,13 +159,13 @@ export class ValidationCache {
    * @param contentHash - Hash of current file content
    * @param configHash - Hash of current validation configuration
    * @param gitCommit - Current git commit hash
+   *
    * @returns Cached result if valid, undefined otherwise
    */
   async get(
     filePath: string,
     contentHash: string,
-    configHash: string,
-    gitCommit?: string
+    configHash: string
   ): Promise<CachedValidationResult | undefined> {
     try {
       const cacheFile = this.getCacheFilePath(filePath);
@@ -158,7 +181,7 @@ export class ValidationCache {
       }
 
       // Validate cache entry
-      if (!this.isCacheValid(cached, contentHash, configHash, gitCommit)) {
+      if (!this.isCacheValid(cached, contentHash, configHash)) {
         this.misses++;
         return undefined;
       }
@@ -194,13 +217,15 @@ export class ValidationCache {
       const cached: CachedValidationResult = {
         filePath,
         contentHash,
-        gitCommit,
         timestamp: Date.now(),
         externalLinksTtl: this.config.externalLinksTtl,
         result,
         version: this.getVersion(),
         configHash,
       };
+      if (gitCommit !== undefined) {
+        cached.gitCommit = gitCommit;
+      }
 
       await this.writeCacheFile(cacheFile, cached);
     } catch (error) {
@@ -226,9 +251,7 @@ export class ValidationCache {
     }
   }
 
-  /**
-   * Clear entire cache.
-   */
+  /** Clear entire cache. */
   async clear(): Promise<void> {
     try {
       if (existsSync(this.config.cacheDir)) {
@@ -236,7 +259,7 @@ export class ValidationCache {
         await rm(this.config.cacheDir, { recursive: true, force: true });
       }
     } catch (error) {
-      throw new Error(`Failed to clear cache: ${error}`);
+      throw new Error(`Failed to clear cache: ${error}`, { cause: error });
     }
   }
 
@@ -258,14 +281,14 @@ export class ValidationCache {
       if (existsSync(this.config.cacheDir)) {
         const { readdir } = await import('node:fs/promises');
         const files = await readdir(this.config.cacheDir, { recursive: true });
-        
+
         for (const file of files) {
           if (typeof file === 'string' && file.endsWith('.json')) {
             const filePath = join(this.config.cacheDir, file);
             try {
               const stats = await stat(filePath);
               sizeBytes += stats.size;
-              
+
               const cached = await this.readCacheFile(filePath);
               if (cached) {
                 totalFiles++;
@@ -294,7 +317,7 @@ export class ValidationCache {
 
       return this.metadata;
     } catch (error) {
-      throw new Error(`Failed to get cache metadata: ${error}`);
+      throw new Error(`Failed to get cache metadata: ${error}`, { cause: error });
     }
   }
 
@@ -313,7 +336,7 @@ export class ValidationCache {
 
       const { readdir } = await import('node:fs/promises');
       const files = await readdir(this.config.cacheDir, { recursive: true });
-      
+
       for (const file of files) {
         if (typeof file === 'string' && file.endsWith('.json')) {
           const filePath = join(this.config.cacheDir, file);
@@ -342,7 +365,7 @@ export class ValidationCache {
 
       return removedCount;
     } catch (error) {
-      throw new Error(`Failed to cleanup cache: ${error}`);
+      throw new Error(`Failed to cleanup cache: ${error}`, { cause: error });
     }
   }
 
@@ -378,13 +401,16 @@ export class ValidationCache {
   private async readCacheFile(cacheFile: string): Promise<CachedValidationResult | undefined> {
     try {
       const content = await readFile(cacheFile, 'utf-8');
-      const parsed = JSON.parse(content) as CachedValidationResult;
-      
+      const parsed: unknown = JSON.parse(content);
+      if (!isCachedValidationResult(parsed)) {
+        return undefined;
+      }
+
       // Validate structure
       if (!parsed.filePath || !parsed.contentHash || !parsed.result) {
         return undefined;
       }
-      
+
       return parsed;
     } catch {
       return undefined;
@@ -409,8 +435,7 @@ export class ValidationCache {
   private isCacheValid(
     cached: CachedValidationResult,
     contentHash: string,
-    configHash: string,
-    gitCommit?: string
+    configHash: string
   ): boolean {
     // Check content hash
     if (cached.contentHash !== contentHash) {
@@ -449,7 +474,7 @@ export class ValidationCache {
   private shouldRemoveFromCache(cached: CachedValidationResult): boolean {
     const now = Date.now();
     const age = now - cached.timestamp;
-    
+
     // Remove if older than 7 days
     const maxAge = 7 * 24 * 60 * 60 * 1000;
     if (age > maxAge) {
@@ -475,9 +500,7 @@ export class ValidationCache {
    * @private
    */
   private hasExternalLinks(result: ValidationResult): boolean {
-    // This would need to be implemented based on the actual ValidationResult structure
-    // For now, assume it might have external links
-    return true;
+    return result.hasExternalLinks;
   }
 
   /**
@@ -486,9 +509,7 @@ export class ValidationCache {
    * @private
    */
   private countLinksInResult(result: ValidationResult): number {
-    // This would need to be implemented based on the actual ValidationResult structure
-    // For now, return a placeholder
-    return 0;
+    return result.totalLinks;
   }
 
   /**
@@ -505,27 +526,29 @@ export class ValidationCache {
 /**
  * Calculate hash of file content.
  *
- * @param filePath - Path to the file
- * @returns SHA-256 hash of file content
- *
  * @category Utils
+ *
+ * @param filePath - Path to the file
+ *
+ * @returns SHA-256 hash of file content
  */
 export async function calculateFileHash(filePath: string): Promise<string> {
   try {
     const content = await readFile(filePath, 'utf-8');
     return createHash('sha256').update(content).digest('hex');
   } catch (error) {
-    throw new Error(`Failed to calculate hash for ${filePath}: ${error}`);
+    throw new Error(`Failed to calculate hash for ${filePath}: ${error}`, { cause: error });
   }
 }
 
 /**
  * Calculate hash of configuration object.
  *
- * @param config - Configuration object
- * @returns SHA-256 hash of configuration
- *
  * @category Utils
+ *
+ * @param config - Configuration object
+ *
+ * @returns SHA-256 hash of configuration
  */
 export function calculateConfigHash(config: Record<string, unknown>): string {
   const configString = JSON.stringify(config, Object.keys(config).sort());

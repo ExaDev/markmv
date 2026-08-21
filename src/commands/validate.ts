@@ -4,7 +4,11 @@ import { posix } from 'path';
 import { LinkValidator } from '../core/link-validator.js';
 import { LinkParser } from '../core/link-parser.js';
 import { GitUtils } from '../utils/git-utils.js';
-import { ValidationCache, calculateFileHash, calculateConfigHash } from '../utils/validation-cache.js';
+import {
+  ValidationCache,
+  calculateFileHash,
+  calculateConfigHash,
+} from '../utils/validation-cache.js';
 import type { LinkType } from '../types/links.js';
 import type { BrokenLink } from '../types/config.js';
 import type { OperationOptions } from '../types/operations.js';
@@ -179,7 +183,7 @@ export async function validateLinks(
     dryRun: options.dryRun ?? false,
     verbose: options.verbose ?? false,
     force: options.force ?? false,
-    gitDiff: options.gitDiff,
+    gitDiff: options.gitDiff ?? '',
     gitStaged: options.gitStaged ?? false,
     cache: options.cache ?? false,
     cacheDir: options.cacheDir ?? '.markmv-cache',
@@ -194,7 +198,7 @@ export async function validateLinks(
 
   if (opts.gitDiff || opts.gitStaged || opts.cache) {
     gitUtils = new GitUtils();
-    
+
     if (!gitUtils.isGitRepository()) {
       if (opts.gitDiff || opts.gitStaged) {
         throw new Error('Git integration requires a git repository');
@@ -214,25 +218,34 @@ export async function validateLinks(
       }
       cache = undefined;
     }
+
+    // Cache statistics are reported through gitInfo, so initialise it here rather than only in
+    // the git branches; the git modes overwrite this with their own richer payload below.
+    gitInfo ??= {
+      enabled: false,
+      changedFiles: 0,
+      cachedFiles: 0,
+      cacheHitRate: 0,
+    };
   }
 
   // Resolve file patterns to actual file paths
   let files: string[] = [];
-  
+
   if (opts.gitDiff && gitUtils) {
     // Git diff mode - only validate changed files
     const baseRef = opts.gitDiff;
-    
+
     if (!gitUtils.refExists(baseRef)) {
       throw new Error(`Git reference '${baseRef}' does not exist`);
     }
-    
+
     const changedFiles = gitUtils.getChangedFiles(baseRef);
     files = changedFiles
-      .filter(change => change.status !== 'deleted')
-      .map(change => change.path)
-      .filter(path => path.endsWith('.md'));
-    
+      .filter((change) => change.status !== 'deleted')
+      .map((change) => change.path)
+      .filter((path) => path.endsWith('.md'));
+
     const status = gitUtils.getStatus();
     gitInfo = {
       enabled: true,
@@ -242,18 +255,20 @@ export async function validateLinks(
       baseRef,
       currentCommit: status.commit,
     };
-    
+
     if (opts.verbose) {
-      console.log(`🔍 Git Integration: Found ${files.length} changed markdown files since ${baseRef}`);
+      console.log(
+        `🔍 Git Integration: Found ${files.length} changed markdown files since ${baseRef}`
+      );
     }
   } else if (opts.gitStaged && gitUtils) {
     // Git staged mode - only validate staged files
     const stagedFiles = gitUtils.getStagedFiles();
     files = stagedFiles
-      .filter(change => change.status !== 'deleted')
-      .map(change => change.path)
-      .filter(path => path.endsWith('.md'));
-    
+      .filter((change) => change.status !== 'deleted')
+      .map((change) => change.path)
+      .filter((path) => path.endsWith('.md'));
+
     const status = gitUtils.getStatus();
     gitInfo = {
       enabled: true,
@@ -262,7 +277,7 @@ export async function validateLinks(
       cacheHitRate: 0,
       currentCommit: status.commit,
     };
-    
+
     if (opts.verbose) {
       console.log(`🔍 Git Integration: Found ${files.length} staged markdown files`);
     }
@@ -311,8 +326,10 @@ export async function validateLinks(
     fileErrors: [],
     hasCircularReferences: false,
     processingTime: 0,
-    gitInfo,
   };
+  if (gitInfo !== undefined) {
+    result.gitInfo = gitInfo;
+  }
 
   // Initialize broken links by type
   for (const linkType of opts.linkTypes) {
@@ -338,23 +355,27 @@ export async function validateLinks(
         console.log(`Validating: ${filePath}`);
       }
 
-      let validation: { brokenLinks: BrokenLink[] };
+      let validation: { brokenLinks: BrokenLink[] } | undefined;
       let totalLinksForFile = 0;
-      let fromCache = false;
 
-      // Try to get from cache first
+      // Try to get from cache first; a failing cache read degrades to a miss rather than
+      // skipping the file
       if (cache) {
         const contentHash = await calculateFileHash(filePath);
-        const gitCommit = gitUtils?.getCurrentCommit();
-        const cached = await cache.get(filePath, contentHash, configHash, gitCommit);
-        
+        let cached;
+        try {
+          cached = await cache.get(filePath, contentHash, configHash);
+        } catch (error) {
+          if (opts.verbose) {
+            console.warn(`  Cache read failed for ${filePath}, validating anyway:`, error);
+          }
+        }
+
         if (cached) {
-          // Use cached result
           validation = { brokenLinks: cached.result.brokenLinks || [] };
           totalLinksForFile = cached.result.totalLinks || 0;
-          fromCache = true;
           cacheHits++;
-          
+
           if (opts.verbose) {
             console.log(`  ✓ Used cached result`);
           }
@@ -363,7 +384,7 @@ export async function validateLinks(
         }
       }
 
-      if (!fromCache) {
+      if (!validation) {
         // Parse links from file
         const parsedFile = await parser.parseFile(filePath);
         const relevantLinks = parsedFile.links.filter((link) => opts.linkTypes.includes(link.type));
@@ -374,12 +395,21 @@ export async function validateLinks(
           if (cache) {
             const contentHash = await calculateFileHash(filePath);
             const gitCommit = gitUtils?.getCurrentCommit();
-            await cache.set(filePath, contentHash, { 
-              brokenLinks: [], 
-              totalLinks: 0 
-            } as any, configHash, gitCommit);
+            try {
+              await cache.set(
+                filePath,
+                contentHash,
+                { brokenLinks: [], totalLinks: 0, hasExternalLinks: false },
+                configHash,
+                gitCommit
+              );
+            } catch (error) {
+              if (opts.verbose) {
+                console.warn(`  Cache write failed for ${filePath}:`, error);
+              }
+            }
           }
-          
+
           result.filesProcessed++;
           continue;
         }
@@ -391,10 +421,23 @@ export async function validateLinks(
         if (cache) {
           const contentHash = await calculateFileHash(filePath);
           const gitCommit = gitUtils?.getCurrentCommit();
-          await cache.set(filePath, contentHash, {
-            brokenLinks: validation.brokenLinks,
-            totalLinks: totalLinksForFile
-          } as any, configHash, gitCommit);
+          try {
+            await cache.set(
+              filePath,
+              contentHash,
+              {
+                brokenLinks: validation.brokenLinks,
+                totalLinks: totalLinksForFile,
+                hasExternalLinks: relevantLinks.some((link) => link.type === 'external'),
+              },
+              configHash,
+              gitCommit
+            );
+          } catch (error) {
+            if (opts.verbose) {
+              console.warn(`  Cache write failed for ${filePath}:`, error);
+            }
+          }
         }
       }
 
@@ -454,7 +497,8 @@ export async function validateLinks(
   if (result.gitInfo && cache) {
     const totalRequests = cacheHits + cacheMisses;
     result.gitInfo.cachedFiles = cacheHits;
-    result.gitInfo.cacheHitRate = totalRequests > 0 ? Math.round((cacheHits / totalRequests) * 100) : 0;
+    result.gitInfo.cacheHitRate =
+      totalRequests > 0 ? Math.round((cacheHits / totalRequests) * 100) : 0;
   }
 
   // Check for circular references if requested
@@ -547,12 +591,16 @@ export async function validateCommand(
     if (result.gitInfo?.enabled) {
       console.log(`\n🔍 Git Integration`);
       if (result.gitInfo.baseRef) {
-        console.log(`Changed since ${result.gitInfo.baseRef}: ${result.gitInfo.changedFiles} files`);
+        console.log(
+          `Changed since ${result.gitInfo.baseRef}: ${result.gitInfo.changedFiles} files`
+        );
       } else {
         console.log(`Staged files: ${result.gitInfo.changedFiles} files`);
       }
       if (result.gitInfo.cachedFiles > 0) {
-        console.log(`Cache hits: ${result.gitInfo.cachedFiles} files (${result.gitInfo.cacheHitRate}% hit rate)`);
+        console.log(
+          `Cache hits: ${result.gitInfo.cachedFiles} files (${result.gitInfo.cacheHitRate}% hit rate)`
+        );
       }
       console.log();
     }
@@ -562,10 +610,12 @@ export async function validateCommand(
     console.log(`Total links found: ${result.totalLinks}`);
     console.log(`Broken links: ${result.brokenLinks}`);
     console.log(`Processing time: ${result.processingTime}ms`);
-    
+
     if (result.gitInfo?.enabled && options.cache) {
-      const savedTime = result.gitInfo.cacheHitRate > 0 ? 
-        ` (${Math.round(result.processingTime * (result.gitInfo.cacheHitRate / 100))}ms saved by cache)` : '';
+      const savedTime =
+        result.gitInfo.cacheHitRate > 0
+          ? ` (${Math.round(result.processingTime * (result.gitInfo.cacheHitRate / 100))}ms saved by cache)`
+          : '';
       console.log(`Cache performance: ${result.gitInfo.cacheHitRate}% hit rate${savedTime}`);
     }
     console.log();
