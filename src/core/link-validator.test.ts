@@ -345,6 +345,9 @@ describe('LinkValidator', () => {
       expect(mockFetch).toHaveBeenCalledWith('https://example.com/image.png', {
         method: 'HEAD',
         signal: expect.any(AbortSignal),
+        headers: {
+          'User-Agent': 'markmv-validator/1.0 (content-freshness-detection)',
+        },
       });
     });
 

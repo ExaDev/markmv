@@ -49,3 +49,4 @@ logs/
 
 # Test data and temporary files
 test-data/
+.markmv-cache/

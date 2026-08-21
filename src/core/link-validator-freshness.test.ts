@@ -1,7 +1,7 @@
 /**
  * Tests for LinkValidator with content freshness detection integration.
  *
- * @fileoverview Tests for link validation with freshness analysis
+ * @file Tests for link validation with freshness analysis
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -21,7 +21,7 @@ describe('LinkValidator with Content Freshness Detection', () => {
 
   beforeEach(async () => {
     tempDir = await mkdtemp(join(tmpdir(), 'link-validator-freshness-test-'));
-    
+
     validator = new LinkValidator({
       checkExternal: true,
       checkContentFreshness: true,
@@ -42,7 +42,7 @@ describe('LinkValidator with Content Freshness Detection', () => {
   describe('Fresh Content Detection', () => {
     it('should validate fresh external links without flagging them as broken', async () => {
       const recentDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
-      
+
       mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
@@ -75,13 +75,11 @@ describe('LinkValidator with Content Freshness Detection', () => {
 
     it('should flag stale external links as broken with freshness info', async () => {
       const oldDate = new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000); // 2 years ago
-      
+
       mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
-        headers: new Map([
-          ['last-modified', oldDate.toUTCString()],
-        ]),
+        headers: new Map([['last-modified', oldDate.toUTCString()]]),
         text: () => Promise.resolve('<html><body>Old content</body></html>'),
         url: 'https://example.com/stale',
       });
@@ -108,7 +106,8 @@ describe('LinkValidator with Content Freshness Detection', () => {
         ok: true,
         status: 200,
         headers: new Map(),
-        text: () => Promise.resolve(`
+        text: () =>
+          Promise.resolve(`
           <html>
             <body>
               <h1>API Documentation</h1>
@@ -173,13 +172,11 @@ describe('LinkValidator with Content Freshness Detection', () => {
       });
 
       const eightMonthsAgo = new Date(Date.now() - 8 * 30 * 24 * 60 * 60 * 1000);
-      
+
       mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
-        headers: new Map([
-          ['last-modified', eightMonthsAgo.toUTCString()],
-        ]),
+        headers: new Map([['last-modified', eightMonthsAgo.toUTCString()]]),
         text: () => Promise.resolve('Firebase documentation'),
         url: 'https://firebase.google.com/docs/functions',
       });
@@ -238,13 +235,11 @@ describe('LinkValidator with Content Freshness Detection', () => {
       });
 
       const veryOldDate = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000); // 5 years ago
-      
+
       mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
-        headers: new Map([
-          ['last-modified', veryOldDate.toUTCString()],
-        ]),
+        headers: new Map([['last-modified', veryOldDate.toUTCString()]]),
         url: 'https://example.com/old-no-freshness',
       });
 
@@ -310,15 +305,16 @@ describe('LinkValidator with Content Freshness Detection', () => {
       });
 
       // Mock a slow response that will definitely timeout
-      mockFetch.mockImplementation(() => 
-        new Promise((resolve, reject) => {
-          // Simulate AbortController behavior
-          setTimeout(() => {
-            const error = new Error('The operation was aborted');
-            error.name = 'AbortError';
-            reject(error);
-          }, 2);
-        })
+      mockFetch.mockImplementation(
+        () =>
+          new Promise((resolve, reject) => {
+            // Simulate AbortController behavior
+            setTimeout(() => {
+              const error = new Error('The operation was aborted');
+              error.name = 'AbortError';
+              reject(error);
+            }, 2);
+          })
       );
 
       const link: MarkdownLink = {
@@ -339,9 +335,7 @@ describe('LinkValidator with Content Freshness Detection', () => {
       mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
-        headers: new Map([
-          ['last-modified', 'invalid-date-format'],
-        ]),
+        headers: new Map([['last-modified', 'invalid-date-format']]),
         text: () => Promise.resolve('Content with invalid headers'),
         url: 'https://example.com/invalid-headers',
       });
@@ -365,9 +359,7 @@ describe('LinkValidator with Content Freshness Detection', () => {
       mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
-        headers: new Map([
-          ['content-type', 'image/jpeg'],
-        ]),
+        headers: new Map([['content-type', 'image/jpeg']]),
         text: () => Promise.resolve(''), // Images don't have text content
         url: 'https://example.com/image.jpg',
       });
@@ -429,7 +421,7 @@ describe('LinkValidator with Content Freshness Detection', () => {
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
-      
+
       // Should be valid since content is fresh and no stale patterns
       expect(result).toBeNull();
       expect(mockFetch).toHaveBeenCalledWith('https://example.com/hash-test', {
@@ -477,21 +469,21 @@ describe('LinkValidator with Content Freshness Detection', () => {
 
       // Create internal file
       await writeFile(join(tempDir, 'internal.md'), '# Internal File');
-      
+
       // Create source file with anchor
       const sourceFile = join(tempDir, 'source.md');
       await writeFile(sourceFile, '# Section\nContent here');
 
       const results = await Promise.all(
-        links.map(link => validator.validateLink(link, sourceFile))
+        links.map((link) => validator.validateLink(link, sourceFile))
       );
 
       // Internal link should be valid
       expect(results[0]).toBeNull();
-      
+
       // External link should be valid (fresh)
       expect(results[1]).toBeNull();
-      
+
       // Anchor link should be valid
       expect(results[2]).toBeNull();
 
