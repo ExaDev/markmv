@@ -70,7 +70,6 @@
   "author": "Joe Mearman",
   "license": "CC-BY-NC-SA-4.0",
   "devDependencies": {
-    "@amanda-mitchell/semantic-release-npm-multiple": "^3.17.0",
     "@commitlint/cli": "^20.5.0",
     "@commitlint/config-conventional": "^20.5.0",
     "@eslint/js": "^10.0.1",

@@ -46,7 +46,6 @@
     [
       "@semantic-release/npm",
       {
-        "npmPublish": false,
         "tarballDir": "dist",
         "pkgRoot": "./",
         "provenance": true,
@@ -83,7 +82,7 @@
             "label": "Software Bill of Materials (SBOM)"
           }
         ],
-        "successComment": "🎉 This ${issue.pull_request ? 'PR is included' : 'issue has been resolved'} in version ${nextRelease.version} 🎉\n\nThe release is available on:\n- **[GitHub Releases](https://github.com/ExaDev/markmv/releases/tag/v${nextRelease.version})** - includes coverage reports and SBOM\n- **[npm package (@latest dist-tag)](https://www.npmjs.com/package/markmv)** - published with build attestations\n- **[GitHub Packages](https://github.com/ExaDev/markmv/pkgs/npm/markmv)** - alternative NPM registry\n\n## Installation\n\n### From NPM (Recommended)\n```bash\nnpm install -g markmv@${nextRelease.version}\n```\n\n### From GitHub Packages\n```bash\nnpm install -g @mearman/markmv@${nextRelease.version} --registry=https://npm.pkg.github.com\n```\n\n## Security & Supply Chain\n✅ **Build Provenance**: Cryptographically signed build attestations\n✅ **SBOM**: Software Bill of Materials included in release\n✅ **NPM Provenance**: Published with npm provenance attestations\n✅ **Multiple Registries**: Available on both NPM and GitHub Packages\n\n## Test Coverage\nThis release includes comprehensive test coverage reports. View coverage details in the release assets.\n\nYour **[semantic-release](https://github.com/semantic-release/semantic-release)** bot 📦🚀",
+        "successComment": "🎉 This ${issue.pull_request ? 'PR is included' : 'issue has been resolved'} in version ${nextRelease.version} 🎉\n\nThe release is available on:\n- **[GitHub Releases](https://github.com/ExaDev/markmv/releases/tag/v${nextRelease.version})** - includes coverage reports and SBOM\n- **[npm package (@latest dist-tag)](https://www.npmjs.com/package/markmv)** - published via OIDC trusted publishing with provenance\n\n## Installation\n```bash\nnpm install -g markmv@${nextRelease.version}\n```\n\n## Security & Supply Chain\n✅ **OIDC Trusted Publishing**: published from CI with no long-lived npm token\n✅ **SBOM**: Software Bill of Materials included in release\n✅ **NPM Provenance**: Published with npm provenance attestations\n\n## Test Coverage\nThis release includes comprehensive test coverage reports. View coverage details in the release assets.\n\nYour **[semantic-release](https://github.com/semantic-release/semantic-release)** bot 📦🚀",
         "failComment": "❌ This release failed. Check the [build logs](${env.GITHUB_SERVER_URL}/${env.GITHUB_REPOSITORY}/actions/runs/${env.GITHUB_RUN_ID}) for details.",
         "failTitle": "🚨 Release failed for ${nextRelease.version}",
         "addReleases": "bottom",
@@ -95,7 +94,7 @@
     [
       "@semantic-release/git",
       {
-        "assets": ["CHANGELOG.md", "package.json", "package-lock.json", "README.md"],
+        "assets": ["CHANGELOG.md", "package.json", "README.md"],
         "message": "chore(release): ${nextRelease.version} [skip ci]\n\nIncludes auto-generated README and updated coverage badges\n\n${nextRelease.notes}"
       }
     ]

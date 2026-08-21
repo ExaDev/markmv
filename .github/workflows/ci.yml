@@ -275,9 +275,8 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
-      id-token: write
-      attestations: write
-    
+      id-token: write # OIDC identity for npm trusted publishing (no NPM_TOKEN)
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -286,8 +285,6 @@ jobs:
           token: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
           # Get the latest commit (including badge updates)
           ref: main
-
-      # Note: Using GITHUB_TOKEN instead of GitHub App token for GitHub Packages compatibility GitHub Packages npm registry doesn't support GitHub App installation tokens
 
       # pnpm must be on PATH before setup-node: its cache integration runs `pnpm store path` and fails if the package manager is not installed yet.
       - name: Setup pnpm
@@ -298,10 +295,12 @@ jobs:
         with:
           node-version: '22.x'
           cache: 'pnpm'
-          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Upgrade npm for OIDC trusted publishing (needs npm CLI >=11.5.1)
+        run: npm install -g npm@latest
 
       - name: Download coverage artifacts
         uses: actions/download-artifact@v8
@@ -333,22 +332,6 @@ jobs:
           output-file: sbom.spdx.json
           upload-artifact: true
           upload-release-assets: false
-        
-      # Temporarily disabled due to Sigstore timeout issues
-      # - name: Generate build attestations for NPM
-      #   uses: actions/attest-build-provenance@v1
-      #   id: attest-build
-      #   with:
-      #     subject-path: 'dist/**/*'
-      #     push-to-registry: false
-        
-      # - name: Generate SBOM attestations for NPM
-      #   uses: actions/attest-sbom@v1
-      #   id: attest-sbom
-      #   with:
-      #     subject-path: 'dist/**/*'
-      #     sbom-path: 'sbom.spdx.json'
-      #     push-to-registry: false
         
       # Pre-release: Generate README and update badges BEFORE semantic-release
       - name: Generate updated README for release
@@ -459,187 +442,16 @@ jobs:
             echo "ℹ️ No README changes to stage"
           fi
         
-      - name: Prepare GitHub Packages publishing
-        run: |
-          echo "📦 Preparing package configuration for GitHub Packages..."
-          
-          # Create dist-github directory and copy ALL build artifacts
-          mkdir -p dist-github
-          cp -r dist/* dist-github/ 2>/dev/null || echo "Warning: No dist files found"
-          
-          # Verify binary files exist and are executable
-          if [ -f "dist-github/cli.js" ]; then
-            chmod +x dist-github/cli.js
-            echo "✅ CLI binary found and made executable"
-          else
-            echo "❌ CLI binary not found in dist-github/"
-            ls -la dist-github/ || echo "dist-github directory is empty"
-            ls -la dist/ || echo "dist directory not found"
-            exit 1
-          fi
-          
-          # Create a scoped package.json for GitHub Packages (fix paths and remove prepublishOnly script) 
-          # NOTE: Using user-scoped package @mearman/markmv to bypass organization permission issues
-          jq '.name = "@mearman/markmv" | .publishConfig.registry = "https://npm.pkg.github.com" | del(.scripts.prepublishOnly) | .bin.markmv = "./cli.js" | .main = "./index.js" | .types = "./index.d.ts"' package.json > dist-github/package.json
-          
-          # Copy other required files to dist-github
-          cp README.md CHANGELOG.md LICENSE dist-github/ 2>/dev/null || true
-          
-          # Show final structure
-          echo "📁 Final dist-github structure:"
-          ls -la dist-github/
-          
-          echo "✅ GitHub Packages configuration prepared"
-          
       - name: Release (includes README and badge updates)
         env:
           GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          # Environment variables for npm-multiple plugin
-          NPMJS_NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
-          NPMJS_NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          GITHUB_NPM_CONFIG_REGISTRY: https://npm.pkg.github.com
-          GITHUB_NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "🚀 Starting semantic-release with staged README and badge updates..."
-          
-          # Set up .npmrc for both registries
-          cat > .npmrc << EOF
-          registry=https://registry.npmjs.org/
-          //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
-          //npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}
-          @mearman:registry=https://npm.pkg.github.com
-          EOF
-          
-          # Copy .npmrc to dist-github for GitHub Packages authentication
-          cp .npmrc dist-github/
-          
-          pnpm run release
-          echo "✅ Release completed - version tagged and prepared for publishing"
-          
-      # Temporarily disabled - attestation verification step
-      # - name: Verify attestations are available for NPM
-      #   run: |
-      #     echo "🔍 Verifying attestations are ready for NPM publishing..."
-      #     
-      #     # Check if attestations were generated
-      #     if [ -f "${{ steps.attest-build.outputs.bundle-path }}" ]; then
-      #       echo "✅ Build attestation available: ${{ steps.attest-build.outputs.bundle-path }}"
-      #       ls -la "${{ steps.attest-build.outputs.bundle-path }}"
-      #     else
-      #       echo "⚠️ No build attestation bundle found"
-      #     fi
-      #     
-      #     if [ -f "${{ steps.attest-sbom.outputs.bundle-path }}" ]; then
-      #       echo "✅ SBOM attestation available: ${{ steps.attest-sbom.outputs.bundle-path }}"
-      #       ls -la "${{ steps.attest-sbom.outputs.bundle-path }}"
-      #     else
-      #       echo "⚠️ No SBOM attestation bundle found"
-      #     fi
-      #     
-      #     # Verify SBOM file is available
-      #     if [ -f "sbom.spdx.json" ]; then
-      #       echo "✅ SBOM file available: sbom.spdx.json"
-      #       ls -la sbom.spdx.json
-      #     else
-      #       echo "⚠️ SBOM file not found"
-      #     fi
-      #     
-      #     echo "📦 NPM provenance is enabled in package.json publishConfig"
-      #     echo "🔐 Attestations will be automatically linked to published package"
+          # npm publish provenance, matching the npm plugin's provenance setting in .releaserc.json
+          NPM_CONFIG_PROVENANCE: "true"
+          # Blanked, not omitted -- an inherited NPM_TOKEN/NODE_AUTH_TOKEN from a workflow-level env block or composite action would otherwise be used in preference to the OIDC exchange.
+          NPM_TOKEN: ""
+          NODE_AUTH_TOKEN: ""
+        run: pnpm run release
 
-      # Separate NPM Publishing Step
-      - name: Publish to NPM Registry
-        continue-on-error: true
-        run: |
-          echo "📦 Publishing to NPM registry..."
-          
-          # Check if we can publish directly from the project root
-          # since semantic-release has already prepared the package
-          if [ -f "package.json" ]; then
-            echo "✅ Found package.json, attempting direct publish"
-            
-            # Publish with provenance from current directory
-            npm publish --provenance --access public
-            
-            if [ $? -eq 0 ]; then
-              echo "✅ Successfully published to NPM"
-            else
-              echo "❌ NPM publishing failed, checking for tarball alternative"
-              
-              # Fallback: try to find and extract the tarball
-              TARBALL=$(ls dist/markmv-*.tgz 2>/dev/null | head -1)
-              if [ -n "$TARBALL" ] && [ -f "$TARBALL" ]; then
-                echo "📦 Found tarball: $TARBALL"
-                echo "📁 Extracting tarball for direct publish..."
-                
-                # Extract to a temporary directory and publish from there
-                mkdir -p /tmp/npm-publish
-                tar -xzf "$TARBALL" -C /tmp/npm-publish --strip-components=1
-                cd /tmp/npm-publish
-                
-                echo "📋 Publishing from extracted directory..."
-                npm publish --provenance --access public
-                
-                if [ $? -eq 0 ]; then
-                  echo "✅ Successfully published to NPM from extracted tarball"
-                else
-                  echo "❌ NPM publishing failed even from extracted tarball"
-                fi
-              else
-                echo "❌ No tarball found for fallback publishing"
-                echo "📁 Contents of dist directory:"
-                ls -la dist/ || echo "No dist directory"
-              fi
-            fi
-          else
-            echo "❌ No package.json found for publishing"
-          fi
-
-      # Separate GitHub Packages Publishing Step  
-      - name: Publish to GitHub Packages
-        continue-on-error: true
-        run: |
-          echo "📦 Publishing to GitHub Packages as @mearman/markmv..."
-          
-          # Check if dist-github directory exists
-          if [ -d "dist-github" ]; then
-            echo "✅ Found dist-github directory"
-            ls -la dist-github/
-            
-            # Verify package.json is configured correctly
-            echo "📋 Package configuration:"
-            cat dist-github/package.json | jq '.name, .publishConfig'
-            
-            # Publish to GitHub Packages
-            cd dist-github && npm publish --registry https://npm.pkg.github.com --access public
-            
-            if [ $? -eq 0 ]; then
-              echo "✅ Successfully published to GitHub Packages"
-            else
-              echo "❌ GitHub Packages publishing failed"
-            fi
-          else
-            echo "❌ No dist-github directory found"
-          fi
-
-      # Summary of Publishing Results
-      - name: Publishing Summary
-        run: |
-          echo "📊 Publishing Summary:"
-          echo "===================="
-          
-          # Check NPM
-          LATEST_NPM=$(npm view markmv version 2>/dev/null || echo "unknown")
-          echo "📦 NPM Registry: $LATEST_NPM"
-          
-          # Check GitHub Packages  
-          LATEST_GH=$(npm view @mearman/markmv version --registry https://npm.pkg.github.com 2>/dev/null || echo "unknown")
-          echo "📦 GitHub Packages: $LATEST_GH"
-          
-          echo "===================="
-          echo "🔍 For installation instructions, see the release notes"
 
   # Documentation Deployment - Only after successful release with updated version
   documentation:
