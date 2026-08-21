@@ -1,7 +1,8 @@
 /**
  * Core web clipper for converting web pages to markdown.
  *
- * @fileoverview Implements multiple extraction strategies for different types of web content
+ * @file Implements multiple extraction strategies for different types of web content
+ *
  * @category Core
  */
 
@@ -15,24 +16,24 @@ import { JSDOM } from 'jsdom';
  *
  * @category Core
  */
-export type ExtractionStrategy = 
-  | 'auto'        // Automatically choose best strategy
+export type ExtractionStrategy =
+  | 'auto' // Automatically choose best strategy
   | 'readability' // Mozilla Readability algorithm
-  | 'manual'      // Custom selectors
-  | 'full'        // Full page content
-  | 'structured'  // Schema.org and semantic extraction
-  | 'headless';   // Browser automation (future)
+  | 'manual' // Custom selectors
+  | 'full' // Full page content
+  | 'structured' // Schema.org and semantic extraction
+  | 'headless'; // Browser automation (future)
 
 /**
  * Image handling strategies.
  *
  * @category Core
  */
-export type ImageStrategy = 
-  | 'skip'        // Don't process images
-  | 'link-only'   // Keep as external links
-  | 'download'    // Download and save locally
-  | 'base64';     // Embed as base64 (small images only)
+export type ImageStrategy =
+  | 'skip' // Don't process images
+  | 'link-only' // Keep as external links
+  | 'download' // Download and save locally
+  | 'base64'; // Embed as base64 (small images only)
 
 /**
  * Options for web clipping operations.
@@ -137,10 +138,10 @@ export interface ClipResult {
   structuredData?: Record<string, unknown>;
 }
 
-/**
- * Default options for web clipping.
- */
-const DEFAULT_CLIPPER_OPTIONS: Required<Omit<WebClipperOptions, 'selectors' | 'cookiesFile' | 'headers'>> = {
+/** Default options for web clipping. */
+const DEFAULT_CLIPPER_OPTIONS: Required<
+  Omit<WebClipperOptions, 'selectors' | 'cookiesFile' | 'headers'>
+> = {
   strategy: 'auto',
   imageStrategy: 'link-only',
   imageDir: './images',
@@ -156,8 +157,8 @@ const DEFAULT_CLIPPER_OPTIONS: Required<Omit<WebClipperOptions, 'selectors' | 'c
 /**
  * Core web clipper class with multiple extraction strategies.
  *
- * Provides comprehensive web page to markdown conversion with support for different
- * content types, extraction strategies, and output formats.
+ * Provides comprehensive web page to markdown conversion with support for different content types,
+ * extraction strategies, and output formats.
  *
  * @category Core
  *
@@ -165,10 +166,10 @@ const DEFAULT_CLIPPER_OPTIONS: Required<Omit<WebClipperOptions, 'selectors' | 'c
  *   Basic usage
  *   ```typescript
  *   const clipper = new WebClipper({
- *     strategy: 'readability',
- *     imageStrategy: 'download'
+ *   strategy: 'readability',
+ *   imageStrategy: 'download'
  *   });
- *   
+ *
  *   const result = await clipper.clip('https://example.com/article');
  *   console.log(result.markdown);
  *   ```
@@ -177,15 +178,15 @@ const DEFAULT_CLIPPER_OPTIONS: Required<Omit<WebClipperOptions, 'selectors' | 'c
  *   Custom extraction
  *   ```typescript
  *   const clipper = new WebClipper({
- *     strategy: 'manual',
- *     selectors: ['article', '.content', 'main']
+ *   strategy: 'manual',
+ *   selectors: ['article', '.content', 'main']
  *   });
- *   
+ *
  *   const result = await clipper.clip('https://docs.example.com');
  *   ```
  */
 export class WebClipper {
-  private options: Required<Omit<WebClipperOptions, 'selectors' | 'cookiesFile' | 'headers'>> & 
+  private options: Required<Omit<WebClipperOptions, 'selectors' | 'cookiesFile' | 'headers'>> &
     Pick<WebClipperOptions, 'selectors' | 'cookiesFile' | 'headers'>;
   private turndown: TurndownService;
 
@@ -208,11 +209,10 @@ export class WebClipper {
 
     // Fetch the web page
     const html = await this.fetchHtml(url);
-    
+
     // Determine extraction strategy
-    const strategy = this.options.strategy === 'auto' 
-      ? this.determineStrategy(html, url)
-      : this.options.strategy;
+    const strategy =
+      this.options.strategy === 'auto' ? this.determineStrategy(html, url) : this.options.strategy;
 
     if (this.options.verbose) {
       console.log(`🔧 Using strategy: ${strategy}`);
@@ -220,10 +220,10 @@ export class WebClipper {
 
     // Extract content using chosen strategy
     const extracted = await this.extractContent(html, url, strategy);
-    
+
     // Process images if needed
     const processedImages = await this.processImages(extracted.images, url);
-    
+
     // Generate markdown
     const markdown = await this.generateMarkdown(extracted, processedImages, url);
 
@@ -234,13 +234,13 @@ export class WebClipper {
       images: processedImages,
       links: extracted.links,
     };
-    
+
     if (extracted.title) result.title = extracted.title;
     if (extracted.author) result.author = extracted.author;
     if (extracted.publishedDate) result.publishedDate = extracted.publishedDate;
     if (extracted.description) result.description = extracted.description;
     if (extracted.structuredData) result.structuredData = extracted.structuredData;
-    
+
     return result;
   }
 
@@ -256,10 +256,10 @@ export class WebClipper {
     try {
       const headers: Record<string, string> = {
         'User-Agent': this.options.userAgent,
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
         'Accept-Encoding': 'gzip, deflate',
-        'Connection': 'keep-alive',
+        Connection: 'keep-alive',
         'Upgrade-Insecure-Requests': '1',
         ...this.options.headers,
       };
@@ -287,22 +287,22 @@ export class WebClipper {
    */
   private determineStrategy(html: string, url: string): ExtractionStrategy {
     const root = parse(html);
-    
+
     // Check for common article patterns
     const articleSelectors = ['article', '[role="main"]', '.post-content', '.entry-content'];
-    const hasArticle = articleSelectors.some(selector => root.querySelector(selector));
-    
+    const hasArticle = articleSelectors.some((selector) => root.querySelector(selector));
+
     // Check for documentation patterns
     const docsPatterns = ['/docs/', '/documentation/', '/api/', '/guide/'];
-    const isDocs = docsPatterns.some(pattern => url.includes(pattern));
-    
+    const isDocs = docsPatterns.some((pattern) => url.includes(pattern));
+
     // Check for blog patterns
     const blogPatterns = ['/blog/', '/post/', '/article/'];
-    const isBlog = blogPatterns.some(pattern => url.includes(pattern));
+    const isBlog = blogPatterns.some((pattern) => url.includes(pattern));
 
     // Check for structured data
-    const hasStructuredData = root.querySelector('[itemscope]') || 
-                             root.querySelector('script[type="application/ld+json"]');
+    const hasStructuredData =
+      root.querySelector('[itemscope]') || root.querySelector('script[type="application/ld+json"]');
 
     if (hasStructuredData) {
       return 'structured';
@@ -320,7 +320,11 @@ export class WebClipper {
    *
    * @private
    */
-  private async extractContent(html: string, url: string, strategy: ExtractionStrategy): Promise<ExtractedContent> {
+  private async extractContent(
+    html: string,
+    url: string,
+    strategy: ExtractionStrategy
+  ): Promise<ExtractedContent> {
     switch (strategy) {
       case 'readability':
         return this.extractWithReadability(html, url);
@@ -350,20 +354,20 @@ export class WebClipper {
     }
 
     const root = parse(article.content);
-    
+
     const result: ExtractedContent = {
       content: article.content,
       images: this.extractImages(root, url),
       links: this.extractLinks(root, url),
     };
-    
+
     if (article.title) result.title = article.title;
     if (article.byline) result.author = article.byline;
     if (article.excerpt) result.description = article.excerpt;
-    
+
     const publishedDate = this.extractPublishedDate(html);
     if (publishedDate) result.publishedDate = publishedDate;
-    
+
     return result;
   }
 
@@ -374,7 +378,7 @@ export class WebClipper {
    */
   private extractWithSelectors(html: string, url: string): ExtractedContent {
     const root = parse(html);
-    
+
     const selectors = this.options.selectors || [
       'article',
       '[role="main"]',
@@ -386,7 +390,7 @@ export class WebClipper {
     ];
 
     let contentElement: HTMLElement | null = null;
-    
+
     for (const selector of selectors) {
       contentElement = root.querySelector(selector);
       if (contentElement) break;
@@ -406,19 +410,19 @@ export class WebClipper {
       images: this.extractImages(contentElement, url),
       links: this.extractLinks(contentElement, url),
     };
-    
+
     const title = this.extractTitle(root);
     if (title) result.title = title;
-    
+
     const author = this.extractAuthor(root);
     if (author) result.author = author;
-    
+
     const publishedDate = this.extractPublishedDate(html);
     if (publishedDate) result.publishedDate = publishedDate;
-    
+
     const description = this.extractDescription(root);
     if (description) result.description = description;
-    
+
     return result;
   }
 
@@ -430,7 +434,7 @@ export class WebClipper {
   private extractFullPage(html: string, url: string): ExtractedContent {
     const root = parse(html);
     const body = root.querySelector('body');
-    
+
     if (!body) {
       throw new Error('Could not find body element');
     }
@@ -440,19 +444,19 @@ export class WebClipper {
       images: this.extractImages(body, url),
       links: this.extractLinks(body, url),
     };
-    
+
     const title = this.extractTitle(root);
     if (title) result.title = title;
-    
+
     const author = this.extractAuthor(root);
     if (author) result.author = author;
-    
+
     const publishedDate = this.extractPublishedDate(html);
     if (publishedDate) result.publishedDate = publishedDate;
-    
+
     const description = this.extractDescription(root);
     if (description) result.description = description;
-    
+
     return result;
   }
 
@@ -463,11 +467,11 @@ export class WebClipper {
    */
   private extractStructured(html: string, url: string): ExtractedContent {
     const root = parse(html);
-    
+
     // Try JSON-LD structured data first
     const jsonLdScript = root.querySelector('script[type="application/ld+json"]');
     let structuredData: Record<string, unknown> | undefined;
-    
+
     if (jsonLdScript) {
       try {
         structuredData = JSON.parse(jsonLdScript.innerHTML);
@@ -478,15 +482,15 @@ export class WebClipper {
 
     // For now, fall back to readability with structured data
     const content = this.extractWithReadability(html, url);
-    
+
     const result: ExtractedContent = {
       ...content,
     };
-    
+
     if (structuredData) {
       result.structuredData = structuredData;
     }
-    
+
     return result;
   }
 
@@ -594,8 +598,8 @@ export class WebClipper {
    */
   private extractImages(root: HTMLElement, baseUrl: string) {
     const images = root.querySelectorAll('img');
-    
-    return images.map(img => {
+
+    return images.map((img) => {
       const alt = img.getAttribute('alt');
       return {
         originalUrl: this.resolveUrl(img.getAttribute('src') || '', baseUrl),
@@ -612,12 +616,12 @@ export class WebClipper {
    */
   private extractLinks(root: HTMLElement, baseUrl: string) {
     const links = root.querySelectorAll('a[href]');
-    
-    return links.map(link => {
+
+    return links.map((link) => {
       const url = this.resolveUrl(link.getAttribute('href') || '', baseUrl);
       const text = link.text?.trim() || '';
       const type = this.isInternalLink(url, baseUrl) ? 'internal' : 'external';
-      
+
       return { url, text, type } as const;
     });
   }
@@ -627,10 +631,13 @@ export class WebClipper {
    *
    * @private
    */
-  private async processImages(images: Array<{ originalUrl: string; alt: string | undefined; processed: boolean }>, _baseUrl: string) {
+  private async processImages(
+    images: Array<{ originalUrl: string; alt: string | undefined; processed: boolean }>,
+    _baseUrl: string
+  ) {
     // For now, just mark as processed without downloading
     // TODO: Implement actual image downloading and processing
-    return images.map(img => ({
+    return images.map((img) => ({
       originalUrl: img.originalUrl,
       alt: img.alt,
       processed: true,
@@ -642,7 +649,11 @@ export class WebClipper {
    *
    * @private
    */
-  private async generateMarkdown(extracted: ExtractedContent, _images: ClipResult['images'], sourceUrl: string): Promise<string> {
+  private async generateMarkdown(
+    extracted: ExtractedContent,
+    _images: ClipResult['images'],
+    sourceUrl: string
+  ): Promise<string> {
     const parts: string[] = [];
 
     // Add frontmatter if requested
@@ -674,7 +685,7 @@ export class WebClipper {
     if (extracted.author) frontmatter.author = extracted.author;
     if (extracted.publishedDate) frontmatter.published = extracted.publishedDate;
     if (extracted.description) frontmatter.description = extracted.description;
-    
+
     frontmatter.source = sourceUrl;
     frontmatter.clipped = new Date().toISOString();
 

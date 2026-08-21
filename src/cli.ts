@@ -45,7 +45,7 @@ program
   .option('--user-agent <agent>', 'Custom User-Agent string')
   .option('--headers <headers>', 'Custom HTTP headers (JSON format)')
   .option('--cookies <file>', 'Path to cookies file')
-  .option('--no-follow-redirects', 'Don\'t follow HTTP redirects')
+  .option('--no-follow-redirects', "Don't follow HTTP redirects")
   .option('--max-redirects <count>', 'Maximum redirects to follow', parseInt, 5)
   .option('-d, --dry-run', 'Show what would be clipped without creating files')
   .option('-v, --verbose', 'Show detailed output with processing information')
