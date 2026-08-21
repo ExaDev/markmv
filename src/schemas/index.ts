@@ -1,9 +1,9 @@
 /**
  * Zod schemas for markmv auto-exposed methods
  *
- * Single source of truth for input/output validation and JSON Schema derivation.
- * MCP tool definitions, REST route schemas, OpenAPI spec, and TypeScript types
- * are all derived from these schemas.
+ * Single source of truth for input/output validation and JSON Schema derivation. MCP tool
+ * definitions, REST route schemas, OpenAPI spec, and TypeScript types are all derived from these
+ * schemas.
  */
 
 import * as z from 'zod';
@@ -127,6 +127,14 @@ export const methodSchemas = {
 } as const;
 
 export type MethodName = keyof typeof methodSchemas;
+
+/**
+ * Type guard for method names obtained from runtime key iteration (Object.keys/Object.entries),
+ * whose TypeScript signatures only produce `string`.
+ */
+export function isMethodName(name: string): name is MethodName {
+  return name in methodSchemas;
+}
 
 // ── Inferred types ──────────────────────────────────────────────────────────
 

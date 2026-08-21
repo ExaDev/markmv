@@ -1,14 +1,13 @@
 /**
  * MCP tool definitions derived from Zod schemas
  *
- * Replaces the generated mcp-tools.ts. Tool definitions are built at runtime
- * from Zod schemas using z.toJSONSchema(), ensuring they stay in sync with
- * the schema definitions automatically.
+ * Replaces the generated mcp-tools.ts. Tool definitions are built at runtime from Zod schemas using
+ * z.toJSONSchema(), ensuring they stay in sync with the schema definitions automatically.
  */
 
 import * as z from 'zod';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
-import { methodSchemas } from './index.js';
+import { isMethodName, methodSchemas } from './index.js';
 
 /** Convert camelCase to snake_case for MCP tool naming */
 function camelToSnake(str: string): string {
@@ -22,24 +21,47 @@ function getDescription(schema: z.ZodType): string {
   return typeof desc === 'string' ? desc : '';
 }
 
+/**
+ * Narrows zod's JSON Schema output to MCP's Tool inputSchema shape. z.JSONSchema is a broad
+ * index-signature type (optional `type`, boolean schemas allowed as property values) while
+ * Tool.inputSchema requires type "object" with non-boolean property schemas; the invariant holds
+ * for object schemas but cannot be expressed across the z.JSONSchema type boundary, so it is
+ * checked at runtime instead of asserted.
+ */
+function isToolInputSchema(value: unknown): value is Tool['inputSchema'] {
+  if (typeof value !== 'object' || value === null) return false;
+  if (!('type' in value) || value.type !== 'object') return false;
+  if ('properties' in value && value.properties !== undefined) {
+    if (typeof value.properties !== 'object' || value.properties === null) return false;
+    for (const propertySchema of Object.values(value.properties)) {
+      if (typeof propertySchema !== 'object' || propertySchema === null) return false;
+    }
+  }
+  return true;
+}
+
 /** Build MCP tool definitions from Zod schemas at runtime */
 function buildMcpTools(): Tool[] {
   const tools: Tool[] = [];
 
-  for (const [methodName, schemas] of Object.entries(methodSchemas)) {
+  for (const methodName of Object.keys(methodSchemas).filter(isMethodName)) {
+    const schemas = methodSchemas[methodName];
     const toolName = camelToSnake(methodName);
     const inputSchema = z.toJSONSchema(schemas.input, {
       target: 'draft-07',
       unrepresentable: 'any',
     });
 
+    if (!isToolInputSchema(inputSchema)) {
+      throw new Error(
+        `Zod produced a non-object JSON Schema for ${methodName}, which cannot be an MCP tool inputSchema`
+      );
+    }
+
     tools.push({
       name: toolName,
       description: getDescription(schemas.input),
-      // z.toJSONSchema returns z.JSONSchema (a broad union type); MCP's Tool.inputSchema
-      // is a narrower Zod-inferred shape. They are structurally compatible for object schemas
-      // but TypeScript cannot verify this across the type boundary.
-      inputSchema: inputSchema as Tool['inputSchema'],
+      inputSchema,
     });
   }
 

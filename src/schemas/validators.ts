@@ -1,9 +1,8 @@
 /**
  * Zod-based validators for markmv auto-exposed methods
  *
- * Drop-in replacement for the AJV-based generated validators.
- * Uses Zod safeParse for runtime input/output validation with
- * structured error reporting.
+ * Drop-in replacement for the AJV-based generated validators. Uses Zod safeParse for runtime
+ * input/output validation with structured error reporting.
  */
 
 import { methodSchemas, type MethodName } from './index.js';
@@ -32,9 +31,7 @@ export function validateInput(methodName: string, data: unknown): ValidationResu
 
   return {
     valid: false,
-    errors: result.error.issues.map(
-      (issue) => `${issue.path.join('.')}: ${issue.message}`
-    ),
+    errors: result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`),
   };
 }
 
@@ -51,9 +48,7 @@ export function validateOutput(methodName: string, data: unknown): ValidationRes
 
   return {
     valid: false,
-    errors: result.error.issues.map(
-      (issue) => `${issue.path.join('.')}: ${issue.message}`
-    ),
+    errors: result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`),
   };
 }
 

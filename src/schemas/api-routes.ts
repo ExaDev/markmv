@@ -1,20 +1,24 @@
 /**
  * REST API route definitions derived from Zod schemas
  *
- * Replaces the generated api-routes.ts. Route handlers use Zod safeParse
- * for input validation and z.toJSONSchema() for schema metadata.
+ * Replaces the generated api-routes.ts. Route handlers use Zod safeParse for input validation and
+ * z.toJSONSchema() for schema metadata.
  */
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import * as z from 'zod';
-import { methodSchemas, type MethodName } from './index.js';
+import { isMethodName, methodSchemas, type MethodName } from './index.js';
 import { validateOutput } from './validators.js';
 import type { FileOperations } from '../core/file-operations.js';
 
 export interface ApiRoute {
   path: string;
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
-  handler: (req: IncomingMessage, res: ServerResponse, markmvInstance: FileOperations) => Promise<void>;
+  handler: (
+    req: IncomingMessage,
+    res: ServerResponse,
+    markmvInstance: FileOperations
+  ) => Promise<void>;
   description: string;
   inputSchema: Record<string, unknown>;
   outputSchema: Record<string, unknown>;
@@ -94,16 +98,21 @@ function toOperationResult(data: {
   };
 }
 
-/** Create a route handler for a method that delegates to markmvInstance */
-function createHandler(
+/**
+ * Create a route handler for a method that delegates to markmvInstance. The parse function and the
+ * dispatcher share the generic T, so the dispatcher receives the input already typed as the
+ * method's Zod-inferred output rather than unknown.
+ */
+function createHandler<T>(
   methodName: MethodName,
-  dispatch: (markmvInstance: FileOperations, validatedInput: unknown) => Promise<unknown>
+  parse: (body: unknown) => z.ZodSafeParseResult<T>,
+  dispatch: (markmvInstance: FileOperations, validatedInput: T) => Promise<unknown>
 ): (req: IncomingMessage, res: ServerResponse, markmvInstance: FileOperations) => Promise<void> {
   return async (req: IncomingMessage, res: ServerResponse, markmvInstance: FileOperations) => {
     try {
       const body = await parseRequestBody(req);
 
-      const parseResult = methodSchemas[methodName].input.safeParse(body);
+      const parseResult = parse(body);
       if (!parseResult.success) {
         const errors = parseResult.error.issues.map(
           (issue) => `${issue.path.join('.')}: ${issue.message}`
@@ -136,39 +145,52 @@ function createHandler(
 
 /** Build API routes from Zod schemas at runtime */
 function buildApiRoutes(): ApiRoute[] {
-  const dispatchers: Record<MethodName, (markmvInstance: FileOperations, validatedInput: unknown) => Promise<unknown>> = {
-    moveFile: async (markmv, validatedInput) => {
-      const data = validatedInput as z.infer<typeof methodSchemas.moveFile.input>;
-      return markmv.moveFile(data.sourcePath, data.destinationPath, toMoveOptions(data.options ?? {}));
-    },
-    moveFiles: async (markmv, validatedInput) => {
-      const data = validatedInput as z.infer<typeof methodSchemas.moveFiles.input>;
-      return markmv.moveFiles(data.moves, toMoveOptions(data.options ?? {}));
-    },
-    validateOperation: async (markmv, validatedInput) => {
-      const data = validatedInput as z.infer<typeof methodSchemas.validateOperation.input>;
-      return markmv.validateOperation(toOperationResult(data.result));
-    },
-    testAutoExposure: async (_markmv, validatedInput) => {
-      const { testAutoExposure } = await import('../index.js');
-      const data = validatedInput as z.infer<typeof methodSchemas.testAutoExposure.input>;
-      return testAutoExposure(data.input);
-    },
+  const handlers: { [K in MethodName]: ApiRoute['handler'] } = {
+    moveFile: createHandler(
+      'moveFile',
+      (body) => methodSchemas.moveFile.input.safeParse(body),
+      (markmv, input) =>
+        markmv.moveFile(input.sourcePath, input.destinationPath, toMoveOptions(input.options ?? {}))
+    ),
+    moveFiles: createHandler(
+      'moveFiles',
+      (body) => methodSchemas.moveFiles.input.safeParse(body),
+      (markmv, input) => markmv.moveFiles(input.moves, toMoveOptions(input.options ?? {}))
+    ),
+    validateOperation: createHandler(
+      'validateOperation',
+      (body) => methodSchemas.validateOperation.input.safeParse(body),
+      (markmv, input) => markmv.validateOperation(toOperationResult(input.result))
+    ),
+    testAutoExposure: createHandler(
+      'testAutoExposure',
+      (body) => methodSchemas.testAutoExposure.input.safeParse(body),
+      async (_markmv, input) => {
+        const { testAutoExposure } = await import('../index.js');
+        return testAutoExposure(input.input);
+      }
+    ),
   };
 
   const routes: ApiRoute[] = [];
 
-  for (const [methodName, schemas] of Object.entries(methodSchemas)) {
-    const typedName = methodName as MethodName;
-    const inputSchema = z.toJSONSchema(schemas.input, { target: 'openapi-3.0', unrepresentable: 'any' });
-    const outputSchema = z.toJSONSchema(schemas.output, { target: 'openapi-3.0', unrepresentable: 'any' });
+  for (const methodName of Object.keys(methodSchemas).filter(isMethodName)) {
+    const schemas = methodSchemas[methodName];
+    const inputSchema = z.toJSONSchema(schemas.input, {
+      target: 'openapi-3.0',
+      unrepresentable: 'any',
+    });
+    const outputSchema = z.toJSONSchema(schemas.output, {
+      target: 'openapi-3.0',
+      unrepresentable: 'any',
+    });
     const desc = inputSchema.description;
     const description = typeof desc === 'string' ? desc : '';
 
     routes.push({
       path: `/api/${camelToKebab(methodName)}`,
       method: 'POST',
-      handler: createHandler(typedName, dispatchers[typedName]),
+      handler: handlers[methodName],
       description,
       inputSchema,
       outputSchema,

@@ -1,8 +1,8 @@
 /**
  * OpenAPI specification derived from Zod schemas
  *
- * Replaces the generated openapi.json. The spec is built at runtime
- * from Zod schemas using z.toJSONSchema() with the openapi-3.0 target.
+ * Replaces the generated openapi.json. The spec is built at runtime from Zod schemas using
+ * z.toJSONSchema() with the openapi-3.0 target.
  */
 
 import * as z from 'zod';
