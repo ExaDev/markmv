@@ -360,7 +360,6 @@ become hyphens, multiple hyphens collapsed to single hyphens.`
   )
   .action(refactorHeadingsCommand);
 
-
 program
   .command('graph')
   .description('Generate interactive link graphs from markdown file relationships')
