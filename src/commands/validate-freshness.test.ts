@@ -1,7 +1,7 @@
 /**
  * Integration tests for validate command with content freshness detection.
  *
- * @fileoverview Tests the full validation pipeline with freshness analysis
+ * @file Tests the full validation pipeline with freshness analysis
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -29,12 +29,15 @@ describe('Validate Command with Content Freshness Detection', () => {
   describe('Fresh Content Validation', () => {
     it('should validate fresh external links without flagging them', async () => {
       const testFile = join(tempDir, 'fresh-links.md');
-      await writeFile(testFile, `
+      await writeFile(
+        testFile,
+        `
 # Test Document
 
 Check out this [fresh documentation](https://example.com/fresh-docs).
 Also see this [recent API guide](https://api.example.com/guide).
-      `);
+      `
+      );
 
       const recentDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
 
@@ -57,6 +60,7 @@ Also see this [recent API guide](https://api.example.com/guide).
       const result = await validateLinks([testFile], {
         checkExternal: true,
         checkContentFreshness: true,
+        cacheDir: join(tempDir, 'freshness-cache'),
         freshnessThreshold: 365, // 1 year threshold
       });
 
@@ -69,12 +73,15 @@ Also see this [recent API guide](https://api.example.com/guide).
 
     it('should flag stale external links with detailed freshness info', async () => {
       const testFile = join(tempDir, 'stale-links.md');
-      await writeFile(testFile, `
+      await writeFile(
+        testFile,
+        `
 # Outdated Documentation
 
 This [old tutorial](https://example.com/old-tutorial) is outdated.
 The [deprecated API](https://api.example.com/deprecated) should be avoided.
-      `);
+      `
+      );
 
       const oldDate = new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000); // 3 years ago
 
@@ -90,7 +97,8 @@ The [deprecated API](https://api.example.com/deprecated) should be avoided.
           ok: true,
           status: 200,
           headers: new Map(),
-          text: () => Promise.resolve(`
+          text: () =>
+            Promise.resolve(`
             <html><body>
               <h1>API Documentation</h1>
               <p>This API is deprecated and no longer supported.</p>
@@ -102,26 +110,27 @@ The [deprecated API](https://api.example.com/deprecated) should be avoided.
       const result = await validateLinks([testFile], {
         checkExternal: true,
         checkContentFreshness: true,
+        cacheDir: join(tempDir, 'freshness-cache'),
         freshnessThreshold: 730, // 2 years threshold
       });
 
       expect(result.brokenLinks).toBe(2);
       expect(result.staleLinks).toBe(2);
       expect(result.freshLinks).toBe(0);
-      
+
       // Check broken links details
       const brokenLinks = Object.values(result.brokenLinksByFile)[0];
       expect(brokenLinks).toHaveLength(2);
-      
+
       // First link should be stale due to age
-      const firstLink = brokenLinks.find(link => link.url.includes('old-tutorial'));
+      const firstLink = brokenLinks.find((link) => link.url.includes('old-tutorial'));
       expect(firstLink?.reason).toBe('content-stale');
       expect(firstLink?.freshnessInfo?.isFresh).toBe(false);
       expect(firstLink?.freshnessInfo?.lastModified).toBeDefined();
       expect(firstLink?.freshnessInfo?.warning).toContain('old');
 
       // Second link should be stale due to deprecation pattern
-      const secondLink = brokenLinks.find(link => link.url.includes('deprecated'));
+      const secondLink = brokenLinks.find((link) => link.url.includes('deprecated'));
       expect(secondLink?.reason).toBe('content-stale');
       expect(secondLink?.freshnessInfo?.stalePatterns).toContain('deprecated');
       expect(secondLink?.freshnessInfo?.stalePatterns).toContain('no longer supported');
@@ -129,13 +138,16 @@ The [deprecated API](https://api.example.com/deprecated) should be avoided.
 
     it('should apply domain-specific freshness thresholds', async () => {
       const testFile = join(tempDir, 'domain-thresholds.md');
-      await writeFile(testFile, `
+      await writeFile(
+        testFile,
+        `
 # Domain-Specific Documentation
 
 Firebase guide: [Cloud Functions](https://firebase.google.com/docs/functions)
 GitHub Actions: [Workflow syntax](https://docs.github.com/actions/reference)
 General docs: [Example site](https://example.com/docs)
-      `);
+      `
+      );
 
       const eightMonthsAgo = new Date(Date.now() - 8 * 30 * 24 * 60 * 60 * 1000);
 
@@ -165,6 +177,7 @@ General docs: [Example site](https://example.com/docs)
       const result = await validateLinks([testFile], {
         checkExternal: true,
         checkContentFreshness: true,
+        cacheDir: join(tempDir, 'freshness-cache'),
         freshnessThreshold: 730, // 2 years default
       });
 
@@ -182,7 +195,9 @@ General docs: [Example site](https://example.com/docs)
       await writeFile(internalFile, '# Internal Document\nContent here.');
 
       const testFile = join(tempDir, 'mixed-links.md');
-      await writeFile(testFile, `
+      await writeFile(
+        testFile,
+        `
 # Mixed Links Document
 
 Internal link: [Internal Doc](./internal.md)
@@ -192,7 +207,8 @@ Anchor link: [Section](#section)
 
 ## Section
 Content here.
-      `);
+      `
+      );
 
       const freshDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000); // 10 days ago
       const staleDate = new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000); // 3 years ago
@@ -216,6 +232,7 @@ Content here.
       const result = await validateLinks([testFile], {
         checkExternal: true,
         checkContentFreshness: true,
+        cacheDir: join(tempDir, 'freshness-cache'),
         strictInternal: true,
       });
 
@@ -223,25 +240,31 @@ Content here.
       expect(result.brokenLinks).toBe(1); // only stale external
       expect(result.staleLinks).toBe(1);
       expect(result.freshLinks).toBe(1);
-      
+
       // Only external links should be fetched
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
     it('should count freshness statistics correctly across multiple files', async () => {
       const file1 = join(tempDir, 'file1.md');
-      await writeFile(file1, `
+      await writeFile(
+        file1,
+        `
 # File 1
 [Fresh link 1](https://example.com/fresh1)
 [Stale link 1](https://example.com/stale1)
-      `);
+      `
+      );
 
       const file2 = join(tempDir, 'file2.md');
-      await writeFile(file2, `
+      await writeFile(
+        file2,
+        `
 # File 2
 [Fresh link 2](https://example.com/fresh2)
 [Stale link 2](https://example.com/stale2)
-      `);
+      `
+      );
 
       const freshDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
       const staleDate = new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000);
@@ -279,6 +302,7 @@ Content here.
       const result = await validateLinks([file1, file2], {
         checkExternal: true,
         checkContentFreshness: true,
+        cacheDir: join(tempDir, 'freshness-cache'),
       });
 
       expect(result.filesProcessed).toBe(2);
@@ -292,14 +316,17 @@ Content here.
   describe('Content Pattern Detection', () => {
     it('should detect various staleness patterns', async () => {
       const testFile = join(tempDir, 'pattern-detection.md');
-      await writeFile(testFile, `
+      await writeFile(
+        testFile,
+        `
 # Pattern Detection Test
 
 [Deprecated API](https://api.example.com/deprecated)
 [Moved page](https://example.com/moved)
 [Legacy docs](https://docs.example.com/legacy)
 [EOL product](https://products.example.com/eol)
-      `);
+      `
+      );
 
       mockFetch
         .mockResolvedValueOnce({
@@ -334,24 +361,25 @@ Content here.
       const result = await validateLinks([testFile], {
         checkExternal: true,
         checkContentFreshness: true,
+        cacheDir: join(tempDir, 'freshness-cache'),
       });
 
       expect(result.brokenLinks).toBe(4);
       expect(result.staleLinks).toBe(4);
 
       const brokenLinks = Object.values(result.brokenLinksByFile)[0];
-      
+
       // Check that different patterns are detected
-      const deprecatedLink = brokenLinks.find(link => link.url.includes('deprecated'));
+      const deprecatedLink = brokenLinks.find((link) => link.url.includes('deprecated'));
       expect(deprecatedLink?.freshnessInfo?.stalePatterns).toContain('deprecated');
 
-      const movedLink = brokenLinks.find(link => link.url.includes('moved'));
+      const movedLink = brokenLinks.find((link) => link.url.includes('moved'));
       expect(movedLink?.freshnessInfo?.stalePatterns).toContain('this page has moved');
 
-      const legacyLink = brokenLinks.find(link => link.url.includes('legacy'));
+      const legacyLink = brokenLinks.find((link) => link.url.includes('legacy'));
       expect(legacyLink?.freshnessInfo?.stalePatterns).toContain('archived');
 
-      const eolLink = brokenLinks.find(link => link.url.includes('eol'));
+      const eolLink = brokenLinks.find((link) => link.url.includes('eol'));
       expect(eolLink?.freshnessInfo?.stalePatterns).toContain('end of life');
     });
   });
@@ -359,14 +387,17 @@ Content here.
   describe('Error Handling', () => {
     it('should handle mixed success and error responses', async () => {
       const testFile = join(tempDir, 'mixed-responses.md');
-      await writeFile(testFile, `
+      await writeFile(
+        testFile,
+        `
 # Mixed Responses
 
 [Working link](https://example.com/working)
 [Broken link](https://example.com/broken)
 [Fresh link](https://example.com/fresh)
 [Network error link](https://example.com/network-error)
-      `);
+      `
+      );
 
       const freshDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
 
@@ -397,6 +428,7 @@ Content here.
       const result = await validateLinks([testFile], {
         checkExternal: true,
         checkContentFreshness: true,
+        cacheDir: join(tempDir, 'freshness-cache'),
       });
 
       expect(result.totalLinks).toBe(4);
@@ -405,25 +437,28 @@ Content here.
       expect(result.staleLinks).toBe(0);
 
       const brokenLinks = Object.values(result.brokenLinksByFile)[0];
-      
-      const httpError = brokenLinks.find(link => link.url.includes('broken'));
+
+      const httpError = brokenLinks.find((link) => link.url.includes('broken'));
       expect(httpError?.reason).toBe('external-error');
       expect(httpError?.details).toContain('404');
 
-      const networkError = brokenLinks.find(link => link.url.includes('network-error'));
+      const networkError = brokenLinks.find((link) => link.url.includes('network-error'));
       expect(networkError?.reason).toBe('external-error');
       expect(networkError?.details).toContain('Network timeout');
     });
 
     it('should continue processing other links when one fails', async () => {
       const testFile = join(tempDir, 'partial-failure.md');
-      await writeFile(testFile, `
+      await writeFile(
+        testFile,
+        `
 # Partial Failure Test
 
 [First link](https://example.com/first)
 [Failing link](https://example.com/fail)
 [Last link](https://example.com/last)
-      `);
+      `
+      );
 
       const freshDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
 
@@ -447,6 +482,7 @@ Content here.
       const result = await validateLinks([testFile], {
         checkExternal: true,
         checkContentFreshness: true,
+        cacheDir: join(tempDir, 'freshness-cache'),
       });
 
       expect(result.totalLinks).toBe(3);
@@ -460,11 +496,14 @@ Content here.
   describe('Disabled Freshness Detection', () => {
     it('should not perform freshness checks when disabled', async () => {
       const testFile = join(tempDir, 'no-freshness.md');
-      await writeFile(testFile, `
+      await writeFile(
+        testFile,
+        `
 # No Freshness Check
 
 [External link](https://example.com/external)
-      `);
+      `
+      );
 
       mockFetch.mockResolvedValue({
         ok: true,
@@ -481,7 +520,7 @@ Content here.
       expect(result.brokenLinks).toBe(0);
       expect(result.staleLinks).toBe(0);
       expect(result.freshLinks).toBe(0);
-      
+
       // Should use HEAD method instead of GET
       expect(mockFetch).toHaveBeenCalledWith('https://example.com/external', {
         method: 'HEAD',
@@ -496,11 +535,14 @@ Content here.
   describe('Content Change Detection Integration', () => {
     it('should track content changes across validation runs', async () => {
       const testFile = join(tempDir, 'content-changes.md');
-      await writeFile(testFile, `
+      await writeFile(
+        testFile,
+        `
 # Content Change Test
 
 [Changing content](https://example.com/changing)
-      `);
+      `
+      );
 
       // First validation
       mockFetch.mockResolvedValueOnce({
@@ -514,6 +556,7 @@ Content here.
       const result1 = await validateLinks([testFile], {
         checkExternal: true,
         checkContentFreshness: true,
+        cacheDir: join(tempDir, 'freshness-cache'),
       });
 
       expect(result1.brokenLinks).toBe(0);
@@ -531,6 +574,7 @@ Content here.
       const result2 = await validateLinks([testFile], {
         checkExternal: true,
         checkContentFreshness: true,
+        cacheDir: join(tempDir, 'freshness-cache'),
       });
 
       // Content change alone doesn't make it stale unless there are other factors

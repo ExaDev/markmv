@@ -650,19 +650,19 @@ export async function validateCommand(
       console.log(`Cache performance: ${result.gitInfo.cacheHitRate}% hit rate${savedTime}`);
     }
     console.log();
-    
+
     // Show freshness information if enabled
     if (options.checkContentFreshness) {
       const staleCount = result.staleLinks || 0;
       const freshCount = result.freshLinks || 0;
       const externalTotal = staleCount + freshCount;
-      
+
       if (externalTotal > 0) {
         console.log(`Fresh external links: ${freshCount}`);
         console.log(`Stale external links: ${staleCount}`);
       }
     }
-    
+
     console.log(`Processing time: ${result.processingTime}ms\n`);
 
     if (result.fileErrors.length > 0) {
@@ -704,7 +704,10 @@ export async function validateCommand(
             if (brokenLink.reason && options.verbose) {
               console.log(`       Reason: ${brokenLink.reason}`);
             }
-            if (brokenLink.freshnessInfo && (options.verbose || brokenLink.reason === 'content-stale')) {
+            if (
+              brokenLink.freshnessInfo &&
+              (options.verbose || brokenLink.reason === 'content-stale')
+            ) {
               const info = brokenLink.freshnessInfo;
               if (info.warning) {
                 console.log(`       Warning: ${info.warning}`);
@@ -734,7 +737,10 @@ export async function validateCommand(
           if (brokenLink.reason && options.verbose) {
             console.log(`       Reason: ${brokenLink.reason}`);
           }
-          if (brokenLink.freshnessInfo && (options.verbose || brokenLink.reason === 'content-stale')) {
+          if (
+            brokenLink.freshnessInfo &&
+            (options.verbose || brokenLink.reason === 'content-stale')
+          ) {
             const info = brokenLink.freshnessInfo;
             if (info.warning) {
               console.log(`       Warning: ${info.warning}`);

@@ -280,7 +280,11 @@ program
   .option('--strict-internal', 'Treat missing internal files as errors', true)
   .option('--check-claude-imports', 'Validate Claude import paths', true)
   .option('--check-circular', 'Check for circular references in file dependencies', false)
-  .option('--check-content-freshness', 'Enable content freshness detection for external links', false)
+  .option(
+    '--check-content-freshness',
+    'Enable content freshness detection for external links',
+    false
+  )
   .option('--freshness-threshold <days>', 'Content staleness threshold in days', parseInt, 730)
   .option('--max-depth <number>', 'Maximum depth to traverse subdirectories', parseInt)
   .option('--only-broken', 'Show only broken links, not all validation results', true)

@@ -225,7 +225,7 @@ export class LinkValidator {
 
       // For freshness detection, we need to make a GET request to get content
       const method = this.options.checkContentFreshness ? 'GET' : 'HEAD';
-      
+
       const response = await fetch(link.href, {
         method,
         signal: controller.signal,
@@ -249,7 +249,7 @@ export class LinkValidator {
       if (this.options.checkContentFreshness && this.freshnessDetector) {
         const content = method === 'GET' ? await response.text() : '';
         const headers: Record<string, string> = {};
-        
+
         // Convert Headers to plain object
         response.headers.forEach((value, key) => {
           headers[key] = value;

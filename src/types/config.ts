@@ -99,7 +99,12 @@ export interface BrokenLink {
   /** The broken link */
   link: import('./links.js').MarkdownLink;
   /** Reason the link is broken */
-  reason: 'file-not-found' | 'external-error' | 'invalid-format' | 'circular-reference' | 'content-stale';
+  reason:
+    | 'file-not-found'
+    | 'external-error'
+    | 'invalid-format'
+    | 'circular-reference'
+    | 'content-stale';
   /** Additional error details */
   details?: string;
   /** Content freshness information for external links */

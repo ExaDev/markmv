@@ -1,7 +1,7 @@
 /**
  * Content freshness detection utilities for external links.
  *
- * @fileoverview Detects potentially stale external content even when links are valid
+ * @file Detects potentially stale external content even when links are valid
  */
 
 import { createHash } from 'node:crypto';
@@ -9,9 +9,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { existsSync } from 'node:fs';
 
-/**
- * Configuration for content freshness detection.
- */
+/** Configuration for content freshness detection. */
 export interface FreshnessConfig {
   /** Enable freshness detection */
   enabled: boolean;
@@ -27,9 +25,7 @@ export interface FreshnessConfig {
   detectContentChanges: boolean;
 }
 
-/**
- * Information about content freshness.
- */
+/** Information about content freshness. */
 export interface ContentFreshnessInfo {
   /** URL being checked */
   url: string;
@@ -55,9 +51,7 @@ export interface ContentFreshnessInfo {
   suggestion?: string;
 }
 
-/**
- * Cached content information.
- */
+/** Cached content information. */
 interface CachedContentInfo {
   /** URL */
   url: string;
@@ -71,9 +65,7 @@ interface CachedContentInfo {
   headers?: Record<string, string>;
 }
 
-/**
- * HTTP response information needed for freshness detection.
- */
+/** HTTP response information needed for freshness detection. */
 export interface ResponseInfo {
   /** Response status code */
   status: number;
@@ -85,9 +77,14 @@ export interface ResponseInfo {
   finalUrl: string;
 }
 
-/**
- * Content freshness detector for external links.
- */
+/** Content freshness detector for external links. */
+
+/** Narrow untrusted cache-file JSON entries into CachedContentInfo values. */
+function isCachedContentInfo(value: unknown): value is CachedContentInfo {
+  if (typeof value !== 'object' || value === null) return false;
+  return 'url' in value && 'contentHash' in value && 'lastChecked' in value;
+}
+
 export class ContentFreshnessDetector {
   private config: FreshnessConfig;
   private cacheFile: string;
@@ -126,17 +123,16 @@ export class ContentFreshnessDetector {
     this.cacheFile = join(this.config.cacheDir, 'content-freshness.json');
   }
 
-  /**
-   * Check if freshness detection is enabled.
-   */
+  /** Check if freshness detection is enabled. */
   isEnabled(): boolean {
     return this.config.enabled;
   }
 
-  /**
-   * Analyze content freshness for a given URL response.
-   */
-  async analyzeContentFreshness(url: string, response: ResponseInfo): Promise<ContentFreshnessInfo> {
+  /** Analyze content freshness for a given URL response. */
+  async analyzeContentFreshness(
+    url: string,
+    response: ResponseInfo
+  ): Promise<ContentFreshnessInfo> {
     if (!this.config.enabled) {
       return {
         url,
@@ -148,7 +144,7 @@ export class ContentFreshnessDetector {
 
     const domain = this.extractDomain(url);
     const thresholdMs = this.config.domainThresholds[domain] ?? this.config.defaultThreshold;
-    
+
     // Initialize result
     const result: ContentFreshnessInfo = {
       url,
@@ -162,7 +158,7 @@ export class ContentFreshnessDetector {
     if (lastModified) {
       result.lastModified = lastModified;
       result.ageMs = Date.now() - lastModified.getTime();
-      
+
       if (result.ageMs > thresholdMs) {
         result.isFresh = false;
         result.warning = `Content is ${this.formatAge(result.ageMs)} old`;
@@ -188,7 +184,7 @@ export class ContentFreshnessDetector {
       if (cached && cached.contentHash !== contentHash) {
         result.previousContentHash = cached.contentHash;
         result.hasContentChanged = true;
-        
+
         if (!result.warning) {
           result.warning = 'Content has changed since last validation';
           result.suggestion = 'Review changes to ensure links are still relevant';
@@ -202,9 +198,7 @@ export class ContentFreshnessDetector {
     return result;
   }
 
-  /**
-   * Extract domain from URL.
-   */
+  /** Extract domain from URL. */
   private extractDomain(url: string): string {
     try {
       return new URL(url).hostname;
@@ -213,9 +207,7 @@ export class ContentFreshnessDetector {
     }
   }
 
-  /**
-   * Parse Last-Modified header.
-   */
+  /** Parse Last-Modified header. */
   private parseLastModified(headers: Record<string, string>): Date | undefined {
     const lastModified = headers['last-modified'] || headers['Last-Modified'];
     if (!lastModified) {
@@ -229,9 +221,7 @@ export class ContentFreshnessDetector {
     }
   }
 
-  /**
-   * Detect stale patterns in content.
-   */
+  /** Detect stale patterns in content. */
   private detectStalePatterns(content: string): string[] {
     const lowerContent = content.toLowerCase();
     const detected: string[] = [];
@@ -245,9 +235,7 @@ export class ContentFreshnessDetector {
     return detected;
   }
 
-  /**
-   * Calculate content hash for change detection.
-   */
+  /** Calculate content hash for change detection. */
   private calculateContentHash(content: string): string {
     // Normalize content to reduce false positives
     const normalized = content
@@ -262,26 +250,26 @@ export class ContentFreshnessDetector {
     return createHash('sha256').update(normalized, 'utf8').digest('hex');
   }
 
-  /**
-   * Format age in human-readable format.
-   */
+  /** Format age in human-readable format. */
   private formatAge(ageMs: number): string {
     const years = Math.floor(ageMs / (365 * 24 * 60 * 60 * 1000));
     const months = Math.floor((ageMs % (365 * 24 * 60 * 60 * 1000)) / (30 * 24 * 60 * 60 * 1000));
     const days = Math.floor((ageMs % (30 * 24 * 60 * 60 * 1000)) / (24 * 60 * 60 * 1000));
 
     if (years > 0) {
-      return months > 0 ? `${years} year${years > 1 ? 's' : ''}, ${months} month${months > 1 ? 's' : ''}` : `${years} year${years > 1 ? 's' : ''}`;
+      return months > 0
+        ? `${years} year${years > 1 ? 's' : ''}, ${months} month${months > 1 ? 's' : ''}`
+        : `${years} year${years > 1 ? 's' : ''}`;
     }
     if (months > 0) {
-      return days > 0 ? `${months} month${months > 1 ? 's' : ''}, ${days} day${days > 1 ? 's' : ''}` : `${months} month${months > 1 ? 's' : ''}`;
+      return days > 0
+        ? `${months} month${months > 1 ? 's' : ''}, ${days} day${days > 1 ? 's' : ''}`
+        : `${months} month${months > 1 ? 's' : ''}`;
     }
     return `${days} day${days > 1 ? 's' : ''}`;
   }
 
-  /**
-   * Get cached content information.
-   */
+  /** Get cached content information. */
   private async getCachedContent(url: string): Promise<CachedContentInfo | undefined> {
     try {
       if (!existsSync(this.cacheFile)) {
@@ -295,9 +283,7 @@ export class ContentFreshnessDetector {
     }
   }
 
-  /**
-   * Update cached content information.
-   */
+  /** Update cached content information. */
   private async updateCachedContent(
     url: string,
     contentHash: string,
@@ -309,7 +295,7 @@ export class ContentFreshnessDetector {
       await mkdir(dirname(this.cacheFile), { recursive: true });
 
       let cacheData: Record<string, CachedContentInfo> = {};
-      
+
       if (existsSync(this.cacheFile)) {
         try {
           cacheData = JSON.parse(await readFile(this.cacheFile, 'utf8'));
@@ -325,7 +311,7 @@ export class ContentFreshnessDetector {
         ...(lastModified && { lastModified: lastModified.getTime() }),
         headers: {
           'last-modified': headers['last-modified'] || headers['Last-Modified'] || '',
-          'etag': headers['etag'] || headers['ETag'] || '',
+          etag: headers['etag'] || headers['ETag'] || '',
           'cache-control': headers['cache-control'] || headers['Cache-Control'] || '',
         },
       };
@@ -334,41 +320,45 @@ export class ContentFreshnessDetector {
     } catch (error) {
       // Fail silently for cache updates
       if (process.env.NODE_ENV !== 'test') {
-        console.warn(`Warning: Failed to update content freshness cache: ${error instanceof Error ? error.message : String(error)}`);
+        console.warn(
+          `Warning: Failed to update content freshness cache: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
     }
   }
 
-  /**
-   * Clear the content freshness cache.
-   */
+  /** Clear the content freshness cache. */
   async clearCache(): Promise<void> {
     try {
       if (existsSync(this.cacheFile)) {
         await writeFile(this.cacheFile, '{}', 'utf8');
       }
     } catch (error) {
-      throw new Error(`Failed to clear content freshness cache: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `Failed to clear content freshness cache: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error }
+      );
     }
   }
 
-  /**
-   * Get cache statistics.
-   */
+  /** Get cache statistics. */
   async getCacheStats(): Promise<{ totalEntries: number; oldestEntry?: Date; newestEntry?: Date }> {
     try {
       if (!existsSync(this.cacheFile)) {
         return { totalEntries: 0 };
       }
 
-      const cacheData = JSON.parse(await readFile(this.cacheFile, 'utf8'));
-      const entries = Object.values(cacheData) as CachedContentInfo[];
-      
+      const cacheData: unknown = JSON.parse(await readFile(this.cacheFile, 'utf8'));
+      if (typeof cacheData !== 'object' || cacheData === null) {
+        return { totalEntries: 0 };
+      }
+      const entries = Object.values(cacheData).filter(isCachedContentInfo);
+
       if (entries.length === 0) {
         return { totalEntries: 0 };
       }
 
-      const timestamps = entries.map(entry => entry.lastChecked);
+      const timestamps = entries.map((entry) => entry.lastChecked);
       return {
         totalEntries: entries.length,
         oldestEntry: new Date(Math.min(...timestamps)),
@@ -380,9 +370,7 @@ export class ContentFreshnessDetector {
   }
 }
 
-/**
- * Default freshness configuration.
- */
+/** Default freshness configuration. */
 export const DEFAULT_FRESHNESS_CONFIG: FreshnessConfig = {
   enabled: true,
   defaultThreshold: 2 * 365 * 24 * 60 * 60 * 1000, // 2 years

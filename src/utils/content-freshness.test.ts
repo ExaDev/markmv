@@ -1,14 +1,18 @@
 /**
  * Tests for content freshness detection system.
  *
- * @fileoverview Tests for detecting stale external content and last-modified tracking
+ * @file Tests for detecting stale external content and last-modified tracking
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ContentFreshnessDetector, DEFAULT_FRESHNESS_CONFIG, type ResponseInfo } from './content-freshness.js';
+import {
+  ContentFreshnessDetector,
+  DEFAULT_FRESHNESS_CONFIG,
+  type ResponseInfo,
+} from './content-freshness.js';
 
 describe('ContentFreshnessDetector', () => {
   let tempDir: string;
@@ -45,7 +49,9 @@ describe('ContentFreshnessDetector', () => {
       expect(DEFAULT_FRESHNESS_CONFIG.enabled).toBe(true);
       expect(DEFAULT_FRESHNESS_CONFIG.defaultThreshold).toBe(2 * 365 * 24 * 60 * 60 * 1000);
       expect(DEFAULT_FRESHNESS_CONFIG.stalePatterns).toContain('deprecated');
-      expect(DEFAULT_FRESHNESS_CONFIG.domainThresholds['firebase.google.com']).toBe(1 * 365 * 24 * 60 * 60 * 1000);
+      expect(DEFAULT_FRESHNESS_CONFIG.domainThresholds['firebase.google.com']).toBe(
+        1 * 365 * 24 * 60 * 60 * 1000
+      );
     });
   });
 
@@ -97,7 +103,10 @@ describe('ContentFreshnessDetector', () => {
         finalUrl: 'https://example.com/deprecated',
       };
 
-      const result = await detector.analyzeContentFreshness('https://example.com/deprecated', response);
+      const result = await detector.analyzeContentFreshness(
+        'https://example.com/deprecated',
+        response
+      );
 
       expect(result.isFresh).toBe(false);
       expect(result.stalePatterns).toContain('deprecated');
@@ -140,7 +149,10 @@ describe('ContentFreshnessDetector', () => {
         finalUrl: 'https://example.com/no-header',
       };
 
-      const result = await detector.analyzeContentFreshness('https://example.com/no-header', response);
+      const result = await detector.analyzeContentFreshness(
+        'https://example.com/no-header',
+        response
+      );
 
       expect(result.lastModified).toBeUndefined();
       expect(result.ageMs).toBeUndefined();
@@ -155,7 +167,10 @@ describe('ContentFreshnessDetector', () => {
         finalUrl: 'https://example.com/multi-stale',
       };
 
-      const result = await detector.analyzeContentFreshness('https://example.com/multi-stale', response);
+      const result = await detector.analyzeContentFreshness(
+        'https://example.com/multi-stale',
+        response
+      );
 
       expect(result.isFresh).toBe(false);
       expect(result.stalePatterns).toContain('this page has moved');
@@ -167,7 +182,7 @@ describe('ContentFreshnessDetector', () => {
   describe('Content Change Detection', () => {
     it('should detect content changes between validations', async () => {
       const url = 'https://example.com/changing';
-      
+
       // First validation
       const response1: ResponseInfo = {
         status: 200,
@@ -195,7 +210,7 @@ describe('ContentFreshnessDetector', () => {
 
     it('should not flag content as changed for minor whitespace differences', async () => {
       const url = 'https://example.com/whitespace';
-      
+
       // First validation
       const response1: ResponseInfo = {
         status: 200,
@@ -220,7 +235,7 @@ describe('ContentFreshnessDetector', () => {
 
     it('should normalize content for consistent hashing', async () => {
       const url = 'https://example.com/normalize';
-      
+
       const contentWithVariations = `
         <html>
           <head>
@@ -254,7 +269,7 @@ describe('ContentFreshnessDetector', () => {
         status: 200,
         headers: {
           'last-modified': new Date().toUTCString(),
-          'etag': '"test-etag"',
+          etag: '"test-etag"',
         },
         content: 'Cached content',
         finalUrl: url,
@@ -350,7 +365,10 @@ describe('ContentFreshnessDetector', () => {
     it('should format age in human-readable format', async () => {
       const testCases = [
         { ageMs: 2 * 365 * 24 * 60 * 60 * 1000, expected: '2 years' },
-        { ageMs: 1 * 365 * 24 * 60 * 60 * 1000 + 6 * 30 * 24 * 60 * 60 * 1000, expected: '1 year, 6 months' },
+        {
+          ageMs: 1 * 365 * 24 * 60 * 60 * 1000 + 6 * 30 * 24 * 60 * 60 * 1000,
+          expected: '1 year, 6 months',
+        },
         { ageMs: 3 * 30 * 24 * 60 * 60 * 1000, expected: '3 months' },
         { ageMs: 15 * 24 * 60 * 60 * 1000, expected: '15 days' },
       ];
@@ -366,8 +384,11 @@ describe('ContentFreshnessDetector', () => {
           finalUrl: 'https://example.com/age-test',
         };
 
-        const result = await detector.analyzeContentFreshness('https://example.com/age-test', response);
-        
+        const result = await detector.analyzeContentFreshness(
+          'https://example.com/age-test',
+          response
+        );
+
         if (!result.isFresh && result.warning) {
           expect(result.warning).toContain(testCase.expected);
         }
@@ -388,7 +409,10 @@ describe('ContentFreshnessDetector', () => {
         finalUrl: 'https://example.com/disabled',
       };
 
-      const result = await disabledDetector.analyzeContentFreshness('https://example.com/disabled', response);
+      const result = await disabledDetector.analyzeContentFreshness(
+        'https://example.com/disabled',
+        response
+      );
 
       expect(result.isFresh).toBe(true);
       expect(result.stalePatterns).toHaveLength(0);
@@ -405,7 +429,10 @@ describe('ContentFreshnessDetector', () => {
         finalUrl: 'https://example.com/case-test',
       };
 
-      const result = await detector.analyzeContentFreshness('https://example.com/case-test', response);
+      const result = await detector.analyzeContentFreshness(
+        'https://example.com/case-test',
+        response
+      );
 
       expect(result.isFresh).toBe(false);
       expect(result.stalePatterns).toContain('deprecated');
@@ -434,7 +461,7 @@ describe('ContentFreshnessDetector', () => {
 
     it('should handle concurrent analyses', async () => {
       const urls = Array.from({ length: 10 }, (_, i) => `https://example.com/concurrent-${i}`);
-      const promises = urls.map(url => {
+      const promises = urls.map((url) => {
         const response: ResponseInfo = {
           status: 200,
           headers: {},
