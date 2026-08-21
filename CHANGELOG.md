@@ -1,3 +1,17 @@
+## [1.32.0](https://github.com/ExaDev/markmv/compare/v1.31.0...v1.32.0) (2026-08-21)
+
+### Features
+
+* implement link graph visualization with multiple output formats ([e498a1e](https://github.com/ExaDev/markmv/commit/e498a1e159b2b07d11c4d604c5c77847bf0c1e60)), closes [#21](https://github.com/ExaDev/markmv/issues/21)
+
+### Bug Fixes
+
+* replace graph format cast and non-null assertion, raise CLI count ([350cc86](https://github.com/ExaDev/markmv/commit/350cc86853ffe1208c4dd4b063152eaad7a5430a))
+
+### Styles
+
+* format the stitched graph command registration ([ad43f0d](https://github.com/ExaDev/markmv/commit/ad43f0d0e562b2b0f1b29217c6109d73033fc5f6))
+
 ## [1.31.0](https://github.com/ExaDev/markmv/compare/v1.30.1...v1.31.0) (2026-08-21)
 
 ### Features
