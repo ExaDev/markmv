@@ -1,3 +1,16 @@
+## [1.35.0](https://github.com/ExaDev/markmv/compare/v1.34.0...v1.35.0) (2026-08-21)
+
+### Features
+
+* add authentication-aware link validation ([#34](https://github.com/ExaDev/markmv/issues/34)) ([f48f258](https://github.com/ExaDev/markmv/commit/f48f2583fc34daaf3a4430bced5722bfefc4ef80))
+* Add comprehensive web clipper functionality for issue [#38](https://github.com/ExaDev/markmv/issues/38) ([c3ae15f](https://github.com/ExaDev/markmv/commit/c3ae15f4374970cceca1218fbdaed5cde88c54e4))
+* add content freshness detection for external links ([#35](https://github.com/ExaDev/markmv/issues/35)) ([22f74ac](https://github.com/ExaDev/markmv/commit/22f74acadcb4e254ca7b12183722913325a99c1c))
+
+### Bug Fixes
+
+* repair freshness module lint, cache guard, and test isolation ([e9312f8](https://github.com/ExaDev/markmv/commit/e9312f8a891ef1cf7d8688c53a39871c85cf5741))
+* retype web clipper mocks and refresh dependencies for the clip feature ([36a3e20](https://github.com/ExaDev/markmv/commit/36a3e2093f097a1917f705f930f0e12d0e0b2f61))
+
 ## [1.34.0](https://github.com/ExaDev/markmv/compare/v1.33.0...v1.34.0) (2026-08-21)
 
 ### Features
