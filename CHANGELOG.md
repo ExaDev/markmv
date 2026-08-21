@@ -1,3 +1,22 @@
+## [1.34.0](https://github.com/ExaDev/markmv/compare/v1.33.0...v1.34.0) (2026-08-21)
+
+### Features
+
+* add standalone check-links command for external link validation ([071500c](https://github.com/ExaDev/markmv/commit/071500cbefb8a4f22550f353bb32fbbdd25e1bf6))
+
+### Bug Fixes
+
+* reconcile check-links CLI options with commander's actual shape ([9916ef6](https://github.com/ExaDev/markmv/commit/9916ef695e87f349bfa34cd9f3d93257a4836c5b))
+* resolve TypeScript linting errors in check-links command ([817d2d0](https://github.com/ExaDev/markmv/commit/817d2d0fe1b76434851881907c465e2e7cedae7b))
+
+### Styles
+
+* format check-links tests ([4cfce78](https://github.com/ExaDev/markmv/commit/4cfce787994bb57dc213ff19ae79b03b95c20811))
+
+### Tests
+
+* add comprehensive tests for check-links command ([1003c7c](https://github.com/ExaDev/markmv/commit/1003c7c60f167aa55fa346e43fe44a35a8cf1411)), closes [#39](https://github.com/ExaDev/markmv/issues/39)
+
 ## [1.33.0](https://github.com/ExaDev/markmv/compare/v1.32.0...v1.33.0) (2026-08-21)
 
 ### Features
