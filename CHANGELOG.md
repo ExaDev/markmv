@@ -1,3 +1,9 @@
+## [1.30.1](https://github.com/ExaDev/markmv/compare/v1.30.0...v1.30.1) (2026-08-21)
+
+### Continuous Integration
+
+* publish to npm via OIDC trusted publishing, rename workflow to ci.yml ([6f54ad0](https://github.com/ExaDev/markmv/commit/6f54ad062388e6b2af4afa51e469278a1c8a7575))
+
 ## [1.30.0](https://github.com/ExaDev/markmv/compare/v1.29.1...v1.30.0) (2026-08-21)
 
 ### Features
