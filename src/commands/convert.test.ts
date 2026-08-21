@@ -397,7 +397,7 @@ External links (should not be converted):
       try {
         await convertCommand([testFile], {
           linkStyle: 'combined',
-          verbose: true
+          verbose: true,
         });
       } finally {
         process.exit = originalExit;
@@ -405,18 +405,18 @@ External links (should not be converted):
       }
 
       expect(exitCode).toBe(0);
-      expect(logs.some(log => log.includes('Files modified: 1'))).toBe(true);
-      expect(logs.some(log => log.includes('Link style: converted to combined'))).toBe(true);
+      expect(logs.some((log) => log.includes('Files modified: 1'))).toBe(true);
+      expect(logs.some((log) => log.includes('Link style: converted to combined'))).toBe(true);
 
       // Verify the file was actually converted
       const { readFile } = await import('node:fs/promises');
       const convertedContent = await readFile(testFile, 'utf-8');
-      
+
       // Should convert internal links to combined format
       expect(convertedContent).toContain('[@./backend/guide.md](./backend/guide.md)');
       expect(convertedContent).toContain('[@./frontend/component.md](./frontend/component.md)');
       expect(convertedContent).toContain('[@./docs/api.md](./docs/api.md)');
-      
+
       // Should leave external links unchanged
       expect(convertedContent).toContain('[GitHub](https://github.com)');
       expect(convertedContent).toContain('[Documentation](https://docs.example.com)');
@@ -453,7 +453,7 @@ Mixed content:
       try {
         await convertCommand([testFile], {
           linkStyle: 'combined',
-          verbose: true
+          verbose: true,
         });
       } finally {
         process.exit = originalExit;
@@ -461,17 +461,17 @@ Mixed content:
       }
 
       expect(exitCode).toBe(0);
-      expect(logs.some(log => log.includes('Files modified: 1'))).toBe(true);
+      expect(logs.some((log) => log.includes('Files modified: 1'))).toBe(true);
 
       // Verify conversion happened only for standard links
       const { readFile } = await import('node:fs/promises');
       const convertedContent = await readFile(testFile, 'utf-8');
-      
+
       // Already combined links should remain unchanged
       expect(convertedContent).toContain('[@./backend/guide.md](./backend/guide.md)');
       expect(convertedContent).toContain('[@./frontend/component.md](./frontend/component.md)');
       expect(convertedContent).toContain('[@./already-combined.md](./already-combined.md)');
-      
+
       // Standard link should be converted
       expect(convertedContent).toContain('[@./standard.md](./standard.md)');
     });
@@ -503,7 +503,7 @@ Mixed content:
       try {
         await convertCommand([testFile], {
           linkStyle: 'combined',
-          verbose: true
+          verbose: true,
         });
       } finally {
         process.exit = originalExit;
@@ -511,9 +511,9 @@ Mixed content:
       }
 
       expect(exitCode).toBe(0);
-      expect(logs.some(log => log.includes('No changes needed'))).toBe(true);
-      expect(logs.some(log => log.includes('Files modified: 0'))).toBe(true);
-      expect(logs.some(log => log.includes('Total changes: 0'))).toBe(true);
+      expect(logs.some((log) => log.includes('No changes needed'))).toBe(true);
+      expect(logs.some((log) => log.includes('Files modified: 0'))).toBe(true);
+      expect(logs.some((log) => log.includes('Total changes: 0'))).toBe(true);
     });
 
     it('should convert combined format back to standard markdown', async () => {
@@ -547,7 +547,7 @@ External links:
       try {
         await convertCommand([testFile], {
           linkStyle: 'markdown',
-          verbose: true
+          verbose: true,
         });
       } finally {
         process.exit = originalExit;
@@ -555,18 +555,18 @@ External links:
       }
 
       expect(exitCode).toBe(0);
-      expect(logs.some(log => log.includes('Files modified: 1'))).toBe(true);
-      expect(logs.some(log => log.includes('Link style: converted to markdown'))).toBe(true);
+      expect(logs.some((log) => log.includes('Files modified: 1'))).toBe(true);
+      expect(logs.some((log) => log.includes('Link style: converted to markdown'))).toBe(true);
 
       // Verify conversion back to standard markdown
       const { readFile } = await import('node:fs/promises');
       const convertedContent = await readFile(testFile, 'utf-8');
-      
+
       // Should convert back to standard markdown (remove @)
       expect(convertedContent).toContain('[./backend/guide.md](./backend/guide.md)');
       expect(convertedContent).toContain('[./frontend/component.md](./frontend/component.md)');
       expect(convertedContent).toContain('[./docs/api.md](./docs/api.md)');
-      
+
       // External links should remain unchanged
       expect(convertedContent).toContain('[GitHub](https://github.com)');
     });
@@ -601,7 +601,7 @@ External links (should not be converted):
       try {
         await convertCommand([testFile], {
           linkStyle: 'claude',
-          verbose: true
+          verbose: true,
         });
       } finally {
         process.exit = originalExit;
@@ -609,17 +609,17 @@ External links (should not be converted):
       }
 
       expect(exitCode).toBe(0);
-      expect(logs.some(log => log.includes('Files modified: 1'))).toBe(true);
-      expect(logs.some(log => log.includes('Link style: converted to claude'))).toBe(true);
+      expect(logs.some((log) => log.includes('Files modified: 1'))).toBe(true);
+      expect(logs.some((log) => log.includes('Link style: converted to claude'))).toBe(true);
 
       // Verify conversion to Claude format
       const { readFile } = await import('node:fs/promises');
       const convertedContent = await readFile(testFile, 'utf-8');
-      
+
       // Should convert to Claude import format
       expect(convertedContent).toContain('@./backend/guide.md');
       expect(convertedContent).toContain('@./frontend/component.md');
-      
+
       // External links should remain unchanged
       expect(convertedContent).toContain('[GitHub](https://github.com)');
     });
@@ -654,7 +654,7 @@ External links (should not be converted):
       try {
         await convertCommand([testFile], {
           linkStyle: 'wikilink',
-          verbose: true
+          verbose: true,
         });
       } finally {
         process.exit = originalExit;
@@ -662,17 +662,17 @@ External links (should not be converted):
       }
 
       expect(exitCode).toBe(0);
-      expect(logs.some(log => log.includes('Files modified: 1'))).toBe(true);
-      expect(logs.some(log => log.includes('Link style: converted to wikilink'))).toBe(true);
+      expect(logs.some((log) => log.includes('Files modified: 1'))).toBe(true);
+      expect(logs.some((log) => log.includes('Link style: converted to wikilink'))).toBe(true);
 
       // Verify conversion to wikilink format
       const { readFile } = await import('node:fs/promises');
       const convertedContent = await readFile(testFile, 'utf-8');
-      
+
       // Should convert to wikilink format (may be escaped in markdown output)
       expect(convertedContent).toContain('\\[\\[./backend/guide.md]]');
       expect(convertedContent).toContain('\\[\\[./frontend/component.md]]');
-      
+
       // External links should remain unchanged
       expect(convertedContent).toContain('[GitHub](https://github.com)');
     });
@@ -704,7 +704,7 @@ External links (should not be converted):
         await convertCommand([testFile], {
           linkStyle: 'combined',
           dryRun: true,
-          verbose: true
+          verbose: true,
         });
       } finally {
         process.exit = originalExit;
@@ -712,14 +712,16 @@ External links (should not be converted):
       }
 
       expect(exitCode).toBe(0);
-      expect(logs.some(log => log.includes('Dry run - no files were actually modified'))).toBe(true);
-      expect(logs.some(log => log.includes('Files modified: 0'))).toBe(true);
-      expect(logs.some(log => log.includes('Total changes:'))).toBe(true);
+      expect(logs.some((log) => log.includes('Dry run - no files were actually modified'))).toBe(
+        true
+      );
+      expect(logs.some((log) => log.includes('Files modified: 0'))).toBe(true);
+      expect(logs.some((log) => log.includes('Total changes:'))).toBe(true);
 
       // Verify file was not actually modified
       const { readFile } = await import('node:fs/promises');
       const unchangedContent = await readFile(testFile, 'utf-8');
-      
+
       // Should still contain original format
       expect(unchangedContent).toContain('[Standard Link](./file.md)');
       expect(unchangedContent).toContain('[Another Link](./another.md)');
@@ -756,7 +758,7 @@ External links (should not be converted):
       try {
         await convertCommand([join(testDir, '*.md')], {
           linkStyle: 'combined',
-          verbose: true
+          verbose: true,
         });
       } finally {
         process.exit = originalExit;
@@ -764,9 +766,9 @@ External links (should not be converted):
       }
 
       expect(exitCode).toBe(0);
-      expect(logs.some(log => log.includes('Files processed: 3'))).toBe(true);
-      expect(logs.some(log => log.includes('Files modified: 3'))).toBe(true);
-      expect(logs.some(log => log.includes('Total changes: 6'))).toBe(true); // 2 internal links per file
+      expect(logs.some((log) => log.includes('Files processed: 3'))).toBe(true);
+      expect(logs.some((log) => log.includes('Files modified: 3'))).toBe(true);
+      expect(logs.some((log) => log.includes('Total changes: 6'))).toBe(true); // 2 internal links per file
 
       // Verify all files were converted
       const { readFile } = await import('node:fs/promises');
