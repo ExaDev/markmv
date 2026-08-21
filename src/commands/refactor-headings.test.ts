@@ -14,7 +14,7 @@ describe('refactorHeadings', () => {
     // Create real temporary directory for testing
     testDir = join(tmpdir(), `markmv-test-${Date.now()}`);
     await mkdir(testDir, { recursive: true });
-    
+
     testFile1 = join(testDir, 'file1.md');
     testFile2 = join(testDir, 'file2.md');
   });
@@ -75,7 +75,7 @@ Duplicate heading for testing.
       expect(result.filesProcessed).toBe(1);
       expect(result.headingsChanged).toBe(2);
       expect(result.headingChanges).toHaveLength(2);
-      
+
       // Verify heading changes
       expect(result.headingChanges[0]).toEqual({
         filePath: testFile1,
@@ -124,7 +124,7 @@ Duplicate heading for testing.
       const result = await refactorHeadings([testFile1], options);
 
       expect(result.headingsChanged).toBe(2); // Only exact text matches: "Installation" and "Installation"
-      expect(result.headingChanges.map(c => c.level)).toEqual([1, 2]);
+      expect(result.headingChanges.map((c) => c.level)).toEqual([1, 2]);
     });
 
     it('should skip files with no matching headings', async () => {
@@ -149,7 +149,7 @@ Content here.
       expect(result.filesProcessed).toBe(1);
       expect(result.headingsChanged).toBe(0);
       expect(result.headingChanges).toHaveLength(0);
-      
+
       // File should not be modified
       const unchangedContent = await readFile(testFile1, 'utf-8');
       expect(unchangedContent).toBe(testContent);
@@ -264,7 +264,7 @@ Content here.
       const result = await refactorHeadings([testFile1], options);
 
       expect(result.headingsChanged).toBe(1);
-      
+
       // File should not be modified
       const unchangedContent = await readFile(testFile1, 'utf-8');
       expect(unchangedContent).toBe(testContent);
@@ -294,7 +294,7 @@ See [getting started](#getting-started) guide.
       expect(result.linksUpdated).toBe(1);
       expect(result.headingChanges).toHaveLength(1);
       expect(result.linkUpdates).toHaveLength(1);
-      
+
       // File should not be modified
       const unchangedContent = await readFile(testFile1, 'utf-8');
       expect(unchangedContent).toBe(testContent);
@@ -403,7 +403,7 @@ Content here.
       const result = await refactorHeadings([testFile1], options);
 
       expect(result.headingsChanged).toBe(1);
-      
+
       const modifiedContent = await readFile(testFile1, 'utf-8');
       expect(modifiedContent).toBe(expectedContent);
     });
