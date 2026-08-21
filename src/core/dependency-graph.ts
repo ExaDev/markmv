@@ -142,7 +142,18 @@ export class DependencyGraph {
 
   getDependents(filePath: string): string[] {
     const node = this.nodes.get(filePath);
-    return node ? Array.from(node.dependents) : [];
+    if (node) {
+      return Array.from(node.dependents);
+    }
+
+    // The target path has no graph node of its own (e.g. a non-markdown asset such as an image that is linked from markdown files but never parsed as one). Fall back to scanning the raw edges so dependents of such paths can still be discovered.
+    const dependents: string[] = [];
+    for (const [filePathWithDeps, dependencies] of this.edges) {
+      if (dependencies.has(filePath)) {
+        dependents.push(filePathWithDeps);
+      }
+    }
+    return dependents;
   }
 
   getTransitiveDependencies(filePath: string): string[] {
@@ -246,21 +257,22 @@ export class DependencyGraph {
 
   updateFilePath(oldPath: string, newPath: string): void {
     const node = this.nodes.get(oldPath);
-    if (!node) return;
 
-    // Update the node
-    node.path = newPath;
-    node.data.filePath = newPath;
+    // The path being renamed may not have its own graph node (e.g. a non-markdown asset that is linked from markdown files but was never parsed as one). References to it from other files' dependency sets still need to be rewritten below, so only the node-specific bookkeeping is skipped in that case.
+    if (node) {
+      node.path = newPath;
+      node.data.filePath = newPath;
 
-    // Move the node to new key
-    this.nodes.delete(oldPath);
-    this.nodes.set(newPath, node);
+      // Move the node to new key
+      this.nodes.delete(oldPath);
+      this.nodes.set(newPath, node);
 
-    // Update edges
-    const dependencies = this.edges.get(oldPath);
-    if (dependencies) {
-      this.edges.delete(oldPath);
-      this.edges.set(newPath, dependencies);
+      // Update edges
+      const dependencies = this.edges.get(oldPath);
+      if (dependencies) {
+        this.edges.delete(oldPath);
+        this.edges.set(newPath, dependencies);
+      }
     }
 
     // Update all references to this file in other nodes

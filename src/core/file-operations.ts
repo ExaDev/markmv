@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import type { ParsedMarkdownFile } from '../types/links.js';
 import type {
   MoveOperationOptions,
@@ -55,14 +56,19 @@ export class FileOperations {
   private linkValidator = new LinkValidator();
 
   /**
-   * Move a markdown file and update all links that reference it.
+   * Move a file (markdown, or a non-markdown asset such as an image) and update all links that
+   * reference it.
    *
    * This method performs an intelligent move operation that:
    *
    * 1. Validates the source and destination paths
    * 2. Discovers all files that link to the source file
    * 3. Updates all cross-references to maintain link integrity
-   * 4. Optionally performs a dry run to preview changes
+   * 4. If the source is markdown, also updates any links inside the moved file itself
+   * 5. Optionally performs a dry run to preview changes
+   *
+   * A non-markdown source (an image, for example) is moved as-is; only the markdown files that link
+   * to it are updated, since it has no markdown links of its own to refactor.
    *
    * @example
    *   ```typescript
@@ -74,6 +80,9 @@ export class FileOperations {
    *   // Move to directory (filename preserved)
    *   await fileOps.moveFile('guide.md', './docs/');
    *
+   *   // Move a linked image, updating any markdown files that reference it
+   *   await fileOps.moveFile('image.png', 'assets/image.png');
+   *
    *   // Dry run with verbose output
    *   const result = await fileOps.moveFile('api.md', 'reference/api.md', {
    *     dryRun: true,
@@ -81,7 +90,7 @@ export class FileOperations {
    *   });
    *   ```;
    *
-   * @param sourcePath - The current path of the markdown file to move
+   * @param sourcePath - The current path of the file to move
    * @param destinationPath - The target path (can be a directory)
    * @param options - Configuration options for the move operation
    *
@@ -112,8 +121,9 @@ export class FileOperations {
         };
       }
 
-      // Parse the source file and build dependency graph
-      const sourceFile = await this.linkParser.parseFile(sourcePath);
+      // Parse the source file (only meaningful for markdown, which may itself contain links to update) and build a dependency graph from the surrounding project's markdown files.
+      const sourceIsMarkdown = PathUtils.isMarkdownFile(sourcePath);
+      const sourceFile = sourceIsMarkdown ? await this.linkParser.parseFile(sourcePath) : null;
       const projectFiles = await this.discoverProjectFiles(sourcePath);
       const dependencyGraph = new DependencyGraph(projectFiles);
 
@@ -177,30 +187,32 @@ export class FileOperations {
         }
       }
 
-      // Update links within the moved file itself
-      try {
-        const selfRefactorResult = await this.linkRefactorer.refactorLinksForCurrentFileMove(
-          sourceFile,
-          resolvedDestination
-        );
+      // Update links within the moved file itself (a non-markdown asset has no internal links to refactor and is moved as raw bytes, so this step only applies to markdown sources).
+      if (sourceFile) {
+        try {
+          const selfRefactorResult = await this.linkRefactorer.refactorLinksForCurrentFileMove(
+            sourceFile,
+            resolvedDestination
+          );
 
-        if (selfRefactorResult.changes.length > 0) {
-          changes.push(...selfRefactorResult.changes);
+          if (selfRefactorResult.changes.length > 0) {
+            changes.push(...selfRefactorResult.changes);
 
-          if (!dryRun) {
-            transaction.addContentUpdate(
-              resolvedDestination,
-              selfRefactorResult.updatedContent,
-              'Update internal links in moved file'
-            );
+            if (!dryRun) {
+              transaction.addContentUpdate(
+                resolvedDestination,
+                selfRefactorResult.updatedContent,
+                'Update internal links in moved file'
+              );
+            }
           }
-        }
 
-        if (selfRefactorResult.errors.length > 0) {
-          warnings.push(...selfRefactorResult.errors);
+          if (selfRefactorResult.errors.length > 0) {
+            warnings.push(...selfRefactorResult.errors);
+          }
+        } catch (error) {
+          warnings.push(`Failed to update links in source file: ${error}`);
         }
-      } catch (error) {
-        warnings.push(`Failed to update links in source file: ${error}`);
       }
 
       // Execute transaction or return dry-run results
@@ -305,11 +317,13 @@ export class FileOperations {
         }
       }
 
-      // Parse all files and build comprehensive dependency graph
+      // Parse markdown sources and build a comprehensive dependency graph. Non-markdown assets (e.g. images) have no links of their own to parse or refactor, so they are moved as raw bytes and never added to the dependency graph as nodes; they can still be discovered as dependencies of the markdown files that link to them.
       const allFiles: ParsedMarkdownFile[] = [];
       const fileContents = new Map<string, string>(); // Store original file contents
 
       for (const { source } of resolvedMoves) {
+        if (!PathUtils.isMarkdownFile(source)) continue;
+
         const sourceFile = await this.linkParser.parseFile(source);
         allFiles.push(sourceFile);
 
@@ -322,9 +336,11 @@ export class FileOperations {
       const projectFiles = await this.discoverProjectFiles(resolvedMoves[0].source);
       const dependencyGraph = new DependencyGraph([...allFiles, ...projectFiles]);
 
-      // Store content for additional files that might be affected (excluding destination files that don't exist yet)
-      const sourceFilePaths = new Set(resolvedMoves.map((m) => m.source));
-      for (const filePath of sourceFilePaths) {
+      // Store content for every parsed file, not just the moved sources. Bystander files that link to several moved files are refactored once per move, and the transaction has not executed yet: re-reading a bystander from disk on a later move would see the original bytes and silently discard the link updates planned by earlier moves in the same batch.
+      const sourceFilePaths = new Set(
+        resolvedMoves.filter(({ source }) => PathUtils.isMarkdownFile(source)).map((m) => m.source)
+      );
+      for (const filePath of [...sourceFilePaths, ...projectFiles.map((f) => f.filePath)]) {
         if (!fileContents.has(filePath) && (await FileUtils.exists(filePath))) {
           const content = await FileUtils.readTextFile(filePath);
           fileContents.set(filePath, content);
@@ -387,6 +403,9 @@ export class FileOperations {
               if (!dryRun) {
                 transaction.addContentUpdate(actualDependentPath, refactorResult.updatedContent);
               }
+
+              // Update stored content so subsequent moves in this batch build on it
+              fileContents.set(actualDependentPath, refactorResult.updatedContent);
             }
 
             warnings.push(...refactorResult.errors);
@@ -513,14 +532,24 @@ export class FileOperations {
       return { valid: false, error: `Invalid destination path: ${destValidation.reason}` };
     }
 
-    // Check if source is a markdown file
-    if (!PathUtils.isMarkdownFile(sourcePath)) {
-      return { valid: false, error: 'Source must be a markdown file' };
+    // The source must exist before any project discovery is attempted. Without this check, a nonexistent path resolves to a directory (its own dirname) that project discovery then scans, which is unbounded when the path has no real parent directory to anchor to (e.g. a nonexistent file directly under the filesystem root).
+    if (!existsSync(sourcePath)) {
+      return { valid: false, error: `Source file does not exist: ${sourcePath}` };
     }
 
-    // Check if destination is a markdown file
-    if (!PathUtils.isMarkdownFile(destinationPath)) {
+    // A markdown file must move to another markdown file (so its own internal links stay meaningful), and a non-markdown asset must move to another non-markdown path (so it isn't silently reinterpreted as markdown). Moving markdown <-> non-markdown is not supported.
+    const sourceIsMarkdown = PathUtils.isMarkdownFile(sourcePath);
+    const destinationIsMarkdown = PathUtils.isMarkdownFile(destinationPath);
+
+    if (sourceIsMarkdown && !destinationIsMarkdown) {
       return { valid: false, error: 'Destination must be a markdown file' };
+    }
+
+    if (!sourceIsMarkdown && destinationIsMarkdown) {
+      return {
+        valid: false,
+        error: 'Destination must not be a markdown file when the source is not a markdown file',
+      };
     }
 
     // Check for same source and destination

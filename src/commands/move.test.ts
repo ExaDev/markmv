@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { moveCommand } from './move.js';
@@ -7,7 +7,7 @@ import { moveCommand } from './move.js';
 // Mock console methods to capture output
 const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
 const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-const mockConsoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+vi.spyOn(console, 'warn').mockImplementation(() => {});
 
 // Mock process.exit to prevent actual process termination
 const mockProcessExit = vi.spyOn(process, 'exit').mockImplementation((code?: number) => {
@@ -88,7 +88,7 @@ describe('Move Command', () => {
       expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('✅ Direct file:'));
     });
 
-    it('should exit when no markdown files found', async () => {
+    it('should exit when no files found', async () => {
       const nonExistentFile = join(testDir, 'nonexistent.md');
       const destFile = join(testDir, 'dest.md');
 
@@ -97,24 +97,21 @@ describe('Move Command', () => {
       );
 
       expect(mockConsoleError).toHaveBeenCalledWith(
-        '❌ No markdown files found matching the specified patterns'
+        '❌ No files found matching the specified patterns'
       );
       expect(mockProcessExit).toHaveBeenCalledWith(1);
     });
 
-    it('should warn about non-markdown files in direct paths', async () => {
+    it('should accept non-markdown files in direct paths', async () => {
       const txtFile = join(testDir, 'test.txt');
-      const destFile = join(testDir, 'dest.md');
+      const destFile = join(testDir, 'dest.txt');
 
       writeFileSync(txtFile, 'Some text content');
 
-      await expect(moveCommand([txtFile, destFile], { verbose: true })).rejects.toThrow(
-        'Process exit called with code 1'
-      );
+      await moveCommand([txtFile, destFile], { dryRun: true, verbose: true });
 
-      expect(mockConsoleWarn).toHaveBeenCalledWith(
-        expect.stringContaining('⚠️  Skipping non-markdown file:')
-      );
+      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('✅ Direct file:'));
+      expect(mockConsoleError).not.toHaveBeenCalledWith(expect.stringContaining('❌'));
     });
 
     it('should handle glob patterns', async () => {
@@ -288,7 +285,7 @@ describe('Move Command', () => {
       );
 
       expect(mockConsoleError).toHaveBeenCalledWith(
-        '❌ No markdown files found matching the specified patterns'
+        '❌ No files found matching the specified patterns'
       );
     });
   });
@@ -319,6 +316,25 @@ describe('Move Command', () => {
 
       // Should not throw any errors
       expect(mockConsoleError).not.toHaveBeenCalledWith(expect.stringContaining('❌'));
+    });
+
+    it('should move a linked image and update the markdown file that references it', async () => {
+      // Reproduces https://github.com/ExaDev/markmv/issues/71
+      const imageFile = join(testDir, 'image.png');
+      const renamedImageFile = join(testDir, 'image2.png');
+      const readmeFile = join(testDir, 'README.md');
+
+      writeFileSync(imageFile, Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+      writeFileSync(readmeFile, '![](image.png)\n');
+
+      await moveCommand([imageFile, renamedImageFile], {});
+
+      expect(mockConsoleError).not.toHaveBeenCalledWith(expect.stringContaining('❌'));
+      expect(existsSync(renamedImageFile)).toBe(true);
+      expect(existsSync(imageFile)).toBe(false);
+
+      const updatedReadme = readFileSync(readmeFile, 'utf-8');
+      expect(updatedReadme).toContain('![](./image2.png)');
     });
   });
 

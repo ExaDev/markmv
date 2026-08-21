@@ -157,7 +157,9 @@ export function createMarkMv(): FileOperations {
 }
 
 /**
- * Convenience function for moving a single markdown file
+ * Convenience function for moving a single file: a markdown file or a non-markdown asset (such as
+ * an image) that markdown files link to. Any markdown file that references the moved file has its
+ * link updated to the new location.
  *
  * @example
  *   ```typescript
@@ -186,7 +188,8 @@ export async function moveFile(
 }
 
 /**
- * Convenience function for moving multiple markdown files
+ * Convenience function for moving multiple files (markdown files, non-markdown assets, or a mix of
+ * both) in a single batch
  *
  * @example
  *   ```typescript

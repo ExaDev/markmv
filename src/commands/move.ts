@@ -20,24 +20,25 @@ export interface MoveOptions {
 }
 
 /**
- * Expand source patterns (which may include globs) to actual markdown file paths.
+ * Expand source patterns (which may include globs) to actual file paths.
  *
  * This function processes an array of file patterns that may include:
  *
- * - Direct file paths
- * - Glob patterns (wildcard.md, nested/wildcard.md, etc.)
+ * - Direct file paths, markdown or otherwise (e.g. an image referenced from a markdown file)
+ * - Glob patterns (wildcard.md, nested/*.png, etc.)
  * - Mixed combinations of both
  *
- * It validates that all resolved files are markdown files and provides verbose output when
- * requested.
+ * Any resolved file is accepted, since `markmv move` can relocate a non-markdown asset (an image,
+ * for example) and update every markdown link that points at it, not only markdown files
+ * themselves. Provides verbose output when requested.
  *
  * @example
  *   ```typescript
  *   // Direct file paths
- *   await expandSourcePatterns(['README.md', 'docs/guide.md']);
+ *   await expandSourcePatterns(['README.md', 'docs/guide.md', 'docs/diagram.png']);
  *
  *   // Glob patterns
- *   await expandSourcePatterns(['*.md', 'docs/*.md']);
+ *   await expandSourcePatterns(['*.md', 'docs/*.png']);
  *
  *   // Mixed patterns
  *   await expandSourcePatterns(['README.md', 'docs/*.md']);
@@ -46,7 +47,7 @@ export interface MoveOptions {
  * @param patterns - Array of file patterns or direct paths to expand
  * @param verbose - Whether to output detailed expansion information
  *
- * @returns Promise resolving to an array of absolute markdown file paths
+ * @returns Promise resolving to an array of absolute file paths
  *
  * @internal
  */
@@ -60,13 +61,9 @@ async function expandSourcePatterns(patterns: string[], verbose = false): Promis
 
     // Check if pattern is a direct file path first
     if (existsSync(pattern) && statSync(pattern).isFile()) {
-      if (PathUtils.isMarkdownFile(pattern)) {
-        allFiles.add(resolve(pattern));
-        if (verbose) {
-          console.log(`   ✅ Direct file: ${pattern}`);
-        }
-      } else {
-        console.warn(`   ⚠️  Skipping non-markdown file: ${pattern}`);
+      allFiles.add(resolve(pattern));
+      if (verbose) {
+        console.log(`   ✅ Direct file: ${pattern}`);
       }
       continue;
     }
@@ -83,15 +80,10 @@ async function expandSourcePatterns(patterns: string[], verbose = false): Promis
         console.log(`   📁 Found ${globResults.length} file(s) matching pattern`);
       }
 
-      // Filter to only markdown files
       for (const file of globResults) {
-        if (PathUtils.isMarkdownFile(file)) {
-          allFiles.add(file);
-          if (verbose) {
-            console.log(`   ✅ ${file}`);
-          }
-        } else if (verbose) {
-          console.log(`   ⚠️  Skipping non-markdown: ${file}`);
+        allFiles.add(file);
+        if (verbose) {
+          console.log(`   ✅ ${file}`);
         }
       }
 
@@ -107,13 +99,16 @@ async function expandSourcePatterns(patterns: string[], verbose = false): Promis
 }
 
 /**
- * Execute the move command to relocate markdown files with intelligent link refactoring.
+ * Execute the move command to relocate markdown files (or files they link to) with intelligent link
+ * refactoring.
  *
  * This is the main entry point for the move command functionality. It supports:
  *
  * - Single file moves to a new location
  * - Multiple file moves to a target directory
  * - Glob pattern expansion for source files
+ * - Moving non-markdown assets (images and other linked files), updating every markdown link that
+ *   points at them
  * - Dry run mode for previewing changes
  * - Comprehensive link integrity validation and updates
  *
@@ -123,25 +118,16 @@ async function expandSourcePatterns(patterns: string[], verbose = false): Promis
  * @category Commands
  *
  * @example
- *   Single file move
- *   ```typescript
- *   await moveCommand(['docs/old.md', 'docs/new.md'], { verbose: true });
- *   ```
+ *   Single file move ```typescript await moveCommand(['docs/old.md', 'docs/new.md'], { verbose: true }); ```
  *
  * @example
- *   Multiple files to directory
- *   ```typescript
- *   await moveCommand(['*.md', 'archive/'], { dryRun: true });
- *   ```
+ *   Moving a linked image, updating any markdown files that reference it ```typescript await moveCommand(['image.png', 'assets/image.png'], { verbose: true }); ```
  *
  * @example
- *   Glob pattern with dry run
- *   ```typescript
- *   await moveCommand(['docs/**\/*.md', 'backup/'], {
- *   dryRun: true,
- *   verbose: true
- *   });
- *   ```
+ *   Multiple files to directory ```typescript await moveCommand(['*.md', 'archive/'], { dryRun: true }); ```
+ *
+ * @example
+ *   Glob pattern with dry run ```typescript await moveCommand(['docs/**\/*.md', 'backup/'], { dryRun: true, verbose: true }); ```
  *
  * @param sources - Array containing source patterns and destination (last element)
  * @param options - Configuration options for the move operation
@@ -169,7 +155,7 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
     const sourceFiles = await expandSourcePatterns(sourcePatterns, options.verbose);
 
     if (sourceFiles.length === 0) {
-      console.error('❌ No markdown files found matching the specified patterns');
+      console.error('❌ No files found matching the specified patterns');
       process.exit(1);
     }
 

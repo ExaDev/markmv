@@ -150,6 +150,53 @@ describe('DependencyGraph', () => {
     });
   });
 
+  describe('non-node dependency targets (e.g. non-markdown assets)', () => {
+    it('should find dependents of a path that has no graph node of its own', () => {
+      const filesWithAsset: ParsedMarkdownFile[] = [
+        {
+          filePath: '/project/a.md',
+          links: [],
+          references: [],
+          dependencies: ['/project/image.png'],
+          dependents: [],
+        },
+        {
+          filePath: '/project/b.md',
+          links: [],
+          references: [],
+          dependencies: ['/project/image.png'],
+          dependents: [],
+        },
+      ];
+
+      graph.build(filesWithAsset);
+
+      expect(graph.getNode('/project/image.png')).toBeUndefined();
+      expect(graph.getDependents('/project/image.png').sort()).toEqual([
+        '/project/a.md',
+        '/project/b.md',
+      ]);
+    });
+
+    it('should rewrite references to a renamed path even when it has no graph node of its own', () => {
+      const filesWithAsset: ParsedMarkdownFile[] = [
+        {
+          filePath: '/project/a.md',
+          links: [],
+          references: [],
+          dependencies: ['/project/image.png'],
+          dependents: [],
+        },
+      ];
+
+      graph.build(filesWithAsset);
+      graph.updateFilePath('/project/image.png', '/project/assets/image.png');
+
+      expect(graph.getDependencies('/project/a.md')).toEqual(['/project/assets/image.png']);
+      expect(graph.getDependents('/project/assets/image.png')).toEqual(['/project/a.md']);
+    });
+  });
+
   describe('removeNode', () => {
     it('should remove node and all references', () => {
       graph.build(mockFiles);

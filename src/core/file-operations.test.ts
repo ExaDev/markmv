@@ -124,6 +124,75 @@ describe('FileOperations', () => {
       expect(contentC).toContain('./moved-a.md');
       expect(contentC).toContain('@./moved-a.md');
     });
+
+    it('should move a non-markdown asset and update markdown links that reference it', async () => {
+      const imagePath = join(testDir, 'image.png');
+      const readmePath = join(testDir, 'README.md');
+      const movedImagePath = join(testDir, 'image2.png');
+
+      await writeFile(imagePath, Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+      await writeFile(readmePath, '# Project\n\n![](image.png)\n');
+
+      const result = await fileOps.moveFile(imagePath, movedImagePath);
+
+      expect(result.success).toBe(true);
+      expect(result.modifiedFiles).toContain(readmePath);
+      expect(await FileUtils.exists(movedImagePath)).toBe(true);
+      expect(await FileUtils.exists(imagePath)).toBe(false);
+
+      const updatedReadme = await FileUtils.readTextFile(readmePath);
+      expect(updatedReadme).toContain('![](./image2.png)');
+    });
+
+    it('should move a non-markdown asset into a subdirectory and update its reference', async () => {
+      const imagePath = join(testDir, 'diagram.png');
+      const readmePath = join(testDir, 'README.md');
+      const assetsDir = join(testDir, 'assets');
+      const movedImagePath = join(assetsDir, 'diagram.png');
+
+      await mkdir(assetsDir);
+      await writeFile(imagePath, Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+      await writeFile(readmePath, '# Project\n\n![Diagram](./diagram.png)\n');
+
+      const result = await fileOps.moveFile(imagePath, movedImagePath);
+
+      expect(result.success).toBe(true);
+      const updatedReadme = await FileUtils.readTextFile(readmePath);
+      const normalized = updatedReadme.replace(/\\/g, '/');
+      expect(normalized).toContain('./assets/diagram.png');
+    });
+
+    it('should reject moving a markdown file to a non-markdown destination', async () => {
+      const sourcePath = join(testDir, 'source.md');
+      const destPath = join(testDir, 'dest.png');
+
+      await writeFile(sourcePath, '# Source');
+
+      const result = await fileOps.moveFile(sourcePath, destPath);
+
+      expect(result.success).toBe(false);
+      expect(result.errors.some((e) => e.includes('Destination must be a markdown file'))).toBe(
+        true
+      );
+    });
+
+    it('should reject moving a non-markdown asset to a markdown destination', async () => {
+      const sourcePath = join(testDir, 'image.png');
+      const destPath = join(testDir, 'image.md');
+
+      await writeFile(sourcePath, Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+
+      const result = await fileOps.moveFile(sourcePath, destPath);
+
+      expect(result.success).toBe(false);
+      expect(
+        result.errors.some((e) =>
+          e.includes(
+            'Destination must not be a markdown file when the source is not a markdown file'
+          )
+        )
+      ).toBe(true);
+    });
   });
 
   describe('moveFiles', () => {
@@ -177,6 +246,36 @@ describe('FileOperations', () => {
       expect(await FileUtils.exists(file2)).toBe(true);
       expect(await FileUtils.exists(dest1)).toBe(false);
       expect(await FileUtils.exists(dest2)).toBe(false);
+    });
+
+    it('should move multiple non-markdown assets and update markdown links that reference them', async () => {
+      const image1 = join(testDir, 'image1.png');
+      const image2 = join(testDir, 'image2.png');
+      const readmePath = join(testDir, 'README.md');
+      const assetsDir = join(testDir, 'assets');
+      const dest1 = join(assetsDir, 'image1.png');
+      const dest2 = join(assetsDir, 'image2.png');
+
+      await mkdir(assetsDir);
+      await writeFile(image1, Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+      await writeFile(image2, Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+      await writeFile(readmePath, '# Project\n\n![One](image1.png)\n![Two](image2.png)\n');
+
+      const moves = [
+        { source: image1, destination: dest1 },
+        { source: image2, destination: dest2 },
+      ];
+
+      const result = await fileOps.moveFiles(moves);
+
+      expect(result.success).toBe(true);
+      expect(await FileUtils.exists(dest1)).toBe(true);
+      expect(await FileUtils.exists(dest2)).toBe(true);
+      expect(result.modifiedFiles).toContain(readmePath);
+
+      const updatedReadme = (await FileUtils.readTextFile(readmePath)).replace(/\\/g, '/');
+      expect(updatedReadme).toContain('./assets/image1.png');
+      expect(updatedReadme).toContain('./assets/image2.png');
     });
   });
 
