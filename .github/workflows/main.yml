@@ -23,53 +23,54 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: [20.x, 22.x]  # Removed 18.x due to semantic-release compatibility
+        node-version: [22.x, 24.x]  # 20.x reached end of life 2026-04-30; 18.x removed earlier due to semantic-release compatibility
         include:
           # Test case-sensitive filesystem behavior on macOS (default) and Linux
           - os: ubuntu-latest
-            node-version: 20.x
+            node-version: 22.x
             filesystem-case: sensitive
-          - os: macos-latest  
-            node-version: 20.x
+          - os: macos-latest
+            node-version: 22.x
             filesystem-case: insensitive
           # Test Windows path separators and drive letters
           - os: windows-latest
-            node-version: 20.x
+            node-version: 22.x
             filesystem-case: insensitive
             path-separator: backslash
       fail-fast: false
-    
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
-          
+
       - name: Configure OS-specific environment
         run: |
           echo "OS: ${{ matrix.os }}"
           echo "Node: ${{ matrix.node-version }}"
           echo "Filesystem case: ${{ matrix.filesystem-case }}"
           echo "Path separator: ${{ matrix.path-separator }}"
-          
+
           # Set environment variables for cross-platform testing
           echo "MARKMV_TEST_OS=${{ matrix.os }}" >> $GITHUB_ENV
           echo "MARKMV_TEST_CASE_SENSITIVE=${{ matrix.filesystem-case == 'sensitive' }}" >> $GITHUB_ENV
           echo "MARKMV_TEST_PATH_SEP=${{ matrix.path-separator || 'slash' }}" >> $GITHUB_ENV
         shell: bash
 
+      # pnpm must be on PATH before setup-node: its cache integration runs `pnpm store path` and fails if the package manager is not installed yet.
+      - name: Setup pnpm
+        run: corepack enable
+
       - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'pnpm'
 
-      - name: Setup pnpm
-        run: corepack enable
-          
       - name: Cache TypeScript build
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             dist/
@@ -80,7 +81,7 @@ jobs:
             ${{ runner.os }}-tsc-
             
       - name: Cache test results
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             coverage/
@@ -223,9 +224,9 @@ jobs:
           echo "**Path Separator:** ${{ matrix.path-separator || 'forward-slash' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
         
-      # Coverage generation (only on Node 20.x and Ubuntu to avoid duplication)
+      # Coverage generation (only on Node 24.x and Ubuntu to avoid duplication)
       - name: Generate test coverage
-        if: matrix.node-version == '20.x' && matrix.os == 'ubuntu-latest'
+        if: matrix.node-version == '24.x' && matrix.os == 'ubuntu-latest'
         run: |
           pnpm run test:coverage | tee coverage-output.txt
           
@@ -235,7 +236,7 @@ jobs:
           echo "📊 Test coverage: $COVERAGE%" >> $GITHUB_STEP_SUMMARY
           
       - name: Generate documentation coverage
-        if: matrix.node-version == '20.x' && matrix.os == 'ubuntu-latest'
+        if: matrix.node-version == '24.x' && matrix.os == 'ubuntu-latest'
         run: |
           # Generate regular report for summary
           pnpm run docs:coverage
@@ -255,8 +256,8 @@ jobs:
           OUTPUT_JSON=true node scripts/check-docs-coverage.js 2>/dev/null > docs-coverage.json || echo '{"overallCoverage": 0}' > docs-coverage.json
           
       - name: Upload coverage artifacts
-        if: matrix.node-version == '20.x' && matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
+        if: matrix.node-version == '24.x' && matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-reports
           path: |
@@ -279,31 +280,31 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           token: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
           # Get the latest commit (including badge updates)
           ref: main
-          
-      # Note: Using GITHUB_TOKEN instead of GitHub App token for GitHub Packages compatibility
-      # GitHub Packages npm registry doesn't support GitHub App installation tokens
+
+      # Note: Using GITHUB_TOKEN instead of GitHub App token for GitHub Packages compatibility GitHub Packages npm registry doesn't support GitHub App installation tokens
+
+      # pnpm must be on PATH before setup-node: its cache integration runs `pnpm store path` and fails if the package manager is not installed yet.
+      - name: Setup pnpm
+        run: corepack enable
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '20.x'
+          node-version: '22.x'
           cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Setup pnpm
-        run: corepack enable
-          
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        
+
       - name: Download coverage artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: coverage-reports
         continue-on-error: true
@@ -325,7 +326,7 @@ jobs:
           node dist/cli.js --version || echo "CLI not yet ready"
         
       - name: Generate SBOM for NPM attestations
-        uses: anchore/sbom-action@v0.17.8
+        uses: anchore/sbom-action@v0.24.0
         with:
           path: ./
           format: spdx-json
@@ -655,27 +656,28 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # Get the latest commit (including version updates from release)
           ref: main
           fetch-depth: 1
-          
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-          cache: 'pnpm'
 
+      # pnpm must be on PATH before setup-node: its cache integration runs `pnpm store path` and fails if the package manager is not installed yet.
       - name: Setup pnpm
         run: corepack enable
-          
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22.x'
+          cache: 'pnpm'
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        
+
       - name: Build project
         run: pnpm run build
-        
+
       - name: Show current project status
         run: |
           echo "## 📊 Documentation Build Status" >> $GITHUB_STEP_SUMMARY
@@ -683,19 +685,19 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Coverage Badges:**" >> $GITHUB_STEP_SUMMARY
           grep -E "(Test Coverage|Documentation Coverage)" README.md >> $GITHUB_STEP_SUMMARY || echo "No coverage badges found" >> $GITHUB_STEP_SUMMARY
-        
+
       - name: Generate documentation
         run: pnpm run docs
-        
+
       - name: Setup Pages
         id: pages
-        uses: actions/configure-pages@v4
-        
+        uses: actions/configure-pages@v6
+
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: ./docs
-          
+
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

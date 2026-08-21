@@ -19,21 +19,21 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: [20.x, 22.x]
+        node-version: [22.x, 24.x]
         include:
           # Extended test matrix with specific filesystem scenarios
           - os: ubuntu-latest
-            node-version: 20.x
+            node-version: 22.x
             filesystem-case: sensitive
             test-symlinks: true
             test-type: "Linux case-sensitive"
           - os: windows-latest
-            node-version: 20.x
+            node-version: 22.x
             filesystem-case: insensitive
             test-symlinks: false
             test-type: "Windows case-insensitive"
           - os: macos-latest
-            node-version: 20.x
+            node-version: 22.x
             filesystem-case: insensitive
             test-symlinks: true
             test-type: "macOS case-insensitive"
@@ -41,16 +41,17 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+
+      # pnpm must be on PATH before setup-node: its cache integration runs `pnpm store path` and fails if the package manager is not installed yet.
+      - name: Setup pnpm
+        run: corepack enable
 
       - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'pnpm'
-
-      - name: Setup pnpm
-        run: corepack enable
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -284,7 +285,7 @@ jobs:
 
       - name: Upload test artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cross-platform-test-results-${{ matrix.os }}-${{ matrix.node-version }}
           path: |
