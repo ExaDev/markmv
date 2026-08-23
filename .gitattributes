@@ -1,7 +1,4 @@
-# Normalise text files to LF in the repository and on checkout, so the
-# working tree is identical on every platform. Prettier enforces
-# endOfLine: 'lf'; without this, Windows checkouts (core.autocrlf=true)
-# arrive as CRLF and fail format:check wholesale.
+# Normalise text files to LF in the repository and on checkout, so the working tree is identical on every platform. Prettier enforces endOfLine: 'lf'; without this, Windows checkouts (core.autocrlf=true) arrive as CRLF and fail the lint task's prettier/prettier rule wholesale.
 * text=auto eol=lf
 
 # Windows scripts must keep CRLF to execute correctly
