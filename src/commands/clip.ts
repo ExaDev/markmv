@@ -120,6 +120,7 @@ export async function clipCommand(urls: string[], options: ClipCliOptions = {}):
     if (urls.length === 0) {
       console.error('💥 Error: At least one URL must be specified');
       process.exit(1);
+      return;
     }
 
     // Parse CLI options into WebClipperOptions
@@ -154,6 +155,7 @@ export async function clipCommand(urls: string[], options: ClipCliOptions = {}):
       } catch {
         console.error('💥 Error: Invalid JSON format for headers');
         process.exit(1);
+        return;
       }
     }
 
@@ -178,11 +180,13 @@ export async function clipCommand(urls: string[], options: ClipCliOptions = {}):
     // Exit with error code if there were failures
     if (result.failedUrls.length > 0) {
       process.exit(1);
+      return;
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(`💥 Clip command failed: ${errorMessage}`);
     process.exit(1);
+    return;
   }
 }
 
