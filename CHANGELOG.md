@@ -1,3 +1,13 @@
+## [1.38.1](https://github.com/ExaDev/markmv/compare/v1.38.0...v1.38.1) (2026-08-23)
+
+### Bug Fixes
+
+* **clip:** stop execution falling through after process.exit in clipCommand ([d554158](https://github.com/ExaDev/markmv/commit/d5541584efdd7043fcb67eb515bc7f194ea8e281))
+
+### Chores
+
+* **deps-dev:** bump the patch-updates group with 4 updates ([438816f](https://github.com/ExaDev/markmv/commit/438816f9e9a475772222b8888e29ed537be2de36))
+
 ## [1.38.0](https://github.com/ExaDev/markmv/compare/v1.37.1...v1.38.0) (2026-08-23)
 
 ### Features
