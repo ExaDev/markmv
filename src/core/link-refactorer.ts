@@ -384,7 +384,7 @@ export class LinkRefactorer {
         newSourceFilePath,
         movedPaths
       );
-      return this.ensureRelativePrefix(newPath);
+      return this.ensureRelativePrefix(PathUtils.toUnixPath(newPath));
     }
 
     if (link.type === 'internal' || link.type === 'image') {
@@ -394,15 +394,14 @@ export class LinkRefactorer {
         newSourceFilePath,
         movedPaths
       );
-      return this.ensureRelativePrefix(newPath);
+      return this.ensureRelativePrefix(PathUtils.toUnixPath(newPath));
     }
 
     return link.href;
   }
 
   /**
-   * Ensure a rewritten same-directory path keeps an explicit ./ prefix, matching the bystander
-   * update convention so both rewrite passes converge on identical output.
+   * Ensure a rewritten same-directory path keeps an explicit ./ prefix, matching the bystander update convention so both rewrite passes converge on identical output. The path must already be in unix form, as markdown links always use forward slashes.
    */
   private ensureRelativePrefix(path: string): string {
     if (!path.startsWith('./') && !path.startsWith('../') && !path.startsWith('/')) {
