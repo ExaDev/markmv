@@ -1,5 +1,6 @@
 import { existsSync, statSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readdir, rmdir } from 'node:fs/promises';
+import { basename, join, relative, resolve } from 'node:path';
 import { glob } from 'glob';
 import { FileOperations } from '../core/file-operations.js';
 import type { MoveOperationOptions, OperationResult } from '../types/operations.js';
@@ -98,6 +99,71 @@ async function expandSourcePatterns(patterns: string[], verbose = false): Promis
   return Array.from(allFiles).sort();
 }
 
+/** Directory names never moved as part of a directory source expansion */
+const IGNORED_DIRECTORY_NAMES = new Set(['node_modules', '.git', 'dist']);
+
+/**
+ * Collect every file inside a directory tree, recursively, mirroring the ignores that glob expansion applies so a directory source and a glob source treat the same tree consistently.
+ *
+ * @param directoryRoot - Directory to walk
+ *
+ * @returns Promise resolving to sorted absolute file paths
+ *
+ * @internal
+ */
+async function collectDirectoryFiles(directoryRoot: string): Promise<string[]> {
+  const files: string[] = [];
+
+  const walk = async (currentDir: string): Promise<void> => {
+    const entries = await readdir(currentDir, { withFileTypes: true });
+    for (const entry of entries) {
+      const entryPath = join(currentDir, entry.name);
+      if (entry.isDirectory()) {
+        if (IGNORED_DIRECTORY_NAMES.has(entry.name)) continue;
+        await walk(entryPath);
+      } else if (entry.isFile()) {
+        files.push(entryPath);
+      }
+    }
+  };
+
+  await walk(resolve(directoryRoot));
+  return files.sort();
+}
+
+/**
+ * Remove the directories a unit move vacated, deepest first. A directory that still contains anything is left untouched, so a partial expansion or files the operator left behind keep their parent directories alive.
+ *
+ * @param directoryRoot - The directory whose contents were just moved out
+ *
+ * @internal
+ */
+async function pruneEmptyDirectories(directoryRoot: string): Promise<void> {
+  const prune = async (currentDir: string): Promise<boolean> => {
+    let allChildrenPruned = true;
+    const entries = await readdir(currentDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory()) {
+        allChildrenPruned = false;
+        continue;
+      }
+      if (IGNORED_DIRECTORY_NAMES.has(entry.name)) {
+        allChildrenPruned = false;
+        continue;
+      }
+      const childPruned = await prune(join(currentDir, entry.name));
+      if (!childPruned) allChildrenPruned = false;
+    }
+    if (!allChildrenPruned) {
+      return false;
+    }
+    await rmdir(currentDir);
+    return true;
+  };
+
+  await prune(resolve(directoryRoot));
+}
+
 /**
  * Execute the move command to relocate markdown files (or files they link to) with intelligent link
  * refactoring.
@@ -141,6 +207,7 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
     console.error('Examples:');
     console.error('  markmv move file.md ./target/');
     console.error('  markmv move file1.md file2.md ./target/');
+    console.error('  markmv move directory ./target/');
     console.error('  markmv move "*.md" ./target/');
     console.error('  markmv move "**/*.md" ./archive/');
     process.exit(1);
@@ -151,10 +218,21 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
   const sourcePatterns = sources.slice(0, -1);
 
   try {
-    // Expand glob patterns to actual file paths
-    const sourceFiles = await expandSourcePatterns(sourcePatterns, options.verbose);
+    // A directory source moves as a unit: every file inside relocates under the destination with its internal structure preserved, and the destination directory is created on demand.
+    const directorySources: string[] = [];
+    const nonDirectoryPatterns: string[] = [];
+    for (const pattern of sourcePatterns) {
+      if (PathUtils.isDirectory(resolve(pattern))) {
+        directorySources.push(resolve(pattern));
+      } else {
+        nonDirectoryPatterns.push(pattern);
+      }
+    }
 
-    if (sourceFiles.length === 0) {
+    // Expand glob patterns to actual file paths
+    const sourceFiles = await expandSourcePatterns(nonDirectoryPatterns, options.verbose);
+
+    if (sourceFiles.length === 0 && directorySources.length === 0) {
       console.error('❌ No files found matching the specified patterns');
       process.exit(1);
     }
@@ -162,7 +240,9 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
     // Validate destination
     const resolvedDestination = resolve(destination);
     const isDestDirectory =
-      PathUtils.isDirectory(resolvedDestination) || PathUtils.looksLikeDirectory(destination);
+      PathUtils.isDirectory(resolvedDestination) ||
+      PathUtils.looksLikeDirectory(destination) ||
+      directorySources.length > 0;
 
     if (sourceFiles.length > 1 && !isDestDirectory) {
       console.error('❌ Error: When moving multiple files, destination must be a directory');
@@ -171,11 +251,31 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
       process.exit(1);
     }
 
+    // Expand directory sources into per-file moves that map each file to its mirrored path under the destination
+    const directoryMoves: Array<{ source: string; destination: string }> = [];
+    for (const directorySource of directorySources) {
+      const filesInDirectory = await collectDirectoryFiles(directorySource);
+      if (options.verbose) {
+        console.log(`📁 Directory source ${directorySource}: ${filesInDirectory.length} file(s)`);
+      }
+      for (const file of filesInDirectory) {
+        directoryMoves.push({
+          source: file,
+          destination: join(resolvedDestination, relative(directorySource, file)),
+        });
+      }
+    }
+
+    const totalSourceFiles = sourceFiles.length + directoryMoves.length;
+
     if (options.verbose) {
       console.log(`🎯 Destination: ${destination} ${isDestDirectory ? '(directory)' : '(file)'}`);
-      console.log(`📁 Found ${sourceFiles.length} source file(s):`);
+      console.log(`📁 Found ${totalSourceFiles} source file(s):`);
       for (const file of sourceFiles) {
         console.log(`   • ${file}`);
+      }
+      for (const move of directoryMoves) {
+        console.log(`   • ${move.source}`);
       }
 
       if (options.dryRun) {
@@ -192,16 +292,26 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
 
     let result: OperationResult;
 
-    if (sourceFiles.length === 1) {
+    if (directoryMoves.length === 0 && sourceFiles.length === 1) {
       // Single file move
       result = await fileOps.moveFile(sourceFiles[0], destination, moveOptions);
     } else {
-      // Batch move
-      const moves = sourceFiles.map((source) => ({
-        source,
-        destination,
-      }));
+      // Batch move: directory-expanded files carry explicit mirrored destinations; plain sources either rename to the destination path or join it when the destination is a directory
+      const moves = [
+        ...directoryMoves,
+        ...sourceFiles.map((source) => ({
+          source,
+          destination: isDestDirectory ? join(resolvedDestination, basename(source)) : destination,
+        })),
+      ];
       result = await fileOps.moveFiles(moves, moveOptions);
+
+      // Once a directory's contents have relocated, remove the directories it vacated
+      if (!options.dryRun && result.success) {
+        for (const directorySource of directorySources) {
+          await pruneEmptyDirectories(directorySource);
+        }
+      }
     }
 
     if (!result.success) {

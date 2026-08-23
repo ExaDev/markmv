@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import { dirname, sep } from 'node:path';
 import type { ParsedMarkdownFile } from '../types/links.js';
 import type {
   MoveOperationOptions,
@@ -124,7 +125,10 @@ export class FileOperations {
       // Parse the source file (only meaningful for markdown, which may itself contain links to update) and build a dependency graph from the surrounding project's markdown files.
       const sourceIsMarkdown = PathUtils.isMarkdownFile(sourcePath);
       const sourceFile = sourceIsMarkdown ? await this.linkParser.parseFile(sourcePath) : null;
-      const { files: projectFiles, parseFailures } = await this.discoverProjectFiles(sourcePath);
+      const { files: projectFiles, parseFailures } = await this.discoverProjectFiles([
+        sourcePath,
+        resolvedDestination,
+      ]);
       const dependencyGraph = new DependencyGraph(projectFiles);
 
       // Find all files that link to the source file
@@ -334,10 +338,11 @@ export class FileOperations {
         fileContents.set(source, content);
       }
 
-      // Discover additional project files
-      const { files: projectFiles, parseFailures } = await this.discoverProjectFiles(
-        resolvedMoves[0].source
-      );
+      // Discover additional project files across the full span of the batch: every source and every destination seeds the scan so bystanders between them are found
+      const { files: projectFiles, parseFailures } = await this.discoverProjectFiles([
+        ...resolvedMoves.map((move) => move.source),
+        ...resolvedMoves.map((move) => move.destination),
+      ]);
       const dependencyGraph = new DependencyGraph([...allFiles, ...projectFiles]);
 
       // Store content for every parsed file, not just the moved sources. Bystander files that link to several moved files are refactored once per move, and the transaction has not executed yet: re-reading a bystander from disk on a later move would see the original bytes and silently discard the link updates planned by earlier moves in the same batch.
@@ -572,13 +577,16 @@ export class FileOperations {
     return { valid: true };
   }
 
-  private async discoverProjectFiles(seedPath: string): Promise<{
+  private async discoverProjectFiles(seedPaths: string[]): Promise<{
     files: ParsedMarkdownFile[];
     parseFailures: Array<{ file: string; error: string; stack?: string | undefined }>;
   }> {
     try {
-      // Find the project root (directory containing the seed file)
-      const projectRoot = PathUtils.findCommonBase([seedPath]);
+      // Bystanders can live anywhere between where the files came from and where they are going, so discovery is rooted at the common base of every seed path. A base at the filesystem root means the seeds span unrelated trees; scanning from there would walk the disk, so fall back to the first seed's own directory.
+      let projectRoot = PathUtils.findCommonBase(seedPaths);
+      if (projectRoot === sep || /^[A-Za-z]:$/.test(projectRoot)) {
+        projectRoot = dirname(seedPaths[0] || '');
+      }
 
       // Find all markdown files in the project
       const markdownFiles = await FileUtils.findMarkdownFiles(projectRoot, true);

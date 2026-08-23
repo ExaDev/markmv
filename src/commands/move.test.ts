@@ -453,4 +453,76 @@ describe('Move Command', () => {
       expect(output).toContain('No links needed updating');
     });
   });
+
+  describe('Directory Sources', () => {
+    it('should move a directory as a unit into a non-existent destination, rewriting links', async () => {
+      const srcDir = join(testDir, 'notes');
+      const nestedDir = join(srcDir, 'sub');
+      mkdirSync(nestedDir, { recursive: true });
+      writeFileSync(join(nestedDir, 'Tailscale.md'), '# Tailscale\n\n[Other](../Other.md)\n');
+      writeFileSync(join(srcDir, 'Other.md'), '# Other\n');
+      const bystander = join(testDir, 'Home.md');
+      writeFileSync(bystander, '[Tailscale](./notes/sub/Tailscale.md)\n');
+
+      const destDir = join(testDir, 'resources', 'networking');
+
+      await moveCommand([srcDir, destDir], {});
+
+      // The directory tree moves as a unit, preserving structure, destination auto-created
+      expect(existsSync(join(destDir, 'sub', 'Tailscale.md'))).toBe(true);
+      expect(existsSync(join(destDir, 'Other.md'))).toBe(true);
+      // The vacated source directory is removed once empty
+      expect(existsSync(srcDir)).toBe(false);
+      // Links inside the moved tree stay valid: the target moved along, so the relative hop is unchanged
+      expect(readFileSync(join(destDir, 'sub', 'Tailscale.md'), 'utf-8')).toContain(
+        '[Other](../Other.md)'
+      );
+      // Bystander links are rewritten to the new location
+      expect(readFileSync(bystander, 'utf-8')).toContain(
+        '[Tailscale](./resources/networking/sub/Tailscale.md)'
+      );
+    });
+
+    it('should move a directory as a unit in dry-run without touching the tree', async () => {
+      const srcDir = join(testDir, 'notes');
+      mkdirSync(srcDir, { recursive: true });
+      writeFileSync(join(srcDir, 'Note.md'), '# Note\n');
+      const destDir = join(testDir, 'archive', 'old-notes');
+
+      await moveCommand([srcDir, destDir], { dryRun: true });
+
+      expect(existsSync(join(srcDir, 'Note.md'))).toBe(true);
+      expect(existsSync(destDir)).toBe(false);
+      const output = mockConsoleLog.mock.calls.map((args) => args.join(' ')).join('\n');
+      expect(output).toContain('Note.md');
+    });
+
+    it('should move non-markdown assets inside a directory too', async () => {
+      const srcDir = join(testDir, 'assets');
+      mkdirSync(srcDir, { recursive: true });
+      writeFileSync(join(srcDir, 'diagram.png'), 'fake png bytes');
+      writeFileSync(join(srcDir, 'doc.md'), '![Diagram](./diagram.png)\n');
+      const destDir = join(testDir, 'moved-assets');
+
+      await moveCommand([srcDir, destDir], {});
+
+      expect(existsSync(join(destDir, 'diagram.png'))).toBe(true);
+      expect(existsSync(join(destDir, 'doc.md'))).toBe(true);
+      expect(readFileSync(join(destDir, 'doc.md'), 'utf-8')).toContain('![Diagram](./diagram.png)');
+    });
+
+    it('should combine directory and file sources into one destination', async () => {
+      const srcDir = join(testDir, 'notes');
+      mkdirSync(srcDir, { recursive: true });
+      writeFileSync(join(srcDir, 'InDir.md'), '# In dir\n');
+      const looseFile = join(testDir, 'Loose.md');
+      writeFileSync(looseFile, '# Loose\n');
+      const destDir = join(testDir, 'combined');
+
+      await moveCommand([srcDir, looseFile, destDir], {});
+
+      expect(existsSync(join(destDir, 'InDir.md'))).toBe(true);
+      expect(existsSync(join(destDir, 'Loose.md'))).toBe(true);
+    });
+  });
 });
