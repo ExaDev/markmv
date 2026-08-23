@@ -14,6 +14,11 @@ import { tocCommand } from './commands/toc.js';
 import { validateCommand, type ValidateCliOptions } from './commands/validate.js';
 import { refactorHeadingsCommand } from './commands/refactor-headings.js';
 import { checkLinksCommand } from './commands/check-links.js';
+import { embedCommand } from './commands/embed.js';
+import { extractCommand } from './commands/extract.js';
+import { waybackCommand, type WaybackOptions } from './commands/wayback.js';
+import { refactorIndexCommand } from './commands/refactor-index.js';
+import { treeCommand } from './commands/tree.js';
 
 function isPackageJson(value: unknown): value is { version: string } {
   if (typeof value !== 'object' || value === null) return false;
@@ -753,5 +758,143 @@ Grouping Options:
   domain    Group results by domain name`
   )
   .action(checkLinksCommand);
+
+program
+  .command('embed')
+  .description('Convert linked local images to inline base64 data URIs')
+  .argument('<files...>', 'Markdown files to process (supports globs like *.md, **/*.md)')
+  .option('-d, --dry-run', 'Show what would be changed without making changes')
+  .option('-v, --verbose', 'Show detailed output with processing information')
+  .option('--json', 'Output results in JSON format')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ markmv embed doc.md
+  $ markmv embed docs/*.md --dry-run
+  $ markmv embed "**/*.md" --verbose --json
+
+Behaviour:
+  Reads each linked local image, base64-encodes it, and rewrites the
+  markdown link to a data:image/...;base64 URI. An image file is deleted
+  only when no file in the processed set still references it. Missing
+  images and unsupported extensions are errors (exit 1); remote URLs and
+  existing data URIs are left untouched.`
+  )
+  .action(embedCommand);
+
+program
+  .command('extract')
+  .description('Write inline base64 images out to image files and link to them')
+  .argument('<files...>', 'Markdown files to process (supports globs like *.md, **/*.md)')
+  .option(
+    '--output-dir <dir>',
+    'Directory for extracted image files (default: alongside each markdown file)'
+  )
+  .option('-d, --dry-run', 'Show what would be changed without making changes')
+  .option('-v, --verbose', 'Show detailed output with processing information')
+  .option('--json', 'Output results in JSON format')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ markmv extract doc.md
+  $ markmv extract docs/*.md --output-dir assets/
+  $ markmv extract "**/*.md" --dry-run --json
+
+Behaviour:
+  Each data:image/...;base64 URI is decoded to a real image file (filename
+  from the alt text when usable, else img-1.png, img-2.png, ...; extension
+  from the mime type) and the markdown is rewritten to link to it. Existing
+  files are never overwritten (-2, -3 suffixes are used). Non-image or
+  non-base64 data URIs are errors (exit 1).`
+  )
+  .action(extractCommand);
+
+program
+  .command('wayback')
+  .description('Convert HTTP(S) links to Wayback Machine archive URLs')
+  .argument('<files...>', 'Markdown files to process (supports globs like *.md, **/*.md)')
+  .option('-r, --recursive', 'Process directories recursively')
+  .option('-d, --dry-run', 'Show what would be changed without making changes')
+  .option('-v, --verbose', 'Show detailed output with processing information')
+  .option('--json', 'Output results in JSON format')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ markmv wayback docs/*.md --dry-run
+  $ markmv wayback README.md --verbose
+  $ markmv wayback **/*.md --recursive
+  $ markmv wayback docs/ --json
+
+Links already pointing at web.archive.org are preserved; mailto, ftp, and
+internal links are left untouched. No network calls are made.`
+  )
+  .action(async (files: string[], options: WaybackOptions) => {
+    await waybackCommand(files, options);
+  });
+
+program
+  .command('refactor-index')
+  .description(
+    'Refactor between index file naming conventions (README.md <-> index.md) with automatic link updates'
+  )
+  .argument('<file>', 'Path to the README.md or index.md file to convert in place')
+  .option('--to <convention>', 'Target naming convention: readme|index')
+  .option('-d, --dry-run', 'Show what would be changed without making changes')
+  .option('-v, --verbose', 'Show detailed output with processing information')
+  .option('--json', 'Output results in JSON format')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ markmv refactor-index docs/README.md                  # Convert README.md to index.md
+  $ markmv refactor-index docs/index.md --to readme       # Convert index.md back to README.md
+  $ markmv refactor-index docs/README.md --dry-run        # Preview the rename and link rewrites
+
+Notes:
+  The target convention defaults to the opposite of the file's current name.
+  Only exact README.md and index.md basenames are accepted; the conversion is
+  refused when the target name already exists in the same directory.`
+  )
+  .action(refactorIndexCommand);
+
+program
+  .command('tree')
+  .description('Visualise the markdown file tree with per-file statistics and warnings')
+  .argument('[path]', 'Directory or markdown file to scan (defaults to current directory)')
+  .option('-f, --format <format>', 'Output format: ascii|json', 'ascii')
+  .option(
+    '--max-depth <number>',
+    'Limit tree rendering depth (statistics always cover the full scan)',
+    parseInt
+  )
+  .option('-v, --verbose', 'Show detailed output with processing information')
+  .option('--json', 'Output results in JSON format (alias for --format json)')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ markmv tree                                      # Render the tree for the current directory
+  $ markmv tree docs/                                # Render a specific directory
+  $ markmv tree docs/ --max-depth 2                  # Limit rendering depth (statistics still cover the full scan)
+  $ markmv tree docs/ --format json                  # Machine-readable tree and statistics
+  $ markmv tree README.md --verbose                  # Single file with scan progress
+
+Per-file annotations:
+  (N words, M links)   Words are whitespace-separated tokens outside fenced code blocks and
+                       inline code spans; link syntax and heading markers count as tokens
+  [N broken]           The file has N internal links whose target file does not exist
+  [orphan]             No other scanned file links to this file
+
+Notes:
+  Excludes node_modules, .git, and dist directories at any depth
+  Directories render before files, each group alphabetically
+  Internal links are checked for file existence only (no network)
+  Statistics always cover the full scan, regardless of --max-depth
+  Read-only command: no files are modified, so there is no --dry-run`
+  )
+  .action(treeCommand);
 
 program.parse();

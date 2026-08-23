@@ -55,6 +55,50 @@ export {
   type WikilinkResolution,
 } from './core/obsidian-vault.js';
 export { suggestLinkFixes, type LinkSuggestion } from './core/link-suggester.js';
+export {
+  findLocalImages,
+  findInlineImages,
+  parseImageDataUri,
+  imageMimeTypeForExtension,
+  imageExtensionForMimeType,
+  renderImageMarkdown,
+  type ImageLinkOccurrence,
+  type ParsedImageDataUri,
+  type SpanReplacement,
+} from './core/image-inline.js';
+export { embedCommand, type EmbedOptions, type EmbedSummary } from './commands/embed.js';
+export { extractCommand, type ExtractOptions, type ExtractSummary } from './commands/extract.js';
+export {
+  waybackCommand,
+  toWaybackUrl,
+  type WaybackOptions,
+  type WaybackResult,
+  type WaybackFileResult,
+  type WaybackLinkChange,
+} from './commands/wayback.js';
+export {
+  refactorIndex,
+  refactorIndexCommand,
+  type IndexConvention,
+  type RefactorIndexOptions,
+  type RefactorIndexCliOptions,
+  type RefactorIndexResult,
+} from './commands/refactor-index.js';
+export {
+  treeCommand,
+  scanMarkdownTree,
+  buildFileTree,
+  renderTreeAscii,
+  computeTreeStatistics,
+  countWords,
+  type ScanOptions,
+  type ScannedMarkdownFile,
+  type TreeDirectoryNode,
+  type TreeFileNode,
+  type TreeStatistics,
+  type TreeFormat,
+  type TreeCliOptions,
+} from './commands/tree.js';
 export { DependencyGraph } from './core/dependency-graph.js';
 export { ContentJoiner } from './core/content-joiner.js';
 export { ContentSplitter } from './core/content-splitter.js';
