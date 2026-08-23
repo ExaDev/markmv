@@ -349,10 +349,9 @@ describe('FileOperations', () => {
       });
 
       try {
-        const result = await fileOps.moveFiles(
-          [{ source: sourcePath, destination: destPath }],
-          { dryRun: true }
-        );
+        const result = await fileOps.moveFiles([{ source: sourcePath, destination: destPath }], {
+          dryRun: true,
+        });
 
         expect(result.success).toBe(true);
         expect(result.parseFailures).toHaveLength(1);

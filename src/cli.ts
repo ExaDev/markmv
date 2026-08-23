@@ -22,10 +22,13 @@ function isPackageJson(value: unknown): value is { version: string } {
 }
 
 /**
- * Reads the package version from package.json at runtime so the reported version always matches the published package instead of a literal that drifts between releases.
+ * Reads the package version from package.json at runtime so the reported version always matches the
+ * published package instead of a literal that drifts between releases.
  */
 function getPackageVersion(): string {
-  const raw: unknown = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8'));
+  const raw: unknown = JSON.parse(
+    readFileSync(new URL('../package.json', import.meta.url), 'utf-8')
+  );
   if (!isPackageJson(raw)) {
     throw new Error('package.json is missing a string version field');
   }

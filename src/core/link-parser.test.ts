@@ -252,34 +252,44 @@ This is a [reference link][ref1] and another [reference][ref2].
       expect(link?.resolvedPath).toBe(join(homedir(), 'memory/dev/foo.md'));
     });
 
-    it('should parse @~/ claude imports under the real ESM runtime', { timeout: 30_000 }, async () => {
-      // Vitest transforms modules through Vite, which shims require() and masks the ReferenceError an ESM-only runtime throws. Spawn a real ESM process to exercise the published behaviour.
-      const requireFromTest = createRequire(import.meta.url);
-      const tsxEntry = pathToFileURL(requireFromTest.resolve('tsx')).href;
-      const notePath = join(testDir, 'note.md');
-      await writeFile(notePath, '- @~/memory/dev/foo.md\n');
+    it(
+      'should parse @~/ claude imports under the real ESM runtime',
+      { timeout: 30_000 },
+      async () => {
+        // Vitest transforms modules through Vite, which shims require() and masks the ReferenceError an ESM-only runtime throws. Spawn a real ESM process to exercise the published behaviour.
+        const requireFromTest = createRequire(import.meta.url);
+        const tsxEntry = pathToFileURL(requireFromTest.resolve('tsx')).href;
+        const notePath = join(testDir, 'note.md');
+        await writeFile(notePath, '- @~/memory/dev/foo.md\n');
 
-      const parserUrl = pathToFileURL(fileURLToPath(new URL('./link-parser.ts', import.meta.url))).href;
-      const scriptPath = join(testDir, 'esm-parse-check.mjs');
-      await writeFile(
-        scriptPath,
-        [
-          `import { LinkParser } from ${JSON.stringify(parserUrl)};`,
-          'const parser = new LinkParser();',
-          `const result = await parser.parseFile(${JSON.stringify(notePath)});`,
-          "const link = result.links[0];",
-          "if (!link) throw new Error('expected one claude-import link, got none');",
-          "console.log(JSON.stringify({ href: link.href, resolvedPath: link.resolvedPath }));",
-        ].join('\n')
-      );
+        const parserUrl = pathToFileURL(
+          fileURLToPath(new URL('./link-parser.ts', import.meta.url))
+        ).href;
+        const scriptPath = join(testDir, 'esm-parse-check.mjs');
+        await writeFile(
+          scriptPath,
+          [
+            `import { LinkParser } from ${JSON.stringify(parserUrl)};`,
+            'const parser = new LinkParser();',
+            `const result = await parser.parseFile(${JSON.stringify(notePath)});`,
+            'const link = result.links[0];',
+            "if (!link) throw new Error('expected one claude-import link, got none');",
+            'console.log(JSON.stringify({ href: link.href, resolvedPath: link.resolvedPath }));',
+          ].join('\n')
+        );
 
-      const { stdout } = await execFileAsync(process.execPath, ['--import', tsxEntry, scriptPath]);
+        const { stdout } = await execFileAsync(process.execPath, [
+          '--import',
+          tsxEntry,
+          scriptPath,
+        ]);
 
-      const parsed: unknown = JSON.parse(stdout);
-      expect(parsed).toEqual({
-        href: '~/memory/dev/foo.md',
-        resolvedPath: join(homedir(), 'memory/dev/foo.md'),
-      });
-    });
+        const parsed: unknown = JSON.parse(stdout);
+        expect(parsed).toEqual({
+          href: '~/memory/dev/foo.md',
+          resolvedPath: join(homedir(), 'memory/dev/foo.md'),
+        });
+      }
+    );
   });
 });

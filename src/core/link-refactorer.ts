@@ -401,7 +401,8 @@ export class LinkRefactorer {
   }
 
   /**
-   * Ensure a rewritten same-directory path keeps an explicit ./ prefix, matching the bystander update convention so both rewrite passes converge on identical output.
+   * Ensure a rewritten same-directory path keeps an explicit ./ prefix, matching the bystander
+   * update convention so both rewrite passes converge on identical output.
    */
   private ensureRelativePrefix(path: string): string {
     if (!path.startsWith('./') && !path.startsWith('../') && !path.startsWith('/')) {

@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * Reads the version straight out of the real package.json so the CLI version assertion tracks the published package rather than a literal that drifts.
+ * Reads the version straight out of the real package.json so the CLI version assertion tracks the
+ * published package rather than a literal that drifts.
  */
 function readPackageJsonVersion(): string {
   const raw: unknown = JSON.parse(
