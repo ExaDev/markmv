@@ -1,3 +1,21 @@
+## [1.38.0](https://github.com/ExaDev/markmv/compare/v1.37.1...v1.38.0) (2026-08-23)
+
+### Features
+
+* **lint:** enable type-aware ESLint rules and typecheck test files ([0a444d6](https://github.com/ExaDev/markmv/commit/0a444d60f7dc6bac04a8c304152275fb9109a8d2))
+
+### Bug Fixes
+
+* **deps:** pin fast-uri and js-yaml past known high-severity advisories ([1acd02d](https://github.com/ExaDev/markmv/commit/1acd02d6f1794dfba466224b7c9ba7b222c57dbe))
+
+### Code Refactoring
+
+* remove dead code and exports flagged by knip ([c521f4b](https://github.com/ExaDev/markmv/commit/c521f4b668ce6b7a1d6c0395c6882dee49508026))
+
+### Chores
+
+* **tooling:** adopt sibling-repo devops tooling ([f14fde6](https://github.com/ExaDev/markmv/commit/f14fde66c7f4a2d8d2fcb2acc88a0022f1fdf273))
+
 ## [1.37.1](https://github.com/ExaDev/markmv/compare/v1.37.0...v1.37.1) (2026-08-23)
 
 ### Bug Fixes
