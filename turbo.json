@@ -1,0 +1,29 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "tasks": {
+    "_build": {
+      "inputs": ["src/**/*.ts", "tsconfig.json", "tsconfig.build.json"],
+      "outputs": ["dist/**", "tsconfig.tsbuildinfo"]
+    },
+    "_lint": {
+      "inputs": ["src/**/*.ts", "eslint.config.ts"],
+      "outputs": []
+    },
+    "_typecheck": {
+      "inputs": ["src/**/*.ts", "tsconfig.json"],
+      "outputs": []
+    },
+    "_format-check": {
+      "inputs": ["src/**/*.ts", "prettier.config.ts"],
+      "outputs": []
+    },
+    "_test": {
+      "inputs": ["src/**/*.ts", "vitest.config.ts"],
+      "outputs": ["coverage/**"]
+    },
+    "_knip": {
+      "inputs": ["src/**/*.ts", "knip.config.ts"],
+      "outputs": []
+    }
+  }
+}

@@ -1,0 +1,18 @@
+# Enforce linear history on main -- reject merge commits.
+branch=$(git rev-parse --abbrev-ref HEAD)
+if [ "$branch" = "main" ] && git rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
+  echo "Error: merge commits are not allowed on main. Rebase instead."
+  exit 1
+fi
+
+# Ban squash merges -- `git merge --squash` collapses granular history into one commit. git leaves
+# a SQUASH_MSG file in the git dir during a squash merge, so its presence at commit time is the
+# reliable signal. Rebase to preserve history.
+if [ -f "$(git rev-parse --git-dir)/SQUASH_MSG" ]; then
+  echo "Error: squash merges are not allowed -- they discard commit history. Rebase instead."
+  exit 1
+fi
+
+# lint-staged.config.ts needs Node's native TypeScript type stripping to load; the flag is a no-op
+# on Node versions where stripping is already unflagged by default.
+NODE_OPTIONS="--experimental-strip-types" pnpm exec lint-staged

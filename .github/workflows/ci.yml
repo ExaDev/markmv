@@ -8,22 +8,90 @@ on:
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 concurrency:
-  group: "ci-cd-${{ github.ref }}"
+  group: 'ci-cd-${{ github.ref }}'
   cancel-in-progress: false
 
 jobs:
-  # Quality Gates - All quality checks must pass before anything else
-  quality:
+  # Commit-message linting. husky's commit-msg hook already enforces this locally before a commit is ever made, so this is a defense-in-depth check (a bypassed hook, or a commit made outside this checkout) rather than the primary gate. Full PR commit range on pull requests; just the latest commit on a direct push, since github.event.before is all-zeros on a branch's first push.
+  commitlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+        with:
+          task: commitlint
+          command: |
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              pnpm exec commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
+            else
+              pnpm exec commitlint --from HEAD~1 --to HEAD
+            fi
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          task: lint
+          command: pnpm run lint
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          task: format-check
+          command: pnpm run format:check
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          task: typecheck
+          command: pnpm run typecheck
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          task: build
+          command: pnpm run build
+
+  knip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          task: knip
+          command: pnpm run knip
+
+  # Advisory only, matching the original behaviour: a high-severity finding is surfaced but never blocks release.
+  security-audit:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          task: security-audit
+          command: pnpm audit --audit-level=high
+
+  # Cross-platform test matrix -- the one job that genuinely needs multiple OS/Node combinations. Test execution deliberately bypasses the turbo-wrapped test:run script (calling the underlying _test script directly): turbo's cache key here is keyed by OS but not by Node version, so the wrapped script would let turbo skip actually re-running tests against the second Node version whenever the source inputs are unchanged, defeating the point of testing both versions. The Build step is safe to leave turbo-wrapped: compiled output doesn't depend on the Node runtime version, so it's free to share a cache with the standalone build job on the same OS/commit.
+  test:
     runs-on: ${{ matrix.os }}
-    permissions:
-      contents: write
-      pull-requests: write
-      issues: write
-    
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        node-version: [22.x, 24.x]  # 20.x reached end of life 2026-04-30; 18.x removed earlier due to semantic-release compatibility
+        node-version: [22.x, 24.x] # 20.x reached end of life 2026-04-30; 18.x removed earlier due to semantic-release compatibility
         include:
           # Test case-sensitive filesystem behavior on macOS (default) and Linux
           - os: ubuntu-latest
@@ -43,7 +111,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
       - name: Configure OS-specific environment
@@ -69,109 +136,44 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'pnpm'
 
-      - name: Cache TypeScript build
-        uses: actions/cache@v6
+      # turbo's local cache for the build step only -- keyed by OS, not Node version, which is correct here since compiled output doesn't vary by Node runtime.
+      - uses: actions/cache@v4
         with:
-          path: |
-            dist/
-            tsconfig.tsbuildinfo
-          key: ${{ runner.os }}-tsc-${{ matrix.node-version }}-${{ hashFiles('src/**/*.ts', 'tsconfig.json') }}
+          path: .turbo
+          key: turbo-build-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-tsc-${{ matrix.node-version }}-
-            ${{ runner.os }}-tsc-
-            
-      - name: Cache test results
-        uses: actions/cache@v6
-        with:
-          path: |
-            coverage/
-            .vitest/
-          key: ${{ runner.os }}-test-${{ matrix.node-version }}-${{ hashFiles('src/**/*.ts', 'src/**/*.test.ts', 'vitest.config.ts') }}
-          restore-keys: |
-            ${{ runner.os }}-test-${{ matrix.node-version }}-
-            ${{ runner.os }}-test-
-          
+            turbo-build-${{ runner.os }}-
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-        
-      # Auto-fix linting issues (only on push to main, only on Node.js 22.x and Ubuntu to avoid race conditions)
-      - name: Check for fixable linting issues
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest'
-        id: check-fixes
-        run: |
-          git status --porcelain > before.txt
-          pnpm run lint:fix || true
-          pnpm run format || true
-          git status --porcelain > after.txt
-          
-          if ! diff before.txt after.txt >/dev/null; then
-            echo "fixes-available=true" >> $GITHUB_OUTPUT
-            git checkout -- .
-          else
-            echo "fixes-available=false" >> $GITHUB_OUTPUT
-          fi
-          
-          rm -f before.txt after.txt
-          
-      - name: Auto-fix linting issues
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest' && steps.check-fixes.outputs.fixes-available == 'true'
-        run: |
-          pnpm run lint:fix
-          pnpm run format
-          
-      - name: Commit auto-fixes
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest' && steps.check-fixes.outputs.fixes-available == 'true'
-        run: |
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add .
-          
-          if ! git diff --cached --quiet; then
-            git commit -m "style: auto-fix linting issues"
-            git push
-          fi
-        
-      # Quality checks (must pass for all further steps)
-      - name: Run lint (fast fail)
-        run: pnpm run lint
-        
-      - name: Check formatting (fast fail)
-        run: pnpm run format:check
-        
-      - name: Run type check (fast fail)
-        run: pnpm run typecheck
-        
-      - name: Run security audit
-        run: pnpm audit --audit-level=high
-        continue-on-error: true
-        
+
       - name: Build
         run: pnpm run build
-        
+
       - name: Create filesystem test environment
         run: |
           # Create test directories for cross-platform filesystem testing
           mkdir -p test-filesystem/case-test
           mkdir -p test-filesystem/path-test
           mkdir -p test-filesystem/symlink-test
-          
+
           # Test case sensitivity (if supported)
           cd test-filesystem/case-test
           echo "lowercase content" > testfile.txt
           echo "uppercase content" > TESTFILE.TXT
-          
+
           # Count files to detect case sensitivity
           FILE_COUNT=$(ls testfile.txt TESTFILE.TXT 2>/dev/null | wc -l || echo "0")
           echo "FILESYSTEM_CASE_TEST_COUNT=$FILE_COUNT" >> $GITHUB_ENV
-          
+
           if [ "$FILE_COUNT" -eq "2" ]; then
             echo "✅ Case-sensitive filesystem detected"
             echo "FILESYSTEM_IS_CASE_SENSITIVE=true" >> $GITHUB_ENV
           else
-            echo "✅ Case-insensitive filesystem detected"  
+            echo "✅ Case-insensitive filesystem detected"
             echo "FILESYSTEM_IS_CASE_SENSITIVE=false" >> $GITHUB_ENV
           fi
-          
+
           cd ../..
         shell: bash
 
@@ -181,7 +183,7 @@ jobs:
           echo "Expected case sensitivity: ${{ matrix.filesystem-case }}"
           echo "Detected case sensitivity: $FILESYSTEM_IS_CASE_SENSITIVE"
           echo "File count in case test: $FILESYSTEM_CASE_TEST_COUNT"
-          
+
           # Test path separators
           if [ "${{ runner.os }}" = "Windows" ]; then
             echo "Testing Windows path separators..."
@@ -192,12 +194,12 @@ jobs:
             echo "Testing Unix-like path separators..."
             echo "test content" > "test-filesystem/path-test/unix.txt"
           fi
-          
+
           # Test symbolic links (if supported)
           cd test-filesystem/symlink-test
           echo "original content" > original.txt
           ln -s original.txt symlink.txt 2>/dev/null || echo "Symlinks not supported on this filesystem"
-          
+
           if [ -L symlink.txt ]; then
             echo "✅ Symbolic links supported"
             echo "FILESYSTEM_SUPPORTS_SYMLINKS=true" >> $GITHUB_ENV
@@ -205,7 +207,7 @@ jobs:
             echo "❌ Symbolic links not supported"
             echo "FILESYSTEM_SUPPORTS_SYMLINKS=false" >> $GITHUB_ENV
           fi
-          
+
           cd ../..
         shell: bash
 
@@ -213,7 +215,7 @@ jobs:
         env:
           MARKMV_TEST_FILESYSTEM_CASE_SENSITIVE: ${{ env.FILESYSTEM_IS_CASE_SENSITIVE }}
           MARKMV_TEST_SUPPORTS_SYMLINKS: ${{ env.FILESYSTEM_SUPPORTS_SYMLINKS }}
-        run: pnpm run test:run
+        run: pnpm run _test
 
       - name: Report filesystem test results
         run: |
@@ -223,38 +225,38 @@ jobs:
           echo "**Symlink Support:** $FILESYSTEM_SUPPORTS_SYMLINKS" >> $GITHUB_STEP_SUMMARY
           echo "**Path Separator:** ${{ matrix.path-separator || 'forward-slash' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-        
+
       # Coverage generation (only on Node 24.x and Ubuntu to avoid duplication)
       - name: Generate test coverage
         if: matrix.node-version == '24.x' && matrix.os == 'ubuntu-latest'
         run: |
           pnpm run test:coverage | tee coverage-output.txt
-          
+
           # Extract overall coverage percentage
           COVERAGE=$(grep "All files" coverage-output.txt | awk '{print $4}' | head -1)
           echo "TEST_COVERAGE=$COVERAGE" >> $GITHUB_ENV
           echo "📊 Test coverage: $COVERAGE%" >> $GITHUB_STEP_SUMMARY
-          
+
       - name: Generate documentation coverage
         if: matrix.node-version == '24.x' && matrix.os == 'ubuntu-latest'
         run: |
           # Generate regular report for summary
           pnpm run docs:coverage
-          
+
           # Generate JSON report for programmatic access (suppress all output to avoid warnings in JSON)
           DOCS_COVERAGE=$(OUTPUT_JSON=true node scripts/check-docs-coverage.js 2>/dev/null | jq -r '.overallCoverage')
-          
+
           # If jq failed, try to extract directly from the script output
           if [ -z "$DOCS_COVERAGE" ] || [ "$DOCS_COVERAGE" = "null" ]; then
             DOCS_COVERAGE=$(OUTPUT_JSON=true node scripts/check-docs-coverage.js 2>/dev/null | grep -o '"overallCoverage":[0-9.]*' | cut -d':' -f2)
           fi
-          
+
           echo "DOCS_COVERAGE=$DOCS_COVERAGE" >> $GITHUB_ENV
           echo "📚 Documentation coverage: $DOCS_COVERAGE%" >> $GITHUB_STEP_SUMMARY
-          
+
           # Save JSON for artifacts (optional)
           OUTPUT_JSON=true node scripts/check-docs-coverage.js 2>/dev/null > docs-coverage.json || echo '{"overallCoverage": 0}' > docs-coverage.json
-          
+
       - name: Upload coverage artifacts
         if: matrix.node-version == '24.x' && matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v7
@@ -266,9 +268,9 @@ jobs:
             docs-coverage.json
           retention-days: 30
 
-  # Release - Only after quality checks pass, includes README generation and badge updates
+  # Release - only after every quality gate passes
   release:
-    needs: quality
+    needs: [commitlint, lint, format, typecheck, build, knip, security-audit, test]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
@@ -276,6 +278,7 @@ jobs:
       issues: write
       pull-requests: write
       id-token: write # OIDC identity for npm trusted publishing (no NPM_TOKEN)
+      attestations: write # for actions/attest
 
     steps:
       - name: Checkout repository
@@ -283,7 +286,6 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
-          # Get the latest commit (including badge updates)
           ref: main
 
       # pnpm must be on PATH before setup-node: its cache integration runs `pnpm store path` and fails if the package manager is not installed yet.
@@ -293,7 +295,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '22.x'
+          node-version-file: .tool-versions
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -307,7 +309,7 @@ jobs:
         with:
           name: coverage-reports
         continue-on-error: true
-        
+
       - name: Upload coverage to Coveralls
         if: hashFiles('coverage/lcov.info') != ''
         uses: coverallsapp/github-action@v2
@@ -315,15 +317,15 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./coverage/lcov.info
         continue-on-error: true
-        
+
       - name: Build
         run: pnpm run build
-        
+
       - name: Verify build output
         run: |
           ls -la dist/
           node dist/cli.js --version || echo "CLI not yet ready"
-        
+
       - name: Generate SBOM for NPM attestations
         uses: anchore/sbom-action@v0.24.0
         with:
@@ -332,130 +334,34 @@ jobs:
           output-file: sbom.spdx.json
           upload-artifact: true
           upload-release-assets: false
-        
-      # Pre-release: Generate README and update badges BEFORE semantic-release
+
+      # Provenance mode (bare subject-path, no sbom-path/predicate inputs): a verifiable chain-of-custody for the SBOM document itself. Attesting the SBOM in "SBOM mode" against the actual npm tarball as its subject would need that tarball packed before this point -- but the real publish, including the version bump, happens later inside `pnpm run release`, so a tarball packed here would carry a version that never actually ships. Signing the SBOM document's own provenance avoids attesting a fact that would already be wrong by the time the real package exists.
+      - name: Attest SBOM
+        uses: actions/attest@v4
+        with:
+          subject-path: sbom.spdx.json
+
+      # Keeps the README's typedoc-derived API reference section in sync with the built code.
+      # @semantic-release/git stages README.md itself (it's in its own assets list), so no manual
+      # git add is needed here.
       - name: Generate updated README for release
         run: |
           echo "🔄 Generating README from TypeScript documentation..."
           pnpm run docs:readme-generate
-          
-      - name: Extract coverage data for badges
-        id: coverage
-        run: |
-          # Test coverage
-          if [ -f "coverage-output.txt" ]; then
-            TEST_COV=$(grep "All files" coverage-output.txt | awk '{print $4}' | head -1)
-          else
-            TEST_COV="unknown"
-          fi
-          
-          # Documentation coverage
-          if [ -f "docs-coverage.json" ]; then
-            DOCS_COV=$(jq -r '.overallCoverage' docs-coverage.json)
-          else
-            DOCS_COV="unknown"
-          fi
-          
-          echo "test-coverage=$TEST_COV" >> $GITHUB_OUTPUT
-          echo "docs-coverage=$DOCS_COV" >> $GITHUB_OUTPUT
-          echo "📊 Test Coverage: $TEST_COV% | Documentation Coverage: $DOCS_COV%"
-          
-      - name: Determine badge colors
-        id: colors
-        run: |
-          # Test coverage color
-          TEST_COV="${{ steps.coverage.outputs.test-coverage }}"
-          if [ "$TEST_COV" = "unknown" ]; then
-            TEST_COLOR="lightgrey"
-          else
-            TEST_NUM=$(echo "$TEST_COV" | sed 's/%//' | cut -d'.' -f1)
-            if [ "$TEST_NUM" -ge 90 ]; then
-              TEST_COLOR="brightgreen"
-            elif [ "$TEST_NUM" -ge 80 ]; then
-              TEST_COLOR="green"
-            elif [ "$TEST_NUM" -ge 70 ]; then
-              TEST_COLOR="yellow"
-            elif [ "$TEST_NUM" -ge 60 ]; then
-              TEST_COLOR="orange"
-            else
-              TEST_COLOR="red"
-            fi
-          fi
-          
-          # Documentation coverage color
-          DOCS_COV="${{ steps.coverage.outputs.docs-coverage }}"
-          if [ "$DOCS_COV" = "unknown" ]; then
-            DOCS_COLOR="lightgrey"
-          else
-            DOCS_NUM=$(echo "$DOCS_COV" | sed 's/%//' | cut -d'.' -f1)
-            if [ "$DOCS_NUM" -ge 95 ]; then
-              DOCS_COLOR="brightgreen"
-            elif [ "$DOCS_NUM" -ge 90 ]; then
-              DOCS_COLOR="green"
-            elif [ "$DOCS_NUM" -ge 80 ]; then
-              DOCS_COLOR="yellow"
-            elif [ "$DOCS_NUM" -ge 70 ]; then
-              DOCS_COLOR="orange"
-            else
-              DOCS_COLOR="red"
-            fi
-          fi
-          
-          echo "test-color=$TEST_COLOR" >> $GITHUB_OUTPUT
-          echo "docs-color=$DOCS_COLOR" >> $GITHUB_OUTPUT
-          
-      - name: Update README badges before release
-        run: |
-          echo "🎨 Updating coverage badges in README..."
-          # Use current commit hash as base for badges (will be the commit before release)
-          CURRENT_HASH=$(git rev-parse HEAD)
-          
-          TEST_COV="${{ steps.coverage.outputs.test-coverage }}"
-          DOCS_COV="${{ steps.coverage.outputs.docs-coverage }}"
-          TEST_COLOR="${{ steps.colors.outputs.test-color }}"
-          DOCS_COLOR="${{ steps.colors.outputs.docs-color }}"
-          
-          # URL encode percentage signs
-          TEST_COV_ENCODED=$(echo "$TEST_COV" | sed 's/%/%25/g')
-          DOCS_COV_ENCODED=$(echo "$DOCS_COV" | sed 's/%/%25/g')
-          
-          # Create new badge URLs with current commit hash
-          TEST_BADGE="[![Test Coverage](https://img.shields.io/badge/coverage-${TEST_COV_ENCODED}-${TEST_COLOR}.svg)](https://github.com/ExaDev/markmv/commit/${CURRENT_HASH})"
-          DOCS_BADGE="[![Documentation Coverage](https://img.shields.io/badge/docs-${DOCS_COV_ENCODED}-${DOCS_COLOR}.svg)](https://github.com/ExaDev/markmv/commit/${CURRENT_HASH})"
-          
-          # Update README.md
-          awk -v test_badge="$TEST_BADGE" -v docs_badge="$DOCS_BADGE" '
-          /\[\!\[Test Coverage\]/ { print test_badge; next }
-          /\[\!\[Documentation Coverage\]/ { print docs_badge; next }
-          { print }
-          ' README.md > README.md.tmp && mv README.md.tmp README.md
-          
-          echo "✅ README badges updated with current coverage data (commit: ${CURRENT_HASH})"
-          
-      - name: Stage README and badge updates for release
-        run: |
-          if ! git diff --quiet; then
-            echo "📝 Staging README and badge updates for inclusion in release commit..."
-            git add README.md
-            echo "✅ Changes staged and ready for semantic-release"
-          else
-            echo "ℹ️ No README changes to stage"
-          fi
-        
-      - name: Release (includes README and badge updates)
+
+      - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
           # npm publish provenance, matching the npm plugin's provenance setting in .releaserc.json
-          NPM_CONFIG_PROVENANCE: "true"
+          NPM_CONFIG_PROVENANCE: 'true'
           # Blanked, not omitted -- an inherited NPM_TOKEN/NODE_AUTH_TOKEN from a workflow-level env block or composite action would otherwise be used in preference to the OIDC exchange.
-          NPM_TOKEN: ""
-          NODE_AUTH_TOKEN: ""
+          NPM_TOKEN: ''
+          NODE_AUTH_TOKEN: ''
         run: pnpm run release
-
 
   # Documentation Deployment - Only after successful release with updated version
   documentation:
-    needs: [quality, release]
+    needs: release
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
@@ -465,7 +371,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -481,7 +387,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: '22.x'
+          node-version-file: .tool-versions
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -495,8 +401,6 @@ jobs:
           echo "## 📊 Documentation Build Status" >> $GITHUB_STEP_SUMMARY
           echo "**Current Version:** $(node -p "require('./package.json').version")" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Coverage Badges:**" >> $GITHUB_STEP_SUMMARY
-          grep -E "(Test Coverage|Documentation Coverage)" README.md >> $GITHUB_STEP_SUMMARY || echo "No coverage badges found" >> $GITHUB_STEP_SUMMARY
 
       - name: Generate documentation
         run: pnpm run docs

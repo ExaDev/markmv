@@ -1,0 +1,41 @@
+name: Setup and run
+description: Set up pnpm + Node from .tool-versions, install from the frozen lockfile, restore turbo's local cache, then run a command. Requires checkout before use.
+
+inputs:
+  task:
+    description: Task identifier, used as part of the turbo cache key (lint, typecheck, test, build, knip, format-check).
+    required: true
+  command:
+    description: Shell command to execute after install.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    # pnpm must be on PATH before setup-node: its cache integration runs `pnpm store path` and fails if the package manager is not installed yet.
+    - name: Setup pnpm
+      run: corepack enable
+      shell: bash
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v7
+      with:
+        # .tool-versions is the single source of truth for the pinned dev Node version, rather than a version literal repeated in every job. registry-url is deliberately absent: setting it makes setup-node write an .npmrc containing an _authToken line, and that line wins over the OIDC token exchange -- so the setting that looks like it configures the registry is exactly the one that would stop trusted publishing working.
+        node-version-file: .tool-versions
+        cache: pnpm
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+      shell: bash
+
+    # turbo's local filesystem cache, keyed per task. A task whose declared inputs are unchanged since the last run on this branch replays its cached result instead of re-running it. restore-keys falls back to the newest cache for the same task when no exact commit match exists, which is the normal case on a new commit.
+    - uses: actions/cache@v4
+      with:
+        path: .turbo
+        key: turbo-${{ inputs.task }}-${{ runner.os }}-${{ github.sha }}
+        restore-keys: |
+          turbo-${{ inputs.task }}-${{ runner.os }}-
+
+    - name: Run ${{ inputs.task }}
+      run: ${{ inputs.command }}
+      shell: bash
