@@ -332,7 +332,9 @@ export async function validateLinks(
       console.log(`🔍 Git Integration: Found ${files.length} staged markdown files`);
     }
   } else {
-    // Standard mode - resolve glob patterns
+    // Standard mode - resolve glob patterns. Glob patterns use forward slashes on every
+    // platform -- backslashes are pattern escapes, not separators -- so library callers passing
+    // host-native joined paths get them normalised exactly as the CLI already does.
     for (const pattern of patterns) {
       try {
         const globOptions: { absolute: boolean; ignore: string[]; maxDepth?: number } = {
@@ -343,7 +345,8 @@ export async function validateLinks(
           globOptions.maxDepth = opts.maxDepth;
         }
 
-        const matches = await glob(pattern, globOptions);
+        const normalizedPattern = pattern.replace(/\\/g, '/');
+        const matches = await glob(normalizedPattern, globOptions);
         files.push(...matches.filter((f) => f.endsWith('.md')));
       } catch (error) {
         if (opts.verbose) {

@@ -483,14 +483,15 @@ export class LinkRefactorer {
       !link.href.startsWith('/') &&
       !link.href.startsWith('~/')
     ) {
-      let newPath = PathUtils.makeRelative(newTargetFilePath, sourceDir);
+      // Markdown links always use forward slashes; the ./ prefix check assumes unix form
+      const unixPath = PathUtils.toUnixPath(PathUtils.makeRelative(newTargetFilePath, sourceDir));
 
       // Ensure relative paths start with ./ for markdown compatibility
-      if (!newPath.startsWith('./') && !newPath.startsWith('../') && !newPath.startsWith('/')) {
-        newPath = `./${newPath}`;
+      if (!unixPath.startsWith('./') && !unixPath.startsWith('../') && !unixPath.startsWith('/')) {
+        return `./${unixPath}`;
       }
 
-      return newPath;
+      return unixPath;
     }
 
     return newTargetFilePath;
@@ -510,7 +511,8 @@ export class LinkRefactorer {
     let newPath: string;
 
     if (this.options.preferRelativePaths && !link.absolute) {
-      newPath = PathUtils.makeRelative(newTargetFilePath, sourceDir);
+      // Markdown links always use forward slashes; the ./ prefix check assumes unix form
+      newPath = PathUtils.toUnixPath(PathUtils.makeRelative(newTargetFilePath, sourceDir));
 
       // Ensure relative paths start with ./ for markdown compatibility
       if (!newPath.startsWith('./') && !newPath.startsWith('../') && !newPath.startsWith('/')) {
@@ -520,10 +522,7 @@ export class LinkRefactorer {
       newPath = newTargetFilePath;
     }
 
-    // Convert to Unix-style paths for markdown
-    newPath = PathUtils.toUnixPath(newPath);
-
-    return newPath + anchorSuffix;
+    return PathUtils.toUnixPath(newPath) + anchorSuffix;
   }
 
   /** Replace a link in a line of text while preserving formatting */
