@@ -124,7 +124,7 @@
     "turndown": "^7.2.0",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.1.0",
-    "zod": "4.3.6"
+    "zod": "4.4.3"
   },
   "engines": {
     "node": ">=22"
