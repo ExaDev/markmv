@@ -1,4 +1,5 @@
 import { readFile, readdir } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import { dirname, extname, isAbsolute, join, resolve } from 'node:path';
 import remarkParse from 'remark-parse';
 import { unified } from 'unified';
@@ -236,7 +237,6 @@ export class LinkParser {
   private resolveClaudeImportPath(importPath: string, baseDir: string): string {
     // Handle home directory paths (~)
     if (importPath.startsWith('~/')) {
-      const { homedir } = require('node:os');
       return resolve(join(homedir(), importPath.slice(2)));
     }
 

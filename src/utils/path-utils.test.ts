@@ -1,4 +1,5 @@
-import { homedir } from 'node:os';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { PathUtils } from './path-utils.js';
@@ -300,6 +301,27 @@ describe('PathUtils', () => {
         const result = PathUtils.findCommonBase(paths);
         expect(result).toBe(expectedBase);
       });
+    });
+  });
+
+  describe('generateUniqueFilename', () => {
+    it('should return the desired path when it does not exist', () => {
+      const desired = join(tmpdir(), `markmv-unique-free-${Date.now()}.md`);
+
+      const result = PathUtils.generateUniqueFilename(desired);
+
+      expect(result).toBe(desired);
+    });
+
+    it('should append a counter when the desired path is taken', () => {
+      const dir = mkdtempSync(join(tmpdir(), 'markmv-unique-'));
+      const desired = join(dir, 'note.md');
+      writeFileSync(desired, 'taken');
+
+      const result = PathUtils.generateUniqueFilename(desired);
+
+      expect(result).toBe(join(dir, 'note-1.md'));
+      rmSync(dir, { recursive: true, force: true });
     });
   });
 });

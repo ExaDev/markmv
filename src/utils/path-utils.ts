@@ -130,8 +130,7 @@ export class PathUtils {
     let counter = 1;
     let uniquePath = desiredPath;
 
-    const fs = require('node:fs');
-    while (fs.existsSync(uniquePath)) {
+    while (existsSync(uniquePath)) {
       uniquePath = join(dir, `${name}-${counter}${ext}`);
       counter++;
     }

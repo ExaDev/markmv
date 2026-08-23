@@ -1,8 +1,14 @@
+import { execFile } from 'node:child_process';
 import { mkdir, rm, stat, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { createRequire } from 'node:module';
+import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { promisify } from 'node:util';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { LinkParser } from './link-parser.js';
+
+const execFileAsync = promisify(execFile);
 
 describe('LinkParser', () => {
   let parser: LinkParser;
@@ -221,6 +227,59 @@ This is a [reference link][ref1] and another [reference][ref2].
       expect(results.map((r) => r.filePath).sort()).toEqual(
         [join(testDir, 'file1.md'), join(testDir, 'file2.md')].sort()
       );
+    });
+  });
+
+  describe('claude-import home paths', () => {
+    it('should parse a file containing @~/ without throwing', async () => {
+      const filePath = join(testDir, 'memory-note.md');
+      await writeFile(filePath, '- @~/memory/dev/foo.md\n');
+
+      const result = await parser.parseFile(filePath);
+
+      expect(result.links).toHaveLength(1);
+    });
+
+    it('should resolve @~/ claude imports against the home directory', async () => {
+      const filePath = join(testDir, 'memory-note.md');
+      await writeFile(filePath, '- @~/memory/dev/foo.md\n');
+
+      const result = await parser.parseFile(filePath);
+
+      const link = result.links[0];
+      expect(link?.type).toBe('claude-import');
+      expect(link?.href).toBe('~/memory/dev/foo.md');
+      expect(link?.resolvedPath).toBe(join(homedir(), 'memory/dev/foo.md'));
+    });
+
+    it('should parse @~/ claude imports under the real ESM runtime', { timeout: 30_000 }, async () => {
+      // Vitest transforms modules through Vite, which shims require() and masks the ReferenceError an ESM-only runtime throws. Spawn a real ESM process to exercise the published behaviour.
+      const requireFromTest = createRequire(import.meta.url);
+      const tsxEntry = pathToFileURL(requireFromTest.resolve('tsx')).href;
+      const notePath = join(testDir, 'note.md');
+      await writeFile(notePath, '- @~/memory/dev/foo.md\n');
+
+      const parserUrl = pathToFileURL(fileURLToPath(new URL('./link-parser.ts', import.meta.url))).href;
+      const scriptPath = join(testDir, 'esm-parse-check.mjs');
+      await writeFile(
+        scriptPath,
+        [
+          `import { LinkParser } from ${JSON.stringify(parserUrl)};`,
+          'const parser = new LinkParser();',
+          `const result = await parser.parseFile(${JSON.stringify(notePath)});`,
+          "const link = result.links[0];",
+          "if (!link) throw new Error('expected one claude-import link, got none');",
+          "console.log(JSON.stringify({ href: link.href, resolvedPath: link.resolvedPath }));",
+        ].join('\n')
+      );
+
+      const { stdout } = await execFileAsync(process.execPath, ['--import', tsxEntry, scriptPath]);
+
+      const parsed: unknown = JSON.parse(stdout);
+      expect(parsed).toEqual({
+        href: '~/memory/dev/foo.md',
+        resolvedPath: join(homedir(), 'memory/dev/foo.md'),
+      });
     });
   });
 });
