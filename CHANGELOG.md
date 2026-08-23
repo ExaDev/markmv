@@ -1,3 +1,27 @@
+## [1.37.0](https://github.com/ExaDev/markmv/compare/v1.36.0...v1.37.0) (2026-08-23)
+
+### Features
+
+* **api:** export obsidian vault resolution and link suggestion helpers ([4f4e92d](https://github.com/ExaDev/markmv/commit/4f4e92d47cf6ffd042eda2668f29bb999e8660fa))
+* **cli:** register embed, extract, wayback, refactor-index, and tree ([5dfb150](https://github.com/ExaDev/markmv/commit/5dfb15000450127b7788d9bd8dbf4b0d642a6bc2))
+* **commands:** convert HTTP(S) links to Wayback Machine archive URLs ([583bdc5](https://github.com/ExaDev/markmv/commit/583bdc5bbfd597ce8469ef7320a5fb882d41a01c)), closes [#18](https://github.com/ExaDev/markmv/issues/18)
+* **commands:** embed linked images as base64 and extract them back to files ([2cc32dc](https://github.com/ExaDev/markmv/commit/2cc32dced4cc6518bc9265275fad9e8cc029ae92)), closes [#72](https://github.com/ExaDev/markmv/issues/72)
+* **commands:** markdown file tree visualisation and statistics ([e6b2bb3](https://github.com/ExaDev/markmv/commit/e6b2bb35ed5a4f009889c5b588a50ea09f1ddbc2)), closes [#20](https://github.com/ExaDev/markmv/issues/20)
+* **commands:** refactor between README.md and index.md conventions ([9257d85](https://github.com/ExaDev/markmv/commit/9257d858f33f11320b6c515892aa54a8ded63651)), closes [#19](https://github.com/ExaDev/markmv/issues/19)
+* **core:** retry transient external link failures ([f57a0e9](https://github.com/ExaDev/markmv/commit/f57a0e9d841444c75c1385575c85b04df7882a6a)), closes [#33](https://github.com/ExaDev/markmv/issues/33)
+
+### Bug Fixes
+
+* **commands:** normalise glob patterns in embed, extract, and wayback ([7b8e133](https://github.com/ExaDev/markmv/commit/7b8e1335fc2f4abab14f5ecf38cea852e10a7c09))
+
+### Styles
+
+* auto-fix linting issues ([b4bae05](https://github.com/ExaDev/markmv/commit/b4bae057bfd07981c26024e364701b4bc822fd59))
+
+### Tests
+
+* pin freshness error-handling tests to single-attempt external checks ([9793255](https://github.com/ExaDev/markmv/commit/97932556075cc3b2ff9047f07743e6e66e1da79c))
+
 ## [1.36.0](https://github.com/ExaDev/markmv/compare/v1.35.0...v1.36.0) (2026-08-23)
 
 ### Features
