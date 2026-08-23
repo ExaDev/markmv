@@ -148,11 +148,12 @@ export class LinkParser {
         const target = hashIndex >= 0 ? targetWithoutAlias.slice(0, hashIndex) : targetWithoutAlias;
         const blockReference = hashIndex >= 0 ? targetWithoutAlias.slice(hashIndex) : undefined;
 
-        if (target.trim() === '') continue;
+        const trimmedTarget = target.trim();
+        if (trimmedTarget === '') continue;
 
         const link: MarkdownLink = {
           type: isEmbed ? 'obsidian-transclusion' : 'wikilink',
-          href: target,
+          href: trimmedTarget,
           text: undefined,
           referenceId: undefined,
           line: node.position.start.line,

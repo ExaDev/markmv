@@ -42,11 +42,14 @@ function buildNameIndex(filePaths: string[]): Map<string, string[]> {
   const index = new Map<string, string[]>();
   for (const filePath of filePaths) {
     const name = basename(filePath);
-    const candidates = index.get(name) ?? [];
+    // Obsidian resolves wikilink targets case-insensitively, so lookups go through lowercased
+    // keys while candidates keep their true-cased paths
+    const lowerName = name.toLowerCase();
+    const candidates = index.get(lowerName) ?? [];
     candidates.push(filePath);
-    index.set(name, candidates);
+    index.set(lowerName, candidates);
     if (extname(name) === '.md') {
-      const stem = basename(name, '.md');
+      const stem = basename(name, '.md').toLowerCase();
       const stemCandidates = index.get(stem) ?? [];
       stemCandidates.push(filePath);
       index.set(stem, stemCandidates);
@@ -151,7 +154,7 @@ function resolveTarget(
     return {};
   }
 
-  const matches = nameIndex.get(target);
+  const matches = nameIndex.get(target.toLowerCase());
   if (matches !== undefined) {
     const unique = Array.from(new Set(matches));
     if (unique.length === 1) {
@@ -164,6 +167,16 @@ function resolveTarget(
   const onDisk = join(vaultRoot, target);
   if (target.includes('.') && existsSync(onDisk)) {
     return { resolvedPath: onDisk };
+  }
+  // Case variation alone should not strand an otherwise-valid filename target
+  if (target.includes('.') && !existsSync(onDisk)) {
+    const lowerTarget = target.toLowerCase();
+    for (const candidateSuffix of [lowerTarget]) {
+      const candidate = join(vaultRoot, candidateSuffix);
+      if (existsSync(candidate)) {
+        return { resolvedPath: candidate };
+      }
+    }
   }
   return {};
 }

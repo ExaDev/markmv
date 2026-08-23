@@ -1,6 +1,7 @@
 import { readFile, readdir, stat } from 'node:fs/promises';
 import { dirname, relative, resolve } from 'node:path';
 import { LinkParser } from '../core/link-parser.js';
+import { resolveWikilinks } from '../core/obsidian-vault.js';
 import { LinkValidator } from '../core/link-validator.js';
 import type { ParsedMarkdownFile } from '../types/links.js';
 import { PathUtils } from '../utils/path-utils.js';
@@ -400,6 +401,10 @@ export async function scanMarkdownTree(
     }
     parsedFiles.push(await parser.parseFile(filePath));
   }
+
+  // Resolve wikilinks against the whole scanned set so vault-style references count as inbound
+  // links and orphan detection sees them
+  resolveWikilinks(parsedFiles, PathUtils.findCommonBase(filePaths));
 
   const scannedByPath = new Map<string, ScannedMarkdownFile>();
   for (const parsed of parsedFiles) {

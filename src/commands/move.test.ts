@@ -127,22 +127,12 @@ describe('Move Command', () => {
       // Use forward slashes for glob patterns to ensure cross-platform compatibility
       const globPattern = join(testDir, '*.md').replace(/\\/g, '/');
 
-      try {
-        await moveCommand([globPattern, destDir], { dryRun: true, verbose: true });
+      await moveCommand([globPattern, destDir], { dryRun: true, verbose: true });
 
-        expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('📁 Found'));
-        expect(mockConsoleLog).toHaveBeenCalledWith(
-          expect.stringContaining('file(s) matching pattern')
-        );
-      } catch (error) {
-        // On Windows, if glob patterns fail, ensure proper error handling
-        if (error instanceof Error && error.message.includes('Process exit called with code 1')) {
-          // This is acceptable behavior if glob pattern doesn't work on Windows
-          expect(mockConsoleError).toHaveBeenCalled();
-        } else {
-          throw error;
-        }
-      }
+      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('📁 Found'));
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('file(s) matching pattern')
+      );
     });
   });
 
@@ -339,36 +329,49 @@ describe('Move Command', () => {
   });
 
   describe('Link Validation', () => {
-    it('should perform link validation in verbose mode when not dry run', async () => {
+    it('should validate link integrity in verbose mode on a real move', async () => {
       const sourceFile = join(testDir, 'source.md');
       const destFile = join(testDir, 'dest.md');
+      const bystanderFile = join(testDir, 'bystander.md');
 
-      writeFileSync(sourceFile, '# Test Content\n\n[Link](./other.md)');
+      writeFileSync(sourceFile, '# Test Content\n\n[Link](./bystander.md)');
+      writeFileSync(bystanderFile, '# Bystander\n\n[Back](./source.md)');
 
-      // Note: We use dry run here because actual file operations require more setup
-      // and the validation step is only shown in non-dry-run + verbose mode
-      await moveCommand([sourceFile, destFile], { dryRun: true, verbose: true });
+      await moveCommand([sourceFile, destFile], { verbose: true });
 
-      // In dry run mode, validation message won't appear, but we can verify the flow works
-      expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('📊 Summary:'));
+      // Non-dry-run verbose moves run post-operation link validation over the result
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('Validating link integrity')
+      );
+      expect(existsSync(destFile)).toBe(true);
+      const bystanderContent = readFileSync(bystanderFile, 'utf-8');
+      expect(bystanderContent).toContain('./dest.md');
     });
 
-    it('should display warnings when present', async () => {
+    it('should display warnings when the operation reports them', async () => {
       const sourceFile = join(testDir, 'source.md');
       const destFile = join(testDir, 'dest.md');
-
       writeFileSync(sourceFile, '# Test Content');
 
-      await moveCommand([sourceFile, destFile], { dryRun: true });
+      const { FileOperations } = await import('../core/file-operations.js');
+      const originalMove = FileOperations.prototype.moveFile;
+      const moveSpy = vi.spyOn(FileOperations.prototype, 'moveFile').mockImplementation(function (
+        this: InstanceType<typeof FileOperations>,
+        ...args
+      ) {
+        const promise = originalMove.apply(this, args);
+        return promise.then((result) => ({ ...result, warnings: ['stubbed warning'] }));
+      });
 
-      // The command should handle warnings display, even if none are generated in this simple case
-      // This tests the warning display logic path
-      const logCalls = mockConsoleLog.mock.calls.map((call) => call[0]);
-      const hasWarningCheck = logCalls.some(
-        (log) => typeof log === 'string' && (log.includes('⚠️') || log.includes('Summary'))
-      );
+      try {
+        await moveCommand([sourceFile, destFile], { dryRun: true });
+      } finally {
+        moveSpy.mockRestore();
+      }
 
-      expect(hasWarningCheck).toBe(true);
+      const output = mockConsoleLog.mock.calls.map((call) => call[0]).join('\n');
+      expect(output).toContain('⚠️  Warnings:');
+      expect(output).toContain('stubbed warning');
     });
   });
 
