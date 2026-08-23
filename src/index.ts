@@ -45,6 +45,19 @@ export { LinkRefactorer } from './core/link-refactorer.js';
 export { LinkValidator } from './core/link-validator.js';
 export { LinkConverter } from './core/link-converter.js';
 export { LinkGraphGenerator } from './core/link-graph-generator.js';
+export {
+  resolveWikilinks,
+  createWikilinkResolver,
+  findDuplicateNoteStems,
+  computeNoteStemCounts,
+  type ObsidianAmbiguity,
+  type DuplicateNoteStem,
+  type WikilinkResolution,
+} from './core/obsidian-vault.js';
+export {
+  suggestLinkFixes,
+  type LinkSuggestion,
+} from './core/link-suggester.js';
 export { DependencyGraph } from './core/dependency-graph.js';
 export { ContentJoiner } from './core/content-joiner.js';
 export { ContentSplitter } from './core/content-splitter.js';
