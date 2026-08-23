@@ -181,7 +181,8 @@ export class LinkRefactorer {
   /** Update links when the current file is being moved */
   async refactorLinksForCurrentFileMove(
     file: ParsedMarkdownFile,
-    newFilePath: string
+    newFilePath: string,
+    movedPaths?: Map<string, string>
   ): Promise<LinkRefactorResult> {
     const content = await FileUtils.readTextFile(file.filePath);
     const changes: OperationChange[] = [];
@@ -202,7 +203,12 @@ export class LinkRefactorer {
         (link.type === 'claude-import' && this.options.updateClaudeImports)
       ) {
         try {
-          const newLink = this.updateLinkForSourceFileMove(link, file.filePath, newFilePath);
+          const newLink = this.updateLinkForSourceFileMove(
+            link,
+            file.filePath,
+            newFilePath,
+            movedPaths
+          );
 
           if (newLink !== link.href) {
             let lineIndex = link.line - 1;
@@ -261,7 +267,8 @@ export class LinkRefactorer {
   async refactorLinksForCurrentFileMoveWithContent(
     file: ParsedMarkdownFile,
     newFilePath: string,
-    content: string
+    content: string,
+    movedPaths?: Map<string, string>
   ): Promise<LinkRefactorResult> {
     const changes: OperationChange[] = [];
     const errors: string[] = [];
@@ -281,14 +288,18 @@ export class LinkRefactorer {
         (link.type === 'claude-import' && this.options.updateClaudeImports)
       ) {
         try {
-          const newLink = this.updateLinkForSourceFileMove(link, file.filePath, newFilePath);
+          const newLink = this.updateLinkForSourceFileMove(
+            link,
+            file.filePath,
+            newFilePath,
+            movedPaths
+          );
 
           if (newLink !== link.href) {
             let lineIndex = link.line - 1;
             let oldLine = lines[lineIndex];
 
-            // For Claude imports, if the import is not found on the expected line,
-            // search for it in nearby lines (this handles parsing edge cases)
+            // For Claude imports, if the import is not found on the expected line, search for it in nearby lines (this handles parsing edge cases)
             if (link.type === 'claude-import') {
               const expectedImport = `@${link.href}`;
               if (!oldLine.includes(expectedImport)) {
@@ -363,17 +374,40 @@ export class LinkRefactorer {
   private updateLinkForSourceFileMove(
     link: MarkdownLink,
     oldSourceFilePath: string,
-    newSourceFilePath: string
+    newSourceFilePath: string,
+    movedPaths?: Map<string, string>
   ): string {
     if (link.type === 'claude-import' && this.options.updateClaudeImports) {
-      return PathUtils.updateClaudeImportPath(link.href, oldSourceFilePath, newSourceFilePath);
+      const newPath = PathUtils.updateClaudeImportPath(
+        link.href,
+        oldSourceFilePath,
+        newSourceFilePath,
+        movedPaths
+      );
+      return this.ensureRelativePrefix(newPath);
     }
 
     if (link.type === 'internal' || link.type === 'image') {
-      return PathUtils.updateRelativePath(link.href, oldSourceFilePath, newSourceFilePath);
+      const newPath = PathUtils.updateRelativePath(
+        link.href,
+        oldSourceFilePath,
+        newSourceFilePath,
+        movedPaths
+      );
+      return this.ensureRelativePrefix(newPath);
     }
 
     return link.href;
+  }
+
+  /**
+   * Ensure a rewritten same-directory path keeps an explicit ./ prefix, matching the bystander update convention so both rewrite passes converge on identical output.
+   */
+  private ensureRelativePrefix(path: string): string {
+    if (!path.startsWith('./') && !path.startsWith('../') && !path.startsWith('/')) {
+      return `./${path}`;
+    }
+    return path;
   }
 
   private updateClaudeImportPath(

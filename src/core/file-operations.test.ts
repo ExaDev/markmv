@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -360,6 +360,36 @@ describe('FileOperations', () => {
       } finally {
         parseSpy.mockRestore();
       }
+    });
+  });
+
+  describe('co-moved file link rewriting', () => {
+    it('should keep links between co-moved files pointing at their new locations', async () => {
+      const destDir = join(testDir, 'dest');
+      const aPath = join(testDir, 'A.md');
+      const bPath = join(testDir, 'B.md');
+      const keepPath = join(testDir, 'Keep.md');
+
+      await writeFile(aPath, '# A\n\nRef to B: [B](./B.md)\nRef to Keep: [Keep](./Keep.md)\n');
+      await writeFile(bPath, '# B\n\nRef to A: [A](./A.md)\n');
+      await writeFile(keepPath, '# Keep\n\nRef to A: [A](./A.md)\n');
+
+      const result = await fileOps.moveFiles([
+        { source: aPath, destination: join(destDir, 'A.md') },
+        { source: bPath, destination: join(destDir, 'B.md') },
+      ]);
+
+      expect(result.success).toBe(true);
+
+      const movedA = await readFile(join(destDir, 'A.md'), 'utf-8');
+      const movedB = await readFile(join(destDir, 'B.md'), 'utf-8');
+      const keeper = await readFile(keepPath, 'utf-8');
+
+      // A and B moved together: their mutual links must stay same-directory, and links to the file that stayed put must gain the relative hop
+      expect(movedA).toContain('[B](./B.md)');
+      expect(movedA).toContain('[Keep](../Keep.md)');
+      expect(movedB).toContain('[A](./A.md)');
+      expect(keeper).toContain('[A](./dest/A.md)');
     });
   });
 });

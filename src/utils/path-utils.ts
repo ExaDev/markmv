@@ -75,7 +75,8 @@ export class PathUtils {
   static updateRelativePath(
     originalLinkPath: string,
     sourceFilePath: string,
-    newSourceFilePath: string
+    newSourceFilePath: string,
+    movedPaths?: Map<string, string>
   ): string {
     // If it's not a relative path, return as-is
     if (isAbsolute(originalLinkPath) || originalLinkPath.startsWith('~/')) {
@@ -86,16 +87,20 @@ export class PathUtils {
     const sourceDir = dirname(sourceFilePath);
     const targetPath = PathUtils.resolvePath(originalLinkPath, sourceDir);
 
+    // A target that is itself being moved in the same batch lands at its own destination, so the recomputed path must point there rather than at the vacated location
+    const finalTargetPath = movedPaths?.get(targetPath) ?? targetPath;
+
     // Create new relative path from new location
     const newSourceDir = dirname(newSourceFilePath);
-    return PathUtils.makeRelative(targetPath, newSourceDir);
+    return PathUtils.makeRelative(finalTargetPath, newSourceDir);
   }
 
   /** Update a Claude import path when a file is moved */
   static updateClaudeImportPath(
     originalImportPath: string,
     sourceFilePath: string,
-    newSourceFilePath: string
+    newSourceFilePath: string,
+    movedPaths?: Map<string, string>
   ): string {
     // Handle absolute paths and home directory paths - they don't need updating
     if (isAbsolute(originalImportPath) || originalImportPath.startsWith('~/')) {
@@ -105,9 +110,10 @@ export class PathUtils {
     // For relative imports, update the path
     const sourceDir = dirname(sourceFilePath);
     const targetPath = PathUtils.resolvePath(originalImportPath, sourceDir);
+    const finalTargetPath = movedPaths?.get(targetPath) ?? targetPath;
     const newSourceDir = dirname(newSourceFilePath);
 
-    return PathUtils.makeRelative(targetPath, newSourceDir);
+    return PathUtils.makeRelative(finalTargetPath, newSourceDir);
   }
 
   /** Normalize path separators for cross-platform compatibility */

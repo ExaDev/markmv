@@ -369,7 +369,11 @@ export class FileOperations {
         dependencyGraph.updateFilePath(source, destination);
       }
 
-      // Second pass: Process content updates for dependent files and moved files
+      // Second pass: Process content updates for dependent files and moved files A moved file's own links must be recomputed against the final location of every target: links between co-moved files keep pointing at their new sibling locations, not the vacated ones
+      const movedPathMap = new Map(
+        resolvedMoves.map((move) => [PathUtils.resolvePath(move.source), move.destination])
+      );
+
       for (const { source, destination } of resolvedMoves) {
         // Find dependent files (files that depend on the source file being moved)
         // Note: use destination since we've already updated the dependency graph
@@ -448,7 +452,8 @@ export class FileOperations {
               await this.linkRefactorer.refactorLinksForCurrentFileMoveWithContent(
                 sourceFile,
                 destination,
-                originalContent
+                originalContent,
+                movedPathMap
               );
 
             if (selfRefactorResult.changes.length > 0) {
@@ -465,7 +470,8 @@ export class FileOperations {
           // Fallback to the original method if content not found
           const selfRefactorResult = await this.linkRefactorer.refactorLinksForCurrentFileMove(
             sourceFile,
-            destination
+            destination,
+            movedPathMap
           );
 
           if (selfRefactorResult.changes.length > 0) {
