@@ -155,13 +155,15 @@ export class LinkParser {
           href: target,
           text: undefined,
           referenceId: undefined,
-          blockReference,
           line: node.position.start.line,
           column: node.position.start.column + wikilinkMatch.index,
           absolute: false,
         };
         if (alias !== undefined && alias.trim() !== '') {
           link.text = alias.trim();
+        }
+        if (blockReference !== undefined) {
+          link.blockReference = blockReference;
         }
 
         links.push(link);
