@@ -1,3 +1,29 @@
+## [1.36.0](https://github.com/ExaDev/markmv/compare/v1.35.0...v1.36.0) (2026-08-23)
+
+### Features
+
+* **cli:** move a directory as a unit and root bystander discovery at the move span ([669290e](https://github.com/ExaDev/markmv/commit/669290e0c733ea9d97c93b53179bc61b7a2cc39c)), closes [#77](https://github.com/ExaDev/markmv/issues/77)
+* **cli:** standards enforcement and external domain skipping in validate ([38ddc81](https://github.com/ExaDev/markmv/commit/38ddc8140507fbb08ea6c0fd37eb1aa6afc9b2f5)), closes [#33](https://github.com/ExaDev/markmv/issues/33)
+* **cli:** suggest and apply fixes for broken internal links in validate ([075d424](https://github.com/ExaDev/markmv/commit/075d424178da8e6a5187b611bdf82ff79863c823)), closes [#33](https://github.com/ExaDev/markmv/issues/33)
+* **core:** obsidian mode with vault-resolved wikilinks and duplicate-basename warnings ([93a859f](https://github.com/ExaDev/markmv/commit/93a859fa7a7feee136a83f39dab86e241d687df1)), closes [Note#Section](https://github.com/ExaDev/Note/issues/Section) [#78](https://github.com/ExaDev/markmv/issues/78)
+* **core:** parse Obsidian wikilinks and embeds with aliases and block references ([fe245b7](https://github.com/ExaDev/markmv/commit/fe245b75ef5e11af8d055d9cc725656d21aac2cf)), closes [Note#Section](https://github.com/ExaDev/Note/issues/Section)
+
+### Bug Fixes
+
+* **cli:** make move summaries count the files links actually change in ([cb900e9](https://github.com/ExaDev/markmv/commit/cb900e939029b6aad1c9ade8c6092139fc4ae305)), closes [#76](https://github.com/ExaDev/markmv/issues/76)
+* **cli:** read --version from package.json instead of a hardcoded literal ([c7ed147](https://github.com/ExaDev/markmv/commit/c7ed147f5684006e34f5c456c524936ac6d4737e)), closes [#79](https://github.com/ExaDev/markmv/issues/79)
+* **core:** emit unix-style paths in self-move link rewrites on all platforms ([46dab49](https://github.com/ExaDev/markmv/commit/46dab493c72169938d3a541bd51e79f356e2f2c4))
+* **core:** fail runs on parse failures instead of reporting success ([dd577bb](https://github.com/ExaDev/markmv/commit/dd577bb93f8b4f561ce4e16d82dac0a564c2aa00)), closes [#75](https://github.com/ExaDev/markmv/issues/75)
+* **core:** normalise glob patterns and bystander rewrites for Windows separators ([3a52125](https://github.com/ExaDev/markmv/commit/3a52125e075c64a3a605771b339da73bce4c8cee))
+* **core:** replace CommonJS require() calls that crash ESM parsing ([3d60aed](https://github.com/ExaDev/markmv/commit/3d60aed035c78eccc396a2e6039b8b1f7c5f90c2)), closes [#74](https://github.com/ExaDev/markmv/issues/74)
+* **core:** rewrite links between co-moved files against their new locations ([b082ff0](https://github.com/ExaDev/markmv/commit/b082ff0c1cdf58c76f2132ffc0b231734c8c6853)), closes [#76](https://github.com/ExaDev/markmv/issues/76)
+* **core:** set optional wikilink fields only when present under exactOptionalPropertyTypes ([bbb18da](https://github.com/ExaDev/markmv/commit/bbb18dab28318f74a77e68b335485b75ae645429))
+
+### Styles
+
+* auto-fix linting issues ([1fc8147](https://github.com/ExaDev/markmv/commit/1fc814726d09f0458abc6e517f0ee7708093d7b1))
+* auto-fix linting issues ([532b936](https://github.com/ExaDev/markmv/commit/532b936f403503f66b19be7b5f4a7e7a71049e54))
+
 ## [1.35.0](https://github.com/ExaDev/markmv/compare/v1.34.0...v1.35.0) (2026-08-21)
 
 ### Features

@@ -202,7 +202,7 @@ recommended way to get started with the library.
 
 #### Returns
 
-[`FileOperations`](#fileoperations)
+`FileOperations`
 
 A new FileOperations instance
 
