@@ -227,6 +227,14 @@ describe('CLI Entry Point', () => {
         '--fix',
         'Suggest fixes for broken internal links and apply them interactively on a terminal'
       );
+      expect(mockOption).toHaveBeenCalledWith(
+        '--require-frontmatter <fields>',
+        'Comma-separated frontmatter fields every file must define'
+      );
+      expect(mockOption).toHaveBeenCalledWith(
+        '--enforce-link-format <format>',
+        'Enforce internal link href form: relative|absolute'
+      );
     });
   });
 });

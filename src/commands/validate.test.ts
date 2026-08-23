@@ -566,6 +566,82 @@ Anchor link: [bad anchor](#non-existent)
     });
   });
 
+  describe('external link domain filtering', () => {
+    it('skips external checks for domains listed in skipDomains', async () => {
+      const sourceFile = join(testDir, 'links.md');
+      await writeFile(
+        sourceFile,
+        '[flaky](https://flaky.invalid/x) and [normal](https://normal.invalid/y)\n'
+      );
+
+      const result = await validateLinks([sourceFile], {
+        checkExternal: true,
+        externalTimeout: 10,
+        strictInternal: true,
+        checkClaudeImports: true,
+        checkCircular: false,
+        onlyBroken: true,
+        groupBy: 'file',
+        includeContext: false,
+        dryRun: false,
+        verbose: false,
+        force: false,
+        skipDomains: ['flaky.invalid'],
+      });
+
+      // The skipped domain makes no check at all; the unskipped one fails its check
+      expect(result.brokenLinks).toBe(1);
+      const broken = Object.values(result.brokenLinksByFile)[0]?.[0];
+      expect(broken?.url).toBe('https://normal.invalid/y');
+    });
+  });
+
+  describe('standards enforcement', () => {
+    const enforcementOptions: ValidateOperationOptions = {
+      checkExternal: false,
+      externalTimeout: 5000,
+      strictInternal: true,
+      checkClaudeImports: true,
+      checkCircular: false,
+      onlyBroken: true,
+      groupBy: 'file',
+      includeContext: false,
+      dryRun: false,
+      verbose: false,
+      force: false,
+    };
+
+    it('reports files missing required frontmatter fields', async () => {
+      const withFrontmatter = join(testDir, 'good.md');
+      const withoutFrontmatter = join(testDir, 'bad.md');
+      await writeFile(withFrontmatter, '---\ntitle: Good\n---\n\n# Good\n');
+      await writeFile(withoutFrontmatter, '# No frontmatter\n');
+
+      const result = await validateLinks([withFrontmatter, withoutFrontmatter], {
+        ...enforcementOptions,
+        requireFrontmatter: ['title'],
+      });
+
+      expect(result.frontmatterViolations).toHaveLength(1);
+      expect(result.frontmatterViolations[0]?.file).toBe(withoutFrontmatter);
+      expect(result.frontmatterViolations[0]?.missingFields).toEqual(['title']);
+    });
+
+    it('reports internal links that violate the enforced link format', async () => {
+      const sourceFile = join(testDir, 'links.md');
+      await writeFile(sourceFile, '[rel](./ok.md) and [abs](/tmp/absolute.md)\n');
+
+      const result = await validateLinks([sourceFile], {
+        ...enforcementOptions,
+        enforceLinkFormat: 'relative',
+      });
+
+      expect(result.formatViolations).toHaveLength(1);
+      expect(result.formatViolations[0]?.href).toBe('/tmp/absolute.md');
+      expect(result.formatViolations[0]?.line).toBe(1);
+    });
+  });
+
   describe('fix mode', () => {
     const fixOptions: ValidateCliOptions = {
       checkExternal: false,

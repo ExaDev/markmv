@@ -35,6 +35,8 @@ export interface LinkValidatorOptions {
   allowAuthRequired?: boolean;
   /** Check Obsidian wikilinks against the vault */
   checkWikilinks?: boolean;
+  /** External-link hostnames excluded from checking entirely (known problematic sites) */
+  skipDomains?: string[];
   /** Resolver for wikilink targets against the whole vault file set */
   wikilinkResolver?: (target: string) => WikilinkResolution;
 }
@@ -99,6 +101,7 @@ export class LinkValidator {
       enableAuthDetection: options.enableAuthDetection ?? false,
       allowAuthRequired: options.allowAuthRequired ?? true,
       checkWikilinks: options.checkWikilinks ?? false,
+      skipDomains: options.skipDomains ?? [],
       ...(options.wikilinkResolver ? { wikilinkResolver: options.wikilinkResolver } : {}),
       ...(options.freshnessConfig && { freshnessConfig: options.freshnessConfig }),
       ...(options.authConfig && { authConfig: options.authConfig }),
@@ -251,6 +254,22 @@ export class LinkValidator {
     link: MarkdownLink,
     sourceFile: string
   ): Promise<BrokenLink | null> {
+    // Domains on the skip list are never contacted -- a site known to block or throttle checkers
+    // would otherwise surface as broken and drown out real findings
+    try {
+      const hostname = new URL(link.href).hostname;
+      if (this.options.skipDomains.includes(hostname)) {
+        return null;
+      }
+    } catch {
+      return {
+        sourceFile,
+        link,
+        reason: 'invalid-format',
+        details: `Could not parse external link URL: ${link.href}`,
+      };
+    }
+
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.options.externalTimeout);

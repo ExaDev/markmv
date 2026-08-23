@@ -75,6 +75,12 @@ export interface ValidateOperationOptions extends OperationOptions {
   authHeaders?: Record<string, Record<string, string>>;
   /** Validate Obsidian wikilinks by resolving them against the whole vault */
   obsidian?: boolean;
+  /** External-link hostnames excluded from checking entirely (comma-separated on the CLI) */
+  skipDomains?: string[];
+  /** Frontmatter fields every validated file must define */
+  requireFrontmatter?: string[];
+  /** Internal-link href form to enforce: relative (no leading /), absolute (leading /), or none */
+  enforceLinkFormat?: 'relative' | 'absolute' | 'none';
 }
 
 /**
@@ -156,6 +162,27 @@ export interface ValidateResult {
   authRequiredLinks?: number;
   /** Number of successfully authenticated links */
   authenticatedLinks?: number;
+  /** Files missing required frontmatter fields */
+  frontmatterViolations: Array<{ file: string; missingFields: string[] }>;
+  /** Internal links whose href form violates the enforced link format */
+  formatViolations: Array<{ file: string; href: string; line: number; expected: string }>;
+}
+
+/** Extract the field names defined in a file's leading YAML frontmatter block, if any */
+function parseFrontmatterFields(content: string): Set<string> {
+  const lines = content.split('\n');
+  if (lines[0] !== '---') {
+    return new Set();
+  }
+  const fields = new Set<string>();
+  for (const line of lines.slice(1)) {
+    if (line === '---') break;
+    const match = line.match(/^([A-Za-z][\w-]*):/);
+    if (match) {
+      fields.add(match[1] || '');
+    }
+  }
+  return fields;
 }
 
 /**
@@ -360,6 +387,9 @@ export async function validateLinks(
     gitDiff: options.gitDiff ?? '',
     gitStaged: options.gitStaged ?? false,
     obsidian: options.obsidian ?? false,
+    skipDomains: options.skipDomains ?? [],
+    requireFrontmatter: options.requireFrontmatter ?? [],
+    enforceLinkFormat: options.enforceLinkFormat ?? 'none',
     cache: options.cache ?? false,
     cacheDir: options.cacheDir ?? '.markmv-cache',
     failFast: options.failFast ?? false,
@@ -522,6 +552,7 @@ export async function validateLinks(
       customHeaders: opts.authHeaders || {},
     },
     ...(wikilinkResolver ? { checkWikilinks: true, wikilinkResolver } : {}),
+    skipDomains: opts.skipDomains,
   });
 
   const parser = new LinkParser();
@@ -539,6 +570,8 @@ export async function validateLinks(
     freshLinks: 0,
     authRequiredLinks: 0,
     authenticatedLinks: 0,
+    frontmatterViolations: [],
+    formatViolations: [],
   };
   if (gitInfo !== undefined) {
     result.gitInfo = gitInfo;
@@ -566,6 +599,39 @@ export async function validateLinks(
     try {
       if (opts.verbose) {
         console.log(`Validating: ${filePath}`);
+      }
+
+      // Standards enforcement runs for every file up front, independent of caching and of whether
+      // the file has any links at all
+      if (opts.requireFrontmatter.length > 0) {
+        const content = await readFile(filePath, 'utf-8');
+        const present = parseFrontmatterFields(content);
+        const missingFields = opts.requireFrontmatter.filter((field) => !present.has(field));
+        if (missingFields.length > 0) {
+          result.frontmatterViolations.push({ file: filePath, missingFields });
+        }
+      }
+      if (opts.enforceLinkFormat !== 'none') {
+        const parsedForFormat = await parser.parseFile(filePath);
+        for (const link of parsedForFormat.links) {
+          if (link.type !== 'internal' && link.type !== 'image') continue;
+          const absoluteForm = link.href.startsWith('/');
+          if (opts.enforceLinkFormat === 'relative' && absoluteForm) {
+            result.formatViolations.push({
+              file: filePath,
+              href: link.href,
+              line: link.line,
+              expected: 'relative',
+            });
+          } else if (opts.enforceLinkFormat === 'absolute' && !absoluteForm) {
+            result.formatViolations.push({
+              file: filePath,
+              href: link.href,
+              line: link.line,
+              expected: 'absolute',
+            });
+          }
+        }
       }
 
       let validation: { brokenLinks: BrokenLink[] } | undefined;
@@ -923,6 +989,24 @@ export async function validateCommand(
 
     console.log(`Processing time: ${result.processingTime}ms\n`);
 
+    if (result.frontmatterViolations.length > 0) {
+      console.log(`📋 Frontmatter Violations (${result.frontmatterViolations.length}):`);
+      for (const violation of result.frontmatterViolations) {
+        console.log(`  ${violation.file}: missing ${violation.missingFields.join(', ')}`);
+      }
+      console.log();
+    }
+
+    if (result.formatViolations.length > 0) {
+      console.log(`📐 Link Format Violations (${result.formatViolations.length}):`);
+      for (const violation of result.formatViolations) {
+        console.log(
+          `  ${violation.file}:${violation.line} ${violation.href} (expected ${violation.expected})`
+        );
+      }
+      console.log();
+    }
+
     if (result.fileErrors.length > 0) {
       console.log(`⚠️  File Errors (${result.fileErrors.length}):`);
       for (const error of result.fileErrors) {
@@ -1087,6 +1171,11 @@ export async function validateCommand(
           }
         }
       }
+    }
+
+    // Standards violations fail the run exactly like broken links
+    if (result.frontmatterViolations.length > 0 || result.formatViolations.length > 0) {
+      process.exitCode = 1;
     }
 
     // Exit with error code if broken links found

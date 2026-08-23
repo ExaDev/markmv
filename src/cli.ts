@@ -395,6 +395,15 @@ program
     '--fix',
     'Suggest fixes for broken internal links and apply them interactively on a terminal'
   )
+  .option(
+    '--skip-domains <domains>',
+    'Comma-separated hostnames never contacted for external checks'
+  )
+  .option(
+    '--require-frontmatter <fields>',
+    'Comma-separated frontmatter fields every file must define'
+  )
+  .option('--enforce-link-format <format>', 'Enforce internal link href form: relative|absolute')
   .option('--explain <file>', 'Print the recorded stack for a file that failed to parse')
   .addHelpText(
     'after',
@@ -477,9 +486,30 @@ Output Options:
         json?: boolean;
         obsidian?: boolean;
         fix?: boolean;
+        skipDomains?: string;
+        requireFrontmatter?: string;
+        enforceLinkFormat?: string;
         explain?: string;
       }
     ) => {
+      // Parse comma-separated standards-enforcement options before they enter the typed options
+      const skipDomains = options.skipDomains
+        ? options.skipDomains
+            .split(',')
+            .map((d) => d.trim())
+            .filter((d) => d !== '')
+        : undefined;
+      const requireFrontmatter = options.requireFrontmatter
+        ? options.requireFrontmatter
+            .split(',')
+            .map((f) => f.trim())
+            .filter((f) => f !== '')
+        : undefined;
+      const enforceLinkFormat =
+        options.enforceLinkFormat === 'relative' || options.enforceLinkFormat === 'absolute'
+          ? options.enforceLinkFormat
+          : undefined;
+
       // Validate the group-by option before it enters the typed options
       const groupBy = options.groupBy || 'file';
       if (groupBy !== 'file' && groupBy !== 'type') {
@@ -541,6 +571,15 @@ Output Options:
       }
       if (options.maxDepth !== undefined) {
         validationOptions.maxDepth = options.maxDepth;
+      }
+      if (skipDomains !== undefined) {
+        validationOptions.skipDomains = skipDomains;
+      }
+      if (requireFrontmatter !== undefined) {
+        validationOptions.requireFrontmatter = requireFrontmatter;
+      }
+      if (enforceLinkFormat !== undefined) {
+        validationOptions.enforceLinkFormat = enforceLinkFormat;
       }
       if (options.explain !== undefined) {
         validationOptions.explain = options.explain;
