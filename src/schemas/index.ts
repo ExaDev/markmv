@@ -32,6 +32,12 @@ const OperationChangeSchema = z.object({
   line: z.number().int().optional(),
 });
 
+const ParseFailureSchema = z.object({
+  file: z.string().meta({ description: 'File that failed to parse' }),
+  error: z.string().meta({ description: 'Parse error message' }),
+  stack: z.string().meta({ description: 'Parse error stack, when available' }).optional(),
+});
+
 const OperationResultSchema = z
   .object({
     success: z.boolean(),
@@ -41,6 +47,12 @@ const OperationResultSchema = z
     errors: z.array(z.string()),
     warnings: z.array(z.string()),
     changes: z.array(OperationChangeSchema),
+    parseFailures: z
+      .array(ParseFailureSchema)
+      .meta({
+        description: 'Files that failed to parse; their links were not checked or rewritten',
+      })
+      .optional(),
   })
   .strict();
 

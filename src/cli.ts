@@ -386,6 +386,7 @@ program
   .option('--auth-headers <json>', 'JSON object with domain-specific headers for authentication')
   .option('-v, --verbose', 'Show detailed output with processing information')
   .option('--json', 'Output results in JSON format')
+  .option('--explain <file>', 'Print the recorded stack for a file that failed to parse')
   .addHelpText(
     'after',
     `
@@ -465,6 +466,7 @@ Output Options:
         authHeaders?: string;
         verbose?: boolean;
         json?: boolean;
+        explain?: string;
       }
     ) => {
       // Validate the group-by option before it enters the typed options
@@ -526,6 +528,9 @@ Output Options:
       }
       if (options.maxDepth !== undefined) {
         validationOptions.maxDepth = options.maxDepth;
+      }
+      if (options.explain !== undefined) {
+        validationOptions.explain = options.explain;
       }
       if (authCredentials !== undefined) {
         validationOptions.authCredentials = authCredentials;

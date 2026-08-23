@@ -124,7 +124,7 @@ export class FileOperations {
       // Parse the source file (only meaningful for markdown, which may itself contain links to update) and build a dependency graph from the surrounding project's markdown files.
       const sourceIsMarkdown = PathUtils.isMarkdownFile(sourcePath);
       const sourceFile = sourceIsMarkdown ? await this.linkParser.parseFile(sourcePath) : null;
-      const projectFiles = await this.discoverProjectFiles(sourcePath);
+      const { files: projectFiles, parseFailures } = await this.discoverProjectFiles(sourcePath);
       const dependencyGraph = new DependencyGraph(projectFiles);
 
       // Find all files that link to the source file
@@ -235,6 +235,7 @@ export class FileOperations {
           errors: [],
           warnings,
           changes,
+          parseFailures,
         };
       }
 
@@ -261,6 +262,7 @@ export class FileOperations {
         errors: [],
         warnings,
         changes,
+        parseFailures,
       };
     } catch (error) {
       return {
@@ -333,7 +335,9 @@ export class FileOperations {
       }
 
       // Discover additional project files
-      const projectFiles = await this.discoverProjectFiles(resolvedMoves[0].source);
+      const { files: projectFiles, parseFailures } = await this.discoverProjectFiles(
+        resolvedMoves[0].source
+      );
       const dependencyGraph = new DependencyGraph([...allFiles, ...projectFiles]);
 
       // Store content for every parsed file, not just the moved sources. Bystander files that link to several moved files are refactored once per move, and the transaction has not executed yet: re-reading a bystander from disk on a later move would see the original bytes and silently discard the link updates planned by earlier moves in the same batch.
@@ -486,6 +490,7 @@ export class FileOperations {
           errors: [],
           warnings,
           changes: allChanges,
+          parseFailures,
         };
       }
 
@@ -499,6 +504,7 @@ export class FileOperations {
         errors: executionResult.errors,
         warnings,
         changes: allChanges,
+        parseFailures,
       };
     } catch (error) {
       return {
@@ -560,7 +566,10 @@ export class FileOperations {
     return { valid: true };
   }
 
-  private async discoverProjectFiles(seedPath: string): Promise<ParsedMarkdownFile[]> {
+  private async discoverProjectFiles(seedPath: string): Promise<{
+    files: ParsedMarkdownFile[];
+    parseFailures: Array<{ file: string; error: string; stack?: string | undefined }>;
+  }> {
     try {
       // Find the project root (directory containing the seed file)
       const projectRoot = PathUtils.findCommonBase([seedPath]);
@@ -568,21 +577,26 @@ export class FileOperations {
       // Find all markdown files in the project
       const markdownFiles = await FileUtils.findMarkdownFiles(projectRoot, true);
 
-      // Parse all files
+      // Parse all files; a file that fails to parse is reported rather than silently dropped, because its links cannot be discovered or rewritten
       const parsedFiles: ParsedMarkdownFile[] = [];
+      const parseFailures: Array<{ file: string; error: string; stack?: string | undefined }> = [];
       for (const filePath of markdownFiles) {
         try {
           const parsed = await this.linkParser.parseFile(filePath);
           parsedFiles.push(parsed);
         } catch (error) {
-          console.warn(`Failed to parse ${filePath}: ${error}`);
+          parseFailures.push({
+            file: filePath,
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+          });
         }
       }
 
-      return parsedFiles;
+      return { files: parsedFiles, parseFailures };
     } catch (error) {
       console.warn(`Failed to discover project files: ${error}`);
-      return [];
+      return { files: [], parseFailures: [] };
     }
   }
 

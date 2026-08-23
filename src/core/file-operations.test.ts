@@ -1,9 +1,10 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FileUtils } from '../utils/file-utils.js';
 import { FileOperations } from './file-operations.js';
+import { LinkParser } from './link-parser.js';
 
 describe('FileOperations', () => {
   let fileOps: FileOperations;
@@ -291,6 +292,74 @@ describe('FileOperations', () => {
 
       expect(validation.valid).toBe(true);
       expect(validation.brokenLinks).toBe(0);
+    });
+  });
+
+  describe('parse failure reporting', () => {
+    it('should report bystander parse failures in the move result', async () => {
+      const sourcePath = join(testDir, 'source.md');
+      const destDir = join(testDir, 'nested');
+      const destPath = join(destDir, 'source.md');
+      const bystanderPath = join(testDir, 'bystander.md');
+
+      await writeFile(sourcePath, '# Source\n');
+      await writeFile(bystanderPath, '# Bystander\n\n[link](./source.md)\n');
+
+      const originalParse = LinkParser.prototype.parseFile;
+      const parseSpy = vi.spyOn(LinkParser.prototype, 'parseFile').mockImplementation(function (
+        this: LinkParser,
+        filePath: string
+      ) {
+        if (filePath === bystanderPath) {
+          return Promise.reject(new Error('parser exploded'));
+        }
+        return originalParse.call(this, filePath);
+      });
+
+      try {
+        const result = await fileOps.moveFile(sourcePath, destPath, { dryRun: true });
+
+        expect(result.success).toBe(true);
+        expect(result.parseFailures).toHaveLength(1);
+        expect(result.parseFailures?.[0]?.file).toBe(bystanderPath);
+        expect(result.parseFailures?.[0]?.error).toBe('parser exploded');
+      } finally {
+        parseSpy.mockRestore();
+      }
+    });
+
+    it('should report parse failures from batch moves', async () => {
+      const sourcePath = join(testDir, 'source.md');
+      const destDir = join(testDir, 'nested');
+      const destPath = join(destDir, 'source.md');
+      const bystanderPath = join(testDir, 'bystander.md');
+
+      await writeFile(sourcePath, '# Source\n');
+      await writeFile(bystanderPath, '# Bystander\n\n[link](./source.md)\n');
+
+      const originalParse = LinkParser.prototype.parseFile;
+      const parseSpy = vi.spyOn(LinkParser.prototype, 'parseFile').mockImplementation(function (
+        this: LinkParser,
+        filePath: string
+      ) {
+        if (filePath === bystanderPath) {
+          return Promise.reject(new Error('parser exploded'));
+        }
+        return originalParse.call(this, filePath);
+      });
+
+      try {
+        const result = await fileOps.moveFiles(
+          [{ source: sourcePath, destination: destPath }],
+          { dryRun: true }
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.parseFailures).toHaveLength(1);
+        expect(result.parseFailures?.[0]?.file).toBe(bystanderPath);
+      } finally {
+        parseSpy.mockRestore();
+      }
     });
   });
 });

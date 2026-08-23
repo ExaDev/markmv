@@ -210,6 +210,10 @@ describe('CLI Entry Point', () => {
         'Merge strategy: append|prepend|interactive',
         'interactive'
       );
+      expect(mockOption).toHaveBeenCalledWith(
+        '--explain <file>',
+        'Print the recorded stack for a file that failed to parse'
+      );
     });
   });
 });

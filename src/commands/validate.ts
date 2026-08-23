@@ -1,6 +1,6 @@
 import { glob } from 'glob';
 import { statSync } from 'fs';
-import { posix } from 'path';
+import { posix, resolve } from 'path';
 import { LinkValidator } from '../core/link-validator.js';
 import { LinkParser } from '../core/link-parser.js';
 import { GitUtils } from '../utils/git-utils.js';
@@ -77,6 +77,8 @@ export interface ValidateCliOptions extends Omit<ValidateOperationOptions, 'link
   linkTypes?: string;
   /** Output results in JSON format */
   json?: boolean;
+  /** Print the recorded parse-failure stack for the named file */
+  explain?: string;
 }
 
 /**
@@ -112,7 +114,7 @@ export interface ValidateResult {
   /** Broken links grouped by type */
   brokenLinksByType: Partial<Record<LinkType, ExtendedBrokenLink[]>>;
   /** Files that had processing errors */
-  fileErrors: Array<{ file: string; error: string }>;
+  fileErrors: Array<{ file: string; error: string; stack?: string | undefined }>;
   /** Whether circular references were detected */
   hasCircularReferences: boolean;
   /** Circular reference details if found */
@@ -563,6 +565,7 @@ export async function validateLinks(
       result.fileErrors.push({
         file: filePath,
         error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
       });
 
       if (opts.verbose) {
@@ -739,7 +742,22 @@ export async function validateCommand(
       for (const error of result.fileErrors) {
         console.log(`  ${error.file}: ${error.error}`);
       }
+      // A file that fails to parse cannot have its links validated, so the run cannot guarantee link integrity; fail the exit code regardless of the broken-link count.
+      process.exitCode = 1;
+
+      if (cliOptions.explain) {
+        const explainTarget = resolve(cliOptions.explain);
+        const entry = result.fileErrors.find((fileError) => fileError.file === explainTarget);
+        if (entry) {
+          console.log(`\n🔍 Parse failure stack for ${entry.file}:`);
+          console.log(entry.stack ?? `${entry.error} (no stack recorded)`);
+        } else {
+          console.log(`\nNo parse failure recorded for ${explainTarget}`);
+        }
+      }
       console.log();
+    } else if (cliOptions.explain) {
+      console.log(`No parse failure recorded for ${resolve(cliOptions.explain)}\n`);
     }
 
     if (result.hasCircularReferences) {

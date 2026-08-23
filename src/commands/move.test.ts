@@ -371,4 +371,40 @@ describe('Move Command', () => {
       expect(hasWarningCheck).toBe(true);
     });
   });
+
+  describe('Parse Failure Reporting', () => {
+    it('should aggregate parse failures in the summary and exit non-zero', async () => {
+      const sourceFile = join(testDir, 'source.md');
+      const destDir = join(testDir, 'nested');
+      const bystanderFile = join(testDir, 'bystander.md');
+      writeFileSync(sourceFile, '# Source\n');
+      writeFileSync(bystanderFile, '# Bystander\n\n[link](./source.md)\n');
+
+      const { LinkParser } = await import('../core/link-parser.js');
+      const originalParse = LinkParser.prototype.parseFile;
+      const parseSpy = vi.spyOn(LinkParser.prototype, 'parseFile').mockImplementation(function (
+        this: InstanceType<typeof LinkParser>,
+        filePath: string
+      ) {
+        if (filePath === bystanderFile) {
+          return Promise.reject(new Error('parser exploded'));
+        }
+        return originalParse.call(this, filePath);
+      });
+
+      process.exitCode = 0;
+      try {
+        await moveCommand([sourceFile, destDir + '/'], { dryRun: true, verbose: true });
+      } finally {
+        parseSpy.mockRestore();
+      }
+
+      expect(process.exitCode).toBe(1);
+
+      const output = mockConsoleLog.mock.calls.map((args) => args.join(' ')).join('\n');
+      expect(output).toContain('Parse Failures (1)');
+      expect(output).toContain(bystanderFile);
+      process.exitCode = 0;
+    });
+  });
 });

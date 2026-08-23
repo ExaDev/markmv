@@ -170,6 +170,8 @@ export interface OperationResult {
   warnings: string[];
   /** Detailed changes made */
   changes: OperationChange[];
+  /** Files that failed to parse during the operation; their links could not be checked or rewritten */
+  parseFailures?: Array<{ file: string; error: string; stack?: string | undefined }>;
 }
 
 /**

@@ -4,6 +4,7 @@ import { mkdtemp, rmdir, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { validateLinks, validateCommand } from './validate.js';
 import type { ValidateOperationOptions, ValidateCliOptions } from './validate.js';
+import { LinkParser } from '../core/link-parser.js';
 
 describe('validate command', () => {
   let testDir: string;
@@ -397,6 +398,109 @@ Anchor link: [bad anchor](#non-existent)
       expect(output).toContain('Files processed: 2'); // Should process both test1.md and test2.md
       expect(output).toContain('test1.md'); // test1.md has broken links so should appear in output
       expect(output).not.toContain('sub1.md'); // Should not include subdirectory files with this pattern
+    });
+  });
+
+  describe('parse failure handling', () => {
+    const baseOptions: ValidateCliOptions = {
+      checkExternal: false,
+      externalTimeout: 5000,
+      strictInternal: true,
+      checkClaudeImports: true,
+      checkCircular: false,
+      onlyBroken: true,
+      groupBy: 'file',
+      includeContext: false,
+      dryRun: false,
+      verbose: false,
+      force: false,
+    };
+
+    let logOutput: string[];
+    let errorOutput: string[];
+    let originalConsoleLog: typeof console.log;
+    let originalConsoleError: typeof console.error;
+
+    beforeEach(() => {
+      logOutput = [];
+      errorOutput = [];
+      originalConsoleLog = console.log;
+      originalConsoleError = console.error;
+      console.log = (...args: unknown[]) => {
+        logOutput.push(args.map(String).join(' '));
+      };
+      console.error = (...args: unknown[]) => {
+        errorOutput.push(args.map(String).join(' '));
+      };
+      process.exitCode = 0;
+    });
+
+    afterEach(() => {
+      console.log = originalConsoleLog;
+      console.error = originalConsoleError;
+      process.exitCode = 0;
+    });
+
+    it('should exit non-zero when a file fails to parse', async () => {
+      const badFile = join(testDir, 'bad.md');
+      await writeFile(badFile, '# Unparseable\n');
+      const parseSpy = vi
+        .spyOn(LinkParser.prototype, 'parseFile')
+        .mockRejectedValue(new Error('parser exploded'));
+
+      try {
+        await validateCommand([badFile], { ...baseOptions });
+      } finally {
+        parseSpy.mockRestore();
+      }
+
+      expect(process.exitCode).toBe(1);
+      expect(logOutput.join('\n')).toContain('File Errors (1)');
+    });
+
+    it('should record the failure stack on fileErrors entries', async () => {
+      const badFile = join(testDir, 'bad.md');
+      await writeFile(badFile, '# Unparseable\n');
+      const failure = new Error('parser exploded');
+      const parseSpy = vi.spyOn(LinkParser.prototype, 'parseFile').mockRejectedValue(failure);
+
+      try {
+        const result = await validateLinks([badFile], { ...baseOptions });
+        expect(result.fileErrors).toHaveLength(1);
+        expect(result.fileErrors[0]?.file).toBe(badFile);
+        expect(result.fileErrors[0]?.error).toBe('parser exploded');
+        expect(result.fileErrors[0]?.stack).toBe(failure.stack);
+      } finally {
+        parseSpy.mockRestore();
+      }
+    });
+
+    it('should print the failure stack with --explain for a failing file', async () => {
+      const badFile = join(testDir, 'bad.md');
+      await writeFile(badFile, '# Unparseable\n');
+      const failure = new Error('parser exploded');
+      const parseSpy = vi.spyOn(LinkParser.prototype, 'parseFile').mockRejectedValue(failure);
+
+      try {
+        await validateCommand([badFile], { ...baseOptions, explain: badFile });
+      } finally {
+        parseSpy.mockRestore();
+      }
+
+      const output = logOutput.join('\n');
+      expect(output).toContain('parser exploded');
+      expect(output).toContain(failure.stack ?? '');
+    });
+
+    it('should report when --explain names a file with no recorded failure', async () => {
+      const goodFile = join(testDir, 'good.md');
+      await writeFile(goodFile, '# Fine\n');
+
+      await validateCommand([goodFile], { ...baseOptions, explain: goodFile });
+
+      const output = logOutput.join('\n');
+      expect(output).toContain('No parse failure recorded');
+      expect(process.exitCode).toBe(0);
     });
   });
 });

@@ -268,6 +268,16 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
       }
     }
 
+    // Surface parse failures: a file that could not be parsed had its links left untouched, so the operation cannot guarantee link integrity even though the move itself succeeded
+    if (result.parseFailures && result.parseFailures.length > 0) {
+      console.log(`\n⚠️  Parse Failures (${result.parseFailures.length}):`);
+      console.log('  Links in these files were NOT checked or rewritten:');
+      for (const failure of result.parseFailures) {
+        console.log(`  ${failure.file}: ${failure.error}`);
+      }
+      process.exitCode = 1;
+    }
+
     // Display warnings
     if (result.warnings.length > 0) {
       console.log('\n⚠️  Warnings:');
