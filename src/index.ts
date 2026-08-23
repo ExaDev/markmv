@@ -54,10 +54,7 @@ export {
   type DuplicateNoteStem,
   type WikilinkResolution,
 } from './core/obsidian-vault.js';
-export {
-  suggestLinkFixes,
-  type LinkSuggestion,
-} from './core/link-suggester.js';
+export { suggestLinkFixes, type LinkSuggestion } from './core/link-suggester.js';
 export { DependencyGraph } from './core/dependency-graph.js';
 export { ContentJoiner } from './core/content-joiner.js';
 export { ContentSplitter } from './core/content-splitter.js';
