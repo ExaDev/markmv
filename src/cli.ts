@@ -511,10 +511,19 @@ Output Options:
             .map((f) => f.trim())
             .filter((f) => f !== '')
         : undefined;
-      const enforceLinkFormat =
-        options.enforceLinkFormat === 'relative' || options.enforceLinkFormat === 'absolute'
-          ? options.enforceLinkFormat
-          : undefined;
+      // An invalid format must fail loudly -- silently disabling enforcement hides the typo
+      if (
+        options.enforceLinkFormat !== undefined &&
+        options.enforceLinkFormat !== 'relative' &&
+        options.enforceLinkFormat !== 'absolute'
+      ) {
+        console.error(
+          `Invalid link format: ${options.enforceLinkFormat}. Valid formats: relative, absolute`
+        );
+        process.exitCode = 1;
+        return;
+      }
+      const enforceLinkFormat = options.enforceLinkFormat;
 
       // Validate the group-by option before it enters the typed options
       const groupBy = options.groupBy || 'file';
