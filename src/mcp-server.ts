@@ -43,17 +43,21 @@ function isOperationResult(obj: unknown): obj is OperationResult {
     return false;
   }
 
-  // Since we've checked it's an object above, this is safe
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  const record = obj as Record<string, unknown>;
   return (
-    typeof record.success === 'boolean' &&
-    Array.isArray(record.modifiedFiles) &&
-    Array.isArray(record.createdFiles) &&
-    Array.isArray(record.deletedFiles) &&
-    Array.isArray(record.errors) &&
-    Array.isArray(record.warnings) &&
-    Array.isArray(record.changes)
+    'success' in obj &&
+    typeof obj.success === 'boolean' &&
+    'modifiedFiles' in obj &&
+    Array.isArray(obj.modifiedFiles) &&
+    'createdFiles' in obj &&
+    Array.isArray(obj.createdFiles) &&
+    'deletedFiles' in obj &&
+    Array.isArray(obj.deletedFiles) &&
+    'errors' in obj &&
+    Array.isArray(obj.errors) &&
+    'warnings' in obj &&
+    Array.isArray(obj.warnings) &&
+    'changes' in obj &&
+    Array.isArray(obj.changes)
   );
 }
 
