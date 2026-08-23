@@ -114,11 +114,12 @@ export async function extractCommand(patterns: string[], options: ExtractOptions
     console.log('🔍 Dry run - no files will be modified');
   }
 
+  const naming: ExtractNamingState = { usedNames: new Set<string>(), unnamedCounter: 0 };
   for (const file of files) {
     if (options.verbose && humanOutput) {
       console.log(`📄 Processing ${file}`);
     }
-    const result = await extractFile(file, options);
+    const result = await extractFile(file, options, naming);
     if (result.error !== undefined) {
       summary.errors.push(result.error);
       summary.success = false;
@@ -241,7 +242,22 @@ async function expandMarkdownPatterns(patterns: string[]): Promise<string[]> {
  * @returns The outcome, with an error message in place of a thrown exception so sibling files are
  *   still processed
  */
-async function extractFile(file: string, options: ExtractOptions): Promise<ExtractFileResult> {
+/**
+ * Names claimed by earlier files in the same run, so numbered collisions are consistent between
+ * dry-run planning and the real writes
+ */
+export interface ExtractNamingState {
+  /** Output file names already claimed in this run */
+  usedNames: Set<string>;
+  /** Counter behind the img-N fallback names */
+  unnamedCounter: number;
+}
+
+async function extractFile(
+  file: string,
+  options: ExtractOptions,
+  naming: ExtractNamingState
+): Promise<ExtractFileResult> {
   const content = await readFile(file, 'utf-8');
   const inlineImages = findInlineImages(content);
   if (inlineImages.length === 0) {
@@ -252,22 +268,20 @@ async function extractFile(file: string, options: ExtractOptions): Promise<Extra
 
   const replacements = [];
   const writes: Array<{ path: string; bytes: Buffer }> = [];
-  const usedNames = new Set<string>();
-  let unnamedCounter = 0;
 
   for (const image of inlineImages) {
     try {
       const parsed = parseImageDataUri(image.href);
       const extension = imageExtensionForMimeType(parsed.mimeType);
       const slug = slugifyFileName(image.alt);
-      const baseName = slug ?? `img-${++unnamedCounter}`;
+      const baseName = slug ?? `img-${++naming.unnamedCounter}`;
       let fileName = `${baseName}.${extension}`;
       let suffix = 2;
-      while (usedNames.has(fileName) || existsSync(joinPath(outputDir, fileName))) {
+      while (naming.usedNames.has(fileName) || existsSync(joinPath(outputDir, fileName))) {
         fileName = `${baseName}-${suffix}.${extension}`;
         suffix++;
       }
-      usedNames.add(fileName);
+      naming.usedNames.add(fileName);
 
       const imagePath = joinPath(outputDir, fileName);
       writes.push({ path: imagePath, bytes: Buffer.from(parsed.data, 'base64') });

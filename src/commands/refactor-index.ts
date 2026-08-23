@@ -31,6 +31,11 @@ export interface RefactorIndexOptions {
   dryRun?: boolean;
   /** Enable verbose output with detailed progress information */
   verbose?: boolean;
+  /**
+   * Root anchoring bystander discovery; an in-place rename spans one directory, so callers should
+   * pass the project or vault root to catch bystanders above it
+   */
+  discoveryRoot?: string;
 }
 
 /**
@@ -126,6 +131,11 @@ export async function refactorIndex(
 
   const targetConvention: IndexConvention =
     options.to !== undefined ? options.to : currentConvention === 'readme' ? 'index' : 'readme';
+  if (targetConvention !== 'readme' && targetConvention !== 'index') {
+    throw new Error(
+      `Unknown index convention '${String(targetConvention)}': expected readme or index`
+    );
+  }
   const targetFilename = CONVENTION_FILENAMES[targetConvention];
 
   if (targetConvention === currentConvention) {
@@ -155,6 +165,7 @@ export async function refactorIndex(
   const moveResult = await fileOps.moveFile(sourcePath, targetPath, {
     dryRun: options.dryRun ?? false,
     verbose: options.verbose ?? false,
+    ...(options.discoveryRoot ? { discoverySeeds: [options.discoveryRoot] } : {}),
   });
 
   const linkChanges = moveResult.changes.filter((change) => change.type === 'link-updated');
@@ -207,6 +218,9 @@ export async function refactorIndexCommand(
   const operationOptions: RefactorIndexOptions = {
     dryRun: options.dryRun ?? false,
     verbose: options.verbose ?? false,
+    // The CLI runs from the user's chosen working directory, which anchors discovery wide
+    // enough to catch bystanders above the renamed file's directory
+    discoveryRoot: process.cwd(),
   };
   if (options.to !== undefined) {
     operationOptions.to = options.to;

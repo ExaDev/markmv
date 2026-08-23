@@ -145,6 +145,20 @@ describe('Embed Command', () => {
     });
   });
 
+  describe('Deletion safety', () => {
+    it('keeps an image still referenced by a markdown file outside the processed set', async () => {
+      await writeFile(join(testDir, 'pic.png'), PNG_BYTES);
+      await writeFile(join(testDir, 'a.md'), '# A\n\n![Pic](./pic.png)\n');
+      await writeFile(join(testDir, 'b.md'), '# B\n\n![Same pic](./pic.png)\n');
+
+      const output = await captureCommandOutput(() => embedCommand([join(testDir, 'a.md')], {}));
+
+      expect(output.exitCode).toBe(0);
+      // b.md still links the image; embedding a.md alone must not destroy it
+      expect(existsSync(join(testDir, 'pic.png'))).toBe(true);
+    });
+  });
+
   describe('Dry run', () => {
     it('plans rewrites without touching markdown or image files', async () => {
       const markdownFile = join(testDir, 'doc.md');

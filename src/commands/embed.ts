@@ -3,6 +3,7 @@ import { readFile, unlink, writeFile } from 'node:fs/promises';
 import { dirname, extname, resolve } from 'node:path';
 import { glob } from 'glob';
 import { PathUtils } from '../utils/path-utils.js';
+import { FileUtils } from '../utils/file-utils.js';
 import {
   findLocalImages,
   imageMimeTypeForExtension,
@@ -154,6 +155,9 @@ export async function embedCommand(patterns: string[], options: EmbedOptions): P
       }
       for (const kept of deletions.kept) {
         console.log(`📁 Kept ${kept} (still referenced in the processed set)`);
+      }
+      for (const keptOutside of deletions.keptOutside) {
+        console.log(`📁 Kept ${keptOutside}`);
       }
     }
   }
@@ -319,6 +323,8 @@ interface ImageDeletions {
   deleted: string[];
   /** Image files kept because a file in the processed set still references them */
   kept: string[];
+  /** Images kept because a file outside the processed set still references them */
+  keptOutside: string[];
 }
 
 /**
@@ -332,19 +338,43 @@ interface ImageDeletions {
  *
  * @returns The deletions performed and the images kept with their reason
  */
+/** Search the tree around the processed set for a markdown file outside it still linking the image */
+async function findOutsideReferencer(
+  imagePath: string,
+  processedFiles: Set<string>
+): Promise<string | undefined> {
+  const scanRoot = PathUtils.findCommonBase([imagePath, ...processedFiles]);
+  if (!scanRoot) {
+    return undefined;
+  }
+  const treeFiles = await FileUtils.findMarkdownFiles(scanRoot, true);
+  for (const file of treeFiles) {
+    if (processedFiles.has(file)) continue;
+    const content = await readFile(file, 'utf-8');
+    if (
+      findLocalImages(content).some((image) => resolve(dirname(file), image.href) === imagePath)
+    ) {
+      return file;
+    }
+  }
+  return undefined;
+}
+
 async function deleteUnreferencedImages(
   imagePaths: string[],
   files: string[]
 ): Promise<ImageDeletions> {
   if (imagePaths.length === 0) {
-    return { deleted: [], kept: [] };
+    return { deleted: [], kept: [], keptOutside: [] };
   }
 
   const currentContent = await Promise.all(
     files.map(async (file) => ({ file, content: await readFile(file, 'utf-8') }))
   );
 
-  const deletions: ImageDeletions = { deleted: [], kept: [] };
+  const deletions: ImageDeletions = { deleted: [], kept: [], keptOutside: [] };
+
+  const processedFiles = new Set(files);
 
   for (const imagePath of imagePaths) {
     const stillReferenced = currentContent.some(({ file, content }) =>
@@ -353,6 +383,14 @@ async function deleteUnreferencedImages(
 
     if (stillReferenced) {
       deletions.kept.push(imagePath);
+      continue;
+    }
+
+    // An image unreferenced in the processed set may still be linked from markdown outside it;
+    // the surrounding tree is scanned before the file is destroyed
+    const outsideReferencer = await findOutsideReferencer(imagePath, processedFiles);
+    if (outsideReferencer !== undefined) {
+      deletions.keptOutside.push(`${imagePath} (referenced by ${outsideReferencer})`);
     } else {
       await unlink(imagePath);
       deletions.deleted.push(imagePath);

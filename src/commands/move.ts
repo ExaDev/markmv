@@ -73,7 +73,8 @@ async function expandSourcePatterns(patterns: string[], verbose = false): Promis
 
     // Expand glob pattern
     try {
-      const globResults = await glob(pattern, {
+      // Glob patterns use forward slashes on every platform; backslashes are pattern escapes
+      const globResults = await glob(pattern.replace(/\\/g, '/'), {
         ignore: ['node_modules/**', '.git/**', 'dist/**'],
         absolute: true,
         nodir: true, // Only return files, not directories
