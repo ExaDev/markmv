@@ -15,6 +15,12 @@ export default tseslint.config(
       'package-lock.json',
     ],
   },
+  {
+    // Forces every lint exception through this file instead of an inline eslint-disable comment, so rule exceptions stay centrally reviewable rather than scattered across src/.
+    linterOptions: {
+      noInlineConfig: true,
+    },
+  },
   js.configs.recommended,
   // Non-type-checked TS rules and the TS parser apply to every .ts file, including root-level config files (this file included) -- those never get type-aware linting (see below) but still need a parser assigned or eslint skips them with "no matching configuration".
   ...tseslint.configs.recommended,
