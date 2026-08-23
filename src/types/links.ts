@@ -13,7 +13,8 @@ export type LinkType =
   | 'image' // Image references
   | 'reference' // Reference-style links [text][ref]
   | 'claude-import' // Claude @import syntax
-  | 'obsidian-transclusion'; // Obsidian [[file]] or ![[file]] syntax
+  | 'wikilink' // Obsidian [[note]] link
+  | 'obsidian-transclusion'; // Obsidian ![[file]] embed
 
 /**
  * Link style formats supported for conversion operations.

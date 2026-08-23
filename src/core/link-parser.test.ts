@@ -230,6 +230,91 @@ This is a [reference link][ref1] and another [reference][ref2].
     });
   });
 
+  describe('obsidian wikilinks', () => {
+    it('should extract a plain wikilink', async () => {
+      const filePath = join(testDir, 'note.md');
+      await writeFile(filePath, 'See [[Tailscale Relay]] for details.\n');
+
+      const result = await parser.parseFile(filePath);
+
+      expect(result.links).toHaveLength(1);
+      const link = result.links[0];
+      expect(link?.type).toBe('wikilink');
+      expect(link?.href).toBe('Tailscale Relay');
+      expect(link?.text).toBeUndefined();
+      expect(link?.line).toBe(1);
+    });
+
+    it('should extract a wikilink with an alias, keeping the alias as text', async () => {
+      const filePath = join(testDir, 'note.md');
+      await writeFile(filePath, 'See [[Tailscale Relay|the relay note]].\n');
+
+      const result = await parser.parseFile(filePath);
+
+      const link = result.links[0];
+      expect(link?.type).toBe('wikilink');
+      expect(link?.href).toBe('Tailscale Relay');
+      expect(link?.text).toBe('the relay note');
+    });
+
+    it('should extract an embed as an obsidian-transclusion', async () => {
+      const filePath = join(testDir, 'note.md');
+      await writeFile(filePath, '![[Tailscale Relay]]\n');
+
+      const result = await parser.parseFile(filePath);
+
+      const link = result.links[0];
+      expect(link?.type).toBe('obsidian-transclusion');
+      expect(link?.href).toBe('Tailscale Relay');
+    });
+
+    it('should extract a wikilink with an explicit extension', async () => {
+      const filePath = join(testDir, 'note.md');
+      await writeFile(filePath, '[[Note.md]] and ![[image.png]]\n');
+
+      const result = await parser.parseFile(filePath);
+
+      const wikilink = result.links.find((l) => l.type === 'wikilink');
+      expect(wikilink?.href).toBe('Note.md');
+      const embed = result.links.find((l) => l.type === 'obsidian-transclusion');
+      expect(embed?.href).toBe('image.png');
+    });
+
+    it('should extract a path-qualified wikilink', async () => {
+      const filePath = join(testDir, 'note.md');
+      await writeFile(filePath, '[[devops/Tailscale Relay|relay]]\n');
+
+      const result = await parser.parseFile(filePath);
+
+      const link = result.links[0];
+      expect(link?.type).toBe('wikilink');
+      expect(link?.href).toBe('devops/Tailscale Relay');
+      expect(link?.text).toBe('relay');
+    });
+
+    it('should split a block reference off the wikilink target', async () => {
+      const filePath = join(testDir, 'note.md');
+      await writeFile(filePath, '[[Note#Section]] and [[Other#^block-id]]\n');
+
+      const result = await parser.parseFile(filePath);
+
+      const section = result.links.find((l) => l.href === 'Note');
+      expect(section?.blockReference).toBe('#Section');
+      const block = result.links.find((l) => l.href === 'Other');
+      expect(block?.blockReference).toBe('#^block-id');
+    });
+
+    it('should not extract empty or single brackets', async () => {
+      const filePath = join(testDir, 'note.md');
+      await writeFile(filePath, '[[ ]] and [Not a wikilink](./file.md)\n');
+
+      const result = await parser.parseFile(filePath);
+
+      expect(result.links.filter((l) => l.type === 'wikilink')).toHaveLength(0);
+      expect(result.links.some((l) => l.type === 'internal')).toBe(true);
+    });
+  });
+
   describe('claude-import home paths', () => {
     it('should parse a file containing @~/ without throwing', async () => {
       const filePath = join(testDir, 'memory-note.md');

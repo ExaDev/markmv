@@ -132,6 +132,40 @@ export class LinkParser {
 
         links.push(link);
       }
+
+      // Extract Obsidian wikilinks and embeds. These resolve vault-wide by note basename, so resolvedPath is left for a whole-tree resolution pass that knows every note.
+      const wikilinkRegex = /(!?)\[\[([^\][]+)\]\]/g;
+      let wikilinkMatch: RegExpExecArray | null;
+
+      while ((wikilinkMatch = wikilinkRegex.exec(node.value)) !== null) {
+        const isEmbed = wikilinkMatch[1] === '!';
+        const inner = wikilinkMatch[2];
+
+        // Split off any display alias, then any block/section reference
+        const [targetWithBlock, alias] = inner.split('|', 2);
+        const targetWithoutAlias = targetWithBlock ?? '';
+        const hashIndex = targetWithoutAlias.indexOf('#');
+        const target = hashIndex >= 0 ? targetWithoutAlias.slice(0, hashIndex) : targetWithoutAlias;
+        const blockReference = hashIndex >= 0 ? targetWithoutAlias.slice(hashIndex) : undefined;
+
+        if (target.trim() === '') continue;
+
+        const link: MarkdownLink = {
+          type: isEmbed ? 'obsidian-transclusion' : 'wikilink',
+          href: target,
+          text: undefined,
+          referenceId: undefined,
+          blockReference,
+          line: node.position.start.line,
+          column: node.position.start.column + wikilinkMatch.index,
+          absolute: false,
+        };
+        if (alias !== undefined && alias.trim() !== '') {
+          link.text = alias.trim();
+        }
+
+        links.push(link);
+      }
     });
 
     // Extract links and images
