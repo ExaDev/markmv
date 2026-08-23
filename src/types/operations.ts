@@ -25,6 +25,8 @@ export interface OperationOptions {
 export interface MoveOperationOptions extends OperationOptions {
   /** Create missing directories */
   createDirectories?: boolean;
+  /** Treat wikilinks as Obsidian vault links: resolve by note basename and rewrite on rename */
+  obsidian?: boolean;
 }
 
 /**

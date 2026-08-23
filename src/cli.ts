@@ -144,10 +144,11 @@ program
   .description('Move markdown files while updating cross-references')
   .argument(
     '<sources...>',
-    'Source markdown files and destination (supports globs like *.md, **/*.md)'
+    'Source markdown files, directories, or globs, and destination (last argument)'
   )
   .option('-d, --dry-run', 'Show what would be changed without making changes')
   .option('-v, --verbose', 'Show detailed output')
+  .option('--obsidian', 'Treat [[wikilinks]] as Obsidian vault links resolved by note basename')
   .option('--json', 'Output results in JSON format')
   .action(moveCommand);
 
@@ -389,6 +390,7 @@ program
   .option('--auth-headers <json>', 'JSON object with domain-specific headers for authentication')
   .option('-v, --verbose', 'Show detailed output with processing information')
   .option('--json', 'Output results in JSON format')
+  .option('--obsidian', 'Validate [[wikilinks]] by resolving them against the whole vault')
   .option('--explain <file>', 'Print the recorded stack for a file that failed to parse')
   .addHelpText(
     'after',
@@ -469,6 +471,7 @@ Output Options:
         authHeaders?: string;
         verbose?: boolean;
         json?: boolean;
+        obsidian?: boolean;
         explain?: string;
       }
     ) => {
@@ -522,6 +525,7 @@ Output Options:
         includeContext: options.includeContext ?? false,
         verbose: options.verbose ?? false,
         json: options.json ?? false,
+        obsidian: options.obsidian ?? false,
         groupBy,
         enableAuthDetection: options.enableAuthDetection ?? false,
         allowAuthRequired: !options.disallowAuthRequired, // Invert the flag

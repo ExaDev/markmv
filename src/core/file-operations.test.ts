@@ -391,4 +391,129 @@ describe('FileOperations', () => {
       expect(keeper).toContain('[A](./dest/A.md)');
     });
   });
+
+  describe('obsidian mode', () => {
+    it('leaves wikilinks untouched when a note moves without renaming', async () => {
+      await mkdir(join(testDir, 'devops'));
+      await writeFile(join(testDir, 'Home.md'), 'See [[Tailscale]].\n');
+      await writeFile(join(testDir, 'devops', 'Tailscale.md'), '# Tailscale\n');
+
+      const result = await fileOps.moveFile(
+        join(testDir, 'devops', 'Tailscale.md'),
+        join(testDir, 'archived', 'Tailscale.md'),
+        { obsidian: true }
+      );
+
+      expect(result.success).toBe(true);
+      // Obsidian resolves [[Tailscale]] by basename vault-wide, so the move breaks nothing and no link text should change anywhere
+      expect(result.changes).toHaveLength(0);
+      expect(await readFile(join(testDir, 'Home.md'), 'utf-8')).toBe('See [[Tailscale]].\n');
+    });
+
+    it('rewrites wikilinks to the new stem on a rename', async () => {
+      await mkdir(join(testDir, 'devops'));
+      await writeFile(join(testDir, 'Home.md'), 'See [[Tailscale]].\n');
+      await writeFile(join(testDir, 'devops', 'Tailscale.md'), '# Tailscale\n');
+
+      const result = await fileOps.moveFile(
+        join(testDir, 'devops', 'Tailscale.md'),
+        join(testDir, 'archived', 'Tailscale VPN.md'),
+        { obsidian: true }
+      );
+
+      expect(result.success).toBe(true);
+      expect(await readFile(join(testDir, 'Home.md'), 'utf-8')).toBe('See [[Tailscale VPN]].\n');
+    });
+
+    it('keeps aliases and block references when rewriting a wikilink', async () => {
+      await writeFile(
+        join(testDir, 'Home.md'),
+        'See [[Tailscale|the relay]] and [[Tailscale#Setup]].\n'
+      );
+      await writeFile(join(testDir, 'Tailscale.md'), '# Tailscale\n');
+
+      const result = await fileOps.moveFile(
+        join(testDir, 'Tailscale.md'),
+        join(testDir, 'Tailscale VPN.md'),
+        { obsidian: true }
+      );
+
+      expect(result.success).toBe(true);
+      const home = await readFile(join(testDir, 'Home.md'), 'utf-8');
+      expect(home).toContain('[[Tailscale VPN|the relay]]');
+      expect(home).toContain('[[Tailscale VPN#Setup]]');
+    });
+
+    it('uses a path-qualified wikilink when the new stem is not unique', async () => {
+      await mkdir(join(testDir, 'a'));
+      await mkdir(join(testDir, 'b'));
+      await writeFile(join(testDir, 'Home.md'), 'See [[Target]].\n');
+      await writeFile(join(testDir, 'a', 'Target.md'), '# A target\n');
+      await writeFile(join(testDir, 'b', 'Other.md'), '# Other\n');
+
+      // Renaming Other.md to Target.md creates a stem collision with a/Target.md
+      const result = await fileOps.moveFile(
+        join(testDir, 'b', 'Other.md'),
+        join(testDir, 'b', 'Target.md'),
+        { obsidian: true }
+      );
+
+      expect(result.success).toBe(true);
+      // Home.md's [[Target]] still uniquely resolves to a/Target.md, so it is untouched
+      expect(await readFile(join(testDir, 'Home.md'), 'utf-8')).toBe('See [[Target]].\n');
+    });
+
+    it('rewrites a wikilink with a vault-relative path when the target stem becomes ambiguous', async () => {
+      await mkdir(join(testDir, 'a'));
+      await writeFile(join(testDir, 'Home.md'), 'See [[Other]].\n');
+      await writeFile(join(testDir, 'Other.md'), '# Other\n');
+      await writeFile(join(testDir, 'a', 'Target.md'), '# Target\n');
+
+      // Moving Other.md into a fresh directory as Target.md collides with a/Target.md's stem
+      const result = await fileOps.moveFile(
+        join(testDir, 'Other.md'),
+        join(testDir, 'nested', 'Target.md'),
+        { obsidian: true }
+      );
+
+      expect(result.success).toBe(true);
+      expect(await readFile(join(testDir, 'Home.md'), 'utf-8')).toBe('See [[nested/Target]].\n');
+    });
+
+    it('warns about duplicate note stems before moving', async () => {
+      await mkdir(join(testDir, 'a'));
+      await mkdir(join(testDir, 'b'));
+      await writeFile(join(testDir, 'Home.md'), 'See [[Note]].\n');
+      await writeFile(join(testDir, 'a', 'Note.md'), '# A\n');
+      await writeFile(join(testDir, 'b', 'Note.md'), '# B\n');
+
+      const result = await fileOps.moveFile(
+        join(testDir, 'a', 'Note.md'),
+        join(testDir, 'archived', 'Note.md'),
+        { obsidian: true, dryRun: true }
+      );
+
+      expect(result.success).toBe(true);
+      const duplicateWarning = result.warnings.find((w) =>
+        w.includes("Duplicate note name 'Note'")
+      );
+      expect(duplicateWarning).toBeDefined();
+      expect(duplicateWarning).toContain(join(testDir, 'a', 'Note.md'));
+      expect(duplicateWarning).toContain(join(testDir, 'b', 'Note.md'));
+    });
+
+    it('leaves wikilink text alone without obsidian mode even on rename', async () => {
+      await writeFile(join(testDir, 'Home.md'), 'See [[Tailscale]].\n');
+      await writeFile(join(testDir, 'Tailscale.md'), '# Tailscale\n');
+
+      const result = await fileOps.moveFile(
+        join(testDir, 'Tailscale.md'),
+        join(testDir, 'Tailscale VPN.md'),
+        {}
+      );
+
+      expect(result.success).toBe(true);
+      expect(await readFile(join(testDir, 'Home.md'), 'utf-8')).toBe('See [[Tailscale]].\n');
+    });
+  });
 });

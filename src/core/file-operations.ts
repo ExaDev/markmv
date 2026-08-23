@@ -14,6 +14,11 @@ import { LinkParser } from './link-parser.js';
 import type { LinkRefactorResult } from './link-refactorer.js';
 import { LinkRefactorer } from './link-refactorer.js';
 import { LinkValidator } from './link-validator.js';
+import {
+  computeNoteStemCounts,
+  findDuplicateNoteStems,
+  resolveWikilinks,
+} from './obsidian-vault.js';
 
 /**
  * Core class for performing markdown file operations with intelligent link refactoring.
@@ -51,6 +56,17 @@ import { LinkValidator } from './link-validator.js';
  *   });
  *   ```
  */
+/**
+ * Collapse a parsed file list to one entry per path.
+ *
+ * Move operations parse the moved sources directly and again during project discovery, so the
+ * combined list carries duplicates; vault-wide wikilink analysis (stem counts, duplicate detection)
+ * must see each note exactly once or every moved file reports itself as a duplicate.
+ */
+function uniqueByFilePath(files: ParsedMarkdownFile[]): ParsedMarkdownFile[] {
+  return Array.from(new Map(files.map((file) => [file.filePath, file])).values());
+}
+
 export class FileOperations {
   private linkParser = new LinkParser();
   private linkRefactorer = new LinkRefactorer();
@@ -125,11 +141,16 @@ export class FileOperations {
       // Parse the source file (only meaningful for markdown, which may itself contain links to update) and build a dependency graph from the surrounding project's markdown files.
       const sourceIsMarkdown = PathUtils.isMarkdownFile(sourcePath);
       const sourceFile = sourceIsMarkdown ? await this.linkParser.parseFile(sourcePath) : null;
-      const { files: projectFiles, parseFailures } = await this.discoverProjectFiles([
-        sourcePath,
-        resolvedDestination,
-      ]);
-      const dependencyGraph = new DependencyGraph(projectFiles);
+      const {
+        files: projectFiles,
+        parseFailures,
+        vaultRoot,
+      } = await this.discoverProjectFiles([sourcePath, resolvedDestination]);
+      const allParsedFiles = uniqueByFilePath(
+        sourceFile ? [...projectFiles, sourceFile] : projectFiles
+      );
+      const obsidianWarnings = this.prepareObsidianMode(allParsedFiles, vaultRoot, options);
+      const dependencyGraph = new DependencyGraph(allParsedFiles);
 
       // Find all files that link to the source file
       const dependentFiles = dependencyGraph.getDependents(sourcePath);
@@ -146,7 +167,7 @@ export class FileOperations {
 
       const changes: OperationChange[] = [];
       const modifiedFiles: string[] = [];
-      const warnings: string[] = [];
+      const warnings: string[] = [...obsidianWarnings];
 
       // Plan file move
       if (!dryRun) {
@@ -339,11 +360,17 @@ export class FileOperations {
       }
 
       // Discover additional project files across the full span of the batch: every source and every destination seeds the scan so bystanders between them are found
-      const { files: projectFiles, parseFailures } = await this.discoverProjectFiles([
+      const {
+        files: projectFiles,
+        parseFailures,
+        vaultRoot,
+      } = await this.discoverProjectFiles([
         ...resolvedMoves.map((move) => move.source),
         ...resolvedMoves.map((move) => move.destination),
       ]);
-      const dependencyGraph = new DependencyGraph([...allFiles, ...projectFiles]);
+      const allParsedFiles = uniqueByFilePath([...allFiles, ...projectFiles]);
+      const obsidianWarnings = this.prepareObsidianMode(allParsedFiles, vaultRoot, options);
+      const dependencyGraph = new DependencyGraph(allParsedFiles);
 
       // Store content for every parsed file, not just the moved sources. Bystander files that link to several moved files are refactored once per move, and the transaction has not executed yet: re-reading a bystander from disk on a later move would see the original bytes and silently discard the link updates planned by earlier moves in the same batch.
       const sourceFilePaths = new Set(
@@ -363,7 +390,7 @@ export class FileOperations {
 
       const allChanges: OperationChange[] = [];
       const modifiedFiles = new Set<string>();
-      const warnings: string[] = [];
+      const warnings: string[] = [...obsidianWarnings];
 
       // First pass: Add all file moves to the transaction
       for (const { source, destination } of resolvedMoves) {
@@ -580,6 +607,7 @@ export class FileOperations {
   private async discoverProjectFiles(seedPaths: string[]): Promise<{
     files: ParsedMarkdownFile[];
     parseFailures: Array<{ file: string; error: string; stack?: string | undefined }>;
+    vaultRoot: string;
   }> {
     try {
       // Bystanders can live anywhere between where the files came from and where they are going, so discovery is rooted at the common base of every seed path. A base at the filesystem root means the seeds span unrelated trees; scanning from there would walk the disk, so fall back to the first seed's own directory.
@@ -607,11 +635,58 @@ export class FileOperations {
         }
       }
 
-      return { files: parsedFiles, parseFailures };
+      return { files: parsedFiles, parseFailures, vaultRoot: projectRoot };
     } catch (error) {
       console.warn(`Failed to discover project files: ${error}`);
-      return { files: [], parseFailures: [] };
+      return {
+        files: [],
+        parseFailures: [],
+        vaultRoot: PathUtils.findCommonBase(seedPaths),
+      };
     }
+  }
+
+  /**
+   * Activate Obsidian vault semantics for an operation when requested.
+   *
+   * Wikilinks in every scanned file are resolved against the whole set so the dependency graph and
+   * rewriter see them as real references, the link refactorer gains the vault context that decides
+   * between a bare stem and a path-qualified rewrite, and ambiguous or duplicate note names are
+   * surfaced as warnings -- a duplicate makes every bare wikilink to it resolve by path proximity,
+   * so a move can silently rebind those links without any text changing.
+   *
+   * @param files - Every parsed markdown file in the scanned tree
+   * @param vaultRoot - Root of the scanned tree, the base for vault-relative rewrites
+   * @param options - The operation's options; obsidian mode activates when set
+   *
+   * @returns Warnings about ambiguous wikilinks and duplicate note names
+   */
+  private prepareObsidianMode(
+    files: ParsedMarkdownFile[],
+    vaultRoot: string,
+    options: MoveOperationOptions
+  ): string[] {
+    if (!options.obsidian) {
+      this.linkRefactorer = new LinkRefactorer();
+      return [];
+    }
+
+    const warnings: string[] = [];
+    for (const ambiguity of resolveWikilinks(files, vaultRoot)) {
+      warnings.push(
+        `Ambiguous wikilink [[${ambiguity.stem}]] matches ${ambiguity.candidates.length} notes: ${ambiguity.candidates.join(', ')}`
+      );
+    }
+    for (const duplicate of findDuplicateNoteStems(files)) {
+      warnings.push(
+        `Duplicate note name '${duplicate.stem}': ${duplicate.paths.join(', ')} -- Obsidian resolves [[${duplicate.stem}]] by path proximity, so a move can silently rebind links to it`
+      );
+    }
+
+    this.linkRefactorer = new LinkRefactorer({
+      obsidianVault: { vaultRoot, noteStemCounts: computeNoteStemCounts(files) },
+    });
+    return warnings;
   }
 
   /** Validate the integrity of links after an operation */

@@ -503,4 +503,59 @@ Anchor link: [bad anchor](#non-existent)
       expect(process.exitCode).toBe(0);
     });
   });
+
+  describe('obsidian mode', () => {
+    const obsidianOptions: ValidateCliOptions = {
+      checkExternal: false,
+      externalTimeout: 5000,
+      strictInternal: true,
+      checkClaudeImports: true,
+      checkCircular: false,
+      onlyBroken: true,
+      groupBy: 'file',
+      includeContext: false,
+      dryRun: false,
+      verbose: false,
+      force: false,
+      obsidian: true,
+    };
+
+    it('validates wikilinks against the vault and flags unresolved ones', async () => {
+      await writeFile(join(testDir, 'Home.md'), 'Good: [[Existing]], bad: [[Missing Note]]\n');
+      await writeFile(join(testDir, 'Existing.md'), '# Existing\n');
+
+      const result = await validateLinks([join(testDir, '*.md')], obsidianOptions);
+
+      expect(result.brokenLinks).toBe(1);
+      const broken = Object.values(result.brokenLinksByFile)[0]?.[0];
+      expect(broken?.url).toBe('Missing Note');
+    });
+
+    it('does not validate wikilinks without obsidian mode', async () => {
+      await writeFile(join(testDir, 'Home.md'), 'Bad: [[Missing Note]]\n');
+
+      const result = await validateLinks([join(testDir, 'Home.md')], {
+        ...obsidianOptions,
+        obsidian: false,
+      });
+
+      expect(result.brokenLinks).toBe(0);
+    });
+
+    it('flags ambiguous wikilinks with their candidates', async () => {
+      await mkdir(join(testDir, 'a'));
+      await mkdir(join(testDir, 'b'));
+      await writeFile(join(testDir, 'Home.md'), 'See [[Note]].\n');
+      await writeFile(join(testDir, 'a', 'Note.md'), '# A\n');
+      await writeFile(join(testDir, 'b', 'Note.md'), '# B\n');
+
+      const result = await validateLinks([join(testDir, '**/*.md')], obsidianOptions);
+
+      expect(result.brokenLinks).toBe(1);
+      const broken = Object.values(result.brokenLinksByFile)[0]?.[0];
+      expect(broken?.reason).toBe('ambiguous-wikilink');
+      expect(broken?.details).toContain(join(testDir, 'a', 'Note.md'));
+      expect(broken?.details).toContain(join(testDir, 'b', 'Note.md'));
+    });
+  });
 });

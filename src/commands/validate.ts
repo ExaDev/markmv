@@ -3,6 +3,9 @@ import { statSync } from 'fs';
 import { posix, resolve } from 'path';
 import { LinkValidator } from '../core/link-validator.js';
 import { LinkParser } from '../core/link-parser.js';
+import { createWikilinkResolver } from '../core/obsidian-vault.js';
+import { FileUtils } from '../utils/file-utils.js';
+import { PathUtils } from '../utils/path-utils.js';
 import { GitUtils } from '../utils/git-utils.js';
 import {
   ValidationCache,
@@ -12,6 +15,9 @@ import {
 import type { LinkType } from '../types/links.js';
 import type { BrokenLink } from '../types/config.js';
 import type { OperationOptions } from '../types/operations.js';
+
+/** Link types only validated in obsidian mode, where wikilinks resolve vault-wide */
+const OBSIDIAN_LINK_TYPES: LinkType[] = ['wikilink', 'obsidian-transclusion'];
 
 /**
  * Configuration options for link validation operations.
@@ -65,6 +71,8 @@ export interface ValidateOperationOptions extends OperationOptions {
   authCredentials?: Record<string, string>;
   /** Custom headers for specific domains */
   authHeaders?: Record<string, Record<string, string>>;
+  /** Validate Obsidian wikilinks by resolving them against the whole vault */
+  obsidian?: boolean;
 }
 
 /**
@@ -198,6 +206,7 @@ export async function validateLinks(
       'image',
       'reference',
       'claude-import',
+      ...(options.obsidian ? OBSIDIAN_LINK_TYPES : []),
     ],
     checkExternal: options.checkExternal ?? false,
     externalTimeout: options.externalTimeout ?? 5000,
@@ -216,6 +225,7 @@ export async function validateLinks(
     force: options.force ?? false,
     gitDiff: options.gitDiff ?? '',
     gitStaged: options.gitStaged ?? false,
+    obsidian: options.obsidian ?? false,
     cache: options.cache ?? false,
     cacheDir: options.cacheDir ?? '.markmv-cache',
     failFast: options.failFast ?? false,
@@ -347,6 +357,17 @@ export async function validateLinks(
     }
   }
 
+  // In obsidian mode a wikilink resolves against the whole vault, so the resolver indexes every
+  // markdown file under the scan root, not only the files the patterns matched
+  let wikilinkResolver: ReturnType<typeof createWikilinkResolver> | undefined = undefined;
+  if (opts.obsidian && files.length > 0) {
+    const vaultRoot = PathUtils.findCommonBase(files);
+    if (vaultRoot) {
+      const vaultFilePaths = await FileUtils.findMarkdownFiles(vaultRoot, true);
+      wikilinkResolver = createWikilinkResolver(vaultRoot, vaultFilePaths);
+    }
+  }
+
   // Initialize validator and parser
   const validator = new LinkValidator({
     checkExternal: opts.checkExternal,
@@ -363,6 +384,7 @@ export async function validateLinks(
       credentials: opts.authCredentials || {},
       customHeaders: opts.authHeaders || {},
     },
+    ...(wikilinkResolver ? { checkWikilinks: true, wikilinkResolver } : {}),
   });
 
   const parser = new LinkParser();
@@ -660,9 +682,26 @@ export async function validateCommand(
           .split(',')
           .map((t) => t.trim())
           .filter((t): t is LinkType =>
-            ['internal', 'external', 'anchor', 'image', 'reference', 'claude-import'].includes(t)
+            [
+              'internal',
+              'external',
+              'anchor',
+              'image',
+              'reference',
+              'claude-import',
+              'wikilink',
+              'obsidian-transclusion',
+            ].includes(t)
           )
-      : ['internal', 'external', 'anchor', 'image', 'reference', 'claude-import'],
+      : [
+          'internal',
+          'external',
+          'anchor',
+          'image',
+          'reference',
+          'claude-import',
+          ...(cliOptions.obsidian ? OBSIDIAN_LINK_TYPES : []),
+        ],
   };
 
   try {

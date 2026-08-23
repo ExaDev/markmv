@@ -105,7 +105,8 @@ export interface BrokenLink {
     | 'invalid-format'
     | 'circular-reference'
     | 'content-stale'
-    | 'auth-required';
+    | 'auth-required'
+    | 'ambiguous-wikilink';
   /** Additional error details */
   details?: string;
   /** Content freshness information for external links */

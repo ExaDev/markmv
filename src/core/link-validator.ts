@@ -4,6 +4,7 @@ import { ContentFreshnessDetector, type FreshnessConfig } from '../utils/content
 import { AuthDetector, type AuthConfig } from '../utils/auth-detection.js';
 import type { BrokenLink, ValidationResult } from '../types/config.js';
 import type { MarkdownLink, ParsedMarkdownFile } from '../types/links.js';
+import type { WikilinkResolution } from './obsidian-vault.js';
 
 /**
  * Configuration options for link validation operations.
@@ -32,6 +33,10 @@ export interface LinkValidatorOptions {
   authConfig?: Partial<AuthConfig>;
   /** Treat auth-required links as valid (not broken) */
   allowAuthRequired?: boolean;
+  /** Check Obsidian wikilinks against the vault */
+  checkWikilinks?: boolean;
+  /** Resolver for wikilink targets against the whole vault file set */
+  wikilinkResolver?: (target: string) => WikilinkResolution;
 }
 
 /**
@@ -74,9 +79,12 @@ export interface LinkValidatorOptions {
  *   ```
  */
 export class LinkValidator {
-  private options: Required<Omit<LinkValidatorOptions, 'freshnessConfig' | 'authConfig'>> & {
+  private options: Required<
+    Omit<LinkValidatorOptions, 'freshnessConfig' | 'authConfig' | 'wikilinkResolver'>
+  > & {
     freshnessConfig?: Partial<FreshnessConfig>;
     authConfig?: Partial<AuthConfig>;
+    wikilinkResolver?: (target: string) => WikilinkResolution;
   };
   private freshnessDetector?: ContentFreshnessDetector;
   private authDetector?: AuthDetector;
@@ -90,6 +98,8 @@ export class LinkValidator {
       checkContentFreshness: options.checkContentFreshness ?? false,
       enableAuthDetection: options.enableAuthDetection ?? false,
       allowAuthRequired: options.allowAuthRequired ?? true,
+      checkWikilinks: options.checkWikilinks ?? false,
+      ...(options.wikilinkResolver ? { wikilinkResolver: options.wikilinkResolver } : {}),
       ...(options.freshnessConfig && { freshnessConfig: options.freshnessConfig }),
       ...(options.authConfig && { authConfig: options.authConfig }),
     };
@@ -161,6 +171,12 @@ export class LinkValidator {
         case 'reference':
           // Reference links are validated if they resolve to an internal/external link
           return null;
+
+        case 'wikilink':
+        case 'obsidian-transclusion':
+          return this.options.checkWikilinks
+            ? await this.validateWikilinkLink(link, sourceFile)
+            : null;
 
         default:
           return null;
@@ -543,6 +559,48 @@ export class LinkValidator {
    *
    * @returns Promise resolving to BrokenLink if invalid, null if valid
    */
+  private async validateWikilinkLink(
+    link: MarkdownLink,
+    sourceFile: string
+  ): Promise<BrokenLink | null> {
+    const resolver = this.options.wikilinkResolver;
+    if (!resolver) {
+      return null;
+    }
+
+    const resolution = resolver(link.href);
+    if (resolution.ambiguous) {
+      return {
+        sourceFile,
+        link,
+        reason: 'ambiguous-wikilink',
+        details: `Ambiguous wikilink matches ${resolution.ambiguous.length} notes: ${resolution.ambiguous.join(', ')}`,
+      };
+    }
+
+    const resolvedPath = resolution.resolvedPath;
+    if (!resolvedPath) {
+      return {
+        sourceFile,
+        link,
+        reason: 'file-not-found',
+        details: `No note in the vault matches [[${link.href}]]`,
+      };
+    }
+
+    try {
+      await access(resolvedPath, constants.F_OK);
+      return null;
+    } catch {
+      return {
+        sourceFile,
+        link,
+        reason: 'file-not-found',
+        details: `File does not exist: ${resolvedPath}`,
+      };
+    }
+  }
+
   private async validateAnchorLink(
     link: MarkdownLink,
     sourceFile: string

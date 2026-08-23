@@ -1,4 +1,4 @@
-import { dirname } from 'node:path';
+import { basename, dirname, relative } from 'node:path';
 import type { MarkdownLink, ParsedMarkdownFile } from '../types/links.js';
 import type { OperationChange } from '../types/operations.js';
 import { FileUtils } from '../utils/file-utils.js';
@@ -36,6 +36,24 @@ export interface RefactorOptions {
   updateClaudeImports?: boolean;
   /** Preserve link formatting (brackets, quotes, etc.) */
   preserveFormatting?: boolean;
+  /** Obsidian vault context enabling wikilink rewriting; without it wikilink text is preserved */
+  obsidianVault?: ObsidianVaultContext;
+}
+
+/**
+ * Vault-wide context a wikilink rewrite needs.
+ *
+ * Obsidian resolves [[Note]] by basename across the whole vault, so deciding what a rewritten
+ * wikilink should say depends on stem uniqueness across every note, not on the two files joined by
+ * the move.
+ *
+ * @category Core
+ */
+export interface ObsidianVaultContext {
+  /** Absolute path of the vault root, the base for path-qualified rewrites */
+  vaultRoot: string;
+  /** How many markdown files carry each note stem (basename without .md) before the move */
+  noteStemCounts: Map<string, number>;
 }
 
 /**
@@ -79,13 +97,16 @@ export interface RefactorOptions {
  *   ```
  */
 export class LinkRefactorer {
-  private options: Required<RefactorOptions>;
+  private options: Omit<Required<RefactorOptions>, 'obsidianVault'> & {
+    obsidianVault?: ObsidianVaultContext;
+  };
 
   constructor(options: RefactorOptions = {}) {
     this.options = {
       preferRelativePaths: options.preferRelativePaths ?? true,
       updateClaudeImports: options.updateClaudeImports ?? true,
       preserveFormatting: options.preserveFormatting ?? true,
+      ...(options.obsidianVault ? { obsidianVault: options.obsidianVault } : {}),
     };
   }
 
@@ -359,6 +380,10 @@ export class LinkRefactorer {
       return link.href;
     }
 
+    if (link.type === 'wikilink' || link.type === 'obsidian-transclusion') {
+      return this.updateWikilinkForMovedFile(link, movedFilePath, newFilePath);
+    }
+
     if (link.type === 'claude-import' && this.options.updateClaudeImports) {
       return this.updateClaudeImportPath(link, sourceFilePath, newFilePath);
     }
@@ -368,6 +393,39 @@ export class LinkRefactorer {
     }
 
     return link.href;
+  }
+
+  /**
+   * Update a wikilink or embed whose target moved.
+   *
+   * A wikilink resolves by note basename vault-wide, so a move that keeps the basename needs no
+   * rewrite at all -- the link still resolves. A rename rewrites to the shortest unambiguous form:
+   * the bare stem when exactly one note carries it, otherwise the vault-relative path, matching
+   * what Obsidian itself generates. Without vault context (obsidian mode off) the link text is
+   * preserved as-is.
+   */
+  private updateWikilinkForMovedFile(
+    link: MarkdownLink,
+    movedFilePath: string,
+    newFilePath: string
+  ): string {
+    const vault = this.options.obsidianVault;
+    if (!vault) {
+      return link.href;
+    }
+
+    const oldStem = basename(movedFilePath, '.md');
+    const newStem = basename(newFilePath, '.md');
+    if (oldStem === newStem) {
+      return link.href;
+    }
+
+    // The bare stem stays unambiguous only when no other note already carries it
+    if ((vault.noteStemCounts.get(newStem) ?? 0) === 0) {
+      return newStem;
+    }
+
+    return PathUtils.toUnixPath(relative(vault.vaultRoot, newFilePath)).replace(/\.md$/, '');
   }
 
   /** Update a link when the source file (containing the link) is being moved */
@@ -475,6 +533,14 @@ export class LinkRefactorer {
       const oldImport = `@${link.href}`;
       const newImport = `@${newHref}`;
       return line.replace(oldImport, newImport);
+    }
+
+    if (link.type === 'wikilink' || link.type === 'obsidian-transclusion') {
+      // Replace the target inside [[...]] while keeping the embed marker, block reference, and display alias exactly as written
+      const wikilinkRegex = new RegExp(
+        `(!?)\\[\\[\\s*${this.escapeRegex(link.href)}((?:#[^\\]|]*)?\\s*(?:\\|[^\\]]*)?)\\]\\]`
+      );
+      return line.replace(wikilinkRegex, `$1[[${newHref}$2]]`);
     }
 
     // For regular markdown links, we need to be more careful to preserve formatting

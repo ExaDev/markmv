@@ -18,6 +18,8 @@ export interface MoveOptions {
   dryRun?: boolean;
   /** Enable verbose output with detailed progress information */
   verbose?: boolean;
+  /** Treat wikilinks as Obsidian vault links resolved by note basename */
+  obsidian?: boolean;
 }
 
 /**
@@ -291,6 +293,7 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
       dryRun: options.dryRun || false,
       verbose: options.verbose || false,
       createDirectories: true,
+      obsidian: options.obsidian || false,
     };
 
     let result: OperationResult;

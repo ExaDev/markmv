@@ -137,7 +137,7 @@ describe('CLI Entry Point', () => {
       );
       expect(mockArgument).toHaveBeenCalledWith(
         '<sources...>',
-        'Source markdown files and destination (supports globs like *.md, **/*.md)'
+        'Source markdown files, directories, or globs, and destination (last argument)'
       );
       expect(mockArgument).toHaveBeenCalledWith('<source>', 'Source markdown file to split');
     });
@@ -214,6 +214,14 @@ describe('CLI Entry Point', () => {
       expect(mockOption).toHaveBeenCalledWith(
         '--explain <file>',
         'Print the recorded stack for a file that failed to parse'
+      );
+      expect(mockOption).toHaveBeenCalledWith(
+        '--obsidian',
+        'Treat [[wikilinks]] as Obsidian vault links resolved by note basename'
+      );
+      expect(mockOption).toHaveBeenCalledWith(
+        '--obsidian',
+        'Validate [[wikilinks]] by resolving them against the whole vault'
       );
     });
   });
