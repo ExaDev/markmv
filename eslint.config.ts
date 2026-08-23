@@ -1,11 +1,19 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
-import prettier from 'eslint-config-prettier';
+import prettierRecommended from 'eslint-plugin-prettier/recommended';
 import type { Linter } from 'eslint';
 
 export default tseslint.config(
   {
-    ignores: ['node_modules/**', 'dist/**', '**/*.d.ts', 'coverage/**'],
+    // Mirrors the exclusions .prettierignore used to carry for Prettier's own CLI, now that eslint-plugin-prettier's `prettier/prettier` rule replaces that CLI and does not read .prettierignore itself.
+    ignores: [
+      'node_modules/**',
+      'dist/**',
+      '**/*.d.ts',
+      'coverage/**',
+      '**/*.md',
+      'package-lock.json',
+    ],
   },
   js.configs.recommended,
   // Non-type-checked TS rules and the TS parser apply to every .ts file, including root-level config files (this file included) -- those never get type-aware linting (see below) but still need a parser assigned or eslint skips them with "no matching configuration".
@@ -91,5 +99,5 @@ export default tseslint.config(
       'no-empty': 'off',
     },
   },
-  prettier
+  prettierRecommended
 ) satisfies Linter.Config[];

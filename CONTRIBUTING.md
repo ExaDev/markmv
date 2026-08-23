@@ -35,6 +35,7 @@ Each commit message should have the following format:
 ### Scopes
 
 Common scopes for this project include:
+
 - **cli**: Command-line interface changes
 - **core**: Core functionality changes
 - **utils**: Utility function changes
@@ -98,11 +99,11 @@ This will prompt you through creating a proper conventional commit message.
 
 ## Code Style
 
-This project uses [Biome](https://biomejs.dev/) for linting and formatting:
+This project uses [ESLint](https://eslint.org/) (with `eslint-plugin-prettier` enforcing [Prettier](https://prettier.io/) formatting as a lint rule) for linting and formatting:
 
-- Check code style: `npm run check`
-- Format code: `npm run format`
-- Lint code: `npm run lint`
+- Check code style and types: `npm run check`
+- Lint (and format) code, applying fixes: `npm run lint:fix`
+- Lint code only: `npm run lint`
 
 ## Release Process
 
@@ -113,6 +114,7 @@ Releases are automated using semantic-release based on conventional commits:
 - **BREAKING CHANGE**: triggers a major version bump
 
 The release process runs automatically on the main branch and:
+
 1. Analyzes commit messages since the last release
 2. Determines the next version number
 3. Generates a changelog

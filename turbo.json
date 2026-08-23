@@ -13,10 +13,6 @@
       "inputs": ["src/**/*.ts", "tsconfig.json"],
       "outputs": []
     },
-    "_format-check": {
-      "inputs": ["src/**/*.ts", "prettier.config.ts"],
-      "outputs": []
-    },
     "_test": {
       "inputs": ["src/**/*.ts", "vitest.config.ts"],
       "outputs": ["coverage/**"]

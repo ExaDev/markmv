@@ -38,15 +38,6 @@ jobs:
           task: lint
           command: pnpm run lint
 
-  format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup
-        with:
-          task: format-check
-          command: pnpm run format:check
-
   typecheck:
     runs-on: ubuntu-latest
     steps:
@@ -270,7 +261,7 @@ jobs:
 
   # Release - only after every quality gate passes
   release:
-    needs: [commitlint, lint, format, typecheck, build, knip, security-audit, test]
+    needs: [commitlint, lint, typecheck, build, knip, security-audit, test]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
