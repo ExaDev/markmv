@@ -362,6 +362,9 @@ Content here.
         checkExternal: true,
         checkContentFreshness: true,
         cacheDir: join(tempDir, 'freshness-cache'),
+        // Single-attempt semantics: this test mocks one response per link, and retry attempts
+        // would consume the queued responses out of order
+        externalRetries: 0,
       });
 
       expect(result.brokenLinks).toBe(4);
@@ -429,6 +432,9 @@ Content here.
         checkExternal: true,
         checkContentFreshness: true,
         cacheDir: join(tempDir, 'freshness-cache'),
+        // Single-attempt semantics: this test mocks one response per link, and retry attempts
+        // would consume the queued responses out of order
+        externalRetries: 0,
       });
 
       expect(result.totalLinks).toBe(4);
@@ -483,6 +489,9 @@ Content here.
         checkExternal: true,
         checkContentFreshness: true,
         cacheDir: join(tempDir, 'freshness-cache'),
+        // Single-attempt semantics: this test mocks one response per link, and retry attempts
+        // would consume the queued responses out of order
+        externalRetries: 0,
       });
 
       expect(result.totalLinks).toBe(3);
