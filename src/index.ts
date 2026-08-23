@@ -282,7 +282,7 @@ export async function moveFile(
  * @group Core API
  */
 export async function moveFiles(
-  moves: Array<{ source: string; destination: string }>,
+  moves: { source: string; destination: string }[],
   options: MoveOperationOptions = {}
 ): Promise<OperationResult> {
   const fileOps = new FileOperations();
@@ -401,7 +401,12 @@ export async function generateIndex(
  *
  * @group Commands
  */
-export const generateBarrel = generateIndex;
+export async function generateBarrel(
+  directory: string,
+  options: import('./commands/index.js').IndexOptions
+): Promise<void> {
+  return generateIndex(directory, options);
+}
 
 /**
  * Generate interactive link graphs from markdown file relationships
@@ -466,14 +471,14 @@ export async function generateLinkGraph(
  *
  * @group Testing
  */
-export async function testAutoExposure(input: string): Promise<{
+export function testAutoExposure(input: string): Promise<{
   message: string;
   timestamp: string;
   success: boolean;
 }> {
-  return {
+  return Promise.resolve({
     message: `Echo: ${input}`,
     timestamp: new Date().toISOString(),
     success: true,
-  };
+  });
 }

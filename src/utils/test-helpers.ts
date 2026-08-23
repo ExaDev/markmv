@@ -2,7 +2,7 @@
 
 import { platform } from 'node:os';
 import { sep, win32, posix } from 'node:path';
-import { accessSync, constants, lstatSync } from 'node:fs';
+import { accessSync, constants } from 'node:fs';
 
 export interface PlatformInfo {
   isWindows: boolean;
@@ -132,7 +132,7 @@ export function skipIfUnsupported(feature: 'symlinks' | 'case-sensitivity'): boo
 }
 
 /** Check if a test should be skipped based on platform capabilities */
-export function shouldSkipTest(requirement: 'symlinks' | 'case-sensitivity' | 'windows' | 'unix'): {
+function shouldSkipTest(requirement: 'symlinks' | 'case-sensitivity' | 'windows' | 'unix'): {
   skip: boolean;
   reason: string;
 } {
@@ -194,27 +194,6 @@ export function fileExists(filePath: string): boolean {
     return true;
   } catch {
     return false;
-  }
-}
-
-/** Check if a path is a symbolic link */
-export function isSymbolicLink(filePath: string): boolean {
-  try {
-    const stats = lstatSync(filePath);
-    return stats.isSymbolicLink();
-  } catch {
-    return false;
-  }
-}
-
-/** Get OS-specific temporary directory patterns */
-export function getTempDirPatterns(): string[] {
-  const platformInfo = getPlatformInfo();
-
-  if (platformInfo.isWindows) {
-    return ['C:\\temp', 'C:\\tmp', '%TEMP%', '%TMP%'];
-  } else {
-    return ['/tmp', '/var/tmp', '$TMPDIR'];
   }
 }
 

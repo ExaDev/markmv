@@ -51,8 +51,3 @@ export function validateOutput(methodName: string, data: unknown): ValidationRes
     errors: result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`),
   };
 }
-
-/** Get list of available methods */
-export function getAvailableMethods(): string[] {
-  return Object.keys(methodSchemas);
-}
