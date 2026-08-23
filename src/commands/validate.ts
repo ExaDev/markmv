@@ -1,9 +1,11 @@
+import { readFile, writeFile } from 'node:fs/promises';
 import { glob } from 'glob';
 import { statSync } from 'fs';
 import { posix, resolve } from 'path';
 import { LinkValidator } from '../core/link-validator.js';
 import { LinkParser } from '../core/link-parser.js';
 import { createWikilinkResolver } from '../core/obsidian-vault.js';
+import { suggestLinkFixes, type LinkSuggestion } from '../core/link-suggester.js';
 import { FileUtils } from '../utils/file-utils.js';
 import { PathUtils } from '../utils/path-utils.js';
 import { GitUtils } from '../utils/git-utils.js';
@@ -87,6 +89,8 @@ export interface ValidateCliOptions extends Omit<ValidateOperationOptions, 'link
   json?: boolean;
   /** Print the recorded parse-failure stack for the named file */
   explain?: string;
+  /** Suggest and apply fixes for broken internal links */
+  fix?: boolean;
 }
 
 /**
@@ -152,6 +156,136 @@ export interface ValidateResult {
   authRequiredLinks?: number;
   /** Number of successfully authenticated links */
   authenticatedLinks?: number;
+}
+
+/**
+ * A broken internal link with ranked replacement candidates, ready to prompt about.
+ *
+ * @category Commands
+ */
+export interface PlannedLinkFix {
+  /** File containing the broken link */
+  sourceFile: string;
+  /** One-based line number of the link */
+  line: number;
+  /** The broken link target as written */
+  brokenHref: string;
+  /** Replacement candidates, best first */
+  suggestions: LinkSuggestion[];
+}
+
+/**
+ * Asks the user which suggestion to apply for one broken link.
+ *
+ * Returns the chosen zero-based suggestion index, or undefined to skip. Injectable so tests and
+ * non-interactive callers can drive fix mode without a terminal.
+ *
+ * @category Commands
+ */
+export type FixPrompter = (fix: PlannedLinkFix) => Promise<number | undefined>;
+
+/**
+ * Plan fixes for the broken internal links in a validation result.
+ *
+ * Only internal file-not-found links are fixable this way -- an external or anchor failure has no
+ * file to suggest. Broken links whose target resembles nothing known are left out rather than given
+ * a wild guess.
+ *
+ * @param result - A completed validation result
+ * @param knownFiles - Absolute paths of every candidate file in the project
+ *
+ * @returns One planned fix per broken internal link that has suggestions
+ */
+export function planLinkFixes(result: ValidateResult, knownFiles: string[]): PlannedLinkFix[] {
+  const fixes: PlannedLinkFix[] = [];
+  for (const [filePath, brokenLinks] of Object.entries(result.brokenLinksByFile)) {
+    for (const broken of brokenLinks) {
+      if (broken.type !== 'internal' || broken.reason !== 'file-not-found') continue;
+      const suggestions = suggestLinkFixes(broken.url, filePath, knownFiles);
+      if (suggestions.length === 0) continue;
+      fixes.push({
+        sourceFile: filePath,
+        line: broken.line ?? 1,
+        brokenHref: broken.url,
+        suggestions,
+      });
+    }
+  }
+  return fixes;
+}
+
+/**
+ * Apply one chosen suggestion to the linking file.
+ *
+ * Rewrites the markdown link form ](broken-href to ](replacement on the recorded line. A missing
+ * line or a link text that no longer matches throws -- applying a fix to a file that changed under
+ * the validator would silently corrupt the wrong span.
+ *
+ * @param fix - The planned fix being accepted
+ * @param choiceIndex - Zero-based index into fix.suggestions
+ */
+export async function applyLinkFix(fix: PlannedLinkFix, choiceIndex: number): Promise<void> {
+  const suggestion = fix.suggestions[choiceIndex];
+  if (!suggestion) {
+    throw new Error(`No suggestion ${choiceIndex} for ${fix.brokenHref} in ${fix.sourceFile}`);
+  }
+
+  const content = await readFile(fix.sourceFile, 'utf-8');
+  const lines = content.split('\n');
+  const lineIndex = fix.line - 1;
+  const target = lines[lineIndex];
+  if (target === undefined) {
+    throw new Error(`Line ${fix.line} not found in ${fix.sourceFile}`);
+  }
+  if (!target.includes(`](${fix.brokenHref}`)) {
+    throw new Error(`Link ${fix.brokenHref} not found on line ${fix.line} of ${fix.sourceFile}`);
+  }
+  lines[lineIndex] = target.replace(`](${fix.brokenHref}`, `](${suggestion.replacementHref}`);
+  await writeFile(fix.sourceFile, lines.join('\n'));
+}
+
+/** Prompt on the terminal for which suggestion to apply, returning a zero-based index or skip */
+async function promptFixChoice(fix: PlannedLinkFix): Promise<number | undefined> {
+  const { createInterface } = await import('node:readline/promises');
+  const readlineInterface = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    console.log(`\n🔧 ${fix.sourceFile}:${fix.line} broken link ${fix.brokenHref}`);
+    fix.suggestions.forEach((suggestion, index) => {
+      console.log(`  ${index + 1}. ${suggestion.replacementHref} (${suggestion.reason})`);
+    });
+    console.log('  s. skip');
+    const answer = await readlineInterface.question('Choice [1-s]: ');
+    const trimmed = answer.trim().toLowerCase();
+    if (trimmed === '' || trimmed === 's') {
+      return undefined;
+    }
+    const index = Number.parseInt(trimmed, 10) - 1;
+    return Number.isNaN(index) ? undefined : index;
+  } finally {
+    readlineInterface.close();
+  }
+}
+
+/** Collect every markdown file matching the validation patterns as fix candidates */
+async function scanKnownFiles(patterns: string[]): Promise<string[]> {
+  const matched: string[] = [];
+  for (const pattern of patterns) {
+    const normalizedPattern = pattern.replace(/\\/g, '/');
+    const matches = await glob(normalizedPattern, {
+      absolute: true,
+      ignore: ['**/node_modules/**', '**/dist/**', '**/coverage/**'],
+    });
+    matched.push(...matches.filter((filePath) => filePath.endsWith('.md')));
+  }
+  if (matched.length === 0) {
+    return [];
+  }
+  const scanRoot = PathUtils.findCommonBase(matched);
+  if (!scanRoot) {
+    return matched;
+  }
+  const scanned = await FileUtils.findMarkdownFiles(scanRoot, true);
+  return scanned.length > 0 ? scanned : matched;
 }
 
 /**
@@ -654,7 +788,8 @@ export async function validateLinks(
  */
 export async function validateCommand(
   patterns: string[],
-  cliOptions: ValidateCliOptions
+  cliOptions: ValidateCliOptions,
+  prompter?: FixPrompter
 ): Promise<void> {
   // Default to current directory if no patterns provided
   let finalPatterns = patterns.length === 0 ? ['.'] : patterns;
@@ -712,6 +847,15 @@ export async function validateCommand(
 
     if (cliOptions.json) {
       console.log(JSON.stringify(result, null, 2));
+      // Fix suggestions go to stderr so machine consumers keep a clean JSON stream on stdout
+      if (cliOptions.fix) {
+        const knownFiles = await scanKnownFiles(finalPatterns);
+        for (const fix of planLinkFixes(result, knownFiles)) {
+          console.error(
+            `Did you mean one of: ${fix.suggestions.map((sg) => sg.replacementHref).join(', ')} for ${fix.brokenHref} (${fix.sourceFile}:${fix.line})`
+          );
+        }
+      }
       return;
     }
 
@@ -911,6 +1055,35 @@ export async function validateCommand(
             if (info.suggestion) {
               console.log(`       Suggestion: ${info.suggestion}`);
             }
+          }
+        }
+      }
+    }
+
+    // Fix mode: suggest and apply replacements for broken internal links. Interactive when a
+    // prompter is injected or stdout is a terminal; otherwise suggestions are printed only.
+    if (cliOptions.fix) {
+      const knownFiles = await scanKnownFiles(finalPatterns);
+      const fixes = planLinkFixes(result, knownFiles);
+      if (fixes.length === 0) {
+        console.log('\n🔧 No fix suggestions available for the broken links found');
+      } else if (prompter || process.stdout.isTTY) {
+        let applied = 0;
+        for (const fix of fixes) {
+          const choice = prompter ? await prompter(fix) : await promptFixChoice(fix);
+          if (choice === undefined) {
+            continue;
+          }
+          await applyLinkFix(fix, choice);
+          applied++;
+        }
+        console.log(`\n🔧 Applied ${applied} fix(es)`);
+      } else {
+        console.log('\n🔧 Suggested fixes (rerun on a terminal, or use the API, to apply):');
+        for (const fix of fixes) {
+          console.log(`  ${fix.sourceFile}:${fix.line} ${fix.brokenHref}`);
+          for (const suggestion of fix.suggestions) {
+            console.log(`    Did you mean ${suggestion.replacementHref} (${suggestion.reason})`);
           }
         }
       }

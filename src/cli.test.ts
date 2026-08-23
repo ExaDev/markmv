@@ -223,6 +223,10 @@ describe('CLI Entry Point', () => {
         '--obsidian',
         'Validate [[wikilinks]] by resolving them against the whole vault'
       );
+      expect(mockOption).toHaveBeenCalledWith(
+        '--fix',
+        'Suggest fixes for broken internal links and apply them interactively on a terminal'
+      );
     });
   });
 });

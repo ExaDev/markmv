@@ -1,8 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { join } from 'node:path';
-import { mkdtemp, rmdir, writeFile, mkdir } from 'node:fs/promises';
+import { mkdtemp, rmdir, writeFile, mkdir, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { validateLinks, validateCommand } from './validate.js';
+import {
+  validateLinks,
+  validateCommand,
+  planLinkFixes,
+  applyLinkFix,
+  type PlannedLinkFix,
+  type FixPrompter,
+} from './validate.js';
 import type { ValidateOperationOptions, ValidateCliOptions } from './validate.js';
 import { LinkParser } from '../core/link-parser.js';
 
@@ -556,6 +563,104 @@ Anchor link: [bad anchor](#non-existent)
       expect(broken?.reason).toBe('ambiguous-wikilink');
       expect(broken?.details).toContain(join(testDir, 'a', 'Note.md'));
       expect(broken?.details).toContain(join(testDir, 'b', 'Note.md'));
+    });
+  });
+
+  describe('fix mode', () => {
+    const fixOptions: ValidateCliOptions = {
+      checkExternal: false,
+      externalTimeout: 5000,
+      strictInternal: true,
+      checkClaudeImports: true,
+      checkCircular: false,
+      onlyBroken: true,
+      groupBy: 'file',
+      includeContext: true,
+      dryRun: false,
+      verbose: false,
+      force: false,
+      fix: true,
+    };
+
+    it('plans fixes for broken internal links with ranked suggestions', async () => {
+      await mkdir(join(testDir, 'guides'));
+      const sourceFile = join(testDir, 'broken.md');
+      await writeFile(sourceFile, 'See [guide](./getting-strated.md) now.\n');
+      await writeFile(join(testDir, 'guides', 'getting-started.md'), '# Guide\n');
+
+      const knownFiles = [join(testDir, 'guides', 'getting-started.md')];
+      const result = await validateLinks([sourceFile], { ...fixOptions, fix: false });
+      const fixes = planLinkFixes(result, knownFiles);
+
+      expect(fixes).toHaveLength(1);
+      expect(fixes[0]?.brokenHref).toBe('./getting-strated.md');
+      expect(fixes[0]?.suggestions[0]?.replacementHref).toBe('./guides/getting-started.md');
+    });
+
+    it('applies a chosen fix to the linking file', async () => {
+      const sourceFile = join(testDir, 'broken.md');
+      await writeFile(sourceFile, 'See [guide](./getting-strated.md) now.\n');
+
+      const fix: PlannedLinkFix = {
+        sourceFile,
+        line: 1,
+        brokenHref: './getting-strated.md',
+        suggestions: [
+          {
+            candidatePath: join(testDir, 'guides', 'getting-started.md'),
+            replacementHref: './guides/getting-started.md',
+            reason: 'near miss',
+          },
+        ],
+      };
+
+      await applyLinkFix(fix, 0);
+
+      expect(await readFile(sourceFile, 'utf-8')).toBe(
+        'See [guide](./guides/getting-started.md) now.\n'
+      );
+    });
+
+    it('prints suggestions without prompting when stdout is not a TTY', async () => {
+      const sourceFile = join(testDir, 'broken.md');
+      await writeFile(sourceFile, 'See [guide](./getting-strated.md) now.\n');
+      await mkdir(join(testDir, 'guides'));
+      await writeFile(join(testDir, 'guides', 'getting-started.md'), '# Guide\n');
+
+      const output: string[] = [];
+      const originalLog = console.log;
+      console.log = (...args: unknown[]) => {
+        output.push(args.map(String).join(' '));
+      };
+      try {
+        await validateCommand([sourceFile], { ...fixOptions, verbose: false });
+      } finally {
+        console.log = originalLog;
+      }
+
+      const joined = output.join('\n');
+      expect(joined).toContain('Did you mean');
+      expect(joined).toContain('./guides/getting-started.md');
+      // A non-interactive run never rewrites files
+      expect(await readFile(sourceFile, 'utf-8')).toContain('./getting-strated.md');
+    });
+
+    it('applies prompted fixes interactively', async () => {
+      const sourceFile = join(testDir, 'broken.md');
+      await writeFile(sourceFile, 'See [guide](./getting-strated.md) now.\n');
+      await mkdir(join(testDir, 'guides'));
+      await writeFile(join(testDir, 'guides', 'getting-started.md'), '# Guide\n');
+
+      const prompter: FixPrompter = async (fix) => {
+        expect(fix.suggestions[0]?.replacementHref).toBe('./guides/getting-started.md');
+        return 0;
+      };
+
+      await validateCommand([sourceFile], { ...fixOptions, fix: true }, prompter);
+
+      expect(await readFile(sourceFile, 'utf-8')).toBe(
+        'See [guide](./guides/getting-started.md) now.\n'
+      );
     });
   });
 });

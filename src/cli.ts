@@ -391,6 +391,10 @@ program
   .option('-v, --verbose', 'Show detailed output with processing information')
   .option('--json', 'Output results in JSON format')
   .option('--obsidian', 'Validate [[wikilinks]] by resolving them against the whole vault')
+  .option(
+    '--fix',
+    'Suggest fixes for broken internal links and apply them interactively on a terminal'
+  )
   .option('--explain <file>', 'Print the recorded stack for a file that failed to parse')
   .addHelpText(
     'after',
@@ -472,6 +476,7 @@ Output Options:
         verbose?: boolean;
         json?: boolean;
         obsidian?: boolean;
+        fix?: boolean;
         explain?: string;
       }
     ) => {
@@ -526,6 +531,7 @@ Output Options:
         verbose: options.verbose ?? false,
         json: options.json ?? false,
         obsidian: options.obsidian ?? false,
+        fix: options.fix ?? false,
         groupBy,
         enableAuthDetection: options.enableAuthDetection ?? false,
         allowAuthRequired: !options.disallowAuthRequired, // Invert the flag
