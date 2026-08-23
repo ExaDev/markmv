@@ -469,6 +469,9 @@ Broken: [Missing](https://example.com/missing)
         checkExternal: true,
         enableAuthDetection: true,
         allowAuthRequired: true,
+        // Single-attempt semantics: this test asserts how one network failure is reported, not
+        // the retry loop, whose extra attempts would consume the queued mock responses
+        externalRetries: 0,
       });
 
       expect(result.brokenLinks).toBe(2);
@@ -515,6 +518,8 @@ Broken: [Missing](https://example.com/missing)
         checkExternal: true,
         enableAuthDetection: true,
         allowAuthRequired: true,
+        // Single-attempt semantics keep the one-response-per-link mock sequence aligned
+        externalRetries: 0,
       });
 
       expect(result.totalLinks).toBe(3);

@@ -465,6 +465,55 @@ describe('LinkValidator', () => {
       });
     });
 
+    it('retries transient external failures before reporting', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('ECONNRESET'))
+        .mockRejectedValueOnce(new Error('ECONNRESET'))
+        .mockResolvedValue({ ok: true, status: 200, statusText: 'OK' });
+      global.fetch = mockFetch;
+
+      const externalValidator = new LinkValidator({
+        checkExternal: true,
+        externalTimeout: 100,
+      });
+
+      const link: MarkdownLink = {
+        type: 'external',
+        href: 'https://flaky.example.com',
+        line: 1,
+        column: 1,
+        absolute: false,
+      };
+
+      const result = await externalValidator.validateLink(link, join(testDir, 'source.md'));
+      expect(result).toBeNull();
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+    });
+
+    it('does not retry when external retries are disabled', async () => {
+      const mockFetch = vi.fn().mockRejectedValue(new Error('ECONNRESET'));
+      global.fetch = mockFetch;
+
+      const externalValidator = new LinkValidator({
+        checkExternal: true,
+        externalTimeout: 100,
+        externalRetries: 0,
+      });
+
+      const link: MarkdownLink = {
+        type: 'external',
+        href: 'https://flaky.example.com',
+        line: 1,
+        column: 1,
+        absolute: false,
+      };
+
+      const result = await externalValidator.validateLink(link, join(testDir, 'source.md'));
+      expect(result?.reason).toBe('external-error');
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
     it('should skip external links when checkExternal is disabled', async () => {
       const link: MarkdownLink = {
         type: 'external',

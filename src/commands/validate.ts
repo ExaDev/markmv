@@ -77,6 +77,8 @@ export interface ValidateOperationOptions extends OperationOptions {
   obsidian?: boolean;
   /** External-link hostnames excluded from checking entirely (comma-separated on the CLI) */
   skipDomains?: string[];
+  /** Extra attempts for transient external failures (network errors, 5xx, 429) */
+  externalRetries?: number;
   /** Frontmatter fields every validated file must define */
   requireFrontmatter?: string[];
   /** Internal-link href form to enforce: relative (no leading /), absolute (leading /), or none */
@@ -388,6 +390,7 @@ export async function validateLinks(
     gitStaged: options.gitStaged ?? false,
     obsidian: options.obsidian ?? false,
     skipDomains: options.skipDomains ?? [],
+    externalRetries: options.externalRetries ?? 2,
     requireFrontmatter: options.requireFrontmatter ?? [],
     enforceLinkFormat: options.enforceLinkFormat ?? 'none',
     cache: options.cache ?? false,
@@ -553,6 +556,7 @@ export async function validateLinks(
     },
     ...(wikilinkResolver ? { checkWikilinks: true, wikilinkResolver } : {}),
     skipDomains: opts.skipDomains,
+    externalRetries: opts.externalRetries,
   });
 
   const parser = new LinkParser();

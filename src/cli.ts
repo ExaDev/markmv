@@ -487,6 +487,7 @@ Output Options:
         obsidian?: boolean;
         fix?: boolean;
         skipDomains?: string;
+        externalRetries?: number;
         requireFrontmatter?: string;
         enforceLinkFormat?: string;
         explain?: string;
@@ -574,6 +575,9 @@ Output Options:
       }
       if (skipDomains !== undefined) {
         validationOptions.skipDomains = skipDomains;
+      }
+      if (options.externalRetries !== undefined && Number.isFinite(options.externalRetries)) {
+        validationOptions.externalRetries = options.externalRetries;
       }
       if (requireFrontmatter !== undefined) {
         validationOptions.requireFrontmatter = requireFrontmatter;

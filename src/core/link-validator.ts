@@ -37,6 +37,8 @@ export interface LinkValidatorOptions {
   checkWikilinks?: boolean;
   /** External-link hostnames excluded from checking entirely (known problematic sites) */
   skipDomains?: string[];
+  /** Extra attempts for transient external failures (network errors, 5xx, 429) */
+  externalRetries?: number;
   /** Resolver for wikilink targets against the whole vault file set */
   wikilinkResolver?: (target: string) => WikilinkResolution;
 }
@@ -102,6 +104,7 @@ export class LinkValidator {
       allowAuthRequired: options.allowAuthRequired ?? true,
       checkWikilinks: options.checkWikilinks ?? false,
       skipDomains: options.skipDomains ?? [],
+      externalRetries: options.externalRetries ?? 2,
       ...(options.wikilinkResolver ? { wikilinkResolver: options.wikilinkResolver } : {}),
       ...(options.freshnessConfig && { freshnessConfig: options.freshnessConfig }),
       ...(options.authConfig && { authConfig: options.authConfig }),
@@ -271,9 +274,6 @@ export class LinkValidator {
     }
 
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.options.externalTimeout);
-
       // Prepare headers for request
       const headers: Record<string, string> = {};
 
@@ -286,7 +286,6 @@ export class LinkValidator {
 
         // If URL is known to require auth via domain detection, return immediately
         if (authInfo.requiresAuth && authInfo.detectionMethod === 'domain') {
-          clearTimeout(timeoutId);
           return {
             sourceFile,
             link,
@@ -310,10 +309,7 @@ export class LinkValidator {
       const method = this.options.checkContentFreshness ? 'GET' : 'HEAD';
       headers['User-Agent'] ??= 'markmv-validator/1.0 (content-freshness-detection)';
 
-      const fetchOptions: RequestInit = {
-        method,
-        signal: controller.signal,
-      };
+      const fetchOptions: RequestInit = { method };
 
       if (Object.keys(headers).length > 0) {
         fetchOptions.headers = headers;
@@ -323,9 +319,43 @@ export class LinkValidator {
         fetchOptions.redirect = 'follow'; // Follow redirects to detect auth redirects
       }
 
-      const response = await fetch(link.href, fetchOptions);
+      // Transient failures -- network errors, 5xx, 429 -- are retried up to externalRetries
+      // extra times before the link is reported, each attempt with its own timeout budget
+      const maxAttempts = 1 + this.options.externalRetries;
+      let response: Response | undefined;
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.options.externalTimeout);
+        try {
+          const attemptResponse = await fetch(link.href, {
+            ...fetchOptions,
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+          if (
+            (attemptResponse.status >= 500 || attemptResponse.status === 429) &&
+            attempt < maxAttempts - 1
+          ) {
+            continue;
+          }
+          response = attemptResponse;
+          break;
+        } catch (error) {
+          clearTimeout(timeoutId);
+          if (attempt === maxAttempts - 1) {
+            throw error;
+          }
+        }
+      }
 
-      clearTimeout(timeoutId);
+      if (!response) {
+        return {
+          sourceFile,
+          link,
+          reason: 'external-error',
+          details: 'External check exhausted all attempts without a response',
+        };
+      }
 
       // Analyze response for authentication indicators if auth detection is enabled
       if (this.authDetector && this.options.enableAuthDetection && authInfo) {
