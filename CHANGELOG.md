@@ -1,3 +1,13 @@
+## [1.37.1](https://github.com/ExaDev/markmv/compare/v1.37.0...v1.37.1) (2026-08-23)
+
+### Bug Fixes
+
+* **cli:** make validate exit codes and obsidian resolution hold up ([3edba19](https://github.com/ExaDev/markmv/commit/3edba190c67c19cfd130e83155d39f59fc152963))
+* **cli:** register --external-retries and reject invalid --enforce-link-format ([8296956](https://github.com/ExaDev/markmv/commit/82969562e736551243b02e3fbd5f313c7bd78afb))
+* **commands:** guard embed deletion, align extract naming, widen index discovery ([e01ad99](https://github.com/ExaDev/markmv/commit/e01ad99cc5234cfb5e0e94f3c7bd3ee30a1d3d65))
+* **core:** accumulate batch rewrites and preserve anchors, home paths, and qualified wikilinks ([a97c052](https://github.com/ExaDev/markmv/commit/a97c0529731104a883c43f7ae43d0fbc83532f02))
+* **core:** resolve wikilinks case-insensitively with trimmed targets ([675ebb3](https://github.com/ExaDev/markmv/commit/675ebb3d8875e13bae5a4211d2c124b90b5660b5))
+
 ## [1.37.0](https://github.com/ExaDev/markmv/compare/v1.36.0...v1.37.0) (2026-08-23)
 
 ### Features
