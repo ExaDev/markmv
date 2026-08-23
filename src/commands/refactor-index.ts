@@ -59,7 +59,7 @@ export interface RefactorIndexResult {
   /** Warnings reported by the move machinery */
   warnings: string[];
   /** Files that failed to parse during the operation; their links could not be checked or rewritten */
-  parseFailures: Array<{ file: string; error: string }>;
+  parseFailures: { file: string; error: string }[];
   /** Errors that prevented the operation */
   errors: string[];
 }
@@ -130,7 +130,7 @@ export async function refactorIndex(
   }
 
   const targetConvention: IndexConvention =
-    options.to !== undefined ? options.to : currentConvention === 'readme' ? 'index' : 'readme';
+    options.to ?? (currentConvention === 'readme' ? 'index' : 'readme');
   if (targetConvention !== 'readme' && targetConvention !== 'index') {
     throw new Error(
       `Unknown index convention '${String(targetConvention)}': expected readme or index`

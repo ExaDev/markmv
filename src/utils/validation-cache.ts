@@ -259,7 +259,10 @@ export class ValidationCache {
         await rm(this.config.cacheDir, { recursive: true, force: true });
       }
     } catch (error) {
-      throw new Error(`Failed to clear cache: ${error}`, { cause: error });
+      throw new Error(
+        `Failed to clear cache: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error }
+      );
     }
   }
 
@@ -317,7 +320,10 @@ export class ValidationCache {
 
       return this.metadata;
     } catch (error) {
-      throw new Error(`Failed to get cache metadata: ${error}`, { cause: error });
+      throw new Error(
+        `Failed to get cache metadata: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error }
+      );
     }
   }
 
@@ -365,7 +371,10 @@ export class ValidationCache {
 
       return removedCount;
     } catch (error) {
-      throw new Error(`Failed to cleanup cache: ${error}`, { cause: error });
+      throw new Error(
+        `Failed to cleanup cache: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error }
+      );
     }
   }
 
@@ -537,7 +546,10 @@ export async function calculateFileHash(filePath: string): Promise<string> {
     const content = await readFile(filePath, 'utf-8');
     return createHash('sha256').update(content).digest('hex');
   } catch (error) {
-    throw new Error(`Failed to calculate hash for ${filePath}: ${error}`, { cause: error });
+    throw new Error(
+      `Failed to calculate hash for ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
+    );
   }
 }
 

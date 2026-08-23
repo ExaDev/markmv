@@ -33,12 +33,12 @@ export interface LinkRedistributionResult {
   /** Updated sections with redistributed links */
   updatedSections: SplitSection[];
   /** Links that need to be updated in external files */
-  externalLinkUpdates: Array<{
+  externalLinkUpdates: {
     filePath: string;
     oldHref: string;
     newHref: string;
     line: number;
-  }>;
+  }[];
   /** Any errors during redistribution */
   errors: string[];
 }
@@ -195,11 +195,7 @@ export class ContentSplitter {
       }
 
       // Redistribute links across sections
-      const redistributionResult = await this.redistributeLinks(
-        splitResult,
-        parsedFile,
-        outputDirectory
-      );
+      const redistributionResult = this.redistributeLinks(splitResult, parsedFile, outputDirectory);
 
       if (verbose) {
         console.log(`Split into ${redistributionResult.updatedSections.length} sections`);
@@ -327,7 +323,9 @@ export class ContentSplitter {
         modifiedFiles: [],
         createdFiles: [],
         deletedFiles: [],
-        errors: [`Split operation failed: ${error}`],
+        errors: [
+          `Split operation failed: ${error instanceof Error ? error.message : String(error)}`,
+        ],
         warnings: [],
         changes: [],
       };
@@ -350,18 +348,18 @@ export class ContentSplitter {
   }
 
   /** Redistribute links across split sections */
-  private async redistributeLinks(
+  private redistributeLinks(
     splitResult: SplitResult,
     originalFile: ParsedMarkdownFile,
     outputDirectory: string
-  ): Promise<LinkRedistributionResult> {
+  ): LinkRedistributionResult {
     const updatedSections: SplitSection[] = [];
-    const externalLinkUpdates: Array<{
+    const externalLinkUpdates: {
       filePath: string;
       oldHref: string;
       newHref: string;
       line: number;
-    }> = [];
+    }[] = [];
     const errors: string[] = [];
 
     // For each section, find which links belong to it and update them
@@ -394,7 +392,9 @@ export class ContentSplitter {
                 }
               }
             } catch (error) {
-              errors.push(`Failed to update link in section ${section.title}: ${error}`);
+              errors.push(
+                `Failed to update link in section ${section.title}: ${error instanceof Error ? error.message : String(error)}`
+              );
             }
           }
         }
@@ -404,7 +404,9 @@ export class ContentSplitter {
           content: lines.join('\n'),
         });
       } catch (error) {
-        errors.push(`Failed to process section ${section.title}: ${error}`);
+        errors.push(
+          `Failed to process section ${section.title}: ${error instanceof Error ? error.message : String(error)}`
+        );
         updatedSections.push(section);
       }
     }
@@ -470,7 +472,9 @@ export class ContentSplitter {
 
       return referencingFiles;
     } catch (error) {
-      console.warn(`Failed to find external references: ${error}`);
+      console.warn(
+        `Failed to find external references: ${error instanceof Error ? error.message : String(error)}`
+      );
       return [];
     }
   }
@@ -522,7 +526,9 @@ export class ContentSplitter {
 
       return updatedContent;
     } catch (error) {
-      console.warn(`Failed to update external file ${externalFilePath}: ${error}`);
+      console.warn(
+        `Failed to update external file ${externalFilePath}: ${error instanceof Error ? error.message : String(error)}`
+      );
       return FileUtils.readTextFile(externalFilePath);
     }
   }

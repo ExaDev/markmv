@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { MarkdownLink, ParsedMarkdownFile, ReferenceDefinition } from '../types/links.js';
+import type { LinkReference, MarkdownLink, ParsedMarkdownFile } from '../types/links.js';
 import { LinkRefactorer } from './link-refactorer.js';
 
 describe('LinkRefactorer', () => {
@@ -31,17 +31,13 @@ describe('LinkRefactorer', () => {
   const createMockParsedFile = (
     filePath: string,
     links: MarkdownLink[] = [],
-    references: ReferenceDefinition[] = []
+    references: LinkReference[] = []
   ): ParsedMarkdownFile => ({
     filePath,
     links,
-    outgoingLinks: links,
-    incomingLinks: [],
     references,
-    headers: [],
-    claudeImports: [],
-    embeddedFiles: [],
-    metadata: { frontmatter: '', wordCount: 0, headingCount: 0, linkCount: links.length },
+    dependencies: [],
+    dependents: [],
   });
 
   describe('constructor and options', () => {
@@ -80,6 +76,7 @@ describe('LinkRefactorer', () => {
           column: 1,
           resolvedPath: targetFile,
           absolute: false,
+          referenceId: undefined,
         },
         {
           text: 'Another link',
@@ -89,6 +86,7 @@ describe('LinkRefactorer', () => {
           column: 1,
           resolvedPath: join(testDir, 'other.md'),
           absolute: false,
+          referenceId: undefined,
         },
       ]);
 
@@ -128,6 +126,7 @@ describe('LinkRefactorer', () => {
           column: 1,
           resolvedPath: targetFile,
           absolute: false,
+          referenceId: undefined,
         },
         {
           text: '@./other.md',
@@ -137,6 +136,7 @@ describe('LinkRefactorer', () => {
           column: 1,
           resolvedPath: join(testDir, 'other.md'),
           absolute: false,
+          referenceId: undefined,
         },
       ]);
 
@@ -172,6 +172,7 @@ describe('LinkRefactorer', () => {
           column: 1,
           resolvedPath: targetFile,
           absolute: false,
+          referenceId: undefined,
         },
         {
           text: 'Another',
@@ -181,6 +182,7 @@ describe('LinkRefactorer', () => {
           column: 1,
           resolvedPath: join(testDir, 'other.png'),
           absolute: false,
+          referenceId: undefined,
         },
       ]);
 
@@ -218,6 +220,7 @@ describe('LinkRefactorer', () => {
           column: 1,
           resolvedPath: targetFile,
           absolute: false,
+          referenceId: undefined,
         },
       ]);
 
@@ -250,6 +253,7 @@ describe('LinkRefactorer', () => {
           column: 1,
           resolvedPath: targetFile,
           absolute: false,
+          referenceId: undefined,
         },
       ]);
 
@@ -280,6 +284,7 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
           column: 8,
           resolvedPath: targetFile,
           absolute: false,
+          referenceId: undefined,
         },
         {
           text: 'Second',
@@ -289,6 +294,7 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
           column: 32,
           resolvedPath: targetFile,
           absolute: false,
+          referenceId: undefined,
         },
       ]);
 
@@ -316,6 +322,7 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
           column: 1,
           resolvedPath: join(testDir, 'target.md'),
           absolute: false,
+          referenceId: undefined,
         },
       ]);
 
@@ -351,6 +358,7 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
           column: 1,
           resolvedPath: join(testDir, 'target.md'),
           absolute: false,
+          referenceId: undefined,
         },
         {
           text: 'Absolute link',
@@ -360,6 +368,7 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
           column: 1,
           resolvedPath: '/absolute/path.md',
           absolute: true,
+          referenceId: undefined,
         },
         {
           text: 'External link',
@@ -369,6 +378,7 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
           column: 1,
           resolvedPath: '',
           absolute: false,
+          referenceId: undefined,
         },
       ]);
 
@@ -379,8 +389,12 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
 
       expect(result.changes).toHaveLength(1);
       expect(result.changes[0].oldValue).toBe('./target.md');
+      const { newValue } = result.changes[0];
+      if (newValue === undefined) {
+        throw new Error('Expected change to have a newValue');
+      }
       // Normalize path separators for cross-platform compatibility
-      const normalizedNewValue = result.changes[0].newValue.replace(/\\/g, '/');
+      const normalizedNewValue = newValue.replace(/\\/g, '/');
       expect(normalizedNewValue).toBe('../target.md');
       // Normalize path separators for cross-platform compatibility
       const normalizedContent = result.updatedContent.replace(/\\/g, '/');
@@ -409,6 +423,7 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
           column: 1,
           resolvedPath: join(testDir, 'target.md'),
           absolute: false,
+          referenceId: undefined,
         },
         {
           text: '@../other.md',
@@ -418,6 +433,7 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
           column: 1,
           resolvedPath: join(testDir, '..', 'other.md'),
           absolute: false,
+          referenceId: undefined,
         },
       ]);
 
@@ -452,6 +468,7 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
           column: 1,
           resolvedPath: join(testDir, 'target.md'),
           absolute: false,
+          referenceId: undefined,
         },
       ]);
 
@@ -593,6 +610,7 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
           column: 1,
           resolvedPath: targetFile,
           absolute: false,
+          referenceId: undefined,
         },
       ]);
 
@@ -624,6 +642,7 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
           column: 1,
           resolvedPath: targetFile,
           absolute: false,
+          referenceId: undefined,
         },
       ]);
 
@@ -659,6 +678,7 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
           column: 1,
           resolvedPath: targetFile,
           absolute: false,
+          referenceId: undefined,
         },
       ]);
 
@@ -670,13 +690,17 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
 
       expect(result.changes).toHaveLength(1);
       // Should use absolute path when preferRelativePaths is false
+      const { newValue } = result.changes[0];
+      if (newValue === undefined) {
+        throw new Error('Expected change to have a newValue');
+      }
       // Normalize path separators for cross-platform compatibility
-      const normalizedNewValue = result.changes[0].newValue.replace(/\\/g, '/');
+      const normalizedNewValue = newValue.replace(/\\/g, '/');
       const normalizedExpected = newTargetFile.replace(/\\/g, '/');
       expect(normalizedNewValue).toBe(normalizedExpected);
     });
 
-    it('should preserve formatting when preserveFormatting is enabled', async () => {
+    it('should preserve formatting when preserveFormatting is enabled', () => {
       // This is tested implicitly in other tests since preserveFormatting defaults to true
       // The regex-based replacement preserves titles, spacing, etc.
       expect(true).toBe(true); // Placeholder - formatting preservation is tested throughout

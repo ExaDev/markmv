@@ -27,7 +27,7 @@ interface LinkNode extends Node {
   alt?: string | null | undefined;
   identifier?: string;
   referenceType?: 'full' | 'collapsed' | 'shortcut';
-  children?: Array<{ type: string; value?: string }>;
+  children?: { type: string; value?: string }[];
 }
 
 /**
@@ -102,7 +102,7 @@ export class LinkParser {
         references.push({
           id: node.identifier,
           url: node.url,
-          title: node.title || undefined,
+          title: node.title ?? undefined,
           line: node.position.start.line,
         });
       }
@@ -181,11 +181,11 @@ export class LinkParser {
       let linkType: LinkType;
 
       if (node.type === 'link' || node.type === 'image') {
-        href = node.url || '';
+        href = node.url ?? '';
         linkType = node.type === 'image' ? 'image' : this.determineLinkType(href);
 
         if (node.type === 'image') {
-          text = node.alt || undefined;
+          text = node.alt ?? undefined;
         } else if (node.children) {
           text = node.children
             .filter((child): child is TextNode => child.type === 'text')
@@ -196,11 +196,11 @@ export class LinkParser {
         // Reference-style links
         referenceId = node.identifier;
         const reference = references.find((ref) => ref.id === referenceId);
-        href = reference?.url || '';
+        href = reference?.url ?? '';
         linkType = node.type === 'imageReference' ? 'image' : 'reference';
 
         if (node.type === 'imageReference') {
-          text = node.alt || undefined;
+          text = node.alt ?? undefined;
         } else if (node.children) {
           text = node.children
             .filter((child): child is TextNode => child.type === 'text')
@@ -213,7 +213,7 @@ export class LinkParser {
         type: linkType,
         href,
         text,
-        referenceId: referenceId || undefined,
+        referenceId: referenceId ?? undefined,
         line: node.position.start.line,
         column: node.position.start.column,
         absolute: isAbsolute(href),

@@ -53,6 +53,9 @@ describe('LinkValidator with Authentication Detection', () => {
         href: 'https://console.firebase.google.com/project/my-project/settings',
         text: 'Firebase Console',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
@@ -74,6 +77,9 @@ describe('LinkValidator with Authentication Detection', () => {
         href: 'https://github.com/private-org/settings/profile',
         text: 'GitHub Settings',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
@@ -97,6 +103,9 @@ describe('LinkValidator with Authentication Detection', () => {
         href: 'https://docs.github.com/en/actions',
         text: 'GitHub Actions Docs',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
@@ -128,6 +137,9 @@ describe('LinkValidator with Authentication Detection', () => {
         href: 'https://api.example.com/private',
         text: 'Private API',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
@@ -153,6 +165,9 @@ describe('LinkValidator with Authentication Detection', () => {
         href: 'https://admin.example.com/dashboard',
         text: 'Admin Dashboard',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
@@ -177,6 +192,9 @@ describe('LinkValidator with Authentication Detection', () => {
         href: 'https://example.com/missing',
         text: 'Missing Page',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
@@ -204,6 +222,9 @@ describe('LinkValidator with Authentication Detection', () => {
         href: 'https://private.example.com/dashboard',
         text: 'Dashboard',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
@@ -231,6 +252,9 @@ describe('LinkValidator with Authentication Detection', () => {
         href: 'https://teams.microsoft.com/channel',
         text: 'Teams Channel',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
@@ -256,6 +280,9 @@ describe('LinkValidator with Authentication Detection', () => {
         href: 'https://api.github.com/user',
         text: 'GitHub User API',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
@@ -285,6 +312,9 @@ describe('LinkValidator with Authentication Detection', () => {
         href: 'https://api.custom.com/data',
         text: 'Custom API',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
@@ -314,6 +344,9 @@ describe('LinkValidator with Authentication Detection', () => {
         href: 'https://api.github.com/repos',
         text: 'GitHub Repos API',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
@@ -345,6 +378,9 @@ describe('LinkValidator with Authentication Detection', () => {
         href: 'https://api.private.com/endpoint',
         text: 'Private API',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await strictValidator.validateLink(link, '/test/file.md');
@@ -377,18 +413,27 @@ describe('LinkValidator with Authentication Detection', () => {
           href: 'https://console.firebase.google.com/project/test',
           text: 'Firebase Console',
           line: 1,
+          column: 1,
+          absolute: false,
+          referenceId: undefined,
         },
         {
           type: 'external',
           href: 'https://docs.example.com/guide',
           text: 'Valid Docs',
           line: 2,
+          column: 1,
+          absolute: false,
+          referenceId: undefined,
         },
         {
           type: 'external',
           href: 'https://example.com/missing',
           text: 'Missing Page',
           line: 3,
+          column: 1,
+          absolute: false,
+          referenceId: undefined,
         },
       ];
 
@@ -427,6 +472,9 @@ describe('LinkValidator with Authentication Detection', () => {
         href: 'https://api.example.com/private',
         text: 'Private API',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await normalValidator.validateLink(link, '/test/file.md');
@@ -455,6 +503,9 @@ describe('LinkValidator with Authentication Detection', () => {
         href: 'https://example.com/test',
         text: 'Test Link',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       await normalValidator.validateLink(link, '/test/file.md');
@@ -480,6 +531,9 @@ describe('LinkValidator with Authentication Detection', () => {
         href: 'https://example.com/network-error',
         text: 'Network Error',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
@@ -498,7 +552,7 @@ describe('LinkValidator with Authentication Detection', () => {
 
       mockFetch.mockImplementation(
         () =>
-          new Promise((resolve, reject) => {
+          new Promise((_resolve, reject) => {
             setTimeout(() => {
               const error = new Error('The operation was aborted');
               error.name = 'AbortError';
@@ -512,6 +566,9 @@ describe('LinkValidator with Authentication Detection', () => {
         href: 'https://example.com/slow',
         text: 'Slow Link',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await timeoutValidator.validateLink(link, '/test/file.md');
@@ -537,6 +594,9 @@ describe('LinkValidator with Authentication Detection', () => {
         href: 'https://private.cdn.com/image.jpg',
         text: 'Private Image',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
@@ -556,6 +616,9 @@ describe('LinkValidator with Authentication Detection', () => {
         href: './test-image.jpg',
         text: 'Local Image',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
         resolvedPath: imagePath,
       };
 

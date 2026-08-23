@@ -370,7 +370,7 @@ Content here.
       await writeFile(filePath, content, 'utf-8');
 
       // Capture console output
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
       await tocCommand([filePath], {
         minDepth: 2,
@@ -426,7 +426,7 @@ Content here.
       const filePath = join(tempDir, 'test.md');
       await writeFile(filePath, content, 'utf-8');
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
       await tocCommand([filePath], {
         json: true,

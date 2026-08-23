@@ -5,6 +5,41 @@ import {
   PrependMergeStrategy,
 } from './merge-strategies.js';
 
+class TestableAppendMergeStrategy extends AppendMergeStrategy {
+  public testExtractTransclusions(
+    content: string
+  ): { ref: string; file: string; section?: string; line: number }[] {
+    return this.extractTransclusions(content);
+  }
+
+  public testCreateTransclusion(file: string, section?: string): string {
+    return this.createTransclusion(file, section);
+  }
+
+  public testDetectTransclusionLoops(
+    targetFile: string,
+    sourceFile: string,
+    existingTransclusions: string[]
+  ): boolean {
+    return this.detectTransclusionLoops(targetFile, sourceFile, existingTransclusions);
+  }
+
+  public testExtractHeaders(content: string): { text: string; level: number; line: number }[] {
+    return this.extractHeaders(content);
+  }
+
+  public testFindHeaderConflicts(
+    targetContent: string,
+    sourceContent: string
+  ): { header: string; targetLine: number; sourceLine: number }[] {
+    return this.findHeaderConflicts(targetContent, sourceContent);
+  }
+
+  public testMergeFrontmatter(targetFrontmatter: string, sourceFrontmatter: string): string {
+    return this.mergeFrontmatter(targetFrontmatter, sourceFrontmatter);
+  }
+}
+
 describe('Merge Strategies', () => {
   const targetContent = `---
 title: "Target Document"
@@ -191,13 +226,9 @@ More content.`;
   });
 
   describe('BaseMergeStrategy utilities', () => {
-    const strategy = new AppendMergeStrategy();
+    const strategy = new TestableAppendMergeStrategy();
 
     it('should extract transclusions correctly', () => {
-      const extractTransclusions = (
-        strategy as { extractTransclusions: (content: string) => unknown[] }
-      ).extractTransclusions.bind(strategy);
-
       const content = `# Test Document
 
 Some content.
@@ -210,7 +241,7 @@ More content.
 
 End.`;
 
-      const transclusions = extractTransclusions(content);
+      const transclusions = strategy.testExtractTransclusions(content);
 
       expect(transclusions).toHaveLength(2);
       expect(transclusions[0].file).toBe('other-file.md');
@@ -220,33 +251,25 @@ End.`;
     });
 
     it('should create transclusion references', () => {
-      const createTransclusion = (
-        strategy as { createTransclusion: (filePath: string) => string }
-      ).createTransclusion.bind(strategy);
-
-      expect(createTransclusion('test-file.md')).toBe('![[test-file]]');
-      expect(createTransclusion('test-file.md', 'section')).toBe('![[test-file#section]]');
+      expect(strategy.testCreateTransclusion('test-file.md')).toBe('![[test-file]]');
+      expect(strategy.testCreateTransclusion('test-file.md', 'section')).toBe(
+        '![[test-file#section]]'
+      );
     });
 
     it('should detect transclusion loops', () => {
-      const detectLoops = (
-        strategy as {
-          detectTransclusionLoops: (transclusions: unknown[], filePath: string) => boolean;
-        }
-      ).detectTransclusionLoops.bind(strategy);
-
       const existingRefs = ['![[file-a]]', '![[file-b#section]]'];
 
-      expect(detectLoops('file-a.md', 'file-c.md', existingRefs)).toBe(true);
-      expect(detectLoops('file-d.md', 'file-c.md', existingRefs)).toBe(false);
-      expect(detectLoops('same.md', 'same.md', [])).toBe(true);
+      expect(strategy.testDetectTransclusionLoops('file-a.md', 'file-c.md', existingRefs)).toBe(
+        true
+      );
+      expect(strategy.testDetectTransclusionLoops('file-d.md', 'file-c.md', existingRefs)).toBe(
+        false
+      );
+      expect(strategy.testDetectTransclusionLoops('same.md', 'same.md', [])).toBe(true);
     });
 
     it('should extract headers with levels and positions', () => {
-      const extractHeaders = (
-        strategy as { extractHeaders: (content: string) => unknown[] }
-      ).extractHeaders.bind(strategy);
-
       const content = `# Main Header
 Some content.
 
@@ -256,7 +279,7 @@ More content.
 ### Subsection
 Even more content.`;
 
-      const headers = extractHeaders(content);
+      const headers = strategy.testExtractHeaders(content);
 
       expect(headers).toHaveLength(3);
       expect(headers[0].text).toBe('Main Header');
@@ -269,26 +292,16 @@ Even more content.`;
     });
 
     it('should find header conflicts', () => {
-      const findConflicts = (
-        strategy as {
-          findHeaderConflicts: (sourceHeaders: unknown[], targetHeaders: unknown[]) => unknown[];
-        }
-      ).findHeaderConflicts.bind(strategy);
-
       const target = '# Same Header\n\n## Different Header\n\n### Same Header';
       const source = '# Same Header\n\n## Another Header\n\n### Same Header';
 
-      const conflicts = findConflicts(target, source);
+      const conflicts = strategy.testFindHeaderConflicts(target, source);
 
       expect(conflicts).toHaveLength(2); // Both "Same Header" instances
       expect(conflicts[0].header).toBe('Same Header');
     });
 
     it('should merge frontmatter with array deduplication', () => {
-      const mergeFrontmatter = (
-        strategy as { mergeFrontmatter: (sourceFm: string, targetFm: string) => string }
-      ).mergeFrontmatter.bind(strategy);
-
       const target = `---
 title: "Target"
 tags: ["tag1", "tag2"]
@@ -301,7 +314,7 @@ tags: ["tag2", "tag3"]
 category: "Source Category"
 ---`;
 
-      const merged = mergeFrontmatter(target, source);
+      const merged = strategy.testMergeFrontmatter(target, source);
 
       expect(merged).toContain('title: "Target"'); // Target wins
       expect(merged).toContain('author: "Target Author"'); // Target only

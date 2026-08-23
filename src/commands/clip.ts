@@ -17,6 +17,11 @@ import type { OperationResult } from '../types/operations.js';
  *
  * @category Commands
  */
+function isRecordOfStrings(value: unknown): value is Record<string, string> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  return Object.values(value).every((entry) => typeof entry === 'string');
+}
+
 export interface ClipCliOptions {
   /** Output file path */
   output?: string;
@@ -60,24 +65,24 @@ export interface ClipCliOptions {
  *
  * @category Commands
  */
-export interface ClipResult extends OperationResult {
+interface ClipResult extends OperationResult {
   /** URLs that were successfully clipped */
   clippedUrls: string[];
   /** Generated markdown files */
   generatedFiles: string[];
   /** URLs that failed to clip */
-  failedUrls: Array<{
+  failedUrls: {
     url: string;
     error: string;
-  }>;
+  }[];
   /** Metadata extracted from pages */
-  metadata: Array<{
+  metadata: {
     url: string;
     title?: string;
     author?: string;
     publishedDate?: string;
     extractionStrategy: string;
-  }>;
+  }[];
 }
 
 /**
@@ -141,7 +146,11 @@ export async function clipCommand(urls: string[], options: ClipCliOptions = {}):
     // Parse headers if provided
     if (options.headers) {
       try {
-        webClipperOptions.headers = JSON.parse(options.headers);
+        const parsed: unknown = JSON.parse(options.headers);
+        if (!isRecordOfStrings(parsed)) {
+          throw new Error('headers must be a JSON object of string values');
+        }
+        webClipperOptions.headers = parsed;
       } catch {
         console.error('💥 Error: Invalid JSON format for headers');
         process.exit(1);
@@ -295,7 +304,9 @@ async function loadUrlsFromFiles(filePaths: string[]): Promise<string[]> {
 
       urls.push(...fileUrls);
     } catch (error) {
-      console.warn(`⚠️ Could not read URL file ${filePath}: ${error}`);
+      console.warn(
+        `⚠️ Could not read URL file ${filePath}: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 

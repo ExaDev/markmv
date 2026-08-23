@@ -1,8 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { CallToolRequest, ListToolsRequest } from '@modelcontextprotocol/sdk/types.js';
+import type {
+  CallToolRequest,
+  CallToolResult,
+  ListToolsRequest,
+} from '@modelcontextprotocol/sdk/types.js';
+
+// The handler under test always returns text-only content blocks (see mcp-server.ts), which is narrower than the SDK's full CallToolResult content union — so this type reuses the SDK's `isError` field but keeps `content` scoped to what the handler actually produces.
+type TestCallToolResult = Pick<CallToolResult, 'isError'> & {
+  content: { type: string; text: string }[];
+};
 
 // Mock console.error to avoid output during tests
-const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
 // Mock the markmv index module
 vi.mock('./index.js', () => ({
@@ -103,7 +112,8 @@ vi.mock('./schemas/validators.js', () => ({
 }));
 
 // Mock MCP SDK Server
-const mockSetRequestHandler = vi.fn();
+type MockRequestHandler = (request: unknown) => Promise<unknown>;
+const mockSetRequestHandler = vi.fn<(schema: unknown, handler: MockRequestHandler) => void>();
 const mockConnect = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
@@ -185,16 +195,15 @@ describe('MCP Server', () => {
   });
 
   describe('Tool Execution', () => {
-    let callToolHandler: (request: {
-      params: { name: string; arguments?: Record<string, unknown> };
-    }) => Promise<{ content: Array<{ type: string; text: string }> }>;
+    let callToolHandler: (request: CallToolRequest) => Promise<TestCallToolResult>;
 
     beforeEach(() => {
       vi.clearAllMocks();
       createMcpServer();
 
       // Get the second handler (should be CallTool)
-      callToolHandler = mockSetRequestHandler.mock.calls[1]?.[1];
+      callToolHandler = mockSetRequestHandler.mock
+        .calls[1]?.[1] as unknown as typeof callToolHandler;
     });
 
     it('should execute move_file tool successfully', async () => {
@@ -409,13 +418,14 @@ describe('MCP Server', () => {
     });
 
     it('should handle non-object arguments', async () => {
-      const request: CallToolRequest = {
+      // Deliberately malformed: a real client could send a non-object `arguments` value over the wire, and this exercises the handler's own runtime check rather than the SDK's static type.
+      const request = {
         method: 'tools/call',
         params: {
           name: 'move_file',
           arguments: 'not an object',
         },
-      };
+      } as unknown as CallToolRequest;
 
       const result = await callToolHandler(request);
 
@@ -439,14 +449,13 @@ describe('MCP Server', () => {
   });
 
   describe('Utility Functions', () => {
-    let callToolHandler: (request: {
-      params: { name: string; arguments?: Record<string, unknown> };
-    }) => Promise<{ content: Array<{ type: string; text: string }> }>;
+    let callToolHandler: (request: CallToolRequest) => Promise<TestCallToolResult>;
 
     beforeEach(() => {
       vi.clearAllMocks();
       createMcpServer();
-      callToolHandler = mockSetRequestHandler.mock.calls[1]?.[1];
+      callToolHandler = mockSetRequestHandler.mock
+        .calls[1]?.[1] as unknown as typeof callToolHandler;
     });
 
     it('should convert snake_case to camelCase', async () => {

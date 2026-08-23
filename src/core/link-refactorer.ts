@@ -121,12 +121,12 @@ export class LinkRefactorer {
   }
 
   /** Update links in a file when another file has been moved (with provided content) */
-  async refactorLinksForFileMoveWithContent(
+  refactorLinksForFileMoveWithContent(
     file: ParsedMarkdownFile,
     movedFilePath: string,
     newFilePath: string,
     content: string
-  ): Promise<LinkRefactorResult> {
+  ): LinkRefactorResult {
     const changes: OperationChange[] = [];
     const errors: string[] = [];
 
@@ -186,7 +186,8 @@ export class LinkRefactorer {
           }
         }
       } catch (error) {
-        errors.push(`Failed to update link at line ${link.line}: ${error}`);
+        const message = error instanceof Error ? error.message : String(error);
+        errors.push(`Failed to update link at line ${link.line}: ${message}`);
       }
     }
 
@@ -270,7 +271,8 @@ export class LinkRefactorer {
             }
           }
         } catch (error) {
-          errors.push(`Failed to update link at line ${link.line}: ${error}`);
+          const message = error instanceof Error ? error.message : String(error);
+          errors.push(`Failed to update link at line ${link.line}: ${message}`);
         }
       }
     }
@@ -285,12 +287,12 @@ export class LinkRefactorer {
   }
 
   /** Update links when the current file is being moved (with provided content) */
-  async refactorLinksForCurrentFileMoveWithContent(
+  refactorLinksForCurrentFileMoveWithContent(
     file: ParsedMarkdownFile,
     newFilePath: string,
     content: string,
     movedPaths?: Map<string, string>
-  ): Promise<LinkRefactorResult> {
+  ): LinkRefactorResult {
     const changes: OperationChange[] = [];
     const errors: string[] = [];
 
@@ -354,7 +356,8 @@ export class LinkRefactorer {
             }
           }
         } catch (error) {
-          errors.push(`Failed to update link at line ${link.line}: ${error}`);
+          const message = error instanceof Error ? error.message : String(error);
+          errors.push(`Failed to update link at line ${link.line}: ${message}`);
         }
       }
     }
@@ -644,8 +647,9 @@ export class LinkRefactorer {
             }
           }
         } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
           errors.push(
-            `Failed to update reference ${reference.id} at line ${reference.line}: ${error}`
+            `Failed to update reference ${reference.id} at line ${reference.line}: ${message}`
           );
         }
       }

@@ -20,6 +20,11 @@ import {
   resolveWikilinks,
 } from './obsidian-vault.js';
 
+/** Format an unknown caught value as a human-readable error message. */
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 /**
  * Core class for performing markdown file operations with intelligent link refactoring.
  *
@@ -132,7 +137,7 @@ export class FileOperations {
           modifiedFiles: [],
           createdFiles: [],
           deletedFiles: [],
-          errors: [validation.error || 'Validation failed'],
+          errors: [validation.error ?? 'Validation failed'],
           warnings: [],
           changes: [],
         };
@@ -210,7 +215,7 @@ export class FileOperations {
             warnings.push(...refactorResult.errors);
           }
         } catch (error) {
-          warnings.push(`Failed to process ${dependentFilePath}: ${error}`);
+          warnings.push(`Failed to process ${dependentFilePath}: ${errorMessage(error)}`);
         }
       }
 
@@ -241,7 +246,7 @@ export class FileOperations {
             warnings.push(...selfRefactorResult.errors);
           }
         } catch (error) {
-          warnings.push(`Failed to update links in source file: ${error}`);
+          warnings.push(`Failed to update links in source file: ${errorMessage(error)}`);
         }
       }
 
@@ -300,7 +305,7 @@ export class FileOperations {
         modifiedFiles: [],
         createdFiles: [],
         deletedFiles: [],
-        errors: [`Move operation failed: ${error}`],
+        errors: [`Move operation failed: ${errorMessage(error)}`],
         warnings: [],
         changes: [],
       };
@@ -309,7 +314,7 @@ export class FileOperations {
 
   /** Move multiple files in a single operation */
   async moveFiles(
-    moves: Array<{ source: string; destination: string }>,
+    moves: { source: string; destination: string }[],
     options: MoveOperationOptions = {}
   ): Promise<OperationResult> {
     const { dryRun = false } = options;
@@ -460,7 +465,7 @@ export class FileOperations {
             warnings.push(...refactorResult.errors);
           } else {
             // Use stored content
-            const refactorResult = await this.linkRefactorer.refactorLinksForFileMoveWithContent(
+            const refactorResult = this.linkRefactorer.refactorLinksForFileMoveWithContent(
               actualDependentFile,
               source,
               destination,
@@ -490,7 +495,7 @@ export class FileOperations {
           const originalContent = fileContents.get(source);
           if (originalContent) {
             const selfRefactorResult =
-              await this.linkRefactorer.refactorLinksForCurrentFileMoveWithContent(
+              this.linkRefactorer.refactorLinksForCurrentFileMoveWithContent(
                 sourceFile,
                 destination,
                 originalContent,
@@ -563,7 +568,7 @@ export class FileOperations {
         modifiedFiles: [],
         createdFiles: [],
         deletedFiles: [],
-        errors: [`Bulk move operation failed: ${error}`],
+        errors: [`Bulk move operation failed: ${errorMessage(error)}`],
         warnings: [],
         changes: [],
       };
@@ -619,7 +624,7 @@ export class FileOperations {
 
   private async discoverProjectFiles(seedPaths: string[]): Promise<{
     files: ParsedMarkdownFile[];
-    parseFailures: Array<{ file: string; error: string; stack?: string | undefined }>;
+    parseFailures: { file: string; error: string; stack?: string | undefined }[];
     vaultRoot: string;
   }> {
     try {
@@ -634,7 +639,7 @@ export class FileOperations {
 
       // Parse all files; a file that fails to parse is reported rather than silently dropped, because its links cannot be discovered or rewritten
       const parsedFiles: ParsedMarkdownFile[] = [];
-      const parseFailures: Array<{ file: string; error: string; stack?: string | undefined }> = [];
+      const parseFailures: { file: string; error: string; stack?: string | undefined }[] = [];
       for (const filePath of markdownFiles) {
         try {
           const parsed = await this.linkParser.parseFile(filePath);
@@ -650,7 +655,7 @@ export class FileOperations {
 
       return { files: parsedFiles, parseFailures, vaultRoot: projectRoot };
     } catch (error) {
-      console.warn(`Failed to discover project files: ${error}`);
+      console.warn(`Failed to discover project files: ${errorMessage(error)}`);
       return {
         files: [],
         parseFailures: [],
@@ -725,14 +730,14 @@ export class FileOperations {
         valid: validationResult.valid,
         brokenLinks: validationResult.brokenLinks.length,
         errors: validationResult.brokenLinks.map(
-          (bl) => `${bl.sourceFile}: ${bl.reason} - ${bl.details || bl.link.href}`
+          (bl) => `${bl.sourceFile}: ${bl.reason} - ${bl.details ?? bl.link.href}`
         ),
       };
     } catch (error) {
       return {
         valid: false,
         brokenLinks: 0,
-        errors: [`Validation failed: ${error}`],
+        errors: [`Validation failed: ${errorMessage(error)}`],
       };
     }
   }

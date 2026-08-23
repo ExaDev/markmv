@@ -47,9 +47,9 @@ describe('AuthDetector', () => {
   });
 
   describe('Domain-based Authentication Detection', () => {
-    it('should detect Firebase Console URLs as auth-required', async () => {
+    it('should detect Firebase Console URLs as auth-required', () => {
       const url = 'https://console.firebase.google.com/project/my-project/settings';
-      const authInfo = await authDetector.analyzeAuth(url);
+      const authInfo = authDetector.analyzeAuth(url);
 
       expect(authInfo.requiresAuth).toBe(true);
       expect(authInfo.authProvider).toBe('Firebase');
@@ -57,66 +57,66 @@ describe('AuthDetector', () => {
       expect(authInfo.warning).toContain('authentication-protected');
     });
 
-    it('should detect GitHub settings URLs as auth-required', async () => {
+    it('should detect GitHub settings URLs as auth-required', () => {
       const url = 'https://github.com/myorg/settings/profile';
-      const authInfo = await authDetector.analyzeAuth(url);
+      const authInfo = authDetector.analyzeAuth(url);
 
       expect(authInfo.requiresAuth).toBe(true);
       expect(authInfo.authProvider).toBe('GitHub');
       expect(authInfo.detectionMethod).toBe('domain');
     });
 
-    it('should detect Google Cloud Console URLs as auth-required', async () => {
+    it('should detect Google Cloud Console URLs as auth-required', () => {
       const url = 'https://console.cloud.google.com/compute/instances';
-      const authInfo = await authDetector.analyzeAuth(url);
+      const authInfo = authDetector.analyzeAuth(url);
 
       expect(authInfo.requiresAuth).toBe(true);
       expect(authInfo.authProvider).toBe('Google');
       expect(authInfo.detectionMethod).toBe('domain');
     });
 
-    it('should detect AWS Console URLs as auth-required', async () => {
+    it('should detect AWS Console URLs as auth-required', () => {
       const url = 'https://console.aws.amazon.com/ec2/v2/home';
-      const authInfo = await authDetector.analyzeAuth(url);
+      const authInfo = authDetector.analyzeAuth(url);
 
       expect(authInfo.requiresAuth).toBe(true);
       expect(authInfo.authProvider).toBe('AWS');
       expect(authInfo.detectionMethod).toBe('domain');
     });
 
-    it('should detect Microsoft 365 URLs as auth-required', async () => {
+    it('should detect Microsoft 365 URLs as auth-required', () => {
       const url = 'https://mycompany.sharepoint.com/sites/team';
-      const authInfo = await authDetector.analyzeAuth(url);
+      const authInfo = authDetector.analyzeAuth(url);
 
       expect(authInfo.requiresAuth).toBe(true);
       expect(authInfo.authProvider).toBe('Microsoft 365');
       expect(authInfo.detectionMethod).toBe('domain');
     });
 
-    it('should detect Vercel dashboard URLs as auth-required', async () => {
+    it('should detect Vercel dashboard URLs as auth-required', () => {
       const url = 'https://app.vercel.com/dashboard';
-      const authInfo = await authDetector.analyzeAuth(url);
+      const authInfo = authDetector.analyzeAuth(url);
 
       expect(authInfo.requiresAuth).toBe(true);
       expect(authInfo.authProvider).toBe('Vercel');
       expect(authInfo.detectionMethod).toBe('domain');
     });
 
-    it('should not detect regular documentation URLs as auth-required', async () => {
+    it('should not detect regular documentation URLs as auth-required', () => {
       const url = 'https://docs.github.com/en/actions';
-      const authInfo = await authDetector.analyzeAuth(url);
+      const authInfo = authDetector.analyzeAuth(url);
 
       expect(authInfo.requiresAuth).toBe(false);
       expect(authInfo.detectionMethod).toBe('none');
     });
 
-    it('should handle wildcard domain patterns', async () => {
+    it('should handle wildcard domain patterns', () => {
       const customDetector = new AuthDetector({
         authDomainPatterns: ['*.internal.company.com'],
       });
 
       const url = 'https://api.internal.company.com/v1/data';
-      const authInfo = await customDetector.analyzeAuth(url);
+      const authInfo = customDetector.analyzeAuth(url);
 
       expect(authInfo.requiresAuth).toBe(true);
       expect(authInfo.detectionMethod).toBe('domain');
@@ -124,7 +124,7 @@ describe('AuthDetector', () => {
   });
 
   describe('Response Analysis', () => {
-    it('should detect 401 Unauthorized as auth-required', async () => {
+    it('should detect 401 Unauthorized as auth-required', () => {
       const mockResponse = new Response('', {
         status: 401,
         statusText: 'Unauthorized',
@@ -132,14 +132,14 @@ describe('AuthDetector', () => {
       });
 
       const url = 'https://api.example.com/private';
-      const authInfo = await authDetector.analyzeAuth(url, mockResponse);
+      const authInfo = authDetector.analyzeAuth(url, mockResponse);
 
       expect(authInfo.requiresAuth).toBe(true);
       expect(authInfo.detectionMethod).toBe('status-code');
       expect(authInfo.warning).toContain('HTTP 401');
     });
 
-    it('should detect 403 Forbidden as auth-required', async () => {
+    it('should detect 403 Forbidden as auth-required', () => {
       const mockResponse = new Response('', {
         status: 403,
         statusText: 'Forbidden',
@@ -147,14 +147,14 @@ describe('AuthDetector', () => {
       });
 
       const url = 'https://api.example.com/admin';
-      const authInfo = await authDetector.analyzeAuth(url, mockResponse);
+      const authInfo = authDetector.analyzeAuth(url, mockResponse);
 
       expect(authInfo.requiresAuth).toBe(true);
       expect(authInfo.detectionMethod).toBe('status-code');
       expect(authInfo.warning).toContain('HTTP 403');
     });
 
-    it('should not detect 200 OK as auth-required', async () => {
+    it('should not detect 200 OK as auth-required', () => {
       const mockResponse = new Response('content', {
         status: 200,
         statusText: 'OK',
@@ -162,12 +162,12 @@ describe('AuthDetector', () => {
       });
 
       const url = 'https://example.com/public';
-      const authInfo = await authDetector.analyzeAuth(url, mockResponse);
+      const authInfo = authDetector.analyzeAuth(url, mockResponse);
 
       expect(authInfo.requiresAuth).toBe(false);
     });
 
-    it('should detect redirects to authentication pages', async () => {
+    it('should detect redirects to authentication pages', () => {
       const originalUrl = 'https://private.example.com/dashboard';
       const finalUrl = 'https://accounts.google.com/oauth/authorize';
 
@@ -182,7 +182,7 @@ describe('AuthDetector', () => {
         writable: false,
       });
 
-      const authInfo = await authDetector.analyzeAuth(originalUrl, mockResponse, [finalUrl]);
+      const authInfo = authDetector.analyzeAuth(originalUrl, mockResponse, [finalUrl]);
 
       expect(authInfo.requiresAuth).toBe(true);
       expect(authInfo.detectionMethod).toBe('redirect');
@@ -285,7 +285,7 @@ describe('AuthDetector', () => {
   });
 
   describe('Provider Detection', () => {
-    it('should detect Google as provider from domains', async () => {
+    it('should detect Google as provider from domains', () => {
       const testCases = [
         { url: 'https://console.firebase.google.com/project', expected: 'Firebase' },
         { url: 'https://console.cloud.google.com/compute', expected: 'Google' },
@@ -293,21 +293,21 @@ describe('AuthDetector', () => {
       ];
 
       for (const testCase of testCases) {
-        const authInfo = await authDetector.analyzeAuth(testCase.url);
+        const authInfo = authDetector.analyzeAuth(testCase.url);
         if (authInfo.requiresAuth) {
           expect(authInfo.authProvider).toBe(testCase.expected);
         }
       }
     });
 
-    it('should detect GitHub as provider from domains', async () => {
+    it('should detect GitHub as provider from domains', () => {
       const url = 'https://github.com/myorg/settings/profile';
-      const authInfo = await authDetector.analyzeAuth(url);
+      const authInfo = authDetector.analyzeAuth(url);
 
       expect(authInfo.authProvider).toBe('GitHub');
     });
 
-    it('should detect Microsoft as provider from domains', async () => {
+    it('should detect Microsoft as provider from domains', () => {
       const urls = [
         'https://admin.microsoft.com/dashboard',
         'https://portal.azure.com/subscriptions',
@@ -315,23 +315,23 @@ describe('AuthDetector', () => {
       ];
 
       for (const url of urls) {
-        const authInfo = await authDetector.analyzeAuth(url);
+        const authInfo = authDetector.analyzeAuth(url);
         if (authInfo.requiresAuth) {
           expect(authInfo.authProvider).toContain('Microsoft');
         }
       }
     });
 
-    it('should detect AWS as provider from domains', async () => {
+    it('should detect AWS as provider from domains', () => {
       const url = 'https://console.aws.amazon.com/ec2';
-      const authInfo = await authDetector.analyzeAuth(url);
+      const authInfo = authDetector.analyzeAuth(url);
 
       expect(authInfo.authProvider).toBe('AWS');
     });
   });
 
   describe('Redirect Analysis', () => {
-    it('should detect auth redirects by URL patterns', async () => {
+    it('should detect auth redirects by URL patterns', () => {
       const testCases = [
         {
           redirectUrl: 'https://login.microsoftonline.com/oauth',
@@ -364,18 +364,14 @@ describe('AuthDetector', () => {
           writable: false,
         });
 
-        const authInfo = await authDetector.analyzeAuth(
-          'https://original.example.com',
-          mockResponse,
-          []
-        );
+        const authInfo = authDetector.analyzeAuth('https://original.example.com', mockResponse, []);
 
         expect(authInfo.requiresAuth).toBe(true);
         expect(authInfo.authProvider).toBe(testCase.expectedProvider);
       }
     });
 
-    it('should detect auth parameters in URLs', async () => {
+    it('should detect auth parameters in URLs', () => {
       const mockResponse = new Response('', {
         status: 200,
         headers: new Headers(),
@@ -387,7 +383,7 @@ describe('AuthDetector', () => {
         writable: false,
       });
 
-      const authInfo = await authDetector.analyzeAuth('https://example.com/original', mockResponse);
+      const authInfo = authDetector.analyzeAuth('https://example.com/original', mockResponse);
 
       expect(authInfo.requiresAuth).toBe(true);
       expect(authInfo.warning).toContain('authentication-related parameters');
@@ -395,25 +391,23 @@ describe('AuthDetector', () => {
   });
 
   describe('Error Handling', () => {
-    it('should handle invalid URLs gracefully', async () => {
-      const authInfo = await authDetector.analyzeAuth('not-a-valid-url');
+    it('should handle invalid URLs gracefully', () => {
+      const authInfo = authDetector.analyzeAuth('not-a-valid-url');
 
       expect(authInfo.requiresAuth).toBe(false);
       expect(authInfo.detectionMethod).toBe('none');
     });
 
-    it('should handle disabled detection', async () => {
+    it('should handle disabled detection', () => {
       const disabledDetector = new AuthDetector({ enabled: false });
-      const authInfo = await disabledDetector.analyzeAuth(
-        'https://console.firebase.google.com/project'
-      );
+      const authInfo = disabledDetector.analyzeAuth('https://console.firebase.google.com/project');
 
       expect(authInfo.requiresAuth).toBe(false);
       expect(authInfo.detectionMethod).toBe('none');
     });
 
-    it('should handle missing response gracefully', async () => {
-      const authInfo = await authDetector.analyzeAuth('https://example.com/unknown');
+    it('should handle missing response gracefully', () => {
+      const authInfo = authDetector.analyzeAuth('https://example.com/unknown');
 
       expect(authInfo.detectionMethod).toBe('none');
       expect(authInfo.redirectCount).toBe(0);

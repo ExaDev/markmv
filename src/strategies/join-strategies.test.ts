@@ -5,7 +5,21 @@ import {
   DependencyOrderJoinStrategy,
   ManualOrderJoinStrategy,
 } from './join-strategies.js';
-import type { JoinSection } from './join-strategies.js';
+import type { JoinConflict, JoinSection } from './join-strategies.js';
+
+class TestableDependencyOrderJoinStrategy extends DependencyOrderJoinStrategy {
+  public testExtractTitle(content: string, frontmatter?: string): string | undefined {
+    return this.extractTitle(content, frontmatter);
+  }
+
+  public testMergeFrontmatter(sections: JoinSection[]): string {
+    return this.mergeFrontmatter(sections);
+  }
+
+  public testDetectConflicts(sections: JoinSection[]): JoinConflict[] {
+    return this.detectConflicts(sections);
+  }
+}
 
 describe('Join Strategies', () => {
   const mockSections: JoinSection[] = [
@@ -68,12 +82,16 @@ describe('Join Strategies', () => {
         {
           filePath: 'file1.md',
           content: '# File 1\n\n[Common link](shared.md)\n\nContent 1',
+          frontmatter: undefined,
+          title: undefined,
           dependencies: ['shared.md'],
           order: 1,
         },
         {
           filePath: 'file2.md',
           content: '# File 2\n\n[Common link](shared.md)\n\nContent 2',
+          frontmatter: undefined,
+          title: undefined,
           dependencies: ['shared.md'],
           order: 2,
         },
@@ -91,12 +109,16 @@ describe('Join Strategies', () => {
         {
           filePath: 'file1.md',
           content: '# Introduction\n\nFirst intro',
+          frontmatter: undefined,
+          title: undefined,
           dependencies: [],
           order: 1,
         },
         {
           filePath: 'file2.md',
           content: '# Introduction\n\nSecond intro',
+          frontmatter: undefined,
+          title: undefined,
           dependencies: [],
           order: 2,
         },
@@ -115,12 +137,16 @@ describe('Join Strategies', () => {
         {
           filePath: 'a.md',
           content: '# A\n\n[Link to B](b.md)',
+          frontmatter: undefined,
+          title: undefined,
           dependencies: ['b.md'],
           order: 1,
         },
         {
           filePath: 'b.md',
           content: '# B\n\n[Link to A](a.md)',
+          frontmatter: undefined,
+          title: undefined,
           dependencies: ['a.md'],
           order: 2,
         },
@@ -156,12 +182,16 @@ describe('Join Strategies', () => {
         {
           filePath: 'zebra.md',
           content: 'Content without header',
+          frontmatter: undefined,
+          title: undefined,
           dependencies: [],
           order: 1,
         },
         {
           filePath: 'alpha.md',
           content: 'Another file without header',
+          frontmatter: undefined,
+          title: undefined,
           dependencies: [],
           order: 2,
         },
@@ -222,6 +252,7 @@ describe('Join Strategies', () => {
           filePath: '2023-01-15-post.md',
           content: '# Post from January\n\nOlder post',
           frontmatter: '---\ndate: 2023-01-15\n---\n',
+          title: undefined,
           dependencies: [],
           order: 1,
         },
@@ -229,12 +260,15 @@ describe('Join Strategies', () => {
           filePath: '2023-03-10-post.md',
           content: '# Post from March\n\nNewer post',
           frontmatter: '---\ndate: 2023-03-10\n---\n',
+          title: undefined,
           dependencies: [],
           order: 2,
         },
         {
           filePath: 'undated-post.md',
           content: '# Undated Post\n\nNo date specified',
+          frontmatter: undefined,
+          title: undefined,
           dependencies: [],
           order: 3,
         },
@@ -253,12 +287,16 @@ describe('Join Strategies', () => {
         {
           filePath: '2023-12-01-newer.md',
           content: '# Newer Post',
+          frontmatter: undefined,
+          title: undefined,
           dependencies: [],
           order: 1,
         },
         {
           filePath: '2023-01-01-older.md',
           content: '# Older Post',
+          frontmatter: undefined,
+          title: undefined,
           dependencies: [],
           order: 2,
         },
@@ -273,30 +311,23 @@ describe('Join Strategies', () => {
   });
 
   describe('BaseJoinStrategy utilities', () => {
-    const strategy = new DependencyOrderJoinStrategy();
+    const strategy = new TestableDependencyOrderJoinStrategy();
 
     it('should extract titles correctly', () => {
-      const extractTitle = (
-        strategy as { extractTitle: (content: string, frontmatter: string) => string }
-      ).extractTitle.bind(strategy);
-
-      expect(extractTitle('# Main Title\n\nContent', '')).toBe('Main Title');
-      expect(extractTitle('Content without header', '---\ntitle: "From Frontmatter"\n---\n')).toBe(
-        'From Frontmatter'
-      );
-      expect(extractTitle('## Second Level\n\nContent', '')).toBe('Second Level');
+      expect(strategy.testExtractTitle('# Main Title\n\nContent', '')).toBe('Main Title');
+      expect(
+        strategy.testExtractTitle('Content without header', '---\ntitle: "From Frontmatter"\n---\n')
+      ).toBe('From Frontmatter');
+      expect(strategy.testExtractTitle('## Second Level\n\nContent', '')).toBe('Second Level');
     });
 
     it('should merge frontmatter correctly', () => {
-      const mergeFrontmatter = (
-        strategy as { mergeFrontmatter: (sections: unknown[]) => string }
-      ).mergeFrontmatter.bind(strategy);
-
-      const sections = [
+      const sections: JoinSection[] = [
         {
           frontmatter: '---\ntitle: "First"\ntags: ["tag1", "tag2"]\n---\n',
           filePath: 'first.md',
           content: '',
+          title: undefined,
           dependencies: [],
           order: 1,
         },
@@ -304,12 +335,13 @@ describe('Join Strategies', () => {
           frontmatter: '---\ntitle: "Second"\ntags: ["tag2", "tag3"]\nauthor: "Test"\n---\n',
           filePath: 'second.md',
           content: '',
+          title: undefined,
           dependencies: [],
           order: 2,
         },
       ];
 
-      const result = mergeFrontmatter(sections);
+      const result = strategy.testMergeFrontmatter(sections);
 
       expect(result).toContain('title: "First & Second"');
       expect(result).toContain('tags: ["tag1", "tag2", "tag3"]');
@@ -317,26 +349,26 @@ describe('Join Strategies', () => {
     });
 
     it('should detect header conflicts', () => {
-      const detectConflicts = (
-        strategy as { detectConflicts: (sections: unknown[]) => unknown[] }
-      ).detectConflicts.bind(strategy);
-
-      const sections = [
+      const sections: JoinSection[] = [
         {
           filePath: 'file1.md',
           content: '# Same Header\n\nContent 1',
+          frontmatter: undefined,
+          title: undefined,
           dependencies: [],
           order: 1,
         },
         {
           filePath: 'file2.md',
           content: '# Same Header\n\nContent 2',
+          frontmatter: undefined,
+          title: undefined,
           dependencies: [],
           order: 2,
         },
       ];
 
-      const conflicts = detectConflicts(sections);
+      const conflicts = strategy.testDetectConflicts(sections);
 
       expect(conflicts.length).toBe(1);
       expect(conflicts[0].type).toBe('duplicate-headers');

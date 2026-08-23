@@ -5,7 +5,7 @@ describe('TocGenerator', () => {
   const tocGenerator = new TocGenerator();
 
   describe('generateToc', () => {
-    it('should generate table of contents from markdown headings', async () => {
+    it('should generate table of contents from markdown headings', () => {
       const content = `# Main Title
 Some content here.
 
@@ -25,7 +25,7 @@ Content here.
 Very deep content.
 `;
 
-      const result = await tocGenerator.generateToc(content);
+      const result = tocGenerator.generateToc(content);
 
       expect(result.headings).toHaveLength(6);
       expect(result.headings[0]).toEqual({
@@ -49,7 +49,7 @@ Very deep content.
       expect(result.toc).toContain('      - [Deep Subsection](#deep-subsection)');
     });
 
-    it('should respect minDepth and maxDepth options', async () => {
+    it('should respect minDepth and maxDepth options', () => {
       const content = `# Main Title
 ## Section 1
 ### Subsection 1.1
@@ -58,7 +58,7 @@ Very deep content.
 ###### Extremely Deep
 `;
 
-      const result = await tocGenerator.generateToc(content, {
+      const result = tocGenerator.generateToc(content, {
         minDepth: 2,
         maxDepth: 4,
       });
@@ -72,14 +72,14 @@ Very deep content.
       expect(result.toc).not.toContain('Extremely Deep');
     });
 
-    it('should include line numbers when requested', async () => {
+    it('should include line numbers when requested', () => {
       const content = `# Title
 ## Section 1
 ### Subsection
 ## Section 2
 `;
 
-      const result = await tocGenerator.generateToc(content, {
+      const result = tocGenerator.generateToc(content, {
         includeLineNumbers: true,
       });
 
@@ -89,15 +89,15 @@ Very deep content.
       expect(result.toc).toContain('  - [Section 2](#section-2) (line 4)');
     });
 
-    it('should handle empty content gracefully', async () => {
+    it('should handle empty content gracefully', () => {
       const content = '';
-      const result = await tocGenerator.generateToc(content);
+      const result = tocGenerator.generateToc(content);
 
       expect(result.headings).toHaveLength(0);
       expect(result.toc).toBe('');
     });
 
-    it('should handle content with no headings', async () => {
+    it('should handle content with no headings', () => {
       const content = `This is just regular content.
 
 Some more content here.
@@ -105,19 +105,19 @@ Some more content here.
 And even more content.
 `;
 
-      const result = await tocGenerator.generateToc(content);
+      const result = tocGenerator.generateToc(content);
 
       expect(result.headings).toHaveLength(0);
       expect(result.toc).toBe('');
     });
 
-    it('should handle headings with special characters', async () => {
+    it('should handle headings with special characters', () => {
       const content = `# Title with "Quotes" and Special Characters!
 ## Section with $pecial Ch@rs & Symbols
 ### Another Section: With Colons
 `;
 
-      const result = await tocGenerator.generateToc(content);
+      const result = tocGenerator.generateToc(content);
 
       expect(result.headings).toHaveLength(3);
       expect(result.headings[0].slug).toBe('title-with-quotes-and-special-characters');
@@ -125,14 +125,14 @@ And even more content.
       expect(result.headings[2].slug).toBe('another-section-with-colons');
     });
 
-    it('should use custom slugify function when provided', async () => {
+    it('should use custom slugify function when provided', () => {
       const content = `# Test Title
 ## Another Section
 `;
 
       const customSlugify = (text: string) => `custom-${text.toLowerCase().replace(/\s+/g, '-')}`;
 
-      const result = await tocGenerator.generateToc(content, {
+      const result = tocGenerator.generateToc(content, {
         slugify: customSlugify,
       });
 
@@ -142,19 +142,19 @@ And even more content.
       expect(result.toc).toContain('[Another Section](#custom-another-section)');
     });
 
-    it('should handle headings with inline code and links', async () => {
+    it('should handle headings with inline code and links', () => {
       const content = `# Title with \`code\` and [link](url)
 ## Section with **bold** and *italic*
 `;
 
-      const result = await tocGenerator.generateToc(content);
+      const result = tocGenerator.generateToc(content);
 
       expect(result.headings).toHaveLength(2);
       expect(result.headings[0].text).toBe('Title with  and link');
       expect(result.headings[1].text).toBe('Section with bold and italic');
     });
 
-    it('should maintain proper indentation for nested headings', async () => {
+    it('should maintain proper indentation for nested headings', () => {
       const content = `# Level 1
 ## Level 2
 ### Level 3
@@ -163,7 +163,7 @@ And even more content.
 ###### Level 6
 `;
 
-      const result = await tocGenerator.generateToc(content);
+      const result = tocGenerator.generateToc(content);
 
       const lines = result.toc.split('\n');
       expect(lines[0]).toBe('- [Level 1](#level-1)');
@@ -176,14 +176,14 @@ And even more content.
   });
 
   describe('extractHeadings', () => {
-    it('should extract headings without generating TOC', async () => {
+    it('should extract headings without generating TOC', () => {
       const content = `# Title
 ## Section 1
 ### Subsection
 ## Section 2
 `;
 
-      const headings = await tocGenerator.extractHeadings(content);
+      const headings = tocGenerator.extractHeadings(content);
 
       expect(headings).toHaveLength(4);
       expect(headings[0]).toEqual({
@@ -200,14 +200,14 @@ And even more content.
       });
     });
 
-    it('should respect depth options when extracting headings', async () => {
+    it('should respect depth options when extracting headings', () => {
       const content = `# Title
 ## Section 1
 ### Subsection
 #### Deep Section
 `;
 
-      const headings = await tocGenerator.extractHeadings(content, {
+      const headings = tocGenerator.extractHeadings(content, {
         minDepth: 2,
         maxDepth: 3,
       });
@@ -219,7 +219,7 @@ And even more content.
   });
 
   describe('default slugify function', () => {
-    it('should handle various text patterns correctly', async () => {
+    it('should handle various text patterns correctly', () => {
       const testCases = [
         { input: 'Simple Title', expected: 'simple-title' },
         { input: 'Title with UPPERCASE', expected: 'title-with-uppercase' },
@@ -239,7 +239,7 @@ And even more content.
 
       for (const { input, expected } of testCases) {
         const content = `# ${input}`;
-        const result = await tocGenerator.generateToc(content);
+        const result = tocGenerator.generateToc(content);
         expect(result.headings[0].slug).toBe(expected);
       }
     });

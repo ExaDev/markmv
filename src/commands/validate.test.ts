@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { join } from 'node:path';
-import { mkdtemp, rmdir, writeFile, mkdir, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile, mkdir, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import {
   validateLinks,
@@ -22,7 +22,7 @@ describe('validate command', () => {
 
   afterEach(async () => {
     try {
-      await rmdir(testDir, { recursive: true });
+      await rm(testDir, { recursive: true });
     } catch {
       // Ignore cleanup errors
     }
@@ -151,9 +151,9 @@ Broken image: ![missing image](./missing.jpg)
       expect(result.brokenLinksByType.anchor).toBeDefined();
       expect(result.brokenLinksByType.image).toBeDefined();
 
-      expect(result.brokenLinksByType.internal.length).toBeGreaterThan(0);
-      expect(result.brokenLinksByType.anchor.length).toBeGreaterThan(0);
-      expect(result.brokenLinksByType.image.length).toBeGreaterThan(0);
+      expect(result.brokenLinksByType.internal ?? []).not.toHaveLength(0);
+      expect(result.brokenLinksByType.anchor ?? []).not.toHaveLength(0);
+      expect(result.brokenLinksByType.image ?? []).not.toHaveLength(0);
     });
 
     it('should filter by link types when specified', async () => {
@@ -378,7 +378,7 @@ Anchor link: [bad anchor](#non-existent)
   });
 
   describe('parse failure handling', () => {
-    const baseOptions: ValidateCliOptions = {
+    const baseOptions: Omit<ValidateOperationOptions, 'linkTypes'> = {
       checkExternal: false,
       externalTimeout: 5000,
       strictInternal: true,
@@ -511,13 +511,15 @@ Anchor link: [bad anchor](#non-existent)
       }
 
       expect(process.exitCode).toBe(1);
-      expect(() => JSON.parse(output.join('\n'))).not.toThrow();
+      expect(() => {
+        JSON.parse(output.join('\n'));
+      }).not.toThrow();
       process.exitCode = 0;
     });
   });
 
   describe('obsidian mode', () => {
-    const obsidianOptions: ValidateCliOptions = {
+    const obsidianOptions: Omit<ValidateOperationOptions, 'linkTypes'> = {
       checkExternal: false,
       externalTimeout: 5000,
       strictInternal: true,
@@ -648,7 +650,7 @@ Anchor link: [bad anchor](#non-existent)
   });
 
   describe('fix mode', () => {
-    const fixOptions: ValidateCliOptions = {
+    const fixOptions: Omit<ValidateOperationOptions, 'linkTypes'> & { fix: boolean } = {
       checkExternal: false,
       externalTimeout: 5000,
       strictInternal: true,
@@ -670,7 +672,8 @@ Anchor link: [bad anchor](#non-existent)
       await writeFile(join(testDir, 'guides', 'getting-started.md'), '# Guide\n');
 
       const knownFiles = [join(testDir, 'guides', 'getting-started.md')];
-      const result = await validateLinks([sourceFile], { ...fixOptions, fix: false });
+      const { fix: _fix, ...validateLinksOptions } = fixOptions;
+      const result = await validateLinks([sourceFile], validateLinksOptions);
       const fixes = planLinkFixes(result, knownFiles);
 
       expect(fixes).toHaveLength(1);
@@ -732,9 +735,9 @@ Anchor link: [bad anchor](#non-existent)
       await mkdir(join(testDir, 'guides'));
       await writeFile(join(testDir, 'guides', 'getting-started.md'), '# Guide\n');
 
-      const prompter: FixPrompter = async (fix) => {
+      const prompter: FixPrompter = (fix) => {
         expect(fix.suggestions[0]?.replacementHref).toBe('./guides/getting-started.md');
-        return 0;
+        return Promise.resolve(0);
       };
 
       await validateCommand([sourceFile], { ...fixOptions, fix: true }, prompter);

@@ -143,8 +143,8 @@ export abstract class BaseMergeStrategy {
   /** Extract Obsidian transclusions from content */
   protected extractTransclusions(
     content: string
-  ): Array<{ ref: string; file: string; section?: string; line: number }> {
-    const transclusions: Array<{ ref: string; file: string; section?: string; line: number }> = [];
+  ): { ref: string; file: string; section?: string; line: number }[] {
+    const transclusions: { ref: string; file: string; section?: string; line: number }[] = [];
     const lines = content.split('\n');
 
     for (let i = 0; i < lines.length; i++) {
@@ -171,7 +171,7 @@ export abstract class BaseMergeStrategy {
 
   /** Create an Obsidian transclusion reference */
   protected createTransclusion(file: string, section?: string): string {
-    const template = this.options.transclusionTemplate || '![[{file}#{section}]]';
+    const template = this.options.transclusionTemplate ?? '![[{file}#{section}]]';
     const cleanFile = file.replace(/\.md$/, '');
 
     if (section) {
@@ -234,7 +234,7 @@ export abstract class BaseMergeStrategy {
       .split('\n');
 
     for (const line of lines) {
-      const match = line.match(/^([^:]+):\s*(.*)$/);
+      const match = /^([^:]+):\s*(.*)$/.exec(line);
       if (match) {
         const key = match[1].trim();
         const value = match[2].trim();
@@ -273,13 +273,13 @@ export abstract class BaseMergeStrategy {
   }
 
   /** Extract headers from content with their levels */
-  protected extractHeaders(content: string): Array<{ text: string; level: number; line: number }> {
-    const headers: Array<{ text: string; level: number; line: number }> = [];
+  protected extractHeaders(content: string): { text: string; level: number; line: number }[] {
+    const headers: { text: string; level: number; line: number }[] = [];
     const lines = content.split('\n');
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      const match = line.match(/^(#+)\s+(.+)$/);
+      const match = /^(#+)\s+(.+)$/.exec(line);
       if (match) {
         headers.push({
           text: match[2].trim(),
@@ -296,10 +296,10 @@ export abstract class BaseMergeStrategy {
   protected findHeaderConflicts(
     targetContent: string,
     sourceContent: string
-  ): Array<{ header: string; targetLine: number; sourceLine: number }> {
+  ): { header: string; targetLine: number; sourceLine: number }[] {
     const targetHeaders = this.extractHeaders(targetContent);
     const sourceHeaders = this.extractHeaders(sourceContent);
-    const conflicts: Array<{ header: string; targetLine: number; sourceLine: number }> = [];
+    const conflicts: { header: string; targetLine: number; sourceLine: number }[] = [];
 
     for (const sourceHeader of sourceHeaders) {
       const conflict = targetHeaders.find(
@@ -343,7 +343,7 @@ export abstract class BaseMergeStrategy {
  *   ```
  */
 export class AppendMergeStrategy extends BaseMergeStrategy {
-  async merge(
+  merge(
     targetContent: string,
     sourceContent: string,
     targetFile: string,
@@ -387,7 +387,7 @@ export class AppendMergeStrategy extends BaseMergeStrategy {
           const finalContent = targetMainContent + this.options.separator + transclusionRef;
           transclusions.push(transclusionRef);
 
-          return {
+          return Promise.resolve({
             success: true,
             content: finalContent,
             frontmatter: this.options.mergeFrontmatter
@@ -398,15 +398,15 @@ export class AppendMergeStrategy extends BaseMergeStrategy {
             warnings,
             errors,
             transclusions,
-          };
+          });
         }
       }
 
       // Standard append merge
-      const separator = this.options.separator || '\n\n';
+      const separator = this.options.separator ?? '\n\n';
       const mergedContent = targetMainContent + separator + sourceMainContent;
 
-      return {
+      return Promise.resolve({
         success: true,
         content: mergedContent,
         frontmatter: this.options.mergeFrontmatter
@@ -417,10 +417,12 @@ export class AppendMergeStrategy extends BaseMergeStrategy {
         warnings,
         errors,
         transclusions,
-      };
+      });
     } catch (error) {
-      errors.push(`Failed to merge files: ${error}`);
-      return {
+      errors.push(
+        `Failed to merge files: ${error instanceof Error ? error.message : String(error)}`
+      );
+      return Promise.resolve({
         success: false,
         content: targetContent,
         sourceFiles: [targetFile, sourceFile],
@@ -428,12 +430,12 @@ export class AppendMergeStrategy extends BaseMergeStrategy {
         warnings,
         errors,
         transclusions,
-      };
+      });
     }
   }
 
   private extractFrontmatterFromContent(content: string): string {
-    const match = content.match(/^---\n(.*?)\n---\n/s);
+    const match = /^---\n(.*?)\n---\n/s.exec(content);
     return match ? match[0] : '';
   }
 
@@ -463,7 +465,7 @@ export class AppendMergeStrategy extends BaseMergeStrategy {
  *   ```
  */
 export class PrependMergeStrategy extends BaseMergeStrategy {
-  async merge(
+  merge(
     targetContent: string,
     sourceContent: string,
     targetFile: string,
@@ -495,10 +497,10 @@ export class PrependMergeStrategy extends BaseMergeStrategy {
       }
 
       // Standard prepend merge
-      const separator = this.options.separator || '\n\n';
+      const separator = this.options.separator ?? '\n\n';
       const mergedContent = sourceMainContent + separator + targetMainContent;
 
-      return {
+      return Promise.resolve({
         success: true,
         content: mergedContent,
         frontmatter: this.options.mergeFrontmatter
@@ -509,10 +511,12 @@ export class PrependMergeStrategy extends BaseMergeStrategy {
         warnings,
         errors,
         transclusions,
-      };
+      });
     } catch (error) {
-      errors.push(`Failed to merge files: ${error}`);
-      return {
+      errors.push(
+        `Failed to merge files: ${error instanceof Error ? error.message : String(error)}`
+      );
+      return Promise.resolve({
         success: false,
         content: targetContent,
         sourceFiles: [targetFile, sourceFile],
@@ -520,12 +524,12 @@ export class PrependMergeStrategy extends BaseMergeStrategy {
         warnings,
         errors,
         transclusions,
-      };
+      });
     }
   }
 
   private extractFrontmatterFromContent(content: string): string {
-    const match = content.match(/^---\n(.*?)\n---\n/s);
+    const match = /^---\n(.*?)\n---\n/s.exec(content);
     return match ? match[0] : '';
   }
 
@@ -557,7 +561,7 @@ export class PrependMergeStrategy extends BaseMergeStrategy {
  *   ```
  */
 export class InteractiveMergeStrategy extends BaseMergeStrategy {
-  async merge(
+  merge(
     targetContent: string,
     sourceContent: string,
     targetFile: string,
@@ -609,12 +613,12 @@ export class InteractiveMergeStrategy extends BaseMergeStrategy {
       warnings.push('Use CLI interactive mode or resolve conflicts manually');
 
       // Create a basic append merge as fallback
-      const separator = this.options.separator || '\n\n---\n\n';
+      const separator = this.options.separator ?? '\n\n---\n\n';
       const mergedContent = `${
         targetMainContent + separator
       }<!-- MERGE CONFLICT: Review and resolve manually -->${separator}${sourceMainContent}`;
 
-      return {
+      return Promise.resolve({
         success: true,
         content: mergedContent,
         frontmatter: this.options.mergeFrontmatter
@@ -625,10 +629,12 @@ export class InteractiveMergeStrategy extends BaseMergeStrategy {
         warnings,
         errors,
         transclusions,
-      };
+      });
     } catch (error) {
-      errors.push(`Failed to perform interactive merge: ${error}`);
-      return {
+      errors.push(
+        `Failed to perform interactive merge: ${error instanceof Error ? error.message : String(error)}`
+      );
+      return Promise.resolve({
         success: false,
         content: targetContent,
         sourceFiles: [targetFile, sourceFile],
@@ -636,12 +642,12 @@ export class InteractiveMergeStrategy extends BaseMergeStrategy {
         warnings,
         errors,
         transclusions,
-      };
+      });
     }
   }
 
   private extractFrontmatterFromContent(content: string): string {
-    const match = content.match(/^---\n(.*?)\n---\n/s);
+    const match = /^---\n(.*?)\n---\n/s.exec(content);
     return match ? match[0] : '';
   }
 

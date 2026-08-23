@@ -357,7 +357,7 @@ describe('ContentFreshnessDetector', () => {
 
       const result = await detector.analyzeContentFreshness(invalidUrl, response);
       expect(result.url).toBe(invalidUrl);
-      expect(result.thresholdMs).toBe(detector['config'].defaultThreshold);
+      expect(result.thresholdMs).toBe(365 * 24 * 60 * 60 * 1000);
     });
   });
 

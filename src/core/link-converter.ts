@@ -21,7 +21,7 @@ interface LinkNode extends Node {
   alt?: string | null | undefined;
   identifier?: string;
   referenceType?: 'full' | 'collapsed' | 'shortcut';
-  children?: Array<{ type: string; value?: string }>;
+  children?: { type: string; value?: string }[];
 }
 
 interface TextNode extends Node {
@@ -82,7 +82,7 @@ export class LinkConverter {
       const parsed = await this.parser.parseFile(filePath);
 
       // Convert the content
-      const convertedContent = await this.convertContent(content, parsed.links, filePath, options);
+      const convertedContent = this.convertContent(content, parsed.links, filePath, options);
 
       // Check if content actually changed
       if (convertedContent === content) {
@@ -169,12 +169,12 @@ export class LinkConverter {
    *
    * @returns Promise resolving to converted content
    */
-  private async convertContent(
+  private convertContent(
     content: string,
     _links: MarkdownLink[],
     filePath: string,
     options: ConvertOperationOptions
-  ): Promise<string> {
+  ): string {
     // Parse markdown AST
     const processor = unified().use(remarkParse).use(remarkStringify, {
       bullet: '-',
@@ -274,7 +274,7 @@ export class LinkConverter {
 
     // Handle Claude imports (@./file.md, @~/file.md)
     const claudeImportRegex = /@(\.\/|~\/|[^@\s]+)/g;
-    newValue = newValue.replace(claudeImportRegex, (match, path) => {
+    newValue = newValue.replace(claudeImportRegex, (match: string, path: string) => {
       if (options.pathResolution) {
         const convertedPath = this.convertPathResolution(
           path,
@@ -319,7 +319,7 @@ export class LinkConverter {
     }
 
     const sourceDir = dirname(sourceFile);
-    const base = basePath || process.cwd();
+    const base = basePath ?? process.cwd();
 
     if (targetResolution === 'absolute') {
       // Convert to absolute path
@@ -387,7 +387,7 @@ export class LinkConverter {
 
     return node.children
       .filter((child) => child.type === 'text')
-      .map((child) => child.value || '')
+      .map((child) => child.value ?? '')
       .join('');
   }
 

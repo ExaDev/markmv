@@ -184,7 +184,7 @@ describe('CLI Entry Point', () => {
   });
 
   describe('Command Integration', () => {
-    it('should import all required command modules', async () => {
+    it('should import all required command modules', () => {
       // This test verifies that the CLI file can be imported without errors
       // and that all command imports work correctly
       expect(async () => {

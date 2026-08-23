@@ -137,6 +137,7 @@ Advanced concepts here.`
 
       const options: JoinOperationOptions = {
         dryRun: true, // Don't actually create the file
+        output: undefined,
       };
 
       const result = await joiner.joinFiles([file1, file2], options);

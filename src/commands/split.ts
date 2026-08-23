@@ -103,13 +103,13 @@ export async function splitCommand(source: string, options: SplitOptions): Promi
   }
 
   const splitOptions: SplitOperationOptions = {
-    strategy: options.strategy || 'headers',
-    outputDir: options.output || '.',
-    dryRun: options.dryRun || false,
-    verbose: options.verbose || false,
-    headerLevel: options.headerLevel || 2,
-    maxSize: options.maxSize || 100,
-    splitLines: splitLines || undefined,
+    strategy: options.strategy ?? 'headers',
+    outputDir: options.output ?? '.',
+    dryRun: options.dryRun ?? false,
+    verbose: options.verbose ?? false,
+    headerLevel: options.headerLevel ?? 2,
+    maxSize: options.maxSize ?? 100,
+    splitLines,
   };
 
   if (options.verbose) {
@@ -220,7 +220,7 @@ export async function splitCommand(source: string, options: SplitOptions): Promi
       }
     }
   } catch (error) {
-    console.error(`❌ Unexpected error: ${error}`);
+    console.error(`❌ Unexpected error: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
   }
 }

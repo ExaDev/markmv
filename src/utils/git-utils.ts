@@ -48,23 +48,12 @@ export interface GitStatus {
  * @category Utils
  *
  * @example
- *   Basic usage
- *   ```typescript
- *   const git = new GitUtils();
+ *   Basic usage ```typescript const git = new GitUtils();
  *
- *   if (git.isGitRepository()) {
- *   const changes = git.getChangedFiles('HEAD~1');
- *   console.log(`Found ${changes.length} changed files`);
- *   }
- *   ```
+ *   if (git.isGitRepository()) { const changes = git.getChangedFiles('HEAD~1'); console.log(`Found ${changes.length} changed files`); } ```
  *
  * @example
- *   Pre-commit validation
- *   ```typescript
- *   const git = new GitUtils();
- *   const stagedFiles = git.getStagedFiles();
- *   const markdownFiles = stagedFiles.filter(f => f.path.endsWith('.md'));
- *   ```
+ *   Pre-commit validation ```typescript const git = new GitUtils(); const stagedFiles = git.getStagedFiles(); const markdownFiles = stagedFiles.filter(f => f.path.endsWith('.md')); ```
  */
 export class GitUtils {
   private rootDir: string | undefined;
@@ -102,7 +91,10 @@ export class GitUtils {
       this.rootDir = output.trim();
       return this.rootDir;
     } catch (error) {
-      throw new Error(`Not in a git repository: ${error}`, { cause: error });
+      throw new Error(
+        `Not in a git repository: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error }
+      );
     }
   }
 
@@ -167,26 +159,25 @@ export class GitUtils {
    * Get files changed between two git references.
    *
    * @example
-   *   ```typescript
-   *   // Files changed since last commit
-   *   const changes = git.getChangedFiles('HEAD~1');
+   *   ```typescript // Files changed since last commit const changes = git.getChangedFiles('HEAD~1');
    *
-   *   // Files changed in current branch vs main
-   *   const branchChanges = git.getChangedFiles('main', 'HEAD');
-   *   ```;
+   *   // Files changed in current branch vs main const branchChanges = git.getChangedFiles('main', 'HEAD'); ```;
    *
    * @param base - Base reference (commit, branch, tag)
    * @param head - Head reference (defaults to current HEAD)
    *
    * @returns Array of changed files
    */
-  getChangedFiles(base: string, head: string = 'HEAD'): GitFileChange[] {
+  getChangedFiles(base: string, head = 'HEAD'): GitFileChange[] {
     try {
       const repositoryRoot = this.getRepositoryRoot();
       const output = this.execGit(`diff --name-status ${base}..${head}`);
       return this.parseFileChanges(output, repositoryRoot);
     } catch (error) {
-      throw new Error(`Failed to get changed files: ${error}`, { cause: error });
+      throw new Error(
+        `Failed to get changed files: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error }
+      );
     }
   }
 
@@ -201,7 +192,10 @@ export class GitUtils {
       const output = this.execGit('diff --cached --name-status');
       return this.parseFileChanges(output, repositoryRoot);
     } catch (error) {
-      throw new Error(`Failed to get staged files: ${error}`, { cause: error });
+      throw new Error(
+        `Failed to get staged files: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error }
+      );
     }
   }
 
@@ -216,7 +210,10 @@ export class GitUtils {
       const output = this.execGit('diff --name-status');
       return this.parseFileChanges(output, repositoryRoot);
     } catch (error) {
-      throw new Error(`Failed to get unstaged files: ${error}`, { cause: error });
+      throw new Error(
+        `Failed to get unstaged files: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error }
+      );
     }
   }
 
@@ -238,7 +235,10 @@ export class GitUtils {
         .filter((line) => line.length > 0)
         .map((path) => resolve(repositoryRoot, path));
     } catch (error) {
-      throw new Error(`Failed to get tracked files: ${error}`, { cause: error });
+      throw new Error(
+        `Failed to get tracked files: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error }
+      );
     }
   }
 
@@ -270,7 +270,10 @@ export class GitUtils {
     try {
       return this.execGit(`merge-base ${ref1} ${ref2}`).trim();
     } catch (error) {
-      throw new Error(`Failed to get merge base: ${error}`, { cause: error });
+      throw new Error(
+        `Failed to get merge base: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error }
+      );
     }
   }
 
@@ -360,8 +363,7 @@ export class GitUtils {
             break;
           case 'R': {
             changeStatus = 'renamed';
-            // For renames, git shows "R<score>\toldpath\tnewpath": the new path is the
-            // file's path and the old one becomes previousPath
+            // For renames, git shows "R<score>\toldpath\tnewpath": the new path is the file's path and the old one becomes previousPath
             const [oldPath, newPath] = pathParts;
             if (oldPath !== undefined && newPath !== undefined) {
               previousPath = oldPath;
@@ -387,10 +389,3 @@ export class GitUtils {
       });
   }
 }
-
-/**
- * Default git utilities instance.
- *
- * @category Utils
- */
-export const gitUtils = new GitUtils();

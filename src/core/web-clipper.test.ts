@@ -221,7 +221,7 @@ describe('WebClipper', () => {
         ok: true,
         text: vi.fn().mockResolvedValue('<html><body><h1>Test</h1></body></html>'),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       const result = await clipper.clip('https://example.com/article');
 
@@ -243,7 +243,7 @@ describe('WebClipper', () => {
         status: 404,
         statusText: 'Not Found',
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       await expect(clipper.clip('https://example.com/nonexistent')).rejects.toThrow(
         'HTTP 404: Not Found'
@@ -280,7 +280,7 @@ describe('WebClipper', () => {
         ok: true,
         text: vi.fn().mockResolvedValue('<html><body><h1>Test</h1></body></html>'),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       await headerClipper.clip('https://example.com/protected');
 
@@ -314,7 +314,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       const result = await autoClipper.clip('https://blog.example.com/post');
       expect(result.strategy).toBe('readability');
@@ -336,7 +336,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       const result = await autoClipper.clip('https://example.com/docs/api');
       expect(result.strategy).toBe('manual');
@@ -358,7 +358,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       const result = await autoClipper.clip('https://example.com/structured');
       expect(result.strategy).toBe('structured');
@@ -380,7 +380,7 @@ describe('WebClipper', () => {
             '<html><body><article><h1>Test</h1><p>Content</p></article></body></html>'
           ),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       const result = await readabilityClipper.clip('https://example.com/article');
 
@@ -411,7 +411,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       const result = await manualClipper.clip('https://example.com/manual');
 
@@ -437,7 +437,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       const result = await fullClipper.clip('https://example.com/full');
 
@@ -472,7 +472,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       const result = await structuredClipper.clip('https://example.com/structured');
 
@@ -500,7 +500,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       const result = await clipper.clip('https://example.com/metadata');
       expect(result.title).toBe('Test Article');
@@ -523,7 +523,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       const result = await clipper.clip('https://example.com/dated-article');
       expect(result.publishedDate).toBe('2024-01-01T12:00:00Z');
@@ -544,7 +544,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       const result = await clipper.clip('https://example.com/authored-article');
       expect(result.author).toBe('Test Author');
@@ -567,7 +567,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       const result = await clipper.clip('https://example.com/article-with-links');
 
@@ -593,7 +593,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       const result = await clipper.clip('https://example.com/article-with-images');
 
@@ -615,7 +615,7 @@ describe('WebClipper', () => {
           .fn()
           .mockResolvedValue('<html><body><article><img src="test.jpg" /></article></body></html>'),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       const skipResult = await skipImagesClipper.clip('https://example.com/images');
       const linkResult = await linkOnlyClipper.clip('https://example.com/images');
@@ -638,7 +638,7 @@ describe('WebClipper', () => {
           .fn()
           .mockResolvedValue('<html><body><article><h1>Test</h1></article></body></html>'),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       const result = await frontmatterClipper.clip('https://example.com/frontmatter-test');
 
@@ -660,7 +660,7 @@ describe('WebClipper', () => {
           .fn()
           .mockResolvedValue('<html><body><article><h1>Test</h1></article></body></html>'),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       const result = await noFrontmatterClipper.clip('https://example.com/no-frontmatter');
 
@@ -678,13 +678,13 @@ describe('WebClipper', () => {
       const mockInstance = {
         parse: vi.fn().mockReturnValue(null),
       };
-      vi.mocked(Readability).mockImplementationOnce(() => mockInstance as Readability);
+      vi.mocked(Readability).mockImplementationOnce(() => mockInstance);
 
       const mockResponse = {
         ok: true,
         text: vi.fn().mockResolvedValue('<html><body><p>Unparseable content</p></body></html>'),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       await expect(failingClipper.clip('https://example.com/unparseable')).rejects.toThrow(
         'Could not extract article content using Readability'
@@ -715,7 +715,7 @@ describe('WebClipper', () => {
         ok: true,
         text: vi.fn().mockResolvedValue('<html><body><p>No matching selectors</p></body></html>'),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       await expect(manualClipper.clip('https://example.com/no-selectors')).rejects.toThrow(
         'Could not find content with specified selectors'
@@ -742,7 +742,7 @@ describe('WebClipper', () => {
         ok: true,
         text: vi.fn().mockResolvedValue('<html><head><title>No Body</title></head></html>'),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       await expect(fullClipper.clip('https://example.com/no-body')).rejects.toThrow(
         'Could not find body element'
@@ -788,7 +788,7 @@ describe('WebClipper', () => {
           </html>
         `),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       // Should not throw, just ignore invalid JSON
       const result = await structuredClipper.clip('https://example.com/invalid-json');
@@ -805,7 +805,7 @@ describe('WebClipper', () => {
         ok: true,
         text: vi.fn().mockResolvedValue('<html><body><h1>Test</h1></body></html>'),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       await noRedirectClipper.clip('https://example.com/test');
 
@@ -830,7 +830,7 @@ describe('WebClipper', () => {
         ok: true,
         text: vi.fn().mockResolvedValue('<html><body><h1>Test</h1></body></html>'),
       };
-      vi.mocked(fetch).mockResolvedValue(mockResponse as Response);
+      vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
 
       try {
         await verboseClipper.clip('https://example.com/verbose');

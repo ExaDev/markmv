@@ -133,11 +133,23 @@ export abstract class BaseJoinStrategy {
 
   abstract join(sections: JoinSection[]): Promise<JoinResult>;
 
+  /**
+   * Returns `title` unless it is undefined or the empty string, in which case `filePath` is used --
+   * an empty title is treated as "no title supplied" rather than a meaningful value to sort or
+   * display by.
+   */
+  protected titleOrPath(title: string | undefined, filePath: string): string {
+    if (title) {
+      return title;
+    }
+    return filePath;
+  }
+
   /** Extract title from content (frontmatter or first header) */
   protected extractTitle(content: string, frontmatter?: string): string | undefined {
     // Try frontmatter first
     if (frontmatter) {
-      const titleMatch = frontmatter.match(/^title:\s*(.+)$/m);
+      const titleMatch = /^title:\s*(.+)$/m.exec(frontmatter);
       if (titleMatch) {
         return titleMatch[1].trim().replace(/['"]/g, '');
       }
@@ -146,7 +158,7 @@ export abstract class BaseJoinStrategy {
     // Try first header
     const lines = content.split('\n');
     for (const line of lines) {
-      const headerMatch = line.match(/^#+\s+(.+)$/);
+      const headerMatch = /^#+\s+(.+)$/.exec(line);
       if (headerMatch) {
         return headerMatch[1].trim();
       }
@@ -169,7 +181,7 @@ export abstract class BaseJoinStrategy {
         .split('\n');
 
       for (const line of lines) {
-        const match = line.match(/^([^:]+):\s*(.*)$/);
+        const match = /^([^:]+):\s*(.*)$/.exec(line);
         if (match) {
           const key = match[1].trim();
           const value = match[2].trim();
@@ -189,10 +201,12 @@ export abstract class BaseJoinStrategy {
             }
           } else if (key === 'title') {
             // Use first title found, or combine if different
-            if (!frontmatterData[key]) {
-              frontmatterData[key] = value.replace(/['"]/g, '');
-            } else if (frontmatterData[key] !== value.replace(/['"]/g, '')) {
-              frontmatterData[key] = `${frontmatterData[key]} & ${value.replace(/['"]/g, '')}`;
+            const existingTitle = frontmatterData[key];
+            const cleanValue = value.replace(/['"]/g, '');
+            if (existingTitle === undefined) {
+              frontmatterData[key] = cleanValue;
+            } else if (typeof existingTitle === 'string' && existingTitle !== cleanValue) {
+              frontmatterData[key] = `${existingTitle} & ${cleanValue}`;
             }
           } else {
             // Simple key-value pairs - use first found
@@ -278,7 +292,7 @@ export abstract class BaseJoinStrategy {
       if (section.frontmatter) {
         const lines = section.frontmatter.split('\n');
         for (const line of lines) {
-          const match = line.match(/^([^:]+):/);
+          const match = /^([^:]+):/.exec(line);
           if (match) {
             const key = match[1].trim();
             if (frontmatterKeys.has(key)) {
@@ -315,7 +329,7 @@ export abstract class BaseJoinStrategy {
     const lines = content.split('\n');
 
     for (const line of lines) {
-      const match = line.match(/^#+\s+(.+)$/);
+      const match = /^#+\s+(.+)$/.exec(line);
       if (match) {
         headers.push(match[1].trim());
       }
@@ -398,7 +412,7 @@ export abstract class BaseJoinStrategy {
  *   ```
  */
 export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
-  async join(sections: JoinSection[]): Promise<JoinResult> {
+  join(sections: JoinSection[]): Promise<JoinResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
     const conflicts = this.detectConflicts(sections);
@@ -410,13 +424,15 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
       if (!orderedSections) {
         warnings.push('Circular dependency detected, falling back to manual order');
         const fallbackSections = [...sections].sort((a, b) => a.order - b.order);
-        return this.buildResult(fallbackSections, conflicts, warnings, errors);
+        return Promise.resolve(this.buildResult(fallbackSections, conflicts, warnings, errors));
       }
 
-      return this.buildResult(orderedSections, conflicts, warnings, errors);
+      return Promise.resolve(this.buildResult(orderedSections, conflicts, warnings, errors));
     } catch (error) {
-      errors.push(`Failed to join sections: ${error}`);
-      return {
+      errors.push(
+        `Failed to join sections: ${error instanceof Error ? error.message : String(error)}`
+      );
+      return Promise.resolve({
         success: false,
         content: '',
         frontmatter: undefined,
@@ -425,7 +441,7 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
         warnings,
         errors,
         deduplicatedLinks: [],
-      };
+      });
     }
   }
 
@@ -447,7 +463,7 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
       for (const dep of section.dependencies) {
         if (fileToSection.has(dep)) {
           graph.get(dep)?.add(section.filePath);
-          inDegree.set(section.filePath, (inDegree.get(section.filePath) || 0) + 1);
+          inDegree.set(section.filePath, (inDegree.get(section.filePath) ?? 0) + 1);
         }
       }
     }
@@ -472,9 +488,9 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
       result.push(section);
 
       // Remove edges and update in-degrees
-      const neighbors = graph.get(current) || new Set();
+      const neighbors = graph.get(current) ?? new Set();
       for (const neighbor of neighbors) {
-        const newDegree = (inDegree.get(neighbor) || 0) - 1;
+        const newDegree = (inDegree.get(neighbor) ?? 0) - 1;
         inDegree.set(neighbor, newDegree);
         if (newDegree === 0) {
           queue.push(neighbor);
@@ -497,7 +513,7 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
     errors: string[]
   ): JoinResult {
     const sourceFiles = orderedSections.map((s) => s.filePath);
-    const separator = this.options.separator || '\n\n---\n\n';
+    const separator = this.options.separator ?? '\n\n---\n\n';
 
     // Combine content
     let combinedContent = orderedSections
@@ -553,7 +569,7 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
  *   ```
  */
 export class AlphabeticalJoinStrategy extends BaseJoinStrategy {
-  async join(sections: JoinSection[]): Promise<JoinResult> {
+  join(sections: JoinSection[]): Promise<JoinResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
     const conflicts = this.detectConflicts(sections);
@@ -561,15 +577,17 @@ export class AlphabeticalJoinStrategy extends BaseJoinStrategy {
     try {
       // Sort sections alphabetically by title or filename
       const orderedSections = [...sections].sort((a, b) => {
-        const titleA = a.title || a.filePath;
-        const titleB = b.title || b.filePath;
+        const titleA = this.titleOrPath(a.title, a.filePath);
+        const titleB = this.titleOrPath(b.title, b.filePath);
         return titleA.toLowerCase().localeCompare(titleB.toLowerCase());
       });
 
-      return this.buildResult(orderedSections, conflicts, warnings, errors);
+      return Promise.resolve(this.buildResult(orderedSections, conflicts, warnings, errors));
     } catch (error) {
-      errors.push(`Failed to join sections: ${error}`);
-      return {
+      errors.push(
+        `Failed to join sections: ${error instanceof Error ? error.message : String(error)}`
+      );
+      return Promise.resolve({
         success: false,
         content: '',
         frontmatter: undefined,
@@ -578,7 +596,7 @@ export class AlphabeticalJoinStrategy extends BaseJoinStrategy {
         warnings,
         errors,
         deduplicatedLinks: [],
-      };
+      });
     }
   }
 
@@ -589,7 +607,7 @@ export class AlphabeticalJoinStrategy extends BaseJoinStrategy {
     errors: string[]
   ): JoinResult {
     const sourceFiles = orderedSections.map((s) => s.filePath);
-    const separator = this.options.separator || '\n\n---\n\n';
+    const separator = this.options.separator ?? '\n\n---\n\n';
 
     let combinedContent = orderedSections
       .map((section) => section.content.replace(/^---\n.*?\n---\n/s, '').trim())
@@ -643,13 +661,13 @@ export class AlphabeticalJoinStrategy extends BaseJoinStrategy {
  *   ```
  */
 export class ManualOrderJoinStrategy extends BaseJoinStrategy {
-  async join(sections: JoinSection[]): Promise<JoinResult> {
+  join(sections: JoinSection[]): Promise<JoinResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
     const conflicts = this.detectConflicts(sections);
 
     try {
-      const customOrder = this.options.customOrder || [];
+      const customOrder = this.options.customOrder ?? [];
       const orderedSections: JoinSection[] = [];
       const usedSections = new Set<string>();
 
@@ -668,17 +686,19 @@ export class ManualOrderJoinStrategy extends BaseJoinStrategy {
       const remainingSections = sections
         .filter((s) => !usedSections.has(s.filePath))
         .sort((a, b) => {
-          const titleA = a.title || a.filePath;
-          const titleB = b.title || b.filePath;
+          const titleA = this.titleOrPath(a.title, a.filePath);
+          const titleB = this.titleOrPath(b.title, b.filePath);
           return titleA.toLowerCase().localeCompare(titleB.toLowerCase());
         });
 
       orderedSections.push(...remainingSections);
 
-      return this.buildResult(orderedSections, conflicts, warnings, errors);
+      return Promise.resolve(this.buildResult(orderedSections, conflicts, warnings, errors));
     } catch (error) {
-      errors.push(`Failed to join sections: ${error}`);
-      return {
+      errors.push(
+        `Failed to join sections: ${error instanceof Error ? error.message : String(error)}`
+      );
+      return Promise.resolve({
         success: false,
         content: '',
         frontmatter: undefined,
@@ -687,7 +707,7 @@ export class ManualOrderJoinStrategy extends BaseJoinStrategy {
         warnings,
         errors,
         deduplicatedLinks: [],
-      };
+      });
     }
   }
 
@@ -698,7 +718,7 @@ export class ManualOrderJoinStrategy extends BaseJoinStrategy {
     errors: string[]
   ): JoinResult {
     const sourceFiles = orderedSections.map((s) => s.filePath);
-    const separator = this.options.separator || '\n\n---\n\n';
+    const separator = this.options.separator ?? '\n\n---\n\n';
 
     let combinedContent = orderedSections
       .map((section) => section.content.replace(/^---\n.*?\n---\n/s, '').trim())
@@ -752,7 +772,7 @@ export class ManualOrderJoinStrategy extends BaseJoinStrategy {
  *   ```
  */
 export class ChronologicalJoinStrategy extends BaseJoinStrategy {
-  async join(sections: JoinSection[]): Promise<JoinResult> {
+  join(sections: JoinSection[]): Promise<JoinResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
     const conflicts = this.detectConflicts(sections);
@@ -770,10 +790,12 @@ export class ChronologicalJoinStrategy extends BaseJoinStrategy {
         return dateA.getTime() - dateB.getTime();
       });
 
-      return this.buildResult(orderedSections, conflicts, warnings, errors);
+      return Promise.resolve(this.buildResult(orderedSections, conflicts, warnings, errors));
     } catch (error) {
-      errors.push(`Failed to join sections: ${error}`);
-      return {
+      errors.push(
+        `Failed to join sections: ${error instanceof Error ? error.message : String(error)}`
+      );
+      return Promise.resolve({
         success: false,
         content: '',
         frontmatter: undefined,
@@ -782,14 +804,14 @@ export class ChronologicalJoinStrategy extends BaseJoinStrategy {
         warnings,
         errors,
         deduplicatedLinks: [],
-      };
+      });
     }
   }
 
   private extractDate(section: JoinSection): Date | null {
     // Try frontmatter first
     if (section.frontmatter) {
-      const dateMatch = section.frontmatter.match(/^date:\s*(.+)$/m);
+      const dateMatch = /^date:\s*(.+)$/m.exec(section.frontmatter);
       if (dateMatch) {
         const date = new Date(dateMatch[1].trim().replace(/['"]/g, ''));
         if (!Number.isNaN(date.getTime())) {
@@ -799,7 +821,7 @@ export class ChronologicalJoinStrategy extends BaseJoinStrategy {
     }
 
     // Try to extract date from filename (YYYY-MM-DD format)
-    const filenameDateMatch = section.filePath.match(/(\d{4}-\d{2}-\d{2})/);
+    const filenameDateMatch = /(\d{4}-\d{2}-\d{2})/.exec(section.filePath);
     if (filenameDateMatch) {
       const date = new Date(filenameDateMatch[1]);
       if (!Number.isNaN(date.getTime())) {
@@ -817,7 +839,7 @@ export class ChronologicalJoinStrategy extends BaseJoinStrategy {
     errors: string[]
   ): JoinResult {
     const sourceFiles = orderedSections.map((s) => s.filePath);
-    const separator = this.options.separator || '\n\n---\n\n';
+    const separator = this.options.separator ?? '\n\n---\n\n';
 
     let combinedContent = orderedSections
       .map((section) => section.content.replace(/^---\n.*?\n---\n/s, '').trim())

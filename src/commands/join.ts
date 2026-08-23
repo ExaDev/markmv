@@ -76,10 +76,10 @@ export async function joinCommand(files: string[], options: JoinOptions): Promis
   }
 
   const joinOptions: JoinOperationOptions = {
-    output: options.output || undefined,
-    dryRun: options.dryRun || false,
-    verbose: options.verbose || false,
-    orderStrategy: options.orderStrategy || 'dependency',
+    output: options.output ?? undefined,
+    dryRun: options.dryRun ?? false,
+    verbose: options.verbose ?? false,
+    orderStrategy: options.orderStrategy ?? 'dependency',
   };
 
   if (options.verbose) {
@@ -180,7 +180,8 @@ export async function joinCommand(files: string[], options: JoinOptions): Promis
       }
     }
   } catch (error) {
-    console.error(`❌ Unexpected error: ${error}`);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`❌ Unexpected error: ${message}`);
     process.exit(1);
   }
 }

@@ -1,6 +1,6 @@
 import { existsSync, statSync } from 'node:fs';
 import { basename, join, relative, resolve } from 'node:path';
-import { glob } from 'glob';
+import { glob, type GlobOptionsWithFileTypesFalse } from 'glob';
 import { FileUtils } from '../utils/file-utils.js';
 import { TocGenerator, type TocOptions } from '../utils/toc-generator.js';
 
@@ -142,19 +142,19 @@ export async function indexCommand(
   cliOptions: IndexCliOptions
 ): Promise<void> {
   const options: IndexOptions = {
-    type: cliOptions.type || 'links',
-    strategy: cliOptions.strategy || 'directory',
-    location: cliOptions.location || 'root',
-    name: cliOptions.name || 'index.md',
-    embedStyle: cliOptions.embedStyle || 'obsidian',
-    dryRun: cliOptions.dryRun || false,
-    verbose: cliOptions.verbose || false,
-    noTraverseUp: cliOptions.noTraverseUp || false,
-    generateToc: cliOptions.generateToc || false,
+    type: cliOptions.type ?? 'links',
+    strategy: cliOptions.strategy ?? 'directory',
+    location: cliOptions.location ?? 'root',
+    name: cliOptions.name ?? 'index.md',
+    embedStyle: cliOptions.embedStyle ?? 'obsidian',
+    dryRun: cliOptions.dryRun ?? false,
+    verbose: cliOptions.verbose ?? false,
+    noTraverseUp: cliOptions.noTraverseUp ?? false,
+    generateToc: cliOptions.generateToc ?? false,
     tocOptions: {
-      minDepth: cliOptions.tocMinDepth || 1,
-      maxDepth: cliOptions.tocMaxDepth || 6,
-      includeLineNumbers: cliOptions.tocIncludeLineNumbers || false,
+      minDepth: cliOptions.tocMinDepth ?? 1,
+      maxDepth: cliOptions.tocMaxDepth ?? 6,
+      includeLineNumbers: cliOptions.tocIncludeLineNumbers ?? false,
     },
     ...(cliOptions.template && { template: cliOptions.template }),
     ...(cliOptions.maxDepth !== undefined && { maxDepth: cliOptions.maxDepth }),
@@ -162,9 +162,9 @@ export async function indexCommand(
   };
 
   if (cliOptions.json) {
-    return generateIndexFilesJson(options, directory || '.');
+    return generateIndexFilesJson(options, directory ?? '.');
   } else {
-    return generateIndexFiles(options, directory || '.');
+    return generateIndexFiles(options, directory ?? '.');
   }
 }
 
@@ -202,14 +202,14 @@ async function generateIndexFilesJson(options: IndexOptions, directory: string):
           groupFiles.map((file) => ({
             path: file.path,
             relativePath: file.relativePath,
-            title: file.metadata.title || file.relativePath,
+            title: nonEmptyOr(file.metadata.title, file.relativePath),
           })),
         ])
       ),
       files: files.map((file) => ({
         path: file.path,
         relativePath: file.relativePath,
-        title: file.metadata.title || file.relativePath,
+        title: nonEmptyOr(file.metadata.title, file.relativePath),
       })),
     };
 
@@ -254,7 +254,7 @@ async function generateIndexFiles(options: IndexOptions, directory: string): Pro
     // Generate each index file
     for (const indexPath of indexPaths) {
       const relevantFiles = getRelevantFilesForIndex(indexPath, organizedFiles, options);
-      const indexContent = await generateIndexContent(indexPath, relevantFiles, options);
+      const indexContent = generateIndexContent(indexPath, relevantFiles, options);
 
       if (options.dryRun) {
         console.log(`Would create: ${indexPath}`);
@@ -292,7 +292,7 @@ async function discoverMarkdownFiles(
     globPattern = join(targetDir, '**/*.md').replace(/\\/g, '/');
   }
 
-  const globOptions: Parameters<typeof glob>[1] = {
+  const globOptions: GlobOptionsWithFileTypesFalse = {
     ignore: ['**/node_modules/**'],
   };
 
@@ -306,8 +306,7 @@ async function discoverMarkdownFiles(
   // Filter files to respect boundary constraints and convert Path objects to strings
   const boundaryFilePaths = filePaths
     .map((filePath) => {
-      const pathStr = typeof filePath === 'string' ? filePath : filePath.toString();
-      return resolve(pathStr); // Ensure consistent absolute paths
+      return resolve(filePath); // Ensure consistent absolute paths
     })
     .filter((filePath) => {
       const resolvedPath = filePath;
@@ -360,9 +359,20 @@ async function discoverMarkdownFiles(
   return files;
 }
 
+/**
+ * Returns `value` unless it is undefined or the empty string, in which case `fallback` is used --
+ * an empty string is treated as "no value supplied" rather than a meaningful value to preserve.
+ */
+function nonEmptyOr(value: string | undefined, fallback: string): string {
+  if (value) {
+    return value;
+  }
+  return fallback;
+}
+
 /** Extract frontmatter metadata from markdown content */
 function extractFrontmatter(content: string): FileMetadata {
-  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  const frontmatterMatch = /^---\n([\s\S]*?)\n---/.exec(content);
   if (!frontmatterMatch) {
     return {};
   }
@@ -374,7 +384,7 @@ function extractFrontmatter(content: string): FileMetadata {
     // Simple YAML parsing for common fields
     const lines = frontmatter.split('\n');
     for (const line of lines) {
-      const match = line.match(/^(\w+):\s*(.+)$/);
+      const match = /^(\w+):\s*(.+)$/.exec(line);
       if (match) {
         const [, key, value] = match;
         switch (key) {
@@ -392,7 +402,7 @@ function extractFrontmatter(content: string): FileMetadata {
             break;
           case 'tags': {
             // Handle array format: [tag1, tag2] or simple string
-            const tagMatch = value.match(/\[(.*)\]/);
+            const tagMatch = /\[(.*)\]/.exec(value);
             if (tagMatch) {
               metadata.tags = tagMatch[1].split(',').map((t) => t.trim().replace(/['"]/g, ''));
             } else {
@@ -430,13 +440,13 @@ function organizeFiles(
 
       case 'metadata':
         // Group by category from frontmatter
-        groupKey = file.metadata.category || 'uncategorized';
+        groupKey = nonEmptyOr(file.metadata.category, 'uncategorized');
         break;
 
       case 'manual':
         // For now, treat as directory-based, but this could be extended
         // to read configuration from a special file
-        groupKey = file.relativePath.split('/')[0] || 'root';
+        groupKey = nonEmptyOr(file.relativePath.split('/')[0], 'root');
         break;
 
       default:
@@ -461,8 +471,8 @@ function organizeFiles(
       }
 
       // Fall back to alphabetical by title or filename
-      const aTitle = a.metadata.title || a.relativePath;
-      const bTitle = b.metadata.title || b.relativePath;
+      const aTitle = nonEmptyOr(a.metadata.title, a.relativePath);
+      const bTitle = nonEmptyOr(b.metadata.title, b.relativePath);
       return aTitle.localeCompare(bTitle);
     });
   }
@@ -552,11 +562,11 @@ function getRelevantFilesForIndex(
 }
 
 /** Generate the content for an index file */
-async function generateIndexContent(
+function generateIndexContent(
   indexPath: string,
   organizedFiles: Map<string, IndexableFile[]>,
   options: IndexOptions
-): Promise<string> {
+): string {
   const now = new Date().toISOString();
   const indexDir = indexPath.replace(/\\/g, '/').split('/').slice(0, -1).join('/');
   const tocGenerator = new TocGenerator();
@@ -586,8 +596,10 @@ updated: ${now}
 
     for (const file of files) {
       const relativePath = relative(indexDir, file.path).replace(/\\/g, '/');
-      const title =
-        file.metadata.title || file.relativePath.split('/').pop()?.replace('.md', '') || 'Untitled';
+      const title = nonEmptyOr(
+        file.metadata.title,
+        nonEmptyOr(file.relativePath.split('/').pop()?.replace('.md', ''), 'Untitled')
+      );
       const description = file.metadata.description;
 
       switch (options.type) {
@@ -600,7 +612,7 @@ updated: ${now}
 
           // Add TOC if enabled and file has headings
           if (options.generateToc) {
-            const tocResult = await tocGenerator.generateToc(file.content, options.tocOptions);
+            const tocResult = tocGenerator.generateToc(file.content, options.tocOptions);
             if (tocResult.toc && tocResult.headings.length > 0) {
               content += `  - Table of Contents:\n`;
               const indentedToc = tocResult.toc
@@ -636,7 +648,7 @@ updated: ${now}
 
           // Add TOC if enabled and file has headings
           if (options.generateToc) {
-            const tocResult = await tocGenerator.generateToc(file.content, options.tocOptions);
+            const tocResult = tocGenerator.generateToc(file.content, options.tocOptions);
             if (tocResult.toc && tocResult.headings.length > 0) {
               content += `#### Table of Contents\n\n`;
               content += `${tocResult.toc}\n\n`;

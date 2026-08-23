@@ -158,7 +158,9 @@ export class ContentJoiner {
       result.success = true;
       return result;
     } catch (error) {
-      result.errors.push(`Failed to join files: ${error}`);
+      result.errors.push(
+        `Failed to join files: ${error instanceof Error ? error.message : String(error)}`
+      );
       return result;
     }
   }
@@ -192,13 +194,15 @@ export class ContentJoiner {
         sections.push({
           filePath,
           content,
-          frontmatter: frontmatter || undefined,
-          title: title || undefined,
+          frontmatter: frontmatter ?? undefined,
+          title: title ?? undefined,
           dependencies,
           order: i, // Default order based on input order
         });
       } catch (error) {
-        result.warnings.push(`Failed to read file ${filePath}: ${error}`);
+        result.warnings.push(
+          `Failed to read file ${filePath}: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
     }
 
@@ -206,7 +210,7 @@ export class ContentJoiner {
   }
 
   private extractFrontmatter(content: string): { frontmatter?: string; content: string } {
-    const frontmatterMatch = content.match(/^---\n(.*?)\n---\n/s);
+    const frontmatterMatch = /^---\n(.*?)\n---\n/s.exec(content);
 
     if (frontmatterMatch) {
       return {
@@ -221,7 +225,7 @@ export class ContentJoiner {
   private extractTitle(content: string, frontmatter?: string): string | undefined {
     // Try frontmatter first
     if (frontmatter) {
-      const titleMatch = frontmatter.match(/^title:\s*(.+)$/m);
+      const titleMatch = /^title:\s*(.+)$/m.exec(frontmatter);
       if (titleMatch) {
         return titleMatch[1].trim().replace(/['"]/g, '');
       }
@@ -230,7 +234,7 @@ export class ContentJoiner {
     // Try first header
     const lines = content.split('\n');
     for (const line of lines) {
-      const headerMatch = line.match(/^#+\s+(.+)$/);
+      const headerMatch = /^#+\s+(.+)$/.exec(line);
       if (headerMatch) {
         return headerMatch[1].trim();
       }
@@ -241,7 +245,7 @@ export class ContentJoiner {
 
   private createJoinStrategy(options: JoinOperationOptions) {
     const strategyOptions: JoinStrategyOptions = {
-      orderStrategy: options.orderStrategy || 'dependency',
+      orderStrategy: options.orderStrategy ?? 'dependency',
       mergeFrontmatter: true,
       deduplicateLinks: true,
       resolveHeaderConflicts: false,

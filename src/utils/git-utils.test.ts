@@ -4,7 +4,7 @@
  * @file Tests for git operations and repository management
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type MockedFunction } from 'vitest';
 import { execSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { GitUtils } from './git-utils.js';
@@ -26,7 +26,7 @@ const resolvedRoot = toPosix(resolve('/test/repo'));
 
 describe('GitUtils', () => {
   let gitUtils: GitUtils;
-  let mockExecSync: ReturnType<typeof vi.mocked>;
+  let mockExecSync: MockedFunction<typeof execSync>;
 
   beforeEach(() => {
     mockExecSync = vi.mocked(execSync);
@@ -363,7 +363,8 @@ describe('GitUtils', () => {
 
     it('should handle non-Error exceptions', () => {
       mockExecSync.mockImplementation(() => {
-        throw 'String error';
+        const nonErrorValue: unknown = 'String error';
+        throw nonErrorValue;
       });
 
       expect(() => gitUtils.getCurrentBranch()).toThrow('String error');

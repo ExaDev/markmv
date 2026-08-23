@@ -29,10 +29,10 @@ async function captureCommandOutput(
   const originalWarn = console.warn;
   const originalError = console.error;
 
-  process.exit = ((code: number | undefined): never => {
+  process.exit = (code: number | undefined): never => {
     state.exitCode = code ?? 0;
     return null as never;
-  }) as typeof process.exit;
+  };
   console.log = (...args: unknown[]) => {
     state.logs.push(args.join(' '));
   };

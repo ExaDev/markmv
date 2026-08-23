@@ -33,7 +33,7 @@ function camelToKebab(str: string): string {
 async function parseRequestBody(req: IncomingMessage): Promise<unknown> {
   return new Promise((resolve, reject) => {
     let body = '';
-    req.on('data', (chunk) => {
+    req.on('data', (chunk: Buffer | string) => {
       body += chunk.toString();
     });
     req.on('end', () => {
@@ -70,13 +70,13 @@ function toOperationResult(data: {
   deletedFiles: string[];
   errors: string[];
   warnings: string[];
-  changes: Array<{
+  changes: {
     type: 'file-moved' | 'file-created' | 'file-deleted' | 'link-updated' | 'content-modified';
     filePath: string;
     oldValue?: string | undefined;
     newValue?: string | undefined;
     line?: number | undefined;
-  }>;
+  }[];
 }): import('../types/operations.js').OperationResult {
   return {
     success: data.success,
@@ -145,7 +145,7 @@ function createHandler<T>(
 
 /** Build API routes from Zod schemas at runtime */
 function buildApiRoutes(): ApiRoute[] {
-  const handlers: { [K in MethodName]: ApiRoute['handler'] } = {
+  const handlers: Record<MethodName, ApiRoute['handler']> = {
     moveFile: createHandler(
       'moveFile',
       (body) => methodSchemas.moveFile.input.safeParse(body),

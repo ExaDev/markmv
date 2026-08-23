@@ -45,6 +45,7 @@ Final section.`;
         strategy: 'headers',
         headerLevel: 2,
         outputDir: testDir,
+        splitLines: undefined,
       });
 
       expect(result.success).toBe(true);
@@ -82,6 +83,7 @@ Content 2.`;
         strategy: 'headers',
         dryRun: true,
         outputDir: testDir,
+        splitLines: undefined,
       });
 
       expect(result.success).toBe(true);
@@ -113,6 +115,7 @@ Another [link](../target.md) here.
       const result = await splitter.splitFile(sourceFile, {
         strategy: 'headers',
         outputDir: join(testDir, 'docs'),
+        splitLines: undefined,
       });
 
       expect(result.success).toBe(true);
@@ -140,6 +143,7 @@ ${'More content lines here for the middle section.\n'.repeat(50)}`;
         strategy: 'size',
         maxSize: 2, // 2KB
         outputDir: testDir,
+        splitLines: undefined,
       });
 
       expect(result.success).toBe(true);
@@ -169,6 +173,7 @@ Third section content.`;
       const result = await splitter.splitFile(sourceFile, {
         strategy: 'manual',
         outputDir: testDir,
+        splitLines: undefined,
       });
 
       expect(result.success).toBe(true);
@@ -202,6 +207,7 @@ More content.`;
       const result = await splitter.splitFile(sourceFile, {
         strategy: 'headers',
         outputDir: testDir,
+        splitLines: undefined,
       });
 
       expect(result.success).toBe(true);
@@ -239,6 +245,7 @@ This links to [source](./source.md).
       const result = await splitter.splitFile(sourceFile, {
         strategy: 'headers',
         outputDir: testDir,
+        splitLines: undefined,
       });
 
       expect(result.success).toBe(true);
@@ -252,6 +259,8 @@ This links to [source](./source.md).
     it('should validate non-existent files', async () => {
       const result = await splitter.splitFile('/nonexistent/file.md', {
         strategy: 'headers',
+        outputDir: testDir,
+        splitLines: undefined,
       });
 
       expect(result.success).toBe(false);
@@ -264,6 +273,8 @@ This links to [source](./source.md).
 
       const result = await splitter.splitFile(textFile, {
         strategy: 'headers',
+        outputDir: testDir,
+        splitLines: undefined,
       });
 
       expect(result.success).toBe(false);
@@ -277,6 +288,8 @@ This links to [source](./source.md).
       const result = await splitter.splitFile(sourceFile, {
         strategy: 'headers',
         headerLevel: 2,
+        outputDir: testDir,
+        splitLines: undefined,
       });
 
       expect(result.success).toBe(false);

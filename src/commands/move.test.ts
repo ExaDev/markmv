@@ -1,18 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { moveCommand } from './move.js';
 
 // Mock console methods to capture output
-const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
-const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-vi.spyOn(console, 'warn').mockImplementation(() => {});
+const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
 // Mock process.exit to prevent actual process termination
-const mockProcessExit = vi.spyOn(process, 'exit').mockImplementation((code?: number) => {
-  throw new Error(`Process exit called with code ${code}`);
-});
+const mockProcessExit = vi
+  .spyOn(process, 'exit')
+  .mockImplementation((code?: string | number | null) => {
+    throw new Error(`Process exit called with code ${code}`);
+  });
 
 describe('Move Command', () => {
   let testDir: string;
@@ -32,11 +34,9 @@ describe('Move Command', () => {
   afterEach(() => {
     // Clean up test files
     try {
-      import('node:fs').then((fs) => {
-        if (existsSync(testDir)) {
-          fs.rmSync(testDir, { recursive: true, force: true });
-        }
-      });
+      if (existsSync(testDir)) {
+        rmSync(testDir, { recursive: true, force: true });
+      }
     } catch {
       // Ignore cleanup errors
     }
@@ -224,7 +224,7 @@ describe('Move Command', () => {
       await moveCommand([sourceFile, destFile], { dryRun: true });
 
       // Look for either "would be created" or "would be deleted" sections
-      const logCalls = mockConsoleLog.mock.calls.map((call) => call[0]);
+      const logCalls = mockConsoleLog.mock.calls.map((call: unknown[]) => call[0]);
       const hasCreatedSection = logCalls.some(
         (log) => typeof log === 'string' && log.includes('✅ Files that would be created:')
       );
@@ -263,9 +263,6 @@ describe('Move Command', () => {
     }, 10000); // Increase timeout to 10 seconds
 
     it('should handle unexpected errors', async () => {
-      // Create a scenario that would cause an unexpected error by mocking expandSourcePatterns to throw
-      const _originalExpandSourcePatterns = await import('./move.js');
-
       // We'll use a non-existent glob pattern that should cause an error in expansion
       const badPattern = '/nonexistent/path/**/*.md';
       const destFile = join(testDir, 'dest.md');
@@ -354,7 +351,8 @@ describe('Move Command', () => {
       writeFileSync(sourceFile, '# Test Content');
 
       const { FileOperations } = await import('../core/file-operations.js');
-      const originalMove = FileOperations.prototype.moveFile;
+      const originalMove = Object.getOwnPropertyDescriptor(FileOperations.prototype, 'moveFile')
+        ?.value as typeof FileOperations.prototype.moveFile;
       const moveSpy = vi.spyOn(FileOperations.prototype, 'moveFile').mockImplementation(function (
         this: InstanceType<typeof FileOperations>,
         ...args
@@ -369,7 +367,7 @@ describe('Move Command', () => {
         moveSpy.mockRestore();
       }
 
-      const output = mockConsoleLog.mock.calls.map((call) => call[0]).join('\n');
+      const output = mockConsoleLog.mock.calls.map((call: unknown[]) => call[0]).join('\n');
       expect(output).toContain('⚠️  Warnings:');
       expect(output).toContain('stubbed warning');
     });
@@ -384,7 +382,8 @@ describe('Move Command', () => {
       writeFileSync(bystanderFile, '# Bystander\n\n[link](./source.md)\n');
 
       const { LinkParser } = await import('../core/link-parser.js');
-      const originalParse = LinkParser.prototype.parseFile;
+      const originalParse = Object.getOwnPropertyDescriptor(LinkParser.prototype, 'parseFile')
+        ?.value as typeof LinkParser.prototype.parseFile;
       const parseSpy = vi.spyOn(LinkParser.prototype, 'parseFile').mockImplementation(function (
         this: InstanceType<typeof LinkParser>,
         filePath: string

@@ -85,6 +85,11 @@ function isCachedContentInfo(value: unknown): value is CachedContentInfo {
   return 'url' in value && 'contentHash' in value && 'lastChecked' in value;
 }
 
+/** Type guard for a plain object (not an array, not null) parsed from JSON. */
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 export class ContentFreshnessDetector {
   private config: FreshnessConfig;
   private cacheFile: string;
@@ -171,8 +176,8 @@ export class ContentFreshnessDetector {
     if (detectedPatterns.length > 0) {
       result.stalePatterns = detectedPatterns;
       result.isFresh = false;
-      result.warning = result.warning || 'Content contains staleness indicators';
-      result.suggestion = result.suggestion || 'Review content for updates or alternatives';
+      result.warning = result.warning ?? 'Content contains staleness indicators';
+      result.suggestion = result.suggestion ?? 'Review content for updates or alternatives';
     }
 
     // Content change detection
@@ -276,8 +281,13 @@ export class ContentFreshnessDetector {
         return undefined;
       }
 
-      const cacheData = JSON.parse(await readFile(this.cacheFile, 'utf8'));
-      return cacheData[url];
+      const cacheData: unknown = JSON.parse(await readFile(this.cacheFile, 'utf8'));
+      if (!isPlainRecord(cacheData) || !(url in cacheData)) {
+        return undefined;
+      }
+
+      const entry = cacheData[url];
+      return isCachedContentInfo(entry) ? entry : undefined;
     } catch {
       return undefined;
     }
@@ -294,11 +304,18 @@ export class ContentFreshnessDetector {
       // Ensure cache directory exists
       await mkdir(dirname(this.cacheFile), { recursive: true });
 
-      let cacheData: Record<string, CachedContentInfo> = {};
+      const cacheData: Record<string, CachedContentInfo> = {};
 
       if (existsSync(this.cacheFile)) {
         try {
-          cacheData = JSON.parse(await readFile(this.cacheFile, 'utf8'));
+          const parsed: unknown = JSON.parse(await readFile(this.cacheFile, 'utf8'));
+          if (isPlainRecord(parsed)) {
+            for (const [key, value] of Object.entries(parsed)) {
+              if (isCachedContentInfo(value)) {
+                cacheData[key] = value;
+              }
+            }
+          }
         } catch {
           // Invalid cache file, start fresh
         }
@@ -311,7 +328,7 @@ export class ContentFreshnessDetector {
         ...(lastModified && { lastModified: lastModified.getTime() }),
         headers: {
           'last-modified': headers['last-modified'] || headers['Last-Modified'] || '',
-          etag: headers['etag'] || headers['ETag'] || '',
+          etag: headers.etag || headers.ETag || '',
           'cache-control': headers['cache-control'] || headers['Cache-Control'] || '',
         },
       };

@@ -59,6 +59,9 @@ describe('LinkValidator with Content Freshness Detection', () => {
         href: 'https://example.com/fresh',
         text: 'Fresh Link',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
@@ -89,6 +92,9 @@ describe('LinkValidator with Content Freshness Detection', () => {
         href: 'https://example.com/stale',
         text: 'Stale Link',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
@@ -123,6 +129,9 @@ describe('LinkValidator with Content Freshness Detection', () => {
         href: 'https://api.example.com/deprecated',
         text: 'Deprecated API',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
@@ -147,6 +156,9 @@ describe('LinkValidator with Content Freshness Detection', () => {
         href: 'https://example.com/get',
         text: 'Test Link',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       await validator.validateLink(link, '/test/file.md');
@@ -186,6 +198,9 @@ describe('LinkValidator with Content Freshness Detection', () => {
         href: 'https://firebase.google.com/docs/functions',
         text: 'Firebase Docs',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await firebaseValidator.validateLink(link, '/test/file.md');
@@ -215,6 +230,9 @@ describe('LinkValidator with Content Freshness Detection', () => {
         href: 'https://example.com/head',
         text: 'Test Link',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       await validatorWithoutFreshness.validateLink(link, '/test/file.md');
@@ -248,6 +266,9 @@ describe('LinkValidator with Content Freshness Detection', () => {
         href: 'https://example.com/old-no-freshness',
         text: 'Old Link',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validatorWithoutFreshness.validateLink(link, '/test/file.md');
@@ -265,6 +286,9 @@ describe('LinkValidator with Content Freshness Detection', () => {
         href: 'https://example.com/network-error',
         text: 'Error Link',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
@@ -288,6 +312,9 @@ describe('LinkValidator with Content Freshness Detection', () => {
         href: 'https://example.com/not-found',
         text: 'Not Found Link',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
@@ -307,7 +334,7 @@ describe('LinkValidator with Content Freshness Detection', () => {
       // Mock a slow response that will definitely timeout
       mockFetch.mockImplementation(
         () =>
-          new Promise((resolve, reject) => {
+          new Promise((_resolve, reject) => {
             // Simulate AbortController behavior
             setTimeout(() => {
               const error = new Error('The operation was aborted');
@@ -322,6 +349,9 @@ describe('LinkValidator with Content Freshness Detection', () => {
         href: 'https://example.com/slow',
         text: 'Slow Link',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await shortTimeoutValidator.validateLink(link, '/test/file.md');
@@ -345,6 +375,9 @@ describe('LinkValidator with Content Freshness Detection', () => {
         href: 'https://example.com/invalid-headers',
         text: 'Invalid Headers Link',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
@@ -369,6 +402,9 @@ describe('LinkValidator with Content Freshness Detection', () => {
         href: 'https://example.com/image.jpg',
         text: 'Test Image',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
@@ -393,6 +429,9 @@ describe('LinkValidator with Content Freshness Detection', () => {
         href: './test-image.jpg',
         text: 'Local Image',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
         resolvedPath: imagePath,
       };
 
@@ -418,6 +457,9 @@ describe('LinkValidator with Content Freshness Detection', () => {
         href: 'https://example.com/hash-test',
         text: 'Hash Test Link',
         line: 1,
+        column: 1,
+        absolute: false,
+        referenceId: undefined,
       };
 
       const result = await validator.validateLink(link, '/test/file.md');
@@ -451,6 +493,9 @@ describe('LinkValidator with Content Freshness Detection', () => {
           href: './internal.md',
           text: 'Internal Link',
           line: 1,
+          column: 1,
+          absolute: false,
+          referenceId: undefined,
           resolvedPath: join(tempDir, 'internal.md'),
         },
         {
@@ -458,12 +503,18 @@ describe('LinkValidator with Content Freshness Detection', () => {
           href: 'https://example.com/external',
           text: 'External Link',
           line: 2,
+          column: 1,
+          absolute: false,
+          referenceId: undefined,
         },
         {
           type: 'anchor',
           href: '#section',
           text: 'Anchor Link',
           line: 3,
+          column: 1,
+          absolute: false,
+          referenceId: undefined,
         },
       ];
 
