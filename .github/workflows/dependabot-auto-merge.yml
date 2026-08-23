@@ -1,0 +1,29 @@
+name: Dependabot auto-merge
+
+# A minor or patch bump merges itself once the pull request's own CI is green; a major bump still opens a pull request but is left for manual review. Auto-merge is enforced by CI actually passing on the pull request's head commit: this workflow only requests the merge, GitHub itself withholds it until checks conclude.
+#
+# pull_request_target, not pull_request -- a workflow run triggered by dependabot[bot]'s own pull_request event gets no secret access at all (a hard GitHub Actions security restriction against a compromised dependency update exfiltrating secrets). pull_request_target runs using the base branch's own workflow file and normal secret access instead. Safe here specifically because this job never checks out or executes the pull request's own code -- it only calls the GitHub API (fetch-metadata, gh pr merge), which is exactly the case pull_request_target's own security guidance calls out as safe.
+on:
+  pull_request_target:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: '${{ secrets.GITHUB_TOKEN }}'
+      - name: Enable auto-merge for minor and patch updates
+        if: steps.metadata.outputs.update-type == 'version-update:semver-minor' || steps.metadata.outputs.update-type == 'version-update:semver-patch'
+        run: gh pr merge --auto --rebase "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,9 @@
+# Reject commit messages containing a `Claude-Session:` trailer (case-insensitive). That line is
+# agent bookkeeping and does not belong in the commit history.
+if grep -qi "^Claude-Session:" "$1"; then
+  echo "commit-msg: 'Claude-Session:' lines are not allowed in commit messages." >&2
+  exit 1
+fi
+
+# Enforce conventional-commit message format, with the allowed type list derived from .releaserc.json.
+NODE_OPTIONS="--experimental-strip-types" pnpm exec commitlint --edit "$1"

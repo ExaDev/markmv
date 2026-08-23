@@ -8,19 +8,11 @@
   "excludeProtected": false,
   "excludeInternal": false,
   "readme": "README.md",
-  "theme": "default",
   "cacheBust": true,
   "sort": ["source-order"],
   "categorizeByGroup": true,
   "defaultCategory": "Other",
-  "categoryOrder": [
-    "Core",
-    "Commands", 
-    "Strategies",
-    "Types",
-    "Utilities",
-    "*"
-  ],
+  "categoryOrder": ["Core", "Commands", "Strategies", "Types", "Utilities", "*"],
   "gitRevision": "main",
   "gitRemote": "origin",
   "sourceLinkTemplate": "https://github.com/ExaDev/markmv/blob/{gitRevision}/{path}#L{line}",
@@ -37,18 +29,7 @@
   },
   "treatWarningsAsErrors": false,
   "logLevel": "Info",
-  "exclude": [
-    "**/*.test.ts",
-    "**/*.spec.ts",
-    "**/cli.ts",
-    "node_modules/**/*"
-  ],
-  "externalPattern": [
-    "**/node_modules/**"
-  ],
-  "plugin": [
-    "typedoc-plugin-missing-exports",
-    "typedoc-plugin-coverage",
-    "typedoc-material-theme"
-  ]
+  "exclude": ["**/*.test.ts", "**/*.spec.ts", "**/cli.ts", "node_modules/**/*"],
+  "externalPattern": ["**/node_modules/**"],
+  "plugin": ["typedoc-plugin-missing-exports", "typedoc-plugin-coverage", "typedoc-material-theme"]
 }

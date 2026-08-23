@@ -1,0 +1,3 @@
+# Typecheck and unit tests before push, to catch breakage before it reaches CI.
+pnpm run typecheck
+pnpm run test:run
