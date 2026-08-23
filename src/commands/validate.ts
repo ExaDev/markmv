@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { glob } from 'glob';
 import { statSync } from 'fs';
-import { posix, resolve } from 'path';
+import { dirname, posix, resolve, sep } from 'path';
 import { LinkValidator } from '../core/link-validator.js';
 import { LinkParser } from '../core/link-parser.js';
 import { createWikilinkResolver } from '../core/obsidian-vault.js';
@@ -172,7 +172,8 @@ export interface ValidateResult {
 
 /** Extract the field names defined in a file's leading YAML frontmatter block, if any */
 function parseFrontmatterFields(content: string): Set<string> {
-  const lines = content.split('\n');
+  // CRLF files must parse identically to LF files, so both delimiters are split on
+  const lines = content.split(/\r?\n/);
   if (lines[0] !== '---') {
     return new Set();
   }
@@ -258,6 +259,10 @@ export async function applyLinkFix(fix: PlannedLinkFix, choiceIndex: number): Pr
   if (!suggestion) {
     throw new Error(`No suggestion ${choiceIndex} for ${fix.brokenHref} in ${fix.sourceFile}`);
   }
+  // An anchored target keeps its anchor on the replacement; the anchor sits after the path
+  const [pathPart, ...fragmentParts] = fix.brokenHref.split('#');
+  const fragment = fragmentParts.length > 0 ? `#${fragmentParts.join('#')}` : '';
+  const brokenSpan = `](${pathPart}`;
 
   const content = await readFile(fix.sourceFile, 'utf-8');
   const lines = content.split('\n');
@@ -266,10 +271,10 @@ export async function applyLinkFix(fix: PlannedLinkFix, choiceIndex: number): Pr
   if (target === undefined) {
     throw new Error(`Line ${fix.line} not found in ${fix.sourceFile}`);
   }
-  if (!target.includes(`](${fix.brokenHref}`)) {
+  if (!target.includes(brokenSpan)) {
     throw new Error(`Link ${fix.brokenHref} not found on line ${fix.line} of ${fix.sourceFile}`);
   }
-  lines[lineIndex] = target.replace(`](${fix.brokenHref}`, `](${suggestion.replacementHref}`);
+  lines[lineIndex] = target.replace(brokenSpan, `](${suggestion.replacementHref}${fragment}`);
   await writeFile(fix.sourceFile, lines.join('\n'));
 }
 
@@ -289,7 +294,10 @@ async function promptFixChoice(fix: PlannedLinkFix): Promise<number | undefined>
       return undefined;
     }
     const index = Number.parseInt(trimmed, 10) - 1;
-    return Number.isNaN(index) ? undefined : index;
+    if (Number.isNaN(index) || index < 0 || index >= fix.suggestions.length) {
+      return undefined;
+    }
+    return index;
   } finally {
     readlineInterface.close();
   }
@@ -309,7 +317,11 @@ async function scanKnownFiles(patterns: string[]): Promise<string[]> {
   if (matched.length === 0) {
     return [];
   }
-  const scanRoot = PathUtils.findCommonBase(matched);
+  let scanRoot = PathUtils.findCommonBase(matched);
+  if (scanRoot === sep || /^[A-Za-z]:$/.test(scanRoot)) {
+    // Disjoint matched trees would anchor the scan at a filesystem root and walk the disk
+    scanRoot = dirname(matched[0] || '');
+  }
   if (!scanRoot) {
     return matched;
   }
@@ -531,9 +543,14 @@ export async function validateLinks(
   // markdown file under the scan root, not only the files the patterns matched
   let wikilinkResolver: ReturnType<typeof createWikilinkResolver> | undefined = undefined;
   if (opts.obsidian && files.length > 0) {
-    const vaultRoot = PathUtils.findCommonBase(files);
+    let vaultRoot = PathUtils.findCommonBase(files);
+    if (vaultRoot === sep || /^[A-Za-z]:$/.test(vaultRoot)) {
+      vaultRoot = dirname(files[0] || '');
+    }
     if (vaultRoot) {
-      const vaultFilePaths = await FileUtils.findMarkdownFiles(vaultRoot, true);
+      // The index covers every vault file, not only notes -- embeds target images and PDFs by
+      // bare filename too
+      const vaultFilePaths = await FileUtils.listFiles(vaultRoot, { recursive: true });
       wikilinkResolver = createWikilinkResolver(vaultRoot, vaultFilePaths);
     }
   }
@@ -619,7 +636,9 @@ export async function validateLinks(
         const parsedForFormat = await parser.parseFile(filePath);
         for (const link of parsedForFormat.links) {
           if (link.type !== 'internal' && link.type !== 'image') continue;
-          const absoluteForm = link.href.startsWith('/');
+          // The parser records drive-absolute and UNC forms as absolute too, which a
+          // leading-slash string test would miss on Windows
+          const absoluteForm = link.absolute;
           if (opts.enforceLinkFormat === 'relative' && absoluteForm) {
             result.formatViolations.push({
               file: filePath,
@@ -916,6 +935,16 @@ export async function validateCommand(
     const result = await validateLinks(finalPatterns, options);
 
     if (cliOptions.json) {
+      // JSON and human output must agree on the exit code, so the failure condition is
+      // computed once here and mirrors everything the human path reports
+      if (
+        result.brokenLinks > 0 ||
+        result.fileErrors.length > 0 ||
+        result.frontmatterViolations.length > 0 ||
+        result.formatViolations.length > 0
+      ) {
+        process.exitCode = 1;
+      }
       console.log(JSON.stringify(result, null, 2));
       // Fix suggestions go to stderr so machine consumers keep a clean JSON stream on stdout
       if (cliOptions.fix) {
@@ -992,6 +1021,12 @@ export async function validateCommand(
     }
 
     console.log(`Processing time: ${result.processingTime}ms\n`);
+
+    if (result.frontmatterViolations.length > 0 || result.formatViolations.length > 0) {
+      // Standards violations fail the run exactly like broken links, including when no links
+      // are broken (the clean-links early return below would otherwise swallow this)
+      process.exitCode = 1;
+    }
 
     if (result.frontmatterViolations.length > 0) {
       console.log(`📋 Frontmatter Violations (${result.frontmatterViolations.length}):`);
@@ -1175,11 +1210,6 @@ export async function validateCommand(
           }
         }
       }
-    }
-
-    // Standards violations fail the run exactly like broken links
-    if (result.frontmatterViolations.length > 0 || result.formatViolations.length > 0) {
-      process.exitCode = 1;
     }
 
     // Exit with error code if broken links found

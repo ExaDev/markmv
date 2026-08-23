@@ -138,7 +138,16 @@ export { convertCommand } from './commands/convert.js';
 export { graphCommand, generateGraph } from './commands/graph.js';
 export { indexCommand } from './commands/index.js';
 export { tocCommand, generateToc as generateTocForFiles } from './commands/toc.js';
-export { validateCommand, validateLinks } from './commands/validate.js';
+export {
+  validateCommand,
+  validateLinks,
+  planLinkFixes,
+  applyLinkFix,
+  type ValidateCliOptions,
+  type ValidateResult,
+  type PlannedLinkFix,
+  type FixPrompter,
+} from './commands/validate.js';
 
 // Type definitions
 export type {

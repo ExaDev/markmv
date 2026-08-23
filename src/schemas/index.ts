@@ -20,6 +20,20 @@ const OperationOptionsSchema = z
 
 const MoveOptionsSchema = OperationOptionsSchema.extend({
   createDirectories: z.boolean().meta({ description: 'Create missing directories' }).optional(),
+  obsidian: z
+    .boolean()
+    .meta({
+      description:
+        'Treat wikilinks as Obsidian vault links: resolve by note basename and rewrite on rename',
+    })
+    .optional(),
+  discoverySeeds: z
+    .array(z.string())
+    .meta({
+      description:
+        'Extra paths anchoring bystander discovery wider than the move span; an in-place rename spans one directory, which would miss bystanders above it',
+    })
+    .optional(),
 });
 
 // ── Shared result schemas ───────────────────────────────────────────────────

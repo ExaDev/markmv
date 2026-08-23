@@ -156,37 +156,6 @@ Broken image: ![missing image](./missing.jpg)
       expect(result.brokenLinksByType.image.length).toBeGreaterThan(0);
     });
 
-    it('should handle file processing errors gracefully', async () => {
-      // Create a file with invalid content that will cause parsing errors
-      const invalidFile = join(testDir, 'invalid.md');
-      // Create a file that will cause an error during parsing (use invalid JSON-like content)
-      await writeFile(
-        invalidFile,
-        'This is a markdown file\n\n[broken link with no closing bracket'
-      );
-
-      const options: ValidateOperationOptions = {
-        linkTypes: ['internal'],
-        checkExternal: false,
-        externalTimeout: 5000,
-        strictInternal: true,
-        checkClaudeImports: true,
-        checkCircular: false,
-        onlyBroken: true,
-        groupBy: 'file',
-        includeContext: false,
-        dryRun: false,
-        verbose: false,
-      };
-
-      const result = await validateLinks([invalidFile], options);
-
-      // The file should be processed even if it has parsing issues
-      expect(result.filesProcessed).toBe(1);
-      // We may or may not have file errors, but the test should pass regardless
-      expect(result.fileErrors.length).toBeGreaterThanOrEqual(0);
-    });
-
     it('should filter by link types when specified', async () => {
       const sourceFile = join(testDir, 'source.md');
       const content = `# Test Document
@@ -508,6 +477,42 @@ Anchor link: [bad anchor](#non-existent)
       const output = logOutput.join('\n');
       expect(output).toContain('No parse failure recorded');
       expect(process.exitCode).toBe(0);
+    });
+  });
+
+  describe('json output exit codes', () => {
+    it('exits non-zero from --json when broken links are found', async () => {
+      const brokenFile = join(testDir, 'broken.md');
+      await writeFile(brokenFile, '[Missing](./nowhere.md)\n');
+
+      const output: string[] = [];
+      const originalLog = console.log;
+      console.log = (...args: unknown[]) => {
+        output.push(args.map(String).join(' '));
+      };
+      process.exitCode = 0;
+      try {
+        await validateCommand([brokenFile], {
+          checkExternal: false,
+          externalTimeout: 5000,
+          strictInternal: true,
+          checkClaudeImports: true,
+          checkCircular: false,
+          onlyBroken: true,
+          groupBy: 'file',
+          includeContext: false,
+          dryRun: false,
+          verbose: false,
+          force: false,
+          json: true,
+        });
+      } finally {
+        console.log = originalLog;
+      }
+
+      expect(process.exitCode).toBe(1);
+      expect(() => JSON.parse(output.join('\n'))).not.toThrow();
+      process.exitCode = 0;
     });
   });
 

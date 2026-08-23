@@ -27,6 +27,11 @@ export interface MoveOperationOptions extends OperationOptions {
   createDirectories?: boolean;
   /** Treat wikilinks as Obsidian vault links: resolve by note basename and rewrite on rename */
   obsidian?: boolean;
+  /**
+   * Extra paths anchoring bystander discovery wider than the move span (an in-place rename spans
+   * one directory, which would miss bystanders above it)
+   */
+  discoverySeeds?: string[];
 }
 
 /**
