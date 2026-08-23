@@ -407,4 +407,50 @@ describe('Move Command', () => {
       process.exitCode = 0;
     });
   });
+
+  describe('Summary Reporting', () => {
+    let nestedDir: string;
+    let alphaFile: string;
+    let keepFile: string;
+
+    beforeEach(() => {
+      nestedDir = join(testDir, 'nested');
+      alphaFile = join(testDir, 'Alpha.md');
+      keepFile = join(testDir, 'Keep.md');
+      writeFileSync(alphaFile, '# Alpha\n\n[Keep](./Keep.md)\n');
+      writeFileSync(keepFile, '# Keep\n');
+    });
+
+    it('should attribute dry-run link updates to the files that carry them', async () => {
+      await moveCommand([alphaFile, nestedDir + '/'], { dryRun: true });
+
+      const output = mockConsoleLog.mock.calls.map((args) => args.join(' ')).join('\n');
+      // The only link update lives inside the moved file itself; the summary must not claim updates happened "in 0 file(s)"
+      expect(output).toContain('1 link(s) would be updated across 1 file(s)');
+      expect(output).not.toContain('in 0 file(s)');
+    });
+
+    it('should list per-link rewrites in dry-run output by default', async () => {
+      await moveCommand([alphaFile, nestedDir + '/'], { dryRun: true });
+
+      const output = mockConsoleLog.mock.calls.map((args) => args.join(' ')).join('\n');
+      expect(output).toContain('./Keep.md → ../Keep.md');
+    });
+
+    it('should report the update count on a real run even with no bystander changes', async () => {
+      await moveCommand([alphaFile, nestedDir + '/'], {});
+
+      const output = mockConsoleLog.mock.calls.map((args) => args.join(' ')).join('\n');
+      expect(output).toContain('Move operation completed successfully!');
+      expect(output).toContain('Updated 1 link(s) across 1 file(s)');
+    });
+
+    it('should say when no links needed updating', async () => {
+      writeFileSync(alphaFile, '# Alpha\n\nNo links here.\n');
+      await moveCommand([alphaFile, nestedDir + '/'], {});
+
+      const output = mockConsoleLog.mock.calls.map((args) => args.join(' ')).join('\n');
+      expect(output).toContain('No links needed updating');
+    });
+  });
 });

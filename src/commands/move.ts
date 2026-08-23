@@ -212,7 +212,10 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
       process.exit(1);
     }
 
-    // Display results
+    // Display results. Link updates can land in bystander files and in the moved files themselves, so counts derive from the recorded changes rather than the bystander-only modifiedFiles list.
+    const linkChanges = result.changes.filter((change) => change.type === 'link-updated');
+    const changedFilePaths = Array.from(new Set(linkChanges.map((change) => change.filePath)));
+
     if (options.dryRun) {
       console.log('\n📋 Changes that would be made:');
 
@@ -230,40 +233,40 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
         }
       }
 
-      if (result.modifiedFiles.length > 0) {
-        console.log('\n📝 Files that would be modified:');
-        for (const file of result.modifiedFiles) {
+      if (changedFilePaths.length > 0) {
+        console.log('\n📝 Files whose links would be updated:');
+        for (const file of changedFilePaths) {
           console.log(`  ~ ${file}`);
         }
       }
 
-      if (result.changes.length > 0 && options.verbose) {
-        console.log('\n🔗 Link changes:');
-        for (const change of result.changes) {
-          if (change.type === 'link-updated') {
-            console.log(
-              `  ${change.filePath}:${change.line} ${change.oldValue} → ${change.newValue}`
-            );
-          }
+      if (linkChanges.length > 0) {
+        console.log('\n🔗 Link rewrites:');
+        for (const change of linkChanges) {
+          console.log(
+            `  ${change.filePath}:${change.line} ${change.oldValue} → ${change.newValue}`
+          );
         }
       }
 
       console.log(
-        `\n📊 Summary: ${result.changes.length} link(s) would be updated in ${result.modifiedFiles.length} file(s)`
+        `\n📊 Summary: ${linkChanges.length} link(s) would be updated across ${changedFilePaths.length} file(s)`
       );
     } else {
       console.log('✅ Move operation completed successfully!');
 
-      if (result.modifiedFiles.length > 0) {
+      if (linkChanges.length > 0) {
         console.log(
-          `📝 Updated ${result.changes.length} link(s) in ${result.modifiedFiles.length} file(s)`
+          `📝 Updated ${linkChanges.length} link(s) across ${changedFilePaths.length} file(s)`
         );
+      } else {
+        console.log('📝 No links needed updating');
+      }
 
-        if (options.verbose) {
-          console.log('\nModified files:');
-          for (const file of result.modifiedFiles) {
-            console.log(`  ~ ${file}`);
-          }
+      if (options.verbose && changedFilePaths.length > 0) {
+        console.log('\nFiles with updated links:');
+        for (const file of changedFilePaths) {
+          console.log(`  ~ ${file}`);
         }
       }
     }
