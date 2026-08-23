@@ -27,6 +27,8 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'internal',
         href: './target.md',
+        text: undefined,
+        referenceId: undefined,
         line: 1,
         column: 1,
         absolute: false,
@@ -41,6 +43,8 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'internal',
         href: './missing.md',
+        text: undefined,
+        referenceId: undefined,
         line: 1,
         column: 1,
         absolute: false,
@@ -65,6 +69,7 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'claude-import',
         href: './target.md',
+        referenceId: undefined,
         text: '@./target.md',
         line: 1,
         column: 1,
@@ -80,6 +85,7 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'claude-import',
         href: './missing.md',
+        referenceId: undefined,
         text: '@./missing.md',
         line: 1,
         column: 1,
@@ -108,6 +114,8 @@ describe('LinkValidator', () => {
           {
             type: 'internal',
             href: './target.md',
+            text: undefined,
+            referenceId: undefined,
             line: 1,
             column: 1,
             absolute: false,
@@ -116,6 +124,8 @@ describe('LinkValidator', () => {
           {
             type: 'internal',
             href: './missing.md',
+            text: undefined,
+            referenceId: undefined,
             line: 2,
             column: 1,
             absolute: false,
@@ -193,6 +203,8 @@ describe('LinkValidator', () => {
             {
               type: 'internal',
               href: './target.md',
+              text: undefined,
+              referenceId: undefined,
               line: 1,
               column: 1,
               absolute: false,
@@ -243,6 +255,8 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'internal',
         href: './missing.md',
+        text: undefined,
+        referenceId: undefined,
         line: 1,
         column: 1,
         absolute: false,
@@ -259,6 +273,7 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'claude-import',
         href: './missing.md',
+        referenceId: undefined,
         text: '@./missing.md',
         line: 1,
         column: 1,
@@ -292,6 +307,8 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'image',
         href: './image.png',
+        text: undefined,
+        referenceId: undefined,
         line: 1,
         column: 1,
         absolute: false,
@@ -306,6 +323,8 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'image',
         href: './missing-image.png',
+        text: undefined,
+        referenceId: undefined,
         line: 1,
         column: 1,
         absolute: false,
@@ -335,6 +354,8 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'image',
         href: 'https://example.com/image.png',
+        text: undefined,
+        referenceId: undefined,
         line: 1,
         column: 1,
         absolute: false,
@@ -355,6 +376,8 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'image',
         href: 'https://example.com/image.png',
+        text: undefined,
+        referenceId: undefined,
         line: 1,
         column: 1,
         absolute: false,
@@ -368,10 +391,11 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'image',
         href: './invalid-image.png',
+        text: undefined,
+        referenceId: undefined,
         line: 1,
         column: 1,
         absolute: false,
-        resolvedPath: undefined, // Missing resolved path
       };
 
       const result = await validator.validateLink(link, join(testDir, 'source.md'));
@@ -403,6 +427,8 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'external',
         href: 'https://example.com',
+        text: undefined,
+        referenceId: undefined,
         line: 1,
         column: 1,
         absolute: false,
@@ -425,6 +451,8 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'external',
         href: 'https://example.com/not-found',
+        text: undefined,
+        referenceId: undefined,
         line: 1,
         column: 1,
         absolute: false,
@@ -451,6 +479,8 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'external',
         href: 'https://slow-example.com',
+        text: undefined,
+        referenceId: undefined,
         line: 1,
         column: 1,
         absolute: false,
@@ -481,6 +511,8 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'external',
         href: 'https://flaky.example.com',
+        text: undefined,
+        referenceId: undefined,
         line: 1,
         column: 1,
         absolute: false,
@@ -504,6 +536,8 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'external',
         href: 'https://flaky.example.com',
+        text: undefined,
+        referenceId: undefined,
         line: 1,
         column: 1,
         absolute: false,
@@ -518,6 +552,8 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'external',
         href: 'https://example.com',
+        text: undefined,
+        referenceId: undefined,
         line: 1,
         column: 1,
         absolute: false,
@@ -537,6 +573,8 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'anchor',
         href: '#section-1',
+        text: undefined,
+        referenceId: undefined,
         line: 1,
         column: 1,
         absolute: false,
@@ -550,6 +588,8 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'reference',
         href: '[1]',
+        text: undefined,
+        referenceId: undefined,
         line: 1,
         column: 1,
         absolute: false,
@@ -563,6 +603,8 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'unknown' as never,
         href: 'unknown://link',
+        text: undefined,
+        referenceId: undefined,
         line: 1,
         column: 1,
         absolute: false,
@@ -578,10 +620,11 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'internal',
         href: './missing.md',
+        text: undefined,
+        referenceId: undefined,
         line: 1,
         column: 1,
         absolute: false,
-        resolvedPath: undefined, // Missing resolved path
       };
 
       const result = await validator.validateLink(link, join(testDir, 'source.md'));
@@ -597,11 +640,11 @@ describe('LinkValidator', () => {
       const link: MarkdownLink = {
         type: 'claude-import',
         href: './missing.md',
+        referenceId: undefined,
         text: '@./missing.md',
         line: 1,
         column: 1,
         absolute: false,
-        resolvedPath: undefined, // Missing resolved path
       };
 
       const result = await validator.validateLink(link, join(testDir, 'source.md'));
@@ -626,6 +669,8 @@ describe('LinkValidator', () => {
             {
               type: 'internal',
               href: './target.md',
+              text: undefined,
+              referenceId: undefined,
               line: 1,
               column: 1,
               absolute: false,
@@ -642,6 +687,8 @@ describe('LinkValidator', () => {
             {
               type: 'internal',
               href: './missing.md',
+              text: undefined,
+              referenceId: undefined,
               line: 1,
               column: 1,
               absolute: false,

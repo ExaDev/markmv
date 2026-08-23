@@ -284,7 +284,7 @@ describe('TransactionManager', () => {
       expect(movedContent).toBe('move me');
     });
 
-    it('should get preview of planned operations', async () => {
+    it('should get preview of planned operations', () => {
       const file1 = join(testDir, 'file1.txt');
       const file2 = join(testDir, 'file2.txt');
 
@@ -298,7 +298,7 @@ describe('TransactionManager', () => {
       expect(preview[1].type).toBe('content-update');
     });
 
-    it('should get step count', async () => {
+    it('should get step count', () => {
       expect(manager.getStepCount()).toBe(0);
 
       manager.addFileCreate(join(testDir, 'file.txt'), 'content');
@@ -308,7 +308,7 @@ describe('TransactionManager', () => {
       expect(manager.getStepCount()).toBe(2);
     });
 
-    it('should clear all operations', async () => {
+    it('should clear all operations', () => {
       manager.addFileCreate(join(testDir, 'file.txt'), 'content');
       expect(manager.getStepCount()).toBe(1);
 

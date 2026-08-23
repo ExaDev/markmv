@@ -142,7 +142,7 @@ describe('Cross-Platform Test Helpers', () => {
       if (info.isWindows) {
         expect(testPaths).toBe(PLATFORM_TEST_PATHS.windows);
         // Windows paths should contain drive letters
-        expect(testPaths.absolute.some((path) => path.match(/^[A-Z]:\\/i))).toBe(true);
+        expect(testPaths.absolute.some((path) => /^[A-Z]:\\/i.exec(path))).toBe(true);
       } else {
         expect(testPaths).toBe(PLATFORM_TEST_PATHS.unix);
         // Unix paths should start with /

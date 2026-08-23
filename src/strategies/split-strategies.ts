@@ -100,11 +100,33 @@ export abstract class BaseSplitStrategy {
 
   abstract split(content: string, originalFilename: string): Promise<SplitResult>;
 
+  /**
+   * Returns `value` unless it is nullish or the empty string, in which case `fallback` is used --
+   * an empty string is treated as "no value supplied" rather than a meaningful value to preserve.
+   */
+  protected static stringOrDefault(value: string | null | undefined, fallback: string): string {
+    if (value) {
+      return value;
+    }
+    return fallback;
+  }
+
+  /**
+   * Returns `value` unless it is nullish or zero, in which case `fallback` is used -- zero is not a
+   * meaningful value for these options (header levels start at 1, size limits must be positive).
+   */
+  protected static numberOrDefault(value: number | undefined, fallback: number): number {
+    if (value) {
+      return value;
+    }
+    return fallback;
+  }
+
   /** Generate a safe filename from a title */
   protected generateFilename(title: string, index: number, originalFilename: string): string {
-    const pattern = this.options.filenamePattern || '{title}';
+    const pattern = BaseSplitStrategy.stringOrDefault(this.options.filenamePattern, '{title}');
     const baseName = this.sanitizeFilename(title) || `section-${index + 1}`;
-    const extension = originalFilename.match(/\.[^.]+$/)?.[0] || '.md';
+    const extension = /\.[^.]+$/.exec(originalFilename)?.[0] ?? '.md';
 
     return (
       pattern
@@ -127,7 +149,7 @@ export abstract class BaseSplitStrategy {
 
   /** Extract frontmatter from content */
   protected extractFrontmatter(content: string): { frontmatter: string; content: string } {
-    const frontmatterMatch = content.match(/^---\n(.*?)\n---\n/s);
+    const frontmatterMatch = /^---\n(.*?)\n---\n/s.exec(content);
 
     if (frontmatterMatch) {
       return {
@@ -146,7 +168,7 @@ export abstract class BaseSplitStrategy {
 
   /** Count the header level (number of # characters) */
   protected getHeaderLevel(line: string): number {
-    const match = line.match(/^(#+)(\s|$)/);
+    const match = /^(#+)(\s|$)/.exec(line);
     return match ? match[1].length : 0;
   }
 
@@ -179,13 +201,13 @@ export abstract class BaseSplitStrategy {
  *   ```
  */
 export class HeaderBasedSplitStrategy extends BaseSplitStrategy {
-  async split(content: string, originalFilename: string): Promise<SplitResult> {
+  split(content: string, originalFilename: string): Promise<SplitResult> {
     const { frontmatter, content: mainContent } = this.extractFrontmatter(content);
     const lines = mainContent.split('\n');
     const sections: SplitSection[] = [];
     const errors: string[] = [];
     const warnings: string[] = [];
-    const targetLevel = this.options.headerLevel || 2;
+    const targetLevel = BaseSplitStrategy.numberOrDefault(this.options.headerLevel, 2);
 
     let currentSection: {
       title: string;
@@ -249,12 +271,12 @@ export class HeaderBasedSplitStrategy extends BaseSplitStrategy {
       errors.push(`No headers found at level ${targetLevel} or above`);
     }
 
-    return {
+    return Promise.resolve({
       sections,
       remainingContent: this.options.preserveFrontmatter ? frontmatter : undefined,
       errors,
       warnings,
-    };
+    });
   }
 }
 
@@ -280,9 +302,9 @@ export class HeaderBasedSplitStrategy extends BaseSplitStrategy {
  *   ```
  */
 export class SizeBasedSplitStrategy extends BaseSplitStrategy {
-  async split(content: string, originalFilename: string): Promise<SplitResult> {
+  split(content: string, originalFilename: string): Promise<SplitResult> {
     const { frontmatter, content: mainContent } = this.extractFrontmatter(content);
-    const maxSizeBytes = (this.options.maxSize || 100) * 1024; // Convert KB to bytes
+    const maxSizeBytes = BaseSplitStrategy.numberOrDefault(this.options.maxSize, 100) * 1024; // Convert KB to bytes
     const lines = mainContent.split('\n');
     const sections: SplitSection[] = [];
     const errors: string[] = [];
@@ -303,7 +325,10 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
 
       // Start new section if needed
       if (!currentSection) {
-        const title = this.findNearestHeader(lines, i) || `Part ${sectionCount + 1}`;
+        const title = BaseSplitStrategy.stringOrDefault(
+          this.findNearestHeader(lines, i),
+          `Part ${sectionCount + 1}`
+        );
         currentSection = {
           title,
           content: [],
@@ -328,7 +353,10 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
         });
 
         // Start new section
-        const title = this.findNearestHeader(lines, i) || `Part ${sections.length + 1}`;
+        const title = BaseSplitStrategy.stringOrDefault(
+          this.findNearestHeader(lines, i),
+          `Part ${sections.length + 1}`
+        );
         currentSection = {
           title,
           content: [line],
@@ -361,12 +389,12 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
       errors.push('Content is empty or could not be split');
     }
 
-    return {
+    return Promise.resolve({
       sections,
       remainingContent: this.options.preserveFrontmatter ? frontmatter : undefined,
       errors,
       warnings,
-    };
+    });
   }
 
   private findNearestHeader(lines: string[], startIndex: number): string | null {
@@ -393,9 +421,9 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
     index: number,
     originalFilename: string
   ): string {
-    const pattern = this.options.filenamePattern || '{title}';
+    const pattern = BaseSplitStrategy.stringOrDefault(this.options.filenamePattern, '{title}');
     let baseName = this.sanitizeFilename(title) || `part-${index + 1}`;
-    const extension = originalFilename.match(/\.[^.]+$/)?.[0] || '.md';
+    const extension = /\.[^.]+$/.exec(originalFilename)?.[0] ?? '.md';
 
     // Always append index for size-based splits to ensure uniqueness
     if (index > 0) {
@@ -433,9 +461,9 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
  *   ```
  */
 export class ManualSplitStrategy extends BaseSplitStrategy {
-  async split(content: string, originalFilename: string): Promise<SplitResult> {
+  split(content: string, originalFilename: string): Promise<SplitResult> {
     const { frontmatter, content: mainContent } = this.extractFrontmatter(content);
-    const markers = this.options.splitMarkers || ['<!-- split -->', '---split---'];
+    const markers = this.options.splitMarkers ?? ['<!-- split -->', '---split---'];
     const sections: SplitSection[] = [];
     const errors: string[] = [];
     const warnings: string[] = [];
@@ -455,12 +483,12 @@ export class ManualSplitStrategy extends BaseSplitStrategy {
       warnings.push(
         'No split markers found. Use <!-- split --> or ---split--- to mark split points.'
       );
-      return {
+      return Promise.resolve({
         sections: [],
         remainingContent: content,
         errors,
         warnings,
-      };
+      });
     }
 
     // Split content at markers
@@ -474,7 +502,10 @@ export class ManualSplitStrategy extends BaseSplitStrategy {
         const sectionContent = sectionLines.join('\n');
 
         // Find title for this section
-        const title = this.findSectionTitle(sectionLines) || `Section ${i + 1}`;
+        const title = BaseSplitStrategy.stringOrDefault(
+          this.findSectionTitle(sectionLines),
+          `Section ${i + 1}`
+        );
 
         sections.push({
           title,
@@ -488,12 +519,12 @@ export class ManualSplitStrategy extends BaseSplitStrategy {
       startLine = endLine + 1; // Skip the marker line
     }
 
-    return {
+    return Promise.resolve({
       sections,
       remainingContent: this.options.preserveFrontmatter ? frontmatter : undefined,
       errors,
       warnings,
-    };
+    });
   }
 
   private findSectionTitle(lines: string[]): string | null {
@@ -538,9 +569,9 @@ export class ManualSplitStrategy extends BaseSplitStrategy {
  *   ```
  */
 export class LineBasedSplitStrategy extends BaseSplitStrategy {
-  async split(content: string, originalFilename: string): Promise<SplitResult> {
+  split(content: string, originalFilename: string): Promise<SplitResult> {
     const { frontmatter, content: mainContent } = this.extractFrontmatter(content);
-    const splitLines = this.options.splitLines || [];
+    const splitLines = this.options.splitLines ?? [];
     const sections: SplitSection[] = [];
     const errors: string[] = [];
     const warnings: string[] = [];
@@ -549,12 +580,12 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
       errors.push(
         'No split lines specified. Use --split-lines option with comma-separated line numbers.'
       );
-      return {
+      return Promise.resolve({
         sections: [],
         remainingContent: content,
         errors,
         warnings,
-      };
+      });
     }
 
     const lines = mainContent.split('\n');
@@ -583,7 +614,10 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
     if (uniqueSplitLines.length === 0) {
       // Still create sections from the content if there are valid sections to create
       if (lines.length > 0 && lines.some((line) => line.trim())) {
-        const title = this.findLineSectionTitle(lines, 1) || 'Content';
+        const title = BaseSplitStrategy.stringOrDefault(
+          this.findLineSectionTitle(lines, 1),
+          'Content'
+        );
         sections.push({
           title,
           content: lines.join('\n'),
@@ -592,12 +626,12 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
           filename: this.generateFilename(title, 0, originalFilename),
         });
       }
-      return {
+      return Promise.resolve({
         sections,
         remainingContent: this.options.preserveFrontmatter ? frontmatter : undefined,
         errors,
         warnings,
-      };
+      });
     }
 
     // Split content at specified lines
@@ -616,9 +650,10 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
         if (sectionContent.trim()) {
           // Only create section if it has content
           // Find title for this section
-          const title =
-            this.findLineSectionTitle(sectionLines, startLine + 1) ||
-            `Lines ${startLine + 1}-${endLine}`;
+          const title = BaseSplitStrategy.stringOrDefault(
+            this.findLineSectionTitle(sectionLines, startLine + 1),
+            `Lines ${startLine + 1}-${endLine}`
+          );
 
           sections.push({
             title,
@@ -637,12 +672,12 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
       errors.push('No sections were created from the specified line splits');
     }
 
-    return {
+    return Promise.resolve({
       sections,
       remainingContent: this.options.preserveFrontmatter ? frontmatter : undefined,
       errors,
       warnings,
-    };
+    });
   }
 
   private findLineSectionTitle(lines: string[], actualStartLine: number): string | null {
@@ -659,7 +694,7 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
       const trimmed = line.trim();
       if (trimmed && !trimmed.startsWith('<!--') && !trimmed.startsWith('---')) {
         // Skip obvious continuation/fragment lines
-        if (trimmed.match(/^(the|that|and|or|but|with|for|in|on|at|to|of)\s/i)) {
+        if (/^(the|that|and|or|but|with|for|in|on|at|to|of)\s/i.exec(trimmed)) {
           continue;
         }
 

@@ -65,10 +65,10 @@ async function captureCommandOutput(
   const originalExit = process.exit;
   const originalLog = console.log;
   const originalError = console.error;
-  process.exit = ((code: number | undefined): never => {
-    exitCode = code || 0;
+  process.exit = (code: number | undefined): never => {
+    exitCode = code ?? 0;
     return null as never;
-  }) as typeof process.exit;
+  };
   console.log = (message: string) => {
     logs.push(message);
   };
@@ -348,11 +348,11 @@ describe('Tree Command', () => {
       const parsed = JSON.parse(logs.join('\n')) as {
         root: string;
         tree: {
-          directories: Array<{
+          directories: {
             name: string;
             truncated: boolean;
-            files: Array<{ name: string; orphaned: boolean }>;
-          }>;
+            files: { name: string; orphaned: boolean }[];
+          }[];
         };
         statistics: Record<string, number>;
       };

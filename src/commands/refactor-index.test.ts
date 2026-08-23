@@ -3,16 +3,23 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { refactorIndex, refactorIndexCommand } from './refactor-index.js';
+import type { RefactorIndexResult } from './refactor-index.js';
+
+function parseJsonPayload<T>(json: string): T {
+  return JSON.parse(json) as T;
+}
 
 // Mock console methods to capture output
-const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
-const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-vi.spyOn(console, 'warn').mockImplementation(() => {});
+const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
 // Mock process.exit to prevent actual process termination
-const mockProcessExit = vi.spyOn(process, 'exit').mockImplementation((code?: number) => {
-  throw new Error(`Process exit called with code ${code}`);
-});
+const mockProcessExit = vi
+  .spyOn(process, 'exit')
+  .mockImplementation((code?: string | number | null) => {
+    throw new Error(`Process exit called with code ${code}`);
+  });
 
 describe('refactorIndex', () => {
   let testDir: string;
@@ -293,7 +300,9 @@ describe('refactorIndex', () => {
 
       await refactorIndexCommand(readmePath, { json: true });
 
-      const payload = JSON.parse(mockConsoleLog.mock.calls.map((args) => args.join(' ')).join(''));
+      const payload = parseJsonPayload<RefactorIndexResult>(
+        mockConsoleLog.mock.calls.map((args) => args.join(' ')).join('')
+      );
       expect(payload.success).toBe(true);
       expect(payload.sourcePath).toBe(readmePath);
       expect(payload.targetPath).toBe(join(docsDir, 'index.md'));
@@ -375,7 +384,9 @@ describe('refactorIndex', () => {
         'Process exit called with code 1'
       );
 
-      const payload = JSON.parse(mockConsoleLog.mock.calls.map((args) => args.join(' ')).join(''));
+      const payload = parseJsonPayload<RefactorIndexResult>(
+        mockConsoleLog.mock.calls.map((args) => args.join(' ')).join('')
+      );
       expect(payload.success).toBe(false);
       expect(payload.errors).toHaveLength(1);
       expect(payload.errors[0]).toContain('Only README.md and index.md files');

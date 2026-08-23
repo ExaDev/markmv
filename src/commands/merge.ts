@@ -82,7 +82,7 @@ export async function mergeCommand(
   target: string,
   options: MergeOptions
 ): Promise<void> {
-  const strategy = options.strategy || 'interactive';
+  const strategy = options.strategy ?? 'interactive';
 
   if (options.verbose) {
     console.log(`🔀 Merging ${source} into ${target} using ${strategy} strategy`);
@@ -108,17 +108,17 @@ export async function mergeCommand(
     switch (strategy) {
       case 'append':
         mergeStrategy = new AppendMergeStrategy({
-          createTransclusions: options.createTransclusions || false,
+          createTransclusions: options.createTransclusions ?? false,
         });
         break;
       case 'prepend':
         mergeStrategy = new PrependMergeStrategy({
-          createTransclusions: options.createTransclusions || false,
+          createTransclusions: options.createTransclusions ?? false,
         });
         break;
       default:
         mergeStrategy = new InteractiveMergeStrategy({
-          createTransclusions: options.createTransclusions || false,
+          createTransclusions: options.createTransclusions ?? false,
         });
         break;
     }
@@ -222,7 +222,8 @@ export async function mergeCommand(
       const pathValue = 'path' in error ? String(error.path) : 'unknown';
       console.error(`❌ File not found: ${pathValue}`);
     } else {
-      console.error(`❌ Unexpected error: ${error}`);
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`❌ Unexpected error: ${message}`);
     }
     process.exit(1);
   }

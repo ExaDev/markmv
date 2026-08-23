@@ -29,7 +29,7 @@ describe('link suggester', () => {
     join(vaultRoot, 'reference', 'magic-numbers.md'),
   ];
 
-  it('ranks an exact-stem match with different extension or case first', async () => {
+  it('ranks an exact-stem match with different extension or case first', () => {
     const suggestions = suggestLinkFixes(
       './Getting-Started.md',
       join(vaultRoot, 'docs', 'note.md'),
@@ -39,7 +39,7 @@ describe('link suggester', () => {
     expect(suggestions[0]?.replacementHref).toBe('../guides/getting-started.md');
   });
 
-  it('matches separator and case variations of the target', async () => {
+  it('matches separator and case variations of the target', () => {
     const suggestions = suggestLinkFixes(
       './testing_strategies.md',
       join(vaultRoot, 'docs', 'note.md'),
@@ -49,7 +49,7 @@ describe('link suggester', () => {
     expect(suggestions[0]?.replacementHref).toBe('../guides/testing-strategies.md');
   });
 
-  it('returns near misses ordered by edit distance', async () => {
+  it('returns near misses ordered by edit distance', () => {
     const suggestions = suggestLinkFixes(
       './magic-number.md',
       join(vaultRoot, 'docs', 'note.md'),
@@ -59,7 +59,7 @@ describe('link suggester', () => {
     expect(suggestions[0]?.replacementHref).toBe('../reference/magic-numbers.md');
   });
 
-  it('returns an empty list when nothing is reasonably similar', async () => {
+  it('returns an empty list when nothing is reasonably similar', () => {
     const suggestions = suggestLinkFixes(
       './completely-unrelated.md',
       join(vaultRoot, 'docs', 'note.md'),
@@ -69,7 +69,7 @@ describe('link suggester', () => {
     expect(suggestions).toHaveLength(0);
   });
 
-  it('caps the number of suggestions', async () => {
+  it('caps the number of suggestions', () => {
     const suggestions = suggestLinkFixes(
       './getting-started.md',
       join(vaultRoot, 'docs', 'note.md'),

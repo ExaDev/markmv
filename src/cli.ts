@@ -26,6 +26,16 @@ function isPackageJson(value: unknown): value is { version: string } {
   return typeof value.version === 'string';
 }
 
+function isRecordOfStrings(value: unknown): value is Record<string, string> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  return Object.values(value).every((entry) => typeof entry === 'string');
+}
+
+function isRecordOfStringRecords(value: unknown): value is Record<string, Record<string, string>> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  return Object.values(value).every((entry) => isRecordOfStrings(entry));
+}
+
 /**
  * Reads the package version from package.json at runtime so the reported version always matches the
  * published package instead of a literal that drifts between releases.
@@ -526,7 +536,7 @@ Output Options:
       const enforceLinkFormat = options.enforceLinkFormat;
 
       // Validate the group-by option before it enters the typed options
-      const groupBy = options.groupBy || 'file';
+      const groupBy = options.groupBy ?? 'file';
       if (groupBy !== 'file' && groupBy !== 'type') {
         console.error(`Invalid grouping: ${groupBy}. Valid groupings: file, type`);
         process.exitCode = 1;
@@ -539,7 +549,11 @@ Output Options:
 
       try {
         if (options.authCredentials) {
-          authCredentials = JSON.parse(options.authCredentials);
+          const parsed: unknown = JSON.parse(options.authCredentials);
+          if (!isRecordOfStrings(parsed)) {
+            throw new Error('auth-credentials must be a JSON object of string values');
+          }
+          authCredentials = parsed;
         }
       } catch (error) {
         console.error(
@@ -551,7 +565,11 @@ Output Options:
 
       try {
         if (options.authHeaders) {
-          authHeaders = JSON.parse(options.authHeaders);
+          const parsed: unknown = JSON.parse(options.authHeaders);
+          if (!isRecordOfStringRecords(parsed)) {
+            throw new Error('auth-headers must be a JSON object of objects of string values');
+          }
+          authHeaders = parsed;
         }
       } catch (error) {
         console.error(

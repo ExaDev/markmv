@@ -108,7 +108,7 @@ export async function generateGraph(
   const startTime = Date.now();
 
   const opts = {
-    format: options.format || 'json',
+    format: options.format ?? 'json',
     includeExternal: options.includeExternal ?? false,
     includeImages: options.includeImages ?? true,
     includeAnchors: options.includeAnchors ?? false,
@@ -245,7 +245,7 @@ export async function graphCommand(patterns: string[], cliOptions: GraphCliOptio
   const finalPatterns = patterns.length === 0 ? ['.'] : patterns;
 
   // Validate the format before using it as a GraphOutputFormat
-  const format = cliOptions.format || 'json';
+  const format = cliOptions.format ?? 'json';
   if (!isGraphOutputFormat(format)) {
     console.error('Invalid format: ' + format + '. Valid formats: json, mermaid, dot, html');
     process.exitCode = 1;

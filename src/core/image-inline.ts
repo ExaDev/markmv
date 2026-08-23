@@ -219,9 +219,9 @@ function findImageOccurrences(
     if (!keep(node.url)) return;
 
     occurrences.push({
-      alt: node.alt || undefined,
+      alt: node.alt ?? undefined,
       href: node.url,
-      title: node.title || undefined,
+      title: node.title ?? undefined,
       start: startOffset,
       end: endOffset,
     });

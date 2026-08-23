@@ -282,7 +282,7 @@ export class LinkValidator {
       if (this.authDetector && this.options.enableAuthDetection) {
         headers['User-Agent'] = 'markmv-validator/1.0 (authentication-aware)';
 
-        authInfo = await this.authDetector.analyzeAuth(link.href);
+        authInfo = this.authDetector.analyzeAuth(link.href);
 
         // If URL is known to require auth via domain detection, return immediately
         if (authInfo.requiresAuth && authInfo.detectionMethod === 'domain') {
@@ -290,7 +290,7 @@ export class LinkValidator {
             sourceFile,
             link,
             reason: 'auth-required',
-            details: authInfo.warning || 'Link requires authentication',
+            details: authInfo.warning ?? 'Link requires authentication',
             authInfo,
           };
         }
@@ -359,7 +359,7 @@ export class LinkValidator {
 
       // Analyze response for authentication indicators if auth detection is enabled
       if (this.authDetector && this.options.enableAuthDetection && authInfo) {
-        const finalAuthInfo = await this.authDetector.analyzeAuth(link.href, response);
+        const finalAuthInfo = this.authDetector.analyzeAuth(link.href, response);
         Object.assign(authInfo, finalAuthInfo);
 
         if (finalAuthInfo.requiresAuth && this.options.allowAuthRequired) {
@@ -367,7 +367,7 @@ export class LinkValidator {
             sourceFile,
             link,
             reason: 'auth-required',
-            details: finalAuthInfo.warning || 'Link requires authentication',
+            details: finalAuthInfo.warning ?? 'Link requires authentication',
             authInfo: finalAuthInfo,
           };
         }
@@ -384,7 +384,7 @@ export class LinkValidator {
             url: link.href,
             requiresAuth: true,
             redirectCount: 0,
-            authAttempted: this.authDetector?.shouldAttemptAuth(link.href) || false,
+            authAttempted: this.authDetector?.shouldAttemptAuth(link.href) ?? false,
             detectionMethod: 'status-code' as const,
             warning: `HTTP ${response.status}: Authentication required`,
             suggestion: 'Provide appropriate credentials or API keys to validate this link',
@@ -430,7 +430,7 @@ export class LinkValidator {
             sourceFile,
             link,
             reason: 'content-stale',
-            details: freshnessInfo.warning || 'Content appears to be outdated',
+            details: freshnessInfo.warning ?? 'Content appears to be outdated',
             freshnessInfo,
           };
         }
@@ -540,7 +540,7 @@ export class LinkValidator {
     hasCircularReferences: boolean;
     circularPaths?: string[] | undefined;
   }>;
-  async checkCircularReferences(files: ParsedMarkdownFile[] | string[]): Promise<
+  checkCircularReferences(files: ParsedMarkdownFile[] | string[]): Promise<
     | string[][]
     | {
         hasCircularReferences: boolean;
@@ -575,7 +575,7 @@ export class LinkValidator {
 
         // Find the file and check its dependencies
         const file = parsedFiles.find((f) => f.filePath === filePath);
-        if (file && file.dependencies) {
+        if (file?.dependencies) {
           for (const dependency of file.dependencies) {
             detectCycle(dependency, [...path, filePath]);
           }
@@ -591,12 +591,12 @@ export class LinkValidator {
         }
       }
 
-      return cycles;
+      return Promise.resolve(cycles);
     } else {
       // string[] case - return basic implementation
-      return {
+      return Promise.resolve({
         hasCircularReferences: false,
-      };
+      });
     }
   }
 

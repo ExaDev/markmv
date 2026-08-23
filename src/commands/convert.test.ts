@@ -1,8 +1,24 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { convertCommand } from './convert.js';
+
+/** Mock `process.exit` for the duration of a test and capture the code it was called with. */
+function mockProcessExit(): { getExitCode: () => number; restore: () => void } {
+  let exitCode = 0;
+  const spy = vi.spyOn(process, 'exit').mockImplementation((code?: string | number | null) => {
+    exitCode = typeof code === 'number' ? code : 0;
+    return undefined as never;
+  });
+
+  return {
+    getExitCode: () => exitCode,
+    restore: () => {
+      spy.mockRestore();
+    },
+  };
+}
 
 describe('Convert Command', () => {
   let testDir: string;
@@ -33,13 +49,7 @@ Also a reference link [ref link][1] and a Claude import:
       await writeFile(testFile, content);
 
       // Test dry run
-      let exitCode = 0;
-      const originalExit = process.exit;
-      process.exit = ((code: number | undefined): never => {
-        exitCode = code || 0;
-        // Don't throw, just prevent actual exit
-        return null as never;
-      }) as typeof process.exit;
+      const { getExitCode, restore } = mockProcessExit();
 
       const originalLog = console.log;
       const logs: string[] = [];
@@ -54,11 +64,11 @@ Also a reference link [ref link][1] and a Claude import:
           verbose: true,
         });
       } finally {
-        process.exit = originalExit;
+        restore();
         console.log = originalLog;
       }
 
-      expect(exitCode).toBe(0);
+      expect(getExitCode()).toBe(0);
       expect(logs.some((log) => log.includes('Starting link conversion'))).toBe(true);
       expect(logs.some((log) => log.includes('Dry run mode'))).toBe(true);
     });
@@ -73,13 +83,7 @@ This is just text with no links.
 
       await writeFile(testFile, content);
 
-      let exitCode = 0;
-      const originalExit = process.exit;
-      process.exit = ((code: number | undefined): never => {
-        exitCode = code || 0;
-        // Don't throw, just prevent actual exit
-        return null as never;
-      }) as typeof process.exit;
+      const { getExitCode, restore } = mockProcessExit();
 
       const originalLog = console.log;
       const logs: string[] = [];
@@ -93,11 +97,11 @@ This is just text with no links.
           verbose: true,
         });
       } finally {
-        process.exit = originalExit;
+        restore();
         console.log = originalLog;
       }
 
-      expect(exitCode).toBe(0);
+      expect(getExitCode()).toBe(0);
       expect(logs.some((log) => log.includes('No changes were needed'))).toBe(true);
     });
 
@@ -105,13 +109,7 @@ This is just text with no links.
       const testFile = join(testDir, 'test.md');
       await writeFile(testFile, '# Test');
 
-      let exitCode = 0;
-      const originalExit = process.exit;
-      process.exit = ((code: number | undefined): never => {
-        exitCode = code || 0;
-        // Don't throw, just prevent actual exit
-        return null as never;
-      }) as typeof process.exit;
+      const { getExitCode, restore } = mockProcessExit();
 
       const originalError = console.error;
       const errors: string[] = [];
@@ -123,11 +121,11 @@ This is just text with no links.
         // Test with no conversion options
         await convertCommand([testFile], {});
       } finally {
-        process.exit = originalExit;
+        restore();
         console.error = originalError;
       }
 
-      expect(exitCode).toBe(1);
+      expect(getExitCode()).toBe(1);
       expect(
         errors.some((error) => error.includes('At least one conversion option must be specified'))
       ).toBe(true);
@@ -137,13 +135,7 @@ This is just text with no links.
       const testFile = join(testDir, 'test.md');
       await writeFile(testFile, '# Test');
 
-      let exitCode = 0;
-      const originalExit = process.exit;
-      process.exit = ((code: number | undefined): never => {
-        exitCode = code || 0;
-        // Don't throw, just prevent actual exit
-        return null as never;
-      }) as typeof process.exit;
+      const { getExitCode, restore } = mockProcessExit();
 
       const originalError = console.error;
       const errors: string[] = [];
@@ -156,11 +148,11 @@ This is just text with no links.
           pathResolution: 'invalid' as 'absolute' | 'relative',
         });
       } finally {
-        process.exit = originalExit;
+        restore();
         console.error = originalError;
       }
 
-      expect(exitCode).toBe(1);
+      expect(getExitCode()).toBe(1);
       expect(errors.some((error) => error.includes('Invalid path resolution type'))).toBe(true);
     });
 
@@ -168,13 +160,7 @@ This is just text with no links.
       const testFile = join(testDir, 'test.md');
       await writeFile(testFile, '# Test');
 
-      let exitCode = 0;
-      const originalExit = process.exit;
-      process.exit = ((code: number | undefined): never => {
-        exitCode = code || 0;
-        // Don't throw, just prevent actual exit
-        return null as never;
-      }) as typeof process.exit;
+      const { getExitCode, restore } = mockProcessExit();
 
       const originalError = console.error;
       const errors: string[] = [];
@@ -187,11 +173,11 @@ This is just text with no links.
           linkStyle: 'invalid' as 'markdown' | 'claude' | 'combined' | 'wikilink',
         });
       } finally {
-        process.exit = originalExit;
+        restore();
         console.error = originalError;
       }
 
-      expect(exitCode).toBe(1);
+      expect(getExitCode()).toBe(1);
       expect(errors.some((error) => error.includes('Invalid link style'))).toBe(true);
     });
   });
@@ -201,13 +187,7 @@ This is just text with no links.
       const testFile = join(testDir, 'direct.md');
       await writeFile(testFile, '# Direct file');
 
-      let exitCode = 0;
-      const originalExit = process.exit;
-      process.exit = ((code: number | undefined): never => {
-        exitCode = code || 0;
-        // Don't throw, just prevent actual exit
-        return null as never;
-      }) as typeof process.exit;
+      const { getExitCode, restore } = mockProcessExit();
 
       try {
         await convertCommand([testFile], {
@@ -216,10 +196,10 @@ This is just text with no links.
           verbose: true,
         });
       } finally {
-        process.exit = originalExit;
+        restore();
       }
 
-      expect(exitCode).toBe(0);
+      expect(getExitCode()).toBe(0);
     });
 
     it('should handle directory patterns with recursive option', async () => {
@@ -229,13 +209,7 @@ This is just text with no links.
       await writeFile(join(subDir, 'nested.md'), '# Nested file');
       await writeFile(join(testDir, 'root.md'), '# Root file');
 
-      let exitCode = 0;
-      const originalExit = process.exit;
-      process.exit = ((code: number | undefined): never => {
-        exitCode = code || 0;
-        // Don't throw, just prevent actual exit
-        return null as never;
-      }) as typeof process.exit;
+      const { getExitCode, restore } = mockProcessExit();
 
       const originalLog = console.log;
       const logs: string[] = [];
@@ -251,22 +225,16 @@ This is just text with no links.
           verbose: true,
         });
       } finally {
-        process.exit = originalExit;
+        restore();
         console.log = originalLog;
       }
 
-      expect(exitCode).toBe(0);
+      expect(getExitCode()).toBe(0);
       expect(logs.some((log) => log.includes('markdown files to process'))).toBe(true);
     });
 
     it('should handle non-existent files gracefully', async () => {
-      let exitCode = 0;
-      const originalExit = process.exit;
-      process.exit = ((code: number | undefined): never => {
-        exitCode = code || 0;
-        // Don't throw, just prevent actual exit
-        return null as never;
-      }) as typeof process.exit;
+      const { getExitCode, restore } = mockProcessExit();
 
       const originalError = console.error;
       const errors: string[] = [];
@@ -279,22 +247,16 @@ This is just text with no links.
           pathResolution: 'relative',
         });
       } finally {
-        process.exit = originalExit;
+        restore();
         console.error = originalError;
       }
 
-      expect(exitCode).toBe(1);
+      expect(getExitCode()).toBe(1);
       expect(errors.some((error) => error.includes('No markdown files found'))).toBe(true);
     });
 
     it('should require at least one file pattern', async () => {
-      let exitCode = 0;
-      const originalExit = process.exit;
-      process.exit = ((code: number | undefined): never => {
-        exitCode = code || 0;
-        // Don't throw, just prevent actual exit
-        return null as never;
-      }) as typeof process.exit;
+      const { getExitCode, restore } = mockProcessExit();
 
       const originalError = console.error;
       const errors: string[] = [];
@@ -307,11 +269,11 @@ This is just text with no links.
           pathResolution: 'relative',
         });
       } finally {
-        process.exit = originalExit;
+        restore();
         console.error = originalError;
       }
 
-      expect(exitCode).toBe(1);
+      expect(getExitCode()).toBe(1);
       expect(
         errors.some((error) => error.includes('At least one file pattern must be specified'))
       ).toBe(true);
@@ -327,13 +289,7 @@ This is just text with no links.
 `;
       await writeFile(testFile, content);
 
-      let exitCode = 0;
-      const originalExit = process.exit;
-      process.exit = ((code: number | undefined): never => {
-        exitCode = code || 0;
-        // Don't throw, just prevent actual exit
-        return null as never;
-      }) as typeof process.exit;
+      const { getExitCode, restore } = mockProcessExit();
 
       const originalLog = console.log;
       const logs: string[] = [];
@@ -349,11 +305,11 @@ This is just text with no links.
           verbose: true,
         });
       } finally {
-        process.exit = originalExit;
+        restore();
         console.log = originalLog;
       }
 
-      expect(exitCode).toBe(0);
+      expect(getExitCode()).toBe(0);
       expect(logs.some((log) => log.includes('Conversion Summary'))).toBe(true);
       expect(logs.some((log) => log.includes('Files processed:'))).toBe(true);
       expect(logs.some((log) => log.includes('Path resolution: converted to relative'))).toBe(true);
@@ -381,12 +337,7 @@ External links (should not be converted):
 
       await writeFile(testFile, content);
 
-      let exitCode = 0;
-      const originalExit = process.exit;
-      process.exit = ((code: number | undefined): never => {
-        exitCode = code || 0;
-        return null as never;
-      }) as typeof process.exit;
+      const { getExitCode, restore } = mockProcessExit();
 
       const originalLog = console.log;
       const logs: string[] = [];
@@ -400,11 +351,11 @@ External links (should not be converted):
           verbose: true,
         });
       } finally {
-        process.exit = originalExit;
+        restore();
         console.log = originalLog;
       }
 
-      expect(exitCode).toBe(0);
+      expect(getExitCode()).toBe(0);
       expect(logs.some((log) => log.includes('Files modified: 1'))).toBe(true);
       expect(logs.some((log) => log.includes('Link style: converted to combined'))).toBe(true);
 
@@ -437,12 +388,7 @@ Mixed content:
 
       await writeFile(testFile, content);
 
-      let exitCode = 0;
-      const originalExit = process.exit;
-      process.exit = ((code: number | undefined): never => {
-        exitCode = code || 0;
-        return null as never;
-      }) as typeof process.exit;
+      const { getExitCode, restore } = mockProcessExit();
 
       const originalLog = console.log;
       const logs: string[] = [];
@@ -456,11 +402,11 @@ Mixed content:
           verbose: true,
         });
       } finally {
-        process.exit = originalExit;
+        restore();
         console.log = originalLog;
       }
 
-      expect(exitCode).toBe(0);
+      expect(getExitCode()).toBe(0);
       expect(logs.some((log) => log.includes('Files modified: 1'))).toBe(true);
 
       // Verify conversion happened only for standard links
@@ -487,12 +433,7 @@ Mixed content:
 
       await writeFile(testFile, content);
 
-      let exitCode = 0;
-      const originalExit = process.exit;
-      process.exit = ((code: number | undefined): never => {
-        exitCode = code || 0;
-        return null as never;
-      }) as typeof process.exit;
+      const { getExitCode, restore } = mockProcessExit();
 
       const originalLog = console.log;
       const logs: string[] = [];
@@ -506,11 +447,11 @@ Mixed content:
           verbose: true,
         });
       } finally {
-        process.exit = originalExit;
+        restore();
         console.log = originalLog;
       }
 
-      expect(exitCode).toBe(0);
+      expect(getExitCode()).toBe(0);
       expect(logs.some((log) => log.includes('No changes needed'))).toBe(true);
       expect(logs.some((log) => log.includes('Files modified: 0'))).toBe(true);
       expect(logs.some((log) => log.includes('Total changes: 0'))).toBe(true);
@@ -531,12 +472,7 @@ External links:
 
       await writeFile(testFile, content);
 
-      let exitCode = 0;
-      const originalExit = process.exit;
-      process.exit = ((code: number | undefined): never => {
-        exitCode = code || 0;
-        return null as never;
-      }) as typeof process.exit;
+      const { getExitCode, restore } = mockProcessExit();
 
       const originalLog = console.log;
       const logs: string[] = [];
@@ -550,11 +486,11 @@ External links:
           verbose: true,
         });
       } finally {
-        process.exit = originalExit;
+        restore();
         console.log = originalLog;
       }
 
-      expect(exitCode).toBe(0);
+      expect(getExitCode()).toBe(0);
       expect(logs.some((log) => log.includes('Files modified: 1'))).toBe(true);
       expect(logs.some((log) => log.includes('Link style: converted to markdown'))).toBe(true);
 
@@ -585,12 +521,7 @@ External links (should not be converted):
 
       await writeFile(testFile, content);
 
-      let exitCode = 0;
-      const originalExit = process.exit;
-      process.exit = ((code: number | undefined): never => {
-        exitCode = code || 0;
-        return null as never;
-      }) as typeof process.exit;
+      const { getExitCode, restore } = mockProcessExit();
 
       const originalLog = console.log;
       const logs: string[] = [];
@@ -604,11 +535,11 @@ External links (should not be converted):
           verbose: true,
         });
       } finally {
-        process.exit = originalExit;
+        restore();
         console.log = originalLog;
       }
 
-      expect(exitCode).toBe(0);
+      expect(getExitCode()).toBe(0);
       expect(logs.some((log) => log.includes('Files modified: 1'))).toBe(true);
       expect(logs.some((log) => log.includes('Link style: converted to claude'))).toBe(true);
 
@@ -638,12 +569,7 @@ External links (should not be converted):
 
       await writeFile(testFile, content);
 
-      let exitCode = 0;
-      const originalExit = process.exit;
-      process.exit = ((code: number | undefined): never => {
-        exitCode = code || 0;
-        return null as never;
-      }) as typeof process.exit;
+      const { getExitCode, restore } = mockProcessExit();
 
       const originalLog = console.log;
       const logs: string[] = [];
@@ -657,11 +583,11 @@ External links (should not be converted):
           verbose: true,
         });
       } finally {
-        process.exit = originalExit;
+        restore();
         console.log = originalLog;
       }
 
-      expect(exitCode).toBe(0);
+      expect(getExitCode()).toBe(0);
       expect(logs.some((log) => log.includes('Files modified: 1'))).toBe(true);
       expect(logs.some((log) => log.includes('Link style: converted to wikilink'))).toBe(true);
 
@@ -687,12 +613,7 @@ External links (should not be converted):
 
       await writeFile(testFile, content);
 
-      let exitCode = 0;
-      const originalExit = process.exit;
-      process.exit = ((code: number | undefined): never => {
-        exitCode = code || 0;
-        return null as never;
-      }) as typeof process.exit;
+      const { getExitCode, restore } = mockProcessExit();
 
       const originalLog = console.log;
       const logs: string[] = [];
@@ -707,11 +628,11 @@ External links (should not be converted):
           verbose: true,
         });
       } finally {
-        process.exit = originalExit;
+        restore();
         console.log = originalLog;
       }
 
-      expect(exitCode).toBe(0);
+      expect(getExitCode()).toBe(0);
       expect(logs.some((log) => log.includes('Dry run - no files were actually modified'))).toBe(
         true
       );
@@ -742,12 +663,7 @@ External links (should not be converted):
         await writeFile(join(testDir, file), content);
       }
 
-      let exitCode = 0;
-      const originalExit = process.exit;
-      process.exit = ((code: number | undefined): never => {
-        exitCode = code || 0;
-        return null as never;
-      }) as typeof process.exit;
+      const { getExitCode, restore } = mockProcessExit();
 
       const originalLog = console.log;
       const logs: string[] = [];
@@ -762,11 +678,11 @@ External links (should not be converted):
           verbose: true,
         });
       } finally {
-        process.exit = originalExit;
+        restore();
         console.log = originalLog;
       }
 
-      expect(exitCode).toBe(0);
+      expect(getExitCode()).toBe(0);
       expect(logs.some((log) => log.includes('Files processed: 3'))).toBe(true);
       expect(logs.some((log) => log.includes('Files modified: 3'))).toBe(true);
       expect(logs.some((log) => log.includes('Total changes: 6'))).toBe(true); // 2 internal links per file

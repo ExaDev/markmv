@@ -63,7 +63,7 @@ interface EmbedFileResult {
   /** Absolute paths of the image files that were inlined into this file */
   embeddedImages: string[];
   /** The occurrences that were (or in a dry run, would be) rewritten */
-  rewrites: Array<{ file: string; href: string }>;
+  rewrites: { file: string; href: string }[];
 }
 
 /**

@@ -65,8 +65,11 @@ describe('Auto-Exposure Pattern Integration', () => {
       expect(mcpTool?.description).toBe(apiRoute?.description);
 
       // Input schemas should be consistent
-      const mcpInputSchema = mcpTool?.inputSchema as Record<string, unknown>;
-      const apiInputSchema = apiRoute?.inputSchema as Record<string, unknown>;
+      interface InputPropertySchema {
+        properties: { input: { type: string; description?: string } };
+      }
+      const mcpInputSchema = mcpTool?.inputSchema as unknown as InputPropertySchema;
+      const apiInputSchema = apiRoute?.inputSchema as unknown as InputPropertySchema;
 
       expect(mcpInputSchema.properties.input.type).toBe(apiInputSchema.properties.input.type);
       expect(mcpInputSchema.properties.input.description).toBe(
@@ -295,7 +298,7 @@ describe('Auto-Exposure Pattern Integration', () => {
       // This test ensures that TypeScript types are maintained
       // and no 'any' type coercion occurs
 
-      const input: string = 'Type Safety Test';
+      const input = 'Type Safety Test';
       const requestData: { input: string } = { input };
 
       // Input validation should return proper types

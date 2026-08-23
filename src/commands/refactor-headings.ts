@@ -1,4 +1,4 @@
-import { glob } from 'glob';
+import { glob, type GlobOptionsWithFileTypesFalse } from 'glob';
 import { statSync } from 'fs';
 import { posix } from 'path';
 import { readFile, writeFile } from 'fs/promises';
@@ -43,7 +43,7 @@ export interface RefactorHeadingsCliOptions extends RefactorHeadingsOperationOpt
  *
  * @category Commands
  */
-export interface HeadingChange {
+interface HeadingChange {
   /** File containing the heading */
   filePath: string;
   /** Line number of the heading */
@@ -65,7 +65,7 @@ export interface HeadingChange {
  *
  * @category Commands
  */
-export interface LinkUpdate {
+interface LinkUpdate {
   /** File containing the link */
   filePath: string;
   /** Line number of the link */
@@ -97,7 +97,7 @@ export interface RefactorHeadingsResult {
   /** Detailed link updates */
   linkUpdates: LinkUpdate[];
   /** Files that had processing errors */
-  fileErrors: Array<{ file: string; error: string }>;
+  fileErrors: { file: string; error: string }[];
   /** Processing time in milliseconds */
   processingTime: number;
 }
@@ -188,7 +188,7 @@ export async function refactorHeadings(
           ? posix.join(filePattern, '**/*.md')
           : posix.join(filePattern, '*.md');
 
-        const globOptions: Parameters<typeof glob>[1] = {
+        const globOptions: GlobOptionsWithFileTypesFalse = {
           ignore: ['node_modules/**', '.git/**'],
         };
         if (mergedOptions.maxDepth !== undefined) {
@@ -196,9 +196,9 @@ export async function refactorHeadings(
         }
 
         const matches = await glob(dirPattern, globOptions);
-        matches.forEach((file) => resolvedFiles.add(file.toString()));
+        matches.forEach((file) => resolvedFiles.add(file));
       } else if (filePattern.includes('*')) {
-        const globOptions: Parameters<typeof glob>[1] = {
+        const globOptions: GlobOptionsWithFileTypesFalse = {
           ignore: ['node_modules/**', '.git/**'],
         };
         if (mergedOptions.maxDepth !== undefined) {
@@ -206,7 +206,7 @@ export async function refactorHeadings(
         }
 
         const matches = await glob(filePattern, globOptions);
-        matches.forEach((file) => resolvedFiles.add(file.toString()));
+        matches.forEach((file) => resolvedFiles.add(file));
       } else {
         resolvedFiles.add(filePattern);
       }
@@ -231,7 +231,7 @@ export async function refactorHeadings(
   // Note: LinkRefactorer could be used for more advanced link updates in the future
 
   // Generate old and new slugs
-  const slugify = mergedOptions.slugify || tocGenerator['defaultSlugify'].bind(tocGenerator);
+  const slugify = mergedOptions.slugify ?? defaultSlugify;
   const oldSlug = slugify(options.oldHeading);
   const newSlug = slugify(options.newHeading);
 
@@ -243,7 +243,7 @@ export async function refactorHeadings(
   for (const filePath of fileList) {
     try {
       const content = await readFile(filePath, 'utf-8');
-      const tocResult = await tocGenerator.generateToc(content);
+      const tocResult = tocGenerator.generateToc(content);
 
       // Find headings that match the old heading text
       const matchingHeadings = tocResult.headings.filter(
@@ -400,11 +400,11 @@ export async function refactorHeadingsCommand(
 
     // Parse CLI options into RefactorHeadingsOperationOptions
     const operationOptions: RefactorHeadingsOperationOptions = {
-      dryRun: options.dryRun || false,
-      verbose: options.verbose || false,
+      dryRun: options.dryRun ?? false,
+      verbose: options.verbose ?? false,
       oldHeading: options.oldHeading,
       newHeading: options.newHeading,
-      recursive: options.recursive || false,
+      recursive: options.recursive ?? false,
       updateCrossReferences: options.updateCrossReferences !== false, // Default to true
     };
     if (options.maxDepth !== undefined) {
@@ -518,4 +518,15 @@ function escapeRegExp(string: string): string {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-export { DEFAULT_REFACTOR_HEADINGS_OPTIONS };
+/**
+ * Default slugify function, matching {@link TocGenerator}'s own default so that computed slugs agree
+ * with the slugs it assigns to headings when no custom `slugify` option is supplied.
+ */
+function defaultSlugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '-')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}

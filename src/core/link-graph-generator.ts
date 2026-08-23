@@ -222,15 +222,15 @@ export class LinkGraphGenerator {
       case 'html':
         return this.exportToHtml(graph);
       default:
-        throw new Error('Unsupported export format: ' + format);
+        throw new Error(`Unsupported export format: ${String(format)}`);
     }
   }
 
   private async parseFiles(patterns: string[]): Promise<
-    Array<{
+    {
       filePath: string;
       links: MarkdownLink[];
-    }>
+    }[]
   > {
     const { glob } = await import('glob');
     const files: string[] = [];
@@ -263,10 +263,10 @@ export class LinkGraphGenerator {
   }
 
   private async buildGraph(
-    parsedFiles: Array<{
+    parsedFiles: {
       filePath: string;
       links: MarkdownLink[];
-    }>
+    }[]
   ): Promise<{ nodes: GraphNode[]; edges: GraphEdge[] }> {
     const nodeMap = new Map<string, GraphNode>();
     const edges: GraphEdge[] = [];

@@ -1,6 +1,11 @@
 import type { OperationChange } from '../types/operations.js';
 import { FileUtils } from './file-utils.js';
 
+/** Format an unknown caught value as a human-readable error message. */
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 /**
  * Represents a single atomic operation within a transaction.
  *
@@ -89,7 +94,7 @@ export class TransactionManager {
     this.steps.push({
       id: stepId,
       type: 'file-move',
-      description: description || `Move ${sourcePath} to ${destinationPath}`,
+      description: description ?? `Move ${sourcePath} to ${destinationPath}`,
       completed: false,
 
       execute: async () => {
@@ -119,7 +124,7 @@ export class TransactionManager {
             this.backups.delete(stepId);
           }
         } catch (error) {
-          console.warn(`Failed to rollback file move: ${error}`);
+          console.warn(`Failed to rollback file move: ${errorMessage(error)}`);
         }
       },
     });
@@ -133,7 +138,7 @@ export class TransactionManager {
     this.steps.push({
       id: stepId,
       type: 'content-update',
-      description: description || `Update content of ${filePath}`,
+      description: description ?? `Update content of ${filePath}`,
       completed: false,
 
       execute: async () => {
@@ -156,7 +161,7 @@ export class TransactionManager {
             await FileUtils.deleteFile(filePath);
           }
         } catch (error) {
-          console.warn(`Failed to rollback content update: ${error}`);
+          console.warn(`Failed to rollback content update: ${errorMessage(error)}`);
         }
       },
     });
@@ -169,7 +174,7 @@ export class TransactionManager {
     this.steps.push({
       id: stepId,
       type: 'file-create',
-      description: description || `Create file ${filePath}`,
+      description: description ?? `Create file ${filePath}`,
       completed: false,
 
       execute: async () => {
@@ -186,7 +191,7 @@ export class TransactionManager {
         try {
           await FileUtils.deleteFile(filePath);
         } catch (error) {
-          console.warn(`Failed to rollback file creation: ${error}`);
+          console.warn(`Failed to rollback file creation: ${errorMessage(error)}`);
         }
       },
     });
@@ -200,7 +205,7 @@ export class TransactionManager {
     this.steps.push({
       id: stepId,
       type: 'file-delete',
-      description: description || `Delete file ${filePath}`,
+      description: description ?? `Delete file ${filePath}`,
       completed: false,
 
       execute: async () => {
@@ -219,7 +224,7 @@ export class TransactionManager {
             });
           }
         } catch (error) {
-          console.warn(`Failed to rollback file deletion: ${error}`);
+          console.warn(`Failed to rollback file deletion: ${errorMessage(error)}`);
         }
       },
     });
@@ -256,10 +261,10 @@ export class TransactionManager {
             });
           } catch (error) {
             retries++;
-            const errorMessage = `Step "${step.description}" failed (attempt ${retries}): ${error}`;
+            const stepErrorMessage = `Step "${step.description}" failed (attempt ${retries}): ${errorMessage(error)}`;
 
             if (retries > this.options.maxRetries) {
-              errors.push(errorMessage);
+              errors.push(stepErrorMessage);
 
               if (!this.options.continueOnError) {
                 // Rollback all executed steps
@@ -289,7 +294,7 @@ export class TransactionManager {
         changes,
       };
     } catch (error) {
-      errors.push(`Transaction execution failed: ${error}`);
+      errors.push(`Transaction execution failed: ${errorMessage(error)}`);
       await this.rollback();
 
       return {
@@ -312,7 +317,9 @@ export class TransactionManager {
         await step.rollback();
         step.completed = false;
       } catch (error) {
-        rollbackErrors.push(`Failed to rollback step "${step.description}": ${error}`);
+        rollbackErrors.push(
+          `Failed to rollback step "${step.description}": ${errorMessage(error)}`
+        );
       }
     }
 
@@ -324,7 +331,7 @@ export class TransactionManager {
   }
 
   /** Get a preview of all planned operations */
-  getPreview(): Array<{ description: string; type: string }> {
+  getPreview(): { description: string; type: string }[] {
     return this.steps.map((step) => ({
       description: step.description,
       type: step.type,
@@ -348,7 +355,7 @@ export class TransactionManager {
       try {
         await FileUtils.deleteFile(backupPath);
       } catch (error) {
-        console.warn(`Failed to cleanup backup ${backupPath}: ${error}`);
+        console.warn(`Failed to cleanup backup ${backupPath}: ${errorMessage(error)}`);
       }
     }
     this.backups.clear();
@@ -371,7 +378,7 @@ export class TransactionManager {
 
   private extractFilePathFromDescription(description: string): string {
     // Simple extraction - could be enhanced with more sophisticated parsing
-    const match = description.match(/(?:Move|Update|Create|Delete)\s+(?:content of\s+)?([^\s]+)/);
-    return match?.[1] || '';
+    const match = /(?:Move|Update|Create|Delete)\s+(?:content of\s+)?([^\s]+)/.exec(description);
+    return match?.[1] ?? '';
   }
 }

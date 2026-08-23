@@ -102,7 +102,7 @@ describe('ValidationCache', () => {
       await cache.set(testFilePath, testContentHash, testResult, testConfigHash, gitCommit);
 
       // Should get with same git commit
-      const cached1 = await cache.get(testFilePath, testContentHash, testConfigHash, gitCommit);
+      const cached1 = await cache.get(testFilePath, testContentHash, testConfigHash);
       expect(cached1).toBeDefined();
 
       // Should still get without git commit (backward compatibility)
@@ -123,7 +123,7 @@ describe('ValidationCache', () => {
         {
           ...testResult,
           hasExternalLinks: true,
-        } as ValidationResult,
+        },
         testConfigHash
       );
 
@@ -312,7 +312,7 @@ describe('ValidationCache', () => {
       await malformedCache.set(
         '/test.md',
         'hash',
-        { brokenLinks: [], totalLinks: 0, hasExternalLinks: false } as ValidationResult,
+        { brokenLinks: [], totalLinks: 0, hasExternalLinks: false },
         'config'
       );
 
@@ -353,16 +353,25 @@ describe('ValidationCache', () => {
 
     it('should handle large cache entries', async () => {
       // Create large result object
-      const largeResult = {
+      const largeResult: ValidationResult = {
         brokenLinks: Array(1000)
           .fill(null)
           .map((_, i) => ({
-            link: { href: `https://example.com/link${i}`, type: 'external' },
-            reason: `Test reason ${i}`,
+            sourceFile: '/test/large.md',
+            link: {
+              type: 'external',
+              href: `https://example.com/link${i}`,
+              text: undefined,
+              referenceId: undefined,
+              line: 1,
+              column: 1,
+              absolute: true,
+            },
+            reason: 'external-error',
           })),
         totalLinks: 1000,
         hasExternalLinks: false,
-      } as ValidationResult;
+      };
 
       await cache.set('/test/large.md', 'hash', largeResult, 'config');
 

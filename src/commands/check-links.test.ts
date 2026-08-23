@@ -6,7 +6,10 @@ import {
   formatCheckLinksResults,
   DEFAULT_CHECK_LINKS_OPTIONS,
   type CheckLinksOperationOptions,
+  type CheckLinksResult,
 } from './check-links.js';
+import type { LinkParser } from '../core/link-parser.js';
+import type { LinkValidator } from '../core/link-validator.js';
 
 // Mock the LinkValidator to avoid actual network requests in tests
 vi.mock('../core/link-validator.js', () => ({
@@ -95,8 +98,8 @@ Some text content.`;
       const { LinkParser } = await import('../core/link-parser.js');
       const { LinkValidator } = await import('../core/link-validator.js');
 
-      vi.mocked(LinkParser).mockImplementation(() => mockParser);
-      vi.mocked(LinkValidator).mockImplementation(() => mockValidator);
+      vi.mocked(LinkParser).mockImplementation(() => mockParser as unknown as LinkParser);
+      vi.mocked(LinkValidator).mockImplementation(() => mockValidator as unknown as LinkValidator);
 
       const result = await checkLinks([testFile], DEFAULT_CHECK_LINKS_OPTIONS);
 
@@ -153,8 +156,8 @@ Some text content.`;
       const { LinkParser } = await import('../core/link-parser.js');
       const { LinkValidator } = await import('../core/link-validator.js');
 
-      vi.mocked(LinkParser).mockImplementation(() => mockParser);
-      vi.mocked(LinkValidator).mockImplementation(() => mockValidator);
+      vi.mocked(LinkParser).mockImplementation(() => mockParser as unknown as LinkParser);
+      vi.mocked(LinkValidator).mockImplementation(() => mockValidator as unknown as LinkValidator);
 
       const result = await checkLinks([testFile], DEFAULT_CHECK_LINKS_OPTIONS);
 
@@ -208,8 +211,8 @@ Some text content.`;
       const { LinkParser } = await import('../core/link-parser.js');
       const { LinkValidator } = await import('../core/link-validator.js');
 
-      vi.mocked(LinkParser).mockImplementation(() => mockParser);
-      vi.mocked(LinkValidator).mockImplementation(() => mockValidator);
+      vi.mocked(LinkParser).mockImplementation(() => mockParser as unknown as LinkParser);
+      vi.mocked(LinkValidator).mockImplementation(() => mockValidator as unknown as LinkValidator);
 
       const result = await checkLinks([TEST_DIR], {
         ...DEFAULT_CHECK_LINKS_OPTIONS,
@@ -263,8 +266,8 @@ Some text content.`;
       const { LinkParser } = await import('../core/link-parser.js');
       const { LinkValidator } = await import('../core/link-validator.js');
 
-      vi.mocked(LinkParser).mockImplementation(() => mockParser);
-      vi.mocked(LinkValidator).mockImplementation(() => mockValidator);
+      vi.mocked(LinkParser).mockImplementation(() => mockParser as unknown as LinkParser);
+      vi.mocked(LinkValidator).mockImplementation(() => mockValidator as unknown as LinkValidator);
 
       const options: CheckLinksOperationOptions = {
         ...DEFAULT_CHECK_LINKS_OPTIONS,
@@ -311,8 +314,8 @@ Some text content.`;
       const { LinkParser } = await import('../core/link-parser.js');
       const { LinkValidator } = await import('../core/link-validator.js');
 
-      vi.mocked(LinkParser).mockImplementation(() => mockParser);
-      vi.mocked(LinkValidator).mockImplementation(() => mockValidator);
+      vi.mocked(LinkParser).mockImplementation(() => mockParser as unknown as LinkParser);
+      vi.mocked(LinkValidator).mockImplementation(() => mockValidator as unknown as LinkValidator);
 
       const options: CheckLinksOperationOptions = {
         ...DEFAULT_CHECK_LINKS_OPTIONS,
@@ -483,7 +486,7 @@ Some text content.`;
       const options = { ...DEFAULT_CHECK_LINKS_OPTIONS, format: 'json' as const };
       const output = formatCheckLinksResults(mockResult, options);
 
-      const parsed = JSON.parse(output);
+      const parsed = JSON.parse(output) as CheckLinksResult;
       expect(parsed.filesProcessed).toBe(2);
       expect(parsed.totalExternalLinks).toBe(4);
       expect(parsed.brokenLinks).toBe(1);
@@ -604,8 +607,8 @@ No external links here.`;
       const { LinkParser } = await import('../core/link-parser.js');
       const { LinkValidator } = await import('../core/link-validator.js');
 
-      vi.mocked(LinkParser).mockImplementation(() => mockParser);
-      vi.mocked(LinkValidator).mockImplementation(() => mockValidator);
+      vi.mocked(LinkParser).mockImplementation(() => mockParser as unknown as LinkParser);
+      vi.mocked(LinkValidator).mockImplementation(() => mockValidator as unknown as LinkValidator);
 
       const result = await checkLinks([testFile], DEFAULT_CHECK_LINKS_OPTIONS);
 

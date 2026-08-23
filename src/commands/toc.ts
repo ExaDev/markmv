@@ -54,17 +54,17 @@ export interface TocResult {
   /** Number of files skipped (no headings) */
   filesSkipped: number;
   /** Files that had processing errors */
-  fileErrors: Array<{ file: string; error: string }>;
+  fileErrors: { file: string; error: string }[];
   /** Processing time in milliseconds */
   processingTime: number;
   /** Details of each file processed */
-  fileDetails: Array<{
+  fileDetails: {
     file: string;
     headingsFound: number;
     tocGenerated: boolean;
     tocLength: number;
     position: string;
-  }>;
+  }[];
 }
 
 /**
@@ -148,7 +148,7 @@ export async function generateToc(
         includeLineNumbers: opts.includeLineNumbers,
       };
 
-      const tocResult = await tocGenerator.generateToc(content, tocOptions);
+      const tocResult = tocGenerator.generateToc(content, tocOptions);
 
       // Skip if no headings found and skipEmpty is true
       if (tocResult.headings.length === 0 && opts.skipEmpty) {
@@ -240,7 +240,7 @@ function insertTocIntoContent(
       return replaceExistingToc(content, tocMarkdown, options);
 
     default:
-      throw new Error(`Invalid position: ${options.position}`);
+      throw new Error(`Invalid position: ${String(options.position)}`);
   }
 }
 
@@ -312,7 +312,7 @@ function replaceExistingToc(
 
   // Try to detect existing TOC by looking for "Table of Contents" heading
   const tocHeadingRegex = /^#{1,6}\s+table\s+of\s+contents\s*$/im;
-  const match = content.match(tocHeadingRegex);
+  const match = tocHeadingRegex.exec(content);
 
   if (match) {
     const lines = content.split('\n');

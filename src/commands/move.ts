@@ -95,7 +95,8 @@ async function expandSourcePatterns(patterns: string[], verbose = false): Promis
         console.log(`   ❌ No files found for pattern: ${pattern}`);
       }
     } catch (error) {
-      console.error(`   ❌ Error expanding pattern "${pattern}": ${error}`);
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`   ❌ Error expanding pattern "${pattern}": ${message}`);
     }
   }
 
@@ -258,7 +259,7 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
     }
 
     // Expand directory sources into per-file moves that map each file to its mirrored path under the destination
-    const directoryMoves: Array<{ source: string; destination: string }> = [];
+    const directoryMoves: { source: string; destination: string }[] = [];
     for (const directorySource of directorySources) {
       const filesInDirectory = await collectDirectoryFiles(directorySource);
       if (options.verbose) {
@@ -291,10 +292,10 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
 
     const fileOps = new FileOperations();
     const moveOptions: MoveOperationOptions = {
-      dryRun: options.dryRun || false,
-      verbose: options.verbose || false,
+      dryRun: options.dryRun ?? false,
+      verbose: options.verbose ?? false,
       createDirectories: true,
-      obsidian: options.obsidian || false,
+      obsidian: options.obsidian ?? false,
     };
 
     let result: OperationResult;
@@ -421,7 +422,8 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
       }
     }
   } catch (error) {
-    console.error(`❌ Unexpected error: ${error}`);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`❌ Unexpected error: ${message}`);
     process.exit(1);
   }
 }

@@ -1,10 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as http from 'node:http';
 import { createApiServer } from './api-server.js';
+import type { IncomingMessage, ServerResponse } from 'node:http';
+import type { ApiResponse, ErrorResponse, HealthResponse } from './types/api.js';
+
+function parseJsonResponse<T>(data: string): T {
+  return JSON.parse(data) as T;
+}
 
 // Mock console.log to avoid output during tests
-const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
-const _mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
 // Mock the markmv index module
 vi.mock('./index.js', () => ({
@@ -27,7 +32,7 @@ vi.mock('./schemas/api-routes.js', () => ({
     {
       path: '/api/test',
       method: 'POST',
-      handler: vi.fn(async (req: IncomingMessage, res: ServerResponse) => {
+      handler: vi.fn((_req: IncomingMessage, res: ServerResponse) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, data: 'test response' }));
       }),
@@ -75,9 +80,7 @@ describe('API Server', () => {
       expect(mockConsoleLog).toHaveBeenCalledWith(`API endpoints: http://localhost:${port}/api/*`);
     });
 
-    it('should use default port 3000 when no port specified', async () => {
-      const _defaultPort = 3100 + Math.floor(Math.random() * 100); // Use a different range to avoid conflicts
-
+    it('should use default port 3000 when no port specified', () => {
       // Test the port parsing logic directly instead of creating another server
       const originalEnv = process.env.PORT;
       delete process.env.PORT; // Ensure no PORT env var
@@ -130,12 +133,12 @@ describe('API Server', () => {
       expect(res.headers['content-type']).toBe('application/json');
       expect(res.headers['access-control-allow-origin']).toBe('*');
 
-      const response = JSON.parse(data);
+      const response = parseJsonResponse<ApiResponse<HealthResponse>>(data);
       expect(response.success).toBe(true);
-      expect(response.data.status).toBe('ok');
-      expect(response.data.version).toBe('1.0.0');
-      expect(response.data.info.service).toBe('markmv-api');
-      expect(typeof response.data.uptime).toBe('number');
+      expect(response.data?.status).toBe('ok');
+      expect(response.data?.version).toBe('1.0.0');
+      expect(response.data?.info?.service).toBe('markmv-api');
+      expect(typeof response.data?.uptime).toBe('number');
       expect(typeof response.timestamp).toBe('string');
     });
   });
@@ -239,7 +242,7 @@ describe('API Server', () => {
       expect(res.statusCode).toBe(200);
       expect(res.headers['content-type']).toBe('application/json');
 
-      const response = JSON.parse(data);
+      const response = parseJsonResponse<ApiResponse<string>>(data);
       expect(response.success).toBe(true);
       expect(response.data).toBe('test response');
     });
@@ -281,7 +284,7 @@ describe('API Server', () => {
       expect(res.statusCode).toBe(404);
       expect(res.headers['content-type']).toBe('application/json');
 
-      const response = JSON.parse(data);
+      const response = parseJsonResponse<ErrorResponse>(data);
       expect(response.error).toBe('NotFound');
       expect(response.message).toBe('Route GET /unknown-route not found');
       expect(response.statusCode).toBe(404);
@@ -322,7 +325,7 @@ describe('API Server', () => {
 
       // The server should gracefully handle unknown routes
       expect(res.statusCode).toBe(404);
-      const response = JSON.parse(data);
+      const response = parseJsonResponse<ErrorResponse>(data);
       expect(response.error).toBe('NotFound');
     });
   });
@@ -360,7 +363,7 @@ describe('API Server', () => {
         }
       );
 
-      const response = JSON.parse(data);
+      const response = parseJsonResponse<ApiResponse>(data);
 
       // Verify the response structure matches ApiResponse type
       expect(response).toHaveProperty('success');
@@ -446,7 +449,7 @@ describe('API Server', () => {
       );
 
       expect(res.statusCode).toBe(404);
-      const response = JSON.parse(data);
+      const response = parseJsonResponse<ErrorResponse>(data);
       expect(response.error).toBe('NotFound');
       expect(response.message).toBe('Route POST /health not found');
     });

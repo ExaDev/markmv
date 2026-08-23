@@ -443,28 +443,28 @@ describe('FileUtils', () => {
   });
 
   describe('sanitizeFilename', () => {
-    it('should remove invalid characters', async () => {
+    it('should remove invalid characters', () => {
       const input = 'file<>:"/\\|?*name.md';
       const result = FileUtils.sanitizeFilename(input);
 
       expect(result).toBe('file-name.md');
     });
 
-    it('should replace spaces with dashes', async () => {
+    it('should replace spaces with dashes', () => {
       const input = 'file   with   spaces.md';
       const result = FileUtils.sanitizeFilename(input);
 
       expect(result).toBe('file-with-spaces.md');
     });
 
-    it('should remove leading and trailing dashes', async () => {
+    it('should remove leading and trailing dashes', () => {
       const input = '---filename---';
       const result = FileUtils.sanitizeFilename(input);
 
       expect(result).toBe('filename');
     });
 
-    it('should handle complex filename cleaning', async () => {
+    it('should handle complex filename cleaning', () => {
       const input = '  <<invalid>>  file::name  ';
       const result = FileUtils.sanitizeFilename(input);
 
@@ -473,7 +473,7 @@ describe('FileUtils', () => {
   });
 
   describe('getRelativePath', () => {
-    it('should return relative path between files', async () => {
+    it('should return relative path between files', () => {
       const fromFile = '/project/docs/guide.md';
       const toFile = '/project/assets/image.png';
 

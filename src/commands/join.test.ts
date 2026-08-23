@@ -1,17 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { joinCommand } from './join.js';
 
 // Mock console methods
-const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {});
-const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
 // Mock process.exit
-const mockProcessExit = vi.spyOn(process, 'exit').mockImplementation((code?: number) => {
-  throw new Error(`Process exit called with code ${code}`);
-});
+const mockProcessExit = vi
+  .spyOn(process, 'exit')
+  .mockImplementation((code?: string | number | null) => {
+    throw new Error(`Process exit called with code ${code}`);
+  });
 
 describe('Join Command', () => {
   let testDir: string;
@@ -26,14 +28,8 @@ describe('Join Command', () => {
   });
 
   afterEach(() => {
-    try {
-      import('node:fs').then((fs) => {
-        if (existsSync(testDir)) {
-          fs.rmSync(testDir, { recursive: true, force: true });
-        }
-      });
-    } catch {
-      // Ignore cleanup errors
+    if (existsSync(testDir)) {
+      rmSync(testDir, { recursive: true, force: true });
     }
   });
 

@@ -6,7 +6,7 @@ import { visit } from 'unist-util-visit';
 interface HeadingNode extends Node {
   type: 'heading';
   depth: number;
-  children: Array<{ type: string; value?: string }>;
+  children: { type: string; value?: string }[];
 }
 
 /**
@@ -66,7 +66,7 @@ export interface TocResult {
  *   ```typescript
  *   const generator = new TocGenerator();
  *   const content = `# Title\n## Section 1\n### Subsection\n## Section 2`;
- *   const result = await generator.generateToc(content);
+ *   const result = generator.generateToc(content);
  *
  *   console.log(result.toc);
  *   // Output:
@@ -85,7 +85,7 @@ export interface TocResult {
  *   maxDepth: 4,
  *   includeLineNumbers: true
  *   };
- *   const result = await generator.generateToc(content, options);
+ *   const result = generator.generateToc(content, options);
  *   ```
  */
 export class TocGenerator {
@@ -97,9 +97,9 @@ export class TocGenerator {
    * @param content - Markdown content to analyze
    * @param options - Configuration options
    *
-   * @returns Promise resolving to TOC result
+   * @returns TOC result
    */
-  async generateToc(content: string, options: TocOptions = {}): Promise<TocResult> {
+  generateToc(content: string, options: TocOptions = {}): TocResult {
     const {
       minDepth = 1,
       maxDepth = 6,
@@ -144,10 +144,10 @@ export class TocGenerator {
    * @param content - Markdown content to analyze
    * @param options - Configuration options
    *
-   * @returns Promise resolving to array of headings
+   * @returns Array of headings
    */
-  async extractHeadings(content: string, options: TocOptions = {}): Promise<MarkdownHeading[]> {
-    const result = await this.generateToc(content, options);
+  extractHeadings(content: string, options: TocOptions = {}): MarkdownHeading[] {
+    const result = this.generateToc(content, options);
     return result.headings;
   }
 
@@ -185,12 +185,12 @@ export class TocGenerator {
    * @returns Combined text content
    */
   private extractTextFromNodes(
-    nodes: Array<{ type: string; value?: string; children?: unknown[] }>
+    nodes: { type: string; value?: string; children?: unknown[] }[]
   ): string {
     return nodes
       .map((node) => {
         if (node.type === 'text') {
-          return node.value || '';
+          return node.value ?? '';
         } else if (node.children && Array.isArray(node.children)) {
           // Recursively extract text from children, filtering for valid node structure
           const childNodes = node.children.filter(
@@ -211,7 +211,7 @@ export class TocGenerator {
    *
    * @returns URL-friendly slug
    */
-  private defaultSlugify(text: string): string {
+  private defaultSlugify(this: void, text: string): string {
     return text
       .toLowerCase()
       .replace(/[^\w\s-]/g, '-') // Replace special characters with hyphens

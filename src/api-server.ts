@@ -108,7 +108,7 @@ function handleCORS(request: http.IncomingMessage, response: http.ServerResponse
 }
 
 /** Handle health check endpoint */
-async function handleHealth(response: http.ServerResponse): Promise<void> {
+function handleHealth(response: http.ServerResponse): void {
   const healthResponse: HealthResponse = {
     status: 'ok',
     version: '1.0.0',
@@ -134,13 +134,13 @@ async function handleRequest(
   }
 
   const { method, url: reqUrl } = request;
-  const parsedUrl = url.parse(reqUrl || '', true);
+  const parsedUrl = url.parse(reqUrl ?? '', true);
   const path = parsedUrl.pathname;
 
   try {
     // Handle health endpoint
     if (method === 'GET' && path === '/health') {
-      await handleHealth(response);
+      handleHealth(response);
       return;
     }
 
@@ -176,8 +176,10 @@ async function handleRequest(
 }
 
 /** Create and start the HTTP server */
-export function createApiServer(port: number = 3000): http.Server {
-  const server = http.createServer(handleRequest);
+export function createApiServer(port = 3000): http.Server {
+  const server = http.createServer((request, response) => {
+    void handleRequest(request, response);
+  });
 
   server.listen(port, () => {
     console.log(`markmv API server running on port ${port}`);
@@ -195,6 +197,6 @@ export function startApiServer(): http.Server {
 }
 
 // For direct execution
-if (process.argv[1] && process.argv[1].endsWith('api-server.js')) {
+if (process.argv[1]?.endsWith('api-server.js')) {
   startApiServer();
 }

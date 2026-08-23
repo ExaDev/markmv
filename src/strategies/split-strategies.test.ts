@@ -6,6 +6,20 @@ import {
   SizeBasedSplitStrategy,
 } from './split-strategies.js';
 
+class TestableHeaderBasedSplitStrategy extends HeaderBasedSplitStrategy {
+  public testSanitizeFilename(filename: string): string {
+    return this.sanitizeFilename(filename);
+  }
+
+  public testGetHeaderLevel(line: string): number {
+    return this.getHeaderLevel(line);
+  }
+
+  public testExtractTitleFromHeader(line: string): string {
+    return this.extractTitleFromHeader(line);
+  }
+}
+
 describe('Split Strategies', () => {
   describe('HeaderBasedSplitStrategy', () => {
     it('should split content by headers', async () => {
@@ -321,44 +335,35 @@ Content 2`;
   });
 
   describe('BaseSplitStrategy utilities', () => {
-    const strategy = new HeaderBasedSplitStrategy();
+    const strategy = new TestableHeaderBasedSplitStrategy();
 
     it('should sanitize filenames correctly', () => {
-      // Access protected method for testing
-      const sanitize = (
-        strategy as { sanitizeFilename: (filename: string) => string }
-      ).sanitizeFilename.bind(strategy);
-
-      expect(sanitize('Hello World!')).toBe('hello-world');
-      expect(sanitize('Special@#$%Characters')).toBe('specialcharacters');
-      expect(sanitize('Multiple   Spaces')).toBe('multiple-spaces');
-      expect(sanitize('--Leading-And-Trailing--')).toBe('leading-and-trailing');
+      expect(strategy.testSanitizeFilename('Hello World!')).toBe('hello-world');
+      expect(strategy.testSanitizeFilename('Special@#$%Characters')).toBe('specialcharacters');
+      expect(strategy.testSanitizeFilename('Multiple   Spaces')).toBe('multiple-spaces');
+      expect(strategy.testSanitizeFilename('--Leading-And-Trailing--')).toBe(
+        'leading-and-trailing'
+      );
     });
 
     it('should extract header levels correctly', () => {
-      const getLevel = (
-        strategy as { getHeaderLevel: (line: string) => number }
-      ).getHeaderLevel.bind(strategy);
-
-      expect(getLevel('# Header 1')).toBe(1);
-      expect(getLevel('## Header 2')).toBe(2);
-      expect(getLevel('### Header 3')).toBe(3);
-      expect(getLevel('#### Header 4')).toBe(4);
-      expect(getLevel('##### Header 5')).toBe(5);
-      expect(getLevel('###### Header 6')).toBe(6);
-      expect(getLevel('Regular text')).toBe(0);
-      expect(getLevel('#No space after hash')).toBe(0);
+      expect(strategy.testGetHeaderLevel('# Header 1')).toBe(1);
+      expect(strategy.testGetHeaderLevel('## Header 2')).toBe(2);
+      expect(strategy.testGetHeaderLevel('### Header 3')).toBe(3);
+      expect(strategy.testGetHeaderLevel('#### Header 4')).toBe(4);
+      expect(strategy.testGetHeaderLevel('##### Header 5')).toBe(5);
+      expect(strategy.testGetHeaderLevel('###### Header 6')).toBe(6);
+      expect(strategy.testGetHeaderLevel('Regular text')).toBe(0);
+      expect(strategy.testGetHeaderLevel('#No space after hash')).toBe(0);
     });
 
     it('should extract titles from headers', () => {
-      const extractTitle = (
-        strategy as { extractTitleFromHeader: (line: string) => string }
-      ).extractTitleFromHeader.bind(strategy);
-
-      expect(extractTitle('# Main Title')).toBe('Main Title');
-      expect(extractTitle('## Section Title')).toBe('Section Title');
-      expect(extractTitle('### Title with Extra   Spaces   ')).toBe('Title with Extra   Spaces');
-      expect(extractTitle('#### ')).toBe('');
+      expect(strategy.testExtractTitleFromHeader('# Main Title')).toBe('Main Title');
+      expect(strategy.testExtractTitleFromHeader('## Section Title')).toBe('Section Title');
+      expect(strategy.testExtractTitleFromHeader('### Title with Extra   Spaces   ')).toBe(
+        'Title with Extra   Spaces'
+      );
+      expect(strategy.testExtractTitleFromHeader('#### ')).toBe('');
     });
   });
 });

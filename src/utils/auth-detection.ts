@@ -103,11 +103,7 @@ export class AuthDetector {
   }
 
   /** Analyze authentication requirements for a URL. */
-  async analyzeAuth(
-    url: string,
-    response?: Response,
-    redirectHistory: string[] = []
-  ): Promise<AuthInfo> {
+  analyzeAuth(url: string, response?: Response, redirectHistory: string[] = []): AuthInfo {
     if (!this.config.enabled) {
       return {
         url,
@@ -138,7 +134,7 @@ export class AuthDetector {
 
     // If we have a response, analyze it for auth indicators
     if (response) {
-      const responseAuth = await this.analyzeResponse(url, response, redirectHistory);
+      const responseAuth = this.analyzeResponse(url, response, redirectHistory);
       if (responseAuth.requiresAuth) {
         return {
           ...result,
@@ -176,11 +172,11 @@ export class AuthDetector {
   }
 
   /** Analyze HTTP response for authentication indicators. */
-  private async analyzeResponse(
+  private analyzeResponse(
     url: string,
     response: Response,
     redirectHistory: string[]
-  ): Promise<Partial<AuthInfo>> {
+  ): Partial<AuthInfo> {
     const finalUrl = response.url;
 
     // Check for auth redirects
@@ -208,7 +204,7 @@ export class AuthDetector {
 
     // Check response content for auth indicators (if available)
     try {
-      const contentType = response.headers.get('content-type') || '';
+      const contentType = response.headers.get('content-type') ?? '';
       if (contentType.includes('text/html')) {
         // Don't actually read the content in production to avoid performance issues
         // This would be for future enhancement

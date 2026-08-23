@@ -106,7 +106,7 @@ export interface ValidateCliOptions extends Omit<ValidateOperationOptions, 'link
  *
  * @category Commands
  */
-export interface ExtendedBrokenLink extends BrokenLink {
+interface ExtendedBrokenLink extends BrokenLink {
   /** Link type for grouping */
   type: LinkType;
   /** Link URL for display */
@@ -134,7 +134,7 @@ export interface ValidateResult {
   /** Broken links grouped by type */
   brokenLinksByType: Partial<Record<LinkType, ExtendedBrokenLink[]>>;
   /** Files that had processing errors */
-  fileErrors: Array<{ file: string; error: string; stack?: string | undefined }>;
+  fileErrors: { file: string; error: string; stack?: string | undefined }[];
   /** Whether circular references were detected */
   hasCircularReferences: boolean;
   /** Circular reference details if found */
@@ -165,9 +165,9 @@ export interface ValidateResult {
   /** Number of successfully authenticated links */
   authenticatedLinks?: number;
   /** Files missing required frontmatter fields */
-  frontmatterViolations: Array<{ file: string; missingFields: string[] }>;
+  frontmatterViolations: { file: string; missingFields: string[] }[];
   /** Internal links whose href form violates the enforced link format */
-  formatViolations: Array<{ file: string; href: string; line: number; expected: string }>;
+  formatViolations: { file: string; href: string; line: number; expected: string }[];
 }
 
 /** Extract the field names defined in a file's leading YAML frontmatter block, if any */
@@ -180,7 +180,7 @@ function parseFrontmatterFields(content: string): Set<string> {
   const fields = new Set<string>();
   for (const line of lines.slice(1)) {
     if (line === '---') break;
-    const match = line.match(/^([A-Za-z][\w-]*):/);
+    const match = /^([A-Za-z][\w-]*):/.exec(line);
     if (match) {
       fields.add(match[1] || '');
     }
@@ -374,7 +374,7 @@ export async function validateLinks(
     authCredentials?: Record<string, string>;
     authHeaders?: Record<string, Record<string, string>>;
   } = {
-    linkTypes: options.linkTypes || [
+    linkTypes: options.linkTypes ?? [
       'internal',
       'external',
       'anchor',
@@ -568,8 +568,8 @@ export async function validateLinks(
     enableAuthDetection: opts.enableAuthDetection,
     allowAuthRequired: opts.allowAuthRequired,
     authConfig: {
-      credentials: opts.authCredentials || {},
-      customHeaders: opts.authHeaders || {},
+      credentials: opts.authCredentials ?? {},
+      customHeaders: opts.authHeaders ?? {},
     },
     ...(wikilinkResolver ? { checkWikilinks: true, wikilinkResolver } : {}),
     skipDomains: opts.skipDomains,
@@ -757,9 +757,9 @@ export async function validateLinks(
         const staleLinks = brokenLinks.filter((bl) => bl.reason === 'content-stale').length;
         const freshExternalLinks = externalLinkCount - staleLinks;
 
-        result.staleLinks = (result.staleLinks || 0) + staleLinks;
+        result.staleLinks = (result.staleLinks ?? 0) + staleLinks;
         if (freshExternalLinks > 0) {
-          result.freshLinks = (result.freshLinks || 0) + freshExternalLinks;
+          result.freshLinks = (result.freshLinks ?? 0) + freshExternalLinks;
         }
       }
 
@@ -774,8 +774,8 @@ export async function validateLinks(
             (bl) => bl.authInfo?.authAttempted && bl.authInfo?.authSucceeded
           ).length;
 
-          result.authRequiredLinks = (result.authRequiredLinks || 0) + authRequiredCount;
-          result.authenticatedLinks = (result.authenticatedLinks || 0) + authenticatedCount;
+          result.authRequiredLinks = (result.authRequiredLinks ?? 0) + authRequiredCount;
+          result.authenticatedLinks = (result.authenticatedLinks ?? 0) + authenticatedCount;
         }
       }
 
@@ -795,9 +795,7 @@ export async function validateLinks(
 
         // Group by type
         for (const extendedBrokenLink of extendedBrokenLinks) {
-          if (!result.brokenLinksByType[extendedBrokenLink.type]) {
-            result.brokenLinksByType[extendedBrokenLink.type] = [];
-          }
+          result.brokenLinksByType[extendedBrokenLink.type] ??= [];
           const typeArray = result.brokenLinksByType[extendedBrokenLink.type];
           if (typeArray) {
             typeArray.push(extendedBrokenLink);
@@ -993,8 +991,8 @@ export async function validateCommand(
 
     // Show freshness information if enabled
     if (options.checkContentFreshness) {
-      const staleCount = result.staleLinks || 0;
-      const freshCount = result.freshLinks || 0;
+      const staleCount = result.staleLinks ?? 0;
+      const freshCount = result.freshLinks ?? 0;
       const externalTotal = staleCount + freshCount;
 
       if (externalTotal > 0) {
@@ -1005,8 +1003,8 @@ export async function validateCommand(
 
     // Show authentication information if enabled
     if (options.enableAuthDetection) {
-      const authRequiredCount = result.authRequiredLinks || 0;
-      const authenticatedCount = result.authenticatedLinks || 0;
+      const authRequiredCount = result.authRequiredLinks ?? 0;
+      const authenticatedCount = result.authenticatedLinks ?? 0;
       const realBrokenCount = result.brokenLinks - authRequiredCount;
 
       if (authRequiredCount > 0) {

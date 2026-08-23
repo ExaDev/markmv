@@ -246,7 +246,7 @@ async function expandMarkdownPatterns(patterns: string[]): Promise<string[]> {
  * Names claimed by earlier files in the same run, so numbered collisions are consistent between
  * dry-run planning and the real writes
  */
-export interface ExtractNamingState {
+interface ExtractNamingState {
   /** Output file names already claimed in this run */
   usedNames: Set<string>;
   /** Counter behind the img-N fallback names */
@@ -267,7 +267,7 @@ async function extractFile(
   const outputDir = options.outputDir ? resolve(options.outputDir) : dirname(file);
 
   const replacements = [];
-  const writes: Array<{ path: string; bytes: Buffer }> = [];
+  const writes: { path: string; bytes: Buffer }[] = [];
 
   for (const image of inlineImages) {
     try {

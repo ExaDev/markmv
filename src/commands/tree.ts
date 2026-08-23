@@ -283,7 +283,7 @@ function formatWarningMarkers(file: TreeFileNode): string {
 
 /** Append one tree entry line and recurse into children, using classic tree-drawing prefixes */
 function appendDirectoryLines(directory: TreeDirectoryNode, lines: string[], prefix: string): void {
-  const entries: Array<{ label: string; child?: TreeDirectoryNode }> = [
+  const entries: { label: string; child?: TreeDirectoryNode }[] = [
     ...directory.directories.map((child) => ({
       label: `${child.name}/${child.truncated ? ' ...' : ''}`,
       child,
