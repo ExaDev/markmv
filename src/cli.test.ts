@@ -1,4 +1,21 @@
+import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+/**
+ * Reads the version straight out of the real package.json so the CLI version assertion tracks the published package rather than a literal that drifts.
+ */
+function readPackageJsonVersion(): string {
+  const raw: unknown = JSON.parse(
+    readFileSync(new URL('../package.json', import.meta.url), 'utf-8')
+  );
+  if (typeof raw !== 'object' || raw === null || !('version' in raw)) {
+    throw new Error('package.json has no version field');
+  }
+  if (typeof raw.version !== 'string') {
+    throw new Error('package.json version is not a string');
+  }
+  return raw.version;
+}
 
 // Mock all command modules to prevent actual execution
 vi.mock('./commands/convert', () => ({
@@ -67,7 +84,7 @@ describe('CLI Entry Point', () => {
       expect(mockDescription).toHaveBeenCalledWith(
         'CLI for markdown file operations with intelligent link refactoring'
       );
-      expect(mockVersion).toHaveBeenCalledWith('0.1.0');
+      expect(mockVersion).toHaveBeenCalledWith(readPackageJsonVersion());
     });
   });
 

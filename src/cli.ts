@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { readFileSync } from 'node:fs';
 import { Command } from 'commander';
 import { clipCommand } from './commands/clip.js';
 import { convertCommand } from './commands/convert.js';
@@ -14,12 +15,29 @@ import { validateCommand, type ValidateCliOptions } from './commands/validate.js
 import { refactorHeadingsCommand } from './commands/refactor-headings.js';
 import { checkLinksCommand } from './commands/check-links.js';
 
+function isPackageJson(value: unknown): value is { version: string } {
+  if (typeof value !== 'object' || value === null) return false;
+  if (!('version' in value)) return false;
+  return typeof value.version === 'string';
+}
+
+/**
+ * Reads the package version from package.json at runtime so the reported version always matches the published package instead of a literal that drifts between releases.
+ */
+function getPackageVersion(): string {
+  const raw: unknown = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8'));
+  if (!isPackageJson(raw)) {
+    throw new Error('package.json is missing a string version field');
+  }
+  return raw.version;
+}
+
 const program = new Command();
 
 program
   .name('markmv')
   .description('CLI for markdown file operations with intelligent link refactoring')
-  .version('0.1.0');
+  .version(getPackageVersion());
 
 program
   .command('clip')
