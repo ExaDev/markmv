@@ -392,6 +392,74 @@ describe('FileOperations', () => {
     });
   });
 
+  describe('self-linking moved files', () => {
+    it('does not resurrect the vacated source path when the moved file links to itself', async () => {
+      const sourcePath = join(testDir, 'self.md');
+      await mkdir(join(testDir, 'nested'));
+      await writeFile(sourcePath, '# Self\n\n[Me](./self.md) and @./self.md\n');
+
+      const result = await fileOps.moveFile(sourcePath, join(testDir, 'nested', 'self.md'));
+
+      expect(result.success).toBe(true);
+      expect(await FileUtils.exists(sourcePath)).toBe(false);
+      const moved = await readFile(join(testDir, 'nested', 'self.md'), 'utf-8');
+      expect(moved).toContain('[Me](./self.md)');
+    });
+
+    it('rewrites co-moved links that carry anchors', async () => {
+      await writeFile(join(testDir, 'A.md'), '# A\n\n[Section](./B.md#setup)\n');
+      await writeFile(join(testDir, 'B.md'), '# B\n\n## Setup\n');
+
+      const result = await fileOps.moveFiles([
+        { source: join(testDir, 'A.md'), destination: join(testDir, 'out', 'A.md') },
+        { source: join(testDir, 'B.md'), destination: join(testDir, 'out', 'B.md') },
+      ]);
+
+      expect(result.success).toBe(true);
+      const moved = await readFile(join(testDir, 'out', 'A.md'), 'utf-8');
+      expect(moved).toContain('[Section](./B.md#setup)');
+    });
+  });
+
+  describe('absolute and home href preservation', () => {
+    it('leaves ~ and drive-absolute hrefs untouched when the file moves', async () => {
+      const sourcePath = join(testDir, 'doc.md');
+      await mkdir(join(testDir, 'nested'));
+      await writeFile(sourcePath, '# Doc\n\n[Home](~/notes/home.md)\n@~/notes/shared.md\n');
+
+      const result = await fileOps.moveFile(sourcePath, join(testDir, 'nested', 'doc.md'));
+
+      expect(result.success).toBe(true);
+      const moved = await readFile(join(testDir, 'nested', 'doc.md'), 'utf-8');
+      expect(moved).toContain('[Home](~/notes/home.md)');
+      expect(moved).toContain('@~/notes/shared.md');
+      expect(moved).not.toContain('./~/');
+    });
+  });
+
+  describe('co-moved content accumulation', () => {
+    it('keeps self-pass rewrites when a later bystander pass touches the same destination', async () => {
+      // Unprefixed co-moved href plus a link to a file that stays behind: the self pass rewrites
+      // the stays-behind link, and a later bystander pass for the co-moved link must not replay
+      // from the original bytes and revert it
+      await mkdir(join(testDir, 'b'));
+      await writeFile(join(testDir, 'b', 'C.md'), '# C\n\n[E](E.md)\n[X](X.md)\n');
+      await writeFile(join(testDir, 'b', 'E.md'), '# E\n');
+      await writeFile(join(testDir, 'b', 'X.md'), '# X\n');
+
+      const result = await fileOps.moveFiles([
+        { source: join(testDir, 'b', 'C.md'), destination: join(testDir, 'out', 'C.md') },
+        { source: join(testDir, 'b', 'E.md'), destination: join(testDir, 'out', 'E.md') },
+      ]);
+
+      expect(result.success).toBe(true);
+      const moved = await readFile(join(testDir, 'out', 'C.md'), 'utf-8');
+      expect(moved).toContain('[E](./E.md)');
+      expect(moved).toContain('[X](../b/X.md)');
+      expect(moved).not.toContain('[X](X.md)');
+    });
+  });
+
   describe('obsidian mode', () => {
     it('leaves wikilinks untouched when a note moves without renaming', async () => {
       await mkdir(join(testDir, 'devops'));
@@ -478,6 +546,23 @@ describe('FileOperations', () => {
 
       expect(result.success).toBe(true);
       expect(await readFile(join(testDir, 'Home.md'), 'utf-8')).toBe('See [[nested/Target]].\n');
+    });
+
+    it('rewrites path-qualified wikilinks whose directory changed even when the stem is kept', async () => {
+      await mkdir(join(testDir, 'devops'));
+      await writeFile(join(testDir, 'Home.md'), 'See [[devops/Tailscale]].\n');
+      await writeFile(join(testDir, 'devops', 'Tailscale.md'), '# Tailscale\n');
+
+      const result = await fileOps.moveFile(
+        join(testDir, 'devops', 'Tailscale.md'),
+        join(testDir, 'archived', 'Tailscale.md'),
+        { obsidian: true }
+      );
+
+      expect(result.success).toBe(true);
+      // The bare stem still resolves, but the qualified href points at a vacated path; rewrite
+      // to the shortest unambiguous form
+      expect(await readFile(join(testDir, 'Home.md'), 'utf-8')).toBe('See [[Tailscale]].\n');
     });
 
     it('warns about duplicate note stems before moving', async () => {

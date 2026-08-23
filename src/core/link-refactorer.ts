@@ -416,12 +416,16 @@ export class LinkRefactorer {
 
     const oldStem = basename(movedFilePath, '.md');
     const newStem = basename(newFilePath, '.md');
-    if (oldStem === newStem) {
+    // A bare-stem href still resolves wherever the note lands, so an unchanged stem needs no
+    // rewrite; a path-qualified href resolves by vault path and must be recomputed
+    if (oldStem === newStem && !link.href.includes('/')) {
       return link.href;
     }
 
-    // The bare stem stays unambiguous only when no other note already carries it
-    if ((vault.noteStemCounts.get(newStem) ?? 0) === 0) {
+    // The bare stem stays unambiguous when no other note carries it -- which for an unchanged
+    // stem means the pre-move count of one (this very note), and for a rename means zero
+    const stemCount = vault.noteStemCounts.get(newStem) ?? 0;
+    if (stemCount === 0 || (oldStem === newStem && stemCount === 1)) {
       return newStem;
     }
 
@@ -464,7 +468,15 @@ export class LinkRefactorer {
    * in unix form, as markdown links always use forward slashes.
    */
   private ensureRelativePrefix(path: string): string {
-    if (!path.startsWith('./') && !path.startsWith('../') && !path.startsWith('/')) {
+    // Home-directory and drive-absolute forms are already absolute from the markdown point of
+    // view; prefixing them would corrupt the link (./~/notes/x.md, ./C:/docs/x.md)
+    const alreadyAnchored =
+      path.startsWith('./') ||
+      path.startsWith('../') ||
+      path.startsWith('/') ||
+      path.startsWith('~/') ||
+      /^[A-Za-z]:/.test(path);
+    if (!alreadyAnchored) {
       return `./${path}`;
     }
     return path;
@@ -539,7 +551,9 @@ export class LinkRefactorer {
       const wikilinkRegex = new RegExp(
         `(!?)\\[\\[\\s*${this.escapeRegex(link.href)}((?:#[^\\]|]*)?\\s*(?:\\|[^\\]]*)?)\\]\\]`
       );
-      return line.replace(wikilinkRegex, `$1[[${newHref}$2]]`);
+      // $-sequences in the new target are replacement-template metacharacters and must be escaped
+      const escapedHref = newHref.replace(/\$/g, '$$$$');
+      return line.replace(wikilinkRegex, `$1[[${escapedHref}$2]]`);
     }
 
     // For regular markdown links, we need to be more careful to preserve formatting

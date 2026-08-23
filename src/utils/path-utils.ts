@@ -83,16 +83,18 @@ export class PathUtils {
       return originalLinkPath;
     }
 
-    // Resolve the original target
+    // Resolve the original target, ignoring any anchor fragment -- the fragment names a spot in the target, not part of the path, and including it would defeat movedPaths lookups
     const sourceDir = dirname(sourceFilePath);
-    const targetPath = PathUtils.resolvePath(originalLinkPath, sourceDir);
+    const [pathPart, ...fragmentParts] = originalLinkPath.split('#');
+    const fragment = fragmentParts.length > 0 ? `#${fragmentParts.join('#')}` : '';
+    const targetPath = PathUtils.resolvePath(pathPart, sourceDir);
 
     // A target that is itself being moved in the same batch lands at its own destination, so the recomputed path must point there rather than at the vacated location
     const finalTargetPath = movedPaths?.get(targetPath) ?? targetPath;
 
     // Create new relative path from new location
     const newSourceDir = dirname(newSourceFilePath);
-    return PathUtils.makeRelative(finalTargetPath, newSourceDir);
+    return PathUtils.makeRelative(finalTargetPath, newSourceDir) + fragment;
   }
 
   /** Update a Claude import path when a file is moved */
@@ -107,13 +109,15 @@ export class PathUtils {
       return originalImportPath;
     }
 
-    // For relative imports, update the path
+    // For relative imports, update the path; any anchor fragment is preserved verbatim
     const sourceDir = dirname(sourceFilePath);
-    const targetPath = PathUtils.resolvePath(originalImportPath, sourceDir);
+    const [pathPart, ...fragmentParts] = originalImportPath.split('#');
+    const fragment = fragmentParts.length > 0 ? `#${fragmentParts.join('#')}` : '';
+    const targetPath = PathUtils.resolvePath(pathPart, sourceDir);
     const finalTargetPath = movedPaths?.get(targetPath) ?? targetPath;
     const newSourceDir = dirname(newSourceFilePath);
 
-    return PathUtils.makeRelative(finalTargetPath, newSourceDir);
+    return PathUtils.makeRelative(finalTargetPath, newSourceDir) + fragment;
   }
 
   /** Normalize path separators for cross-platform compatibility */

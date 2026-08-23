@@ -152,8 +152,10 @@ export class FileOperations {
       const obsidianWarnings = this.prepareObsidianMode(allParsedFiles, vaultRoot, options);
       const dependencyGraph = new DependencyGraph(allParsedFiles);
 
-      // Find all files that link to the source file
-      const dependentFiles = dependencyGraph.getDependents(sourcePath);
+      // Find all files that link to the source file. The moved file itself is excluded: a link to its own old path is the self pass's job, and scheduling it here would write content to the vacated source path after the move, resurrecting the old file
+      const dependentFiles = dependencyGraph
+        .getDependents(sourcePath)
+        .filter((dependent) => dependent !== sourcePath);
 
       if (verbose) {
         console.log(`Found ${dependentFiles.length} files that reference ${sourcePath}`);
@@ -215,9 +217,12 @@ export class FileOperations {
       // Update links within the moved file itself (a non-markdown asset has no internal links to refactor and is moved as raw bytes, so this step only applies to markdown sources).
       if (sourceFile) {
         try {
+          // The file's own relocation is in the map so self-links point at the destination
+          // rather than the vacated path
           const selfRefactorResult = await this.linkRefactorer.refactorLinksForCurrentFileMove(
             sourceFile,
-            resolvedDestination
+            resolvedDestination,
+            new Map([[PathUtils.resolvePath(sourcePath), resolvedDestination]])
           );
 
           if (selfRefactorResult.changes.length > 0) {
@@ -367,6 +372,7 @@ export class FileOperations {
       } = await this.discoverProjectFiles([
         ...resolvedMoves.map((move) => move.source),
         ...resolvedMoves.map((move) => move.destination),
+        ...(options.discoverySeeds ?? []),
       ]);
       const allParsedFiles = uniqueByFilePath([...allFiles, ...projectFiles]);
       const obsidianWarnings = this.prepareObsidianMode(allParsedFiles, vaultRoot, options);
@@ -423,9 +429,12 @@ export class FileOperations {
           let contentToUse = fileContents.get(dependentFile.filePath);
 
           if (moveInfo) {
-            // This dependent file is also being moved
+            // This dependent file is also being moved: build on the content accumulated under
+            // its destination by earlier passes in this batch, not on the original bytes, or
+            // this pass's full-content write reverts their rewrites
             actualDependentPath = moveInfo.destination;
-            contentToUse = fileContents.get(moveInfo.source);
+            contentToUse =
+              fileContents.get(actualDependentPath) ?? fileContents.get(moveInfo.source);
           }
 
           if (!contentToUse) {
@@ -495,6 +504,10 @@ export class FileOperations {
                 transaction.addContentUpdate(destination, selfRefactorResult.updatedContent);
               }
             }
+
+            // Publish the accumulated content under the destination key so later bystander
+            // passes for co-moved files build on this pass's rewrites
+            fileContents.set(destination, selfRefactorResult.updatedContent);
 
             warnings.push(...selfRefactorResult.errors);
           }
