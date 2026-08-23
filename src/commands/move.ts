@@ -103,7 +103,8 @@ async function expandSourcePatterns(patterns: string[], verbose = false): Promis
 const IGNORED_DIRECTORY_NAMES = new Set(['node_modules', '.git', 'dist']);
 
 /**
- * Collect every file inside a directory tree, recursively, mirroring the ignores that glob expansion applies so a directory source and a glob source treat the same tree consistently.
+ * Collect every file inside a directory tree, recursively, mirroring the ignores that glob
+ * expansion applies so a directory source and a glob source treat the same tree consistently.
  *
  * @param directoryRoot - Directory to walk
  *
@@ -132,7 +133,9 @@ async function collectDirectoryFiles(directoryRoot: string): Promise<string[]> {
 }
 
 /**
- * Remove the directories a unit move vacated, deepest first. A directory that still contains anything is left untouched, so a partial expansion or files the operator left behind keep their parent directories alive.
+ * Remove the directories a unit move vacated, deepest first. A directory that still contains
+ * anything is left untouched, so a partial expansion or files the operator left behind keep their
+ * parent directories alive.
  *
  * @param directoryRoot - The directory whose contents were just moved out
  *
