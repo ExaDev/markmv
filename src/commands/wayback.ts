@@ -431,9 +431,10 @@ async function expandSourcePatterns(
 
     if (existsSync(absolutePattern) && statSync(absolutePattern).isDirectory()) {
       // A directory expands to its markdown files: everything beneath it recursively, or only its direct children.
+      // Glob patterns use forward slashes on every platform; backslashes are pattern escapes
       const globPattern = options.recursive
-        ? `${absolutePattern}/**/*.md`
-        : `${absolutePattern}/*.md`;
+        ? `${absolutePattern.replace(/\\/g, '/')}/**/*.md`
+        : `${absolutePattern.replace(/\\/g, '/')}/*.md`;
       const files = await glob(globPattern, { absolute: true });
       files.forEach((file) => resolvedFiles.add(file));
       if (options.verbose) {
@@ -442,7 +443,7 @@ async function expandSourcePatterns(
       continue;
     }
 
-    const files = await glob(pattern, { absolute: true });
+    const files = await glob(pattern.replace(/\\/g, '/'), { absolute: true });
     const markdownFiles = files.filter((file) => PathUtils.isMarkdownFile(file));
     markdownFiles.forEach((file) => resolvedFiles.add(file));
   }

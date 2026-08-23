@@ -227,7 +227,8 @@ describe('Extract Command', () => {
       expect(parsed.filesProcessed).toBe(1);
       expect(parsed.filesModified).toEqual([markdownFile]);
       expect(parsed.imagesExtracted).toBe(1);
-      expect(parsed.imagesCreated).toEqual([join(testDir, 'flow-diagram.png')]);
+      // The JSON output reports unix-separator paths; compare against the normalised form so the assertion holds on Windows as well
+      expect(parsed.imagesCreated).toEqual([join(testDir, 'flow-diagram.png').replace(/\\/g, '/')]);
       expect(parsed.errors).toEqual([]);
     });
   });

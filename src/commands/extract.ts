@@ -210,12 +210,13 @@ async function expandMarkdownPatterns(patterns: string[]): Promise<string[]> {
     }
 
     if (existsSync(absolutePattern) && statSync(absolutePattern).isDirectory()) {
-      const files = await glob(`${absolutePattern}/*.md`, { absolute: true });
+      // Glob patterns use forward slashes on every platform; backslashes are pattern escapes
+      const files = await glob(`${absolutePattern.replace(/\\/g, '/')}/*.md`, { absolute: true });
       files.forEach((file) => resolvedFiles.add(file));
       continue;
     }
 
-    const globFiles = await glob(pattern, {
+    const globFiles = await glob(pattern.replace(/\\/g, '/'), {
       ignore: ['node_modules/**', '.git/**', 'dist/**'],
       absolute: true,
       nodir: true,
