@@ -1,42 +1,4 @@
 /**
- * Main configuration interface for the Markmv library.
- *
- * Defines settings for file operations, validation, and default behaviors. This configuration can
- * be provided programmatically or loaded from configuration files.
- *
- * @category Types
- *
- * @example
- *   Basic configuration object with common settings
- */
-export interface MarkmvConfig {
-  /** Base directory for operations */
-  baseDir?: string;
-  /** File patterns to include */
-  include?: string[];
-  /** File patterns to exclude */
-  exclude?: string[];
-  /** Whether to follow symbolic links */
-  followSymlinks?: boolean;
-  /** Default options for operations */
-  defaults?: {
-    move?: Partial<import('./operations.js').MoveOperationOptions>;
-    split?: Partial<import('./operations.js').SplitOperationOptions>;
-    join?: Partial<import('./operations.js').JoinOperationOptions>;
-    merge?: Partial<import('./operations.js').MergeOperationOptions>;
-  };
-  /** Link validation settings */
-  validation?: {
-    /** Check external links */
-    checkExternal?: boolean;
-    /** Timeout for external link checks (ms) */
-    externalTimeout?: number;
-    /** Whether to treat missing files as errors */
-    strictInternal?: boolean;
-  };
-}
-
-/**
  * Result of a link validation operation.
  *
  * Contains comprehensive information about the validation process including success status,
