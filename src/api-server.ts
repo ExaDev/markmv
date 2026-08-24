@@ -160,7 +160,7 @@ async function handleRequest(
     const errorResponse = createErrorResponse(
       404,
       'NotFound',
-      `Route ${method} ${path} not found`,
+      `Route ${String(method)} ${String(path)} not found`,
       [`Available routes: ${availableRoutes.join(', ')}`]
     );
     sendJSON(response, 404, errorResponse);
@@ -182,9 +182,9 @@ export function createApiServer(port = 3000): http.Server {
   });
 
   server.listen(port, () => {
-    console.log(`markmv API server running on port ${port}`);
-    console.log(`Health check: http://localhost:${port}/health`);
-    console.log(`API endpoints: http://localhost:${port}/api/*`);
+    console.log(`markmv API server running on port ${String(port)}`);
+    console.log(`Health check: http://localhost:${String(port)}/health`);
+    console.log(`API endpoints: http://localhost:${String(port)}/api/*`);
   });
 
   return server;
