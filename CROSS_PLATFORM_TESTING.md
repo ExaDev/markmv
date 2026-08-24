@@ -5,8 +5,9 @@ This document describes the cross-platform testing setup for markmv, which ensur
 ## Overview
 
 markmv is tested on three major platforms:
+
 - **Linux (Ubuntu)** - Case-sensitive filesystem, symbolic link support
-- **macOS** - Case-insensitive filesystem (default), symbolic link support  
+- **macOS** - Case-insensitive filesystem (default), symbolic link support
 - **Windows** - Case-insensitive filesystem, limited symbolic link support
 
 ## Testing Strategy
@@ -14,6 +15,7 @@ markmv is tested on three major platforms:
 ### 1. CI/CD Matrix Testing
 
 The main CI pipeline (`.github/workflows/main.yml`) includes a matrix strategy that tests across:
+
 - Operating Systems: Ubuntu, Windows, macOS
 - Node.js versions: 20.x, 22.x
 - Filesystem behaviors: Case-sensitive vs case-insensitive
@@ -21,6 +23,7 @@ The main CI pipeline (`.github/workflows/main.yml`) includes a matrix strategy t
 ### 2. Dedicated Cross-Platform Workflow
 
 A separate workflow (`.github/workflows/cross-platform-tests.yml`) performs comprehensive cross-platform testing:
+
 - Automatic filesystem capability detection
 - Platform-specific test scenarios
 - CLI testing with different path formats
@@ -35,30 +38,36 @@ A local testing script (`scripts/test-cross-platform.js`) allows developers to s
 ### Case Sensitivity
 
 **Linux (default)**: Case-sensitive
+
 - `file.md` and `FILE.md` are different files
 - Link updates must preserve case exactly
 
 **macOS/Windows**: Case-insensitive
+
 - `file.md` and `FILE.md` refer to the same file
 - Link updates are case-insensitive
 
 ### Path Separators
 
 **Windows**: Backslash (`\`)
+
 - Native: `folder\subfolder\file.md`
 - Mixed support: `folder/subfolder/file.md`
 
 **Unix-like (Linux/macOS)**: Forward slash (`/`)
+
 - Native: `folder/subfolder/file.md`
 - Limited backslash support
 
 ### Symbolic Links
 
 **Linux/macOS**: Full support
+
 - File and directory symbolic links
 - Link target resolution
 
 **Windows**: Limited support
+
 - Requires elevated permissions
 - May not work in all environments
 
@@ -69,11 +78,11 @@ A local testing script (`scripts/test-cross-platform.js`) allows developers to s
 The `src/utils/test-helpers.ts` module provides utilities for writing cross-platform tests:
 
 ```typescript
-import { 
-  getPlatformInfo, 
-  conditionalTest, 
+import {
+  getPlatformInfo,
+  conditionalTest,
   getTestPaths,
-  wouldFilenamesConflict 
+  wouldFilenamesConflict,
 } from './test-helpers.js';
 
 // Get current platform information
@@ -152,17 +161,17 @@ import { conditionalTest, getPlatformInfo } from '../utils/test-helpers.js';
 
 describe('My Feature', () => {
   const platformInfo = getPlatformInfo();
-  
+
   // Standard test that runs on all platforms
   test('should work on all platforms', () => {
     // Test implementation
   });
-  
+
   // Conditional test for case-sensitive filesystems
   conditionalTest('case sensitivity test', 'case-sensitivity', () => {
     // This only runs on case-sensitive filesystems
   });
-  
+
   // Platform-specific test
   if (platformInfo.isWindows) {
     test('Windows-specific behavior', () => {

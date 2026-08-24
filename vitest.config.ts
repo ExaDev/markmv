@@ -32,7 +32,7 @@ export default defineConfig({
         'vitest.config.ts',
         '.eslintrc.*',
         'commitlint.config.*',
-        '.releaserc.*'
+        '.releaserc.*',
       ],
       include: ['src/**/*.ts'],
       thresholds: {
@@ -40,11 +40,11 @@ export default defineConfig({
           branches: 40,
           functions: 40,
           lines: 40,
-          statements: 40
-        }
-      }
+          statements: 40,
+        },
+      },
     },
     include: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
-    exclude: ['node_modules/', 'dist/', 'coverage/']
-  }
+    exclude: ['node_modules/', 'dist/', 'coverage/'],
+  },
 });

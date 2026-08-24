@@ -10,7 +10,7 @@ This project uses [Conventional Commits](https://www.conventionalcommits.org/) f
 
 Each commit message should have the following format:
 
-```
+```text
 <type>(<scope>): <description>
 
 [optional body]

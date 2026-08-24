@@ -12,25 +12,28 @@ This project uses [semantic-release](https://semantic-release.gitbook.io/) with 
 
 ## Version Bump Rules
 
-| Commit Type | Version Bump | Example |
-|-------------|--------------|---------|
-| `feat` | Minor (0.1.0 → 0.2.0) | `feat(cli): add batch operations` |
-| `fix` | Patch (0.1.0 → 0.1.1) | `fix(core): resolve link parsing issue` |
-| `BREAKING CHANGE` | Major (0.1.0 → 1.0.0) | `feat!: change API interface` |
-| Other types | Patch | `docs: update README` |
+| Commit Type       | Version Bump          | Example                                 |
+| ----------------- | --------------------- | --------------------------------------- |
+| `feat`            | Minor (0.1.0 → 0.2.0) | `feat(cli): add batch operations`       |
+| `fix`             | Patch (0.1.0 → 0.1.1) | `fix(core): resolve link parsing issue` |
+| `BREAKING CHANGE` | Major (0.1.0 → 1.0.0) | `feat!: change API interface`           |
+| Other types       | Patch                 | `docs: update README`                   |
 
 ## Configuration Files
 
 ### `.releaserc.json`
+
 - Main semantic-release configuration
 - Defines plugins and rules for version analysis
 - Configures changelog generation
 
-### `.commitlintrc.json`  
+### `.commitlintrc.json`
+
 - Validates commit message format
 - Enforces conventional commit standards
 
 ### GitHub Actions (`.github/workflows/`)
+
 - `ci.yml`: Continuous integration for all branches
 - `release.yml`: Automated releases on main branch
 
@@ -39,12 +42,14 @@ This project uses [semantic-release](https://semantic-release.gitbook.io/) with 
 ### Making Commits
 
 #### Manual (follow conventional format):
+
 ```bash
 git add .
 git commit -m "feat(cli): add support for glob patterns"
 ```
 
 #### Using Commitizen (recommended):
+
 ```bash
 npm run commit
 ```
@@ -85,7 +90,7 @@ npm run release
 ## Commit Types Reference
 
 - **feat**: New feature
-- **fix**: Bug fix  
+- **fix**: Bug fix
 - **docs**: Documentation changes
 - **style**: Code style changes (formatting, etc.)
 - **refactor**: Code restructuring without functionality changes
@@ -101,10 +106,11 @@ npm run release
 To indicate breaking changes, either:
 
 1. Add `!` after type: `feat(api)!: change response format`
-2. Add footer: 
-   ```
+2. Add footer:
+
+   ```text
    feat(api): change response format
-   
+
    BREAKING CHANGE: API now returns JSON instead of XML
    ```
 
