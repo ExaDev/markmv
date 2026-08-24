@@ -129,13 +129,15 @@ export async function refactorIndex(
     return refusalResult(sourcePath, [`File does not exist: ${sourcePath}`]);
   }
 
-  const targetConvention: IndexConvention =
+  // options.to is typed as IndexConvention for well-typed callers, but this function is also part of the public library API: a plain-JS consumer, or a caller that bypasses the type system, can still pass an arbitrary string here. Widening to unknown before the check keeps it a real runtime guard instead of one TypeScript considers unreachable given options.to's own type.
+  const rawTargetConvention: unknown =
     options.to ?? (currentConvention === 'readme' ? 'index' : 'readme');
-  if (targetConvention !== 'readme' && targetConvention !== 'index') {
+  if (rawTargetConvention !== 'readme' && rawTargetConvention !== 'index') {
     throw new Error(
-      `Unknown index convention '${String(targetConvention)}': expected readme or index`
+      `Unknown index convention '${String(rawTargetConvention)}': expected readme or index`
     );
   }
+  const targetConvention: IndexConvention = rawTargetConvention;
   const targetFilename = CONVENTION_FILENAMES[targetConvention];
 
   if (targetConvention === currentConvention) {
@@ -262,19 +264,21 @@ export async function refactorIndexCommand(
     if (plannedChanges.length > 0) {
       console.log('\n🔗 Link rewrites:');
       for (const change of plannedChanges) {
-        console.log(`  ${change.filePath}:${change.line} ${change.oldValue} → ${change.newValue}`);
+        console.log(
+          `  ${change.filePath}:${String(change.line)} ${String(change.oldValue)} → ${String(change.newValue)}`
+        );
       }
     }
 
     console.log(
-      `\n📊 Summary: ${result.linksUpdated} link(s) would be updated across ${result.filesWithUpdatedLinks.length} file(s)`
+      `\n📊 Summary: ${String(result.linksUpdated)} link(s) would be updated across ${String(result.filesWithUpdatedLinks.length)} file(s)`
     );
   } else {
     console.log(`✅ Renamed ${result.sourcePath} → ${result.targetPath}`);
 
     if (result.linksUpdated > 0) {
       console.log(
-        `📝 Updated ${result.linksUpdated} link(s) across ${result.filesWithUpdatedLinks.length} file(s)`
+        `📝 Updated ${String(result.linksUpdated)} link(s) across ${String(result.filesWithUpdatedLinks.length)} file(s)`
       );
       if (operationOptions.verbose) {
         console.log('\nFiles with updated links:');
@@ -289,7 +293,7 @@ export async function refactorIndexCommand(
 
   // Surface parse failures: a file that could not be parsed had its links left untouched, so the operation cannot guarantee link integrity even though the rename itself succeeded
   if (result.parseFailures.length > 0) {
-    console.log(`\n⚠️  Parse Failures (${result.parseFailures.length}):`);
+    console.log(`\n⚠️  Parse Failures (${String(result.parseFailures.length)}):`);
     console.log('  Links in these files were NOT checked or rewritten:');
     for (const failure of result.parseFailures) {
       console.log(`  ${failure.file}: ${failure.error}`);

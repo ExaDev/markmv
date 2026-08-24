@@ -159,11 +159,11 @@ export interface CheckLinksResult {
   /** Detailed results for each link */
   linkResults: ExternalLinkResult[];
   /** Results grouped by file */
-  resultsByFile: Record<string, ExternalLinkResult[]>;
+  resultsByFile: Partial<Record<string, ExternalLinkResult[]>>;
   /** Results grouped by status code */
-  resultsByStatus: Record<number, ExternalLinkResult[]>;
+  resultsByStatus: Partial<Record<number, ExternalLinkResult[]>>;
   /** Results grouped by domain */
-  resultsByDomain: Record<string, ExternalLinkResult[]>;
+  resultsByDomain: Partial<Record<string, ExternalLinkResult[]>>;
   /** Files that had processing errors */
   fileErrors: { file: string; error: string }[];
   /** Processing time in milliseconds */
@@ -241,9 +241,9 @@ export async function checkLinks(
   if (options.verbose) {
     console.log('🔗 Starting external link validation...');
     console.log(`📋 Configuration:
-  - Timeout: ${options.timeout}ms
-  - Retries: ${options.retry}
-  - Concurrency: ${options.concurrency}
+  - Timeout: ${String(options.timeout)}ms
+  - Retries: ${String(options.retry)}
+  - Concurrency: ${String(options.concurrency)}
   - Method: ${options.method}
   - Cache: ${options.useCache ? 'enabled' : 'disabled'}
   - Ignore status codes: [${options.ignoreStatusCodes.join(', ')}]`);
@@ -307,7 +307,7 @@ export async function checkLinks(
   result.filesProcessed = fileList.length;
 
   if (options.verbose) {
-    console.log(`📁 Found ${fileList.length} markdown files to process`);
+    console.log(`📁 Found ${String(fileList.length)} markdown files to process`);
   }
 
   // Progress tracking
@@ -316,7 +316,7 @@ export async function checkLinks(
     if (options.showProgress && fileList.length > 1) {
       const percent = Math.round((processedFiles / fileList.length) * 100);
       process.stdout.write(
-        `\r🔍 Processing files: ${processedFiles}/${fileList.length} (${percent}%)`
+        `\r🔍 Processing files: ${String(processedFiles)}/${String(fileList.length)} (${String(percent)}%)`
       );
     }
   };
@@ -360,7 +360,7 @@ export async function checkLinks(
 
       if (options.verbose && filteredExternalLinks.length > 0) {
         console.log(
-          `\n📄 ${filePath}: found ${filteredExternalLinks.length} external links (after filtering)`
+          `\n📄 ${filePath}: found ${String(filteredExternalLinks.length)} external links (after filtering)`
         );
       }
 
@@ -381,24 +381,15 @@ export async function checkLinks(
             result.linkResults.push(linkResult);
 
             // Group by file
-            if (!result.resultsByFile[filePath]) {
-              result.resultsByFile[filePath] = [];
-            }
-            result.resultsByFile[filePath].push(linkResult);
+            (result.resultsByFile[filePath] ??= []).push(linkResult);
 
             // Group by status
             if (linkResult.statusCode) {
-              if (!result.resultsByStatus[linkResult.statusCode]) {
-                result.resultsByStatus[linkResult.statusCode] = [];
-              }
-              result.resultsByStatus[linkResult.statusCode].push(linkResult);
+              (result.resultsByStatus[linkResult.statusCode] ??= []).push(linkResult);
             }
 
             // Group by domain
-            if (!result.resultsByDomain[linkResult.domain]) {
-              result.resultsByDomain[linkResult.domain] = [];
-            }
-            result.resultsByDomain[linkResult.domain].push(linkResult);
+            (result.resultsByDomain[linkResult.domain] ??= []).push(linkResult);
 
             // Update counters
             if (linkResult.isBroken) {
@@ -455,15 +446,15 @@ export async function checkLinks(
   }
 
   if (options.verbose) {
-    console.log(`✅ Completed in ${result.processingTime}ms`);
+    console.log(`✅ Completed in ${String(result.processingTime)}ms`);
     console.log(
-      `📊 Summary: ${result.workingLinks} working, ${result.brokenLinks} broken, ${result.warningLinks} warnings`
+      `📊 Summary: ${String(result.workingLinks)} working, ${String(result.brokenLinks)} broken, ${String(result.warningLinks)} warnings`
     );
     if (result.averageResponseTime) {
-      console.log(`⚡ Average response time: ${result.averageResponseTime}ms`);
+      console.log(`⚡ Average response time: ${String(result.averageResponseTime)}ms`);
     }
     if (result.cacheHitRate !== undefined && result.cacheHitRate > 0) {
-      console.log(`🗄️  Cache hit rate: ${result.cacheHitRate}%`);
+      console.log(`🗄️  Cache hit rate: ${String(result.cacheHitRate)}%`);
     }
   }
 
@@ -493,7 +484,7 @@ async function validateExternalLinkWithRetry(
           line: link.line,
           text: link.text ?? '',
           href: link.href,
-          reason: validationResult.reason ?? '',
+          reason: validationResult.reason,
           isBroken: true,
           responseTime,
           domain,
@@ -534,7 +525,7 @@ async function validateExternalLinkWithRetry(
       if (attempt < options.retry) {
         if (options.verbose) {
           console.log(
-            `  ⚠️  Attempt ${attempt + 1} failed for ${link.href}, retrying in ${options.retryDelay}ms...`
+            `  ⚠️  Attempt ${String(attempt + 1)} failed for ${link.href}, retrying in ${String(options.retryDelay)}ms...`
           );
         }
         await new Promise((resolve) => setTimeout(resolve, options.retryDelay));
@@ -596,19 +587,19 @@ function formatAsText(result: CheckLinksResult, options: CheckLinksOperationOpti
 
   // Summary
   lines.push(`📊 Summary:`);
-  lines.push(`  Files processed: ${result.filesProcessed}`);
-  lines.push(`  External links found: ${result.totalExternalLinks}`);
-  lines.push(`  Working links: ${result.workingLinks}`);
-  lines.push(`  Broken links: ${result.brokenLinks}`);
-  lines.push(`  Warning links: ${result.warningLinks}`);
-  lines.push(`  Processing time: ${result.processingTime}ms`);
+  lines.push(`  Files processed: ${String(result.filesProcessed)}`);
+  lines.push(`  External links found: ${String(result.totalExternalLinks)}`);
+  lines.push(`  Working links: ${String(result.workingLinks)}`);
+  lines.push(`  Broken links: ${String(result.brokenLinks)}`);
+  lines.push(`  Warning links: ${String(result.warningLinks)}`);
+  lines.push(`  Processing time: ${String(result.processingTime)}ms`);
 
   if (result.averageResponseTime) {
-    lines.push(`  Average response time: ${result.averageResponseTime}ms`);
+    lines.push(`  Average response time: ${String(result.averageResponseTime)}ms`);
   }
 
   if (result.cacheHitRate !== undefined && result.cacheHitRate > 0) {
-    lines.push(`  Cache hit rate: ${result.cacheHitRate}%`);
+    lines.push(`  Cache hit rate: ${String(result.cacheHitRate)}%`);
   }
 
   lines.push('');
@@ -620,23 +611,23 @@ function formatAsText(result: CheckLinksResult, options: CheckLinksOperationOpti
 
     if (options.groupBy === 'file') {
       Object.entries(result.resultsByFile).forEach(([file, links]) => {
-        const brokenInFile = links.filter((l) => l.isBroken);
+        const brokenInFile = (links ?? []).filter((l) => l.isBroken);
         if (brokenInFile.length > 0) {
           lines.push(`\n📄 ${file}:`);
           brokenInFile.forEach((link) => {
             lines.push(`  ❌ ${link.href}`);
-            if (link.line) lines.push(`     Line ${link.line}`);
-            if (link.statusCode) lines.push(`     Status: ${link.statusCode}`);
+            if (link.line) lines.push(`     Line ${String(link.line)}`);
+            if (link.statusCode) lines.push(`     Status: ${String(link.statusCode)}`);
             if (link.reason) lines.push(`     Reason: ${link.reason}`);
             if (options.includeResponseTimes && link.responseTime) {
-              lines.push(`     Response time: ${link.responseTime}ms`);
+              lines.push(`     Response time: ${String(link.responseTime)}ms`);
             }
           });
         }
       });
     } else if (options.groupBy === 'status') {
       Object.entries(result.resultsByStatus).forEach(([status, links]) => {
-        const brokenLinks = links.filter((l) => l.isBroken);
+        const brokenLinks = (links ?? []).filter((l) => l.isBroken);
         if (brokenLinks.length > 0) {
           lines.push(`\n🔢 Status ${status}:`);
           brokenLinks.forEach((link) => {
@@ -645,14 +636,14 @@ function formatAsText(result: CheckLinksResult, options: CheckLinksOperationOpti
           });
         }
       });
-    } else if (options.groupBy === 'domain') {
+    } else {
       Object.entries(result.resultsByDomain).forEach(([domain, links]) => {
-        const brokenLinks = links.filter((l) => l.isBroken);
+        const brokenLinks = (links ?? []).filter((l) => l.isBroken);
         if (brokenLinks.length > 0) {
           lines.push(`\n🌐 ${domain}:`);
           brokenLinks.forEach((link) => {
             lines.push(`  ❌ ${link.href} (${link.filePath})`);
-            if (link.statusCode) lines.push(`     Status: ${link.statusCode}`);
+            if (link.statusCode) lines.push(`     Status: ${String(link.statusCode)}`);
           });
         }
       });
@@ -670,7 +661,7 @@ function formatAsText(result: CheckLinksResult, options: CheckLinksOperationOpti
 
     warningLinks.forEach((link) => {
       lines.push(`  ⚠️  ${link.href} (${link.filePath})`);
-      lines.push(`     Status: ${link.statusCode} (redirect)`);
+      lines.push(`     Status: ${String(link.statusCode)} (redirect)`);
       if (link.finalUrl && link.finalUrl !== link.href) {
         lines.push(`     Final URL: ${link.finalUrl}`);
       }
@@ -701,19 +692,19 @@ function formatAsMarkdown(result: CheckLinksResult, options: CheckLinksOperation
   lines.push('');
   lines.push('| Metric | Value |');
   lines.push('|--------|-------|');
-  lines.push(`| Files processed | ${result.filesProcessed} |`);
-  lines.push(`| External links found | ${result.totalExternalLinks} |`);
-  lines.push(`| Working links | ${result.workingLinks} |`);
-  lines.push(`| Broken links | ${result.brokenLinks} |`);
-  lines.push(`| Warning links | ${result.warningLinks} |`);
-  lines.push(`| Processing time | ${result.processingTime}ms |`);
+  lines.push(`| Files processed | ${String(result.filesProcessed)} |`);
+  lines.push(`| External links found | ${String(result.totalExternalLinks)} |`);
+  lines.push(`| Working links | ${String(result.workingLinks)} |`);
+  lines.push(`| Broken links | ${String(result.brokenLinks)} |`);
+  lines.push(`| Warning links | ${String(result.warningLinks)} |`);
+  lines.push(`| Processing time | ${String(result.processingTime)}ms |`);
 
   if (result.averageResponseTime) {
-    lines.push(`| Average response time | ${result.averageResponseTime}ms |`);
+    lines.push(`| Average response time | ${String(result.averageResponseTime)}ms |`);
   }
 
   if (result.cacheHitRate !== undefined && result.cacheHitRate > 0) {
-    lines.push(`| Cache hit rate | ${result.cacheHitRate}% |`);
+    lines.push(`| Cache hit rate | ${String(result.cacheHitRate)}% |`);
   }
 
   lines.push('');
@@ -725,14 +716,14 @@ function formatAsMarkdown(result: CheckLinksResult, options: CheckLinksOperation
 
     if (options.groupBy === 'file') {
       Object.entries(result.resultsByFile).forEach(([file, links]) => {
-        const brokenInFile = links.filter((l) => l.isBroken);
+        const brokenInFile = (links ?? []).filter((l) => l.isBroken);
         if (brokenInFile.length > 0) {
           lines.push(`### 📄 ${file}`);
           lines.push('');
           brokenInFile.forEach((link) => {
             lines.push(`- ❌ **${link.href}**`);
-            if (link.line) lines.push(`  - Line: ${link.line}`);
-            if (link.statusCode) lines.push(`  - Status: ${link.statusCode}`);
+            if (link.line) lines.push(`  - Line: ${String(link.line)}`);
+            if (link.statusCode) lines.push(`  - Status: ${String(link.statusCode)}`);
             if (link.reason) lines.push(`  - Reason: ${link.reason}`);
           });
           lines.push('');
@@ -765,14 +756,14 @@ function formatAsCSV(result: CheckLinksResult, _options: CheckLinksOperationOpti
   // Data rows
   result.linkResults.forEach((link) => {
     const row = [
-      `"${link.filePath ?? ''}"`,
+      `"${link.filePath}"`,
       `"${link.href}"`,
       link.isBroken ? 'BROKEN' : 'OK',
       link.statusCode?.toString() ?? '',
       link.responseTime?.toString() ?? '',
       `"${link.domain}"`,
       link.line?.toString() ?? '',
-      `"${link.reason ?? ''}"`,
+      `"${link.reason}"`,
     ];
     lines.push(row.join(','));
   });
@@ -849,9 +840,9 @@ export async function checkLinksCommand(
       console.log('🔍 Dry run mode - no actual HTTP requests will be made');
       console.log(`📋 Configuration:
   - Files: ${files.join(', ')}
-  - Timeout: ${operationOptions.timeout}ms
-  - Retries: ${operationOptions.retry}
-  - Concurrency: ${operationOptions.concurrency}
+  - Timeout: ${String(operationOptions.timeout)}ms
+  - Retries: ${String(operationOptions.retry)}
+  - Concurrency: ${String(operationOptions.concurrency)}
   - Method: ${operationOptions.method}
   - Format: ${operationOptions.format}
   - Group by: ${operationOptions.groupBy}`);

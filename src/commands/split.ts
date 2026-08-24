@@ -118,10 +118,10 @@ export async function splitCommand(source: string, options: SplitOptions): Promi
       console.log('🔍 Dry run mode - no changes will be made');
     }
     if (splitOptions.strategy === 'headers') {
-      console.log(`📋 Split on header level: ${splitOptions.headerLevel}`);
+      console.log(`📋 Split on header level: ${String(splitOptions.headerLevel)}`);
     }
     if (splitOptions.strategy === 'size') {
-      console.log(`📏 Maximum size per section: ${splitOptions.maxSize}KB`);
+      console.log(`📏 Maximum size per section: ${String(splitOptions.maxSize)}KB`);
     }
     if (splitOptions.strategy === 'lines' && splitOptions.splitLines) {
       console.log(`📍 Split at lines: ${splitOptions.splitLines.join(', ')}`);
@@ -169,18 +169,18 @@ export async function splitCommand(source: string, options: SplitOptions): Promi
       }
 
       console.log(
-        `\n📊 Summary: Would create ${result.createdFiles.length} file(s) and modify ${result.modifiedFiles.length} file(s)`
+        `\n📊 Summary: Would create ${String(result.createdFiles.length)} file(s) and modify ${String(result.modifiedFiles.length)} file(s)`
       );
     } else {
       console.log('✅ Split operation completed successfully!');
 
-      console.log(`📄 Created ${result.createdFiles.length} new file(s):`);
+      console.log(`📄 Created ${String(result.createdFiles.length)} new file(s):`);
       for (const file of result.createdFiles) {
         console.log(`  + ${file}`);
       }
 
       if (result.modifiedFiles.length > 0) {
-        console.log(`\n📝 Modified ${result.modifiedFiles.length} file(s):`);
+        console.log(`\n📝 Modified ${String(result.modifiedFiles.length)} file(s):`);
         for (const file of result.modifiedFiles) {
           console.log(`  ~ ${file}`);
         }
@@ -189,7 +189,7 @@ export async function splitCommand(source: string, options: SplitOptions): Promi
       if (options.verbose && result.changes.length > 0) {
         const linkUpdates = result.changes.filter((c) => c.type === 'link-updated').length;
         if (linkUpdates > 0) {
-          console.log(`\n🔗 Updated links in ${linkUpdates} file(s)`);
+          console.log(`\n🔗 Updated links in ${String(linkUpdates)} file(s)`);
         }
       }
     }
@@ -203,7 +203,7 @@ export async function splitCommand(source: string, options: SplitOptions): Promi
     }
 
     // Show helpful tips
-    if (!options.dryRun && result.success) {
+    if (!options.dryRun) {
       console.log('\n💡 Tips:');
       console.log('  • Use --dry-run to preview changes before splitting');
       console.log('  • Use --verbose for detailed operation logs');

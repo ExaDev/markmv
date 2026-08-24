@@ -12,7 +12,7 @@ describe('refactorHeadings', () => {
 
   beforeEach(async () => {
     // Create real temporary directory for testing
-    testDir = join(tmpdir(), `markmv-test-${Date.now()}`);
+    testDir = join(tmpdir(), `markmv-test-${String(Date.now())}`);
     await mkdir(testDir, { recursive: true });
 
     testFile1 = join(testDir, 'file1.md');

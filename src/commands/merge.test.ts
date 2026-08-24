@@ -12,7 +12,7 @@ const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => und
 const mockProcessExit = vi
   .spyOn(process, 'exit')
   .mockImplementation((code?: string | number | null) => {
-    throw new Error(`Process exit called with code ${code}`);
+    throw new Error(`Process exit called with code ${String(code)}`);
   });
 
 describe('Merge Command', () => {
@@ -21,7 +21,7 @@ describe('Merge Command', () => {
   beforeEach(() => {
     testDir = join(
       tmpdir(),
-      `markmv-merge-test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      `markmv-merge-test-${String(Date.now())}-${Math.random().toString(36).slice(2, 11)}`
     );
     mkdirSync(testDir, { recursive: true });
     vi.clearAllMocks();

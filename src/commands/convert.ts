@@ -88,14 +88,14 @@ async function expandSourcePatterns(
         const files = await glob(globPattern, { absolute: true });
         files.forEach((file) => resolvedFiles.add(file));
         if (options.verbose) {
-          console.log(`Added ${files.length} files from directory: ${absolutePattern}`);
+          console.log(`Added ${String(files.length)} files from directory: ${absolutePattern}`);
         }
       } else {
         const globPattern = `${absolutePattern}/*.md`;
         const files = await glob(globPattern, { absolute: true });
         files.forEach((file) => resolvedFiles.add(file));
         if (options.verbose) {
-          console.log(`Added ${files.length} files from directory: ${absolutePattern}`);
+          console.log(`Added ${String(files.length)} files from directory: ${absolutePattern}`);
         }
       }
       continue;
@@ -113,7 +113,7 @@ async function expandSourcePatterns(
       markdownFiles.forEach((file) => resolvedFiles.add(file));
 
       if (options.verbose) {
-        console.log(`Pattern "${pattern}" matched ${markdownFiles.length} markdown files`);
+        console.log(`Pattern "${pattern}" matched ${String(markdownFiles.length)} markdown files`);
       }
     } catch (error) {
       throw new Error(
@@ -191,9 +191,9 @@ function printConvertSummary(
   options: ConvertOptions
 ): void {
   console.log('\n=== Conversion Summary ===');
-  console.log(`Files processed: ${files.length}`);
-  console.log(`Files modified: ${result.modifiedFiles.length}`);
-  console.log(`Total changes: ${result.changes.length}`);
+  console.log(`Files processed: ${String(files.length)}`);
+  console.log(`Files modified: ${String(result.modifiedFiles.length)}`);
+  console.log(`Total changes: ${String(result.changes.length)}`);
 
   if (options.pathResolution && options.linkStyle) {
     console.log(`Path resolution: converted to ${options.pathResolution}`);
@@ -205,13 +205,17 @@ function printConvertSummary(
   }
 
   if (result.errors.length > 0) {
-    console.log(`Errors: ${result.errors.length}`);
-    result.errors.forEach((error) => console.error(`  - ${error}`));
+    console.log(`Errors: ${String(result.errors.length)}`);
+    result.errors.forEach((error) => {
+      console.error(`  - ${error}`);
+    });
   }
 
   if (result.warnings.length > 0) {
-    console.log(`Warnings: ${result.warnings.length}`);
-    result.warnings.forEach((warning) => console.warn(`  - ${warning}`));
+    console.log(`Warnings: ${String(result.warnings.length)}`);
+    result.warnings.forEach((warning) => {
+      console.warn(`  - ${warning}`);
+    });
   }
 
   if (options.dryRun) {
@@ -245,7 +249,7 @@ function printConvertSummary(
 export async function convertCommand(patterns: string[], options: ConvertOptions): Promise<void> {
   try {
     // Validate input patterns
-    if (!patterns || patterns.length === 0) {
+    if (patterns.length === 0) {
       throw new Error('At least one file pattern must be specified');
     }
 
@@ -270,7 +274,7 @@ export async function convertCommand(patterns: string[], options: ConvertOptions
     const files = await expandSourcePatterns(patterns, validatedOptions);
 
     if (validatedOptions.verbose) {
-      console.log(`Found ${files.length} markdown files to process`);
+      console.log(`Found ${String(files.length)} markdown files to process`);
     }
 
     // Create converter and process files

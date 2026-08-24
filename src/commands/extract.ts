@@ -87,7 +87,7 @@ interface ExtractFileResult {
  * @throws Will exit the process with code 1 if the operation fails
  */
 export async function extractCommand(patterns: string[], options: ExtractOptions): Promise<void> {
-  if (!patterns || patterns.length === 0) {
+  if (patterns.length === 0) {
     reportUsageError(options, 'At least one file pattern must be specified');
   }
 
@@ -142,7 +142,7 @@ export async function extractCommand(patterns: string[], options: ExtractOptions
         for (const created of result.createdImages) {
           console.log(`🖼️  Created ${created}`);
         }
-        console.log(`✅ Extracted ${result.extractedCount} image(s) from ${file}`);
+        console.log(`✅ Extracted ${String(result.extractedCount)} image(s) from ${file}`);
       }
     }
   }
@@ -151,7 +151,7 @@ export async function extractCommand(patterns: string[], options: ExtractOptions
     console.log(JSON.stringify(summary, null, 2));
   } else if (summary.success) {
     console.log(
-      `📊 Summary: extracted ${summary.imagesExtracted} image(s) across ${summary.filesModified.length} file(s)`
+      `📊 Summary: extracted ${String(summary.imagesExtracted)} image(s) across ${String(summary.filesModified.length)} file(s)`
     );
     if (options.dryRun) {
       console.log('(Dry run - no files were actually modified)');
@@ -274,11 +274,11 @@ async function extractFile(
       const parsed = parseImageDataUri(image.href);
       const extension = imageExtensionForMimeType(parsed.mimeType);
       const slug = slugifyFileName(image.alt);
-      const baseName = slug ?? `img-${++naming.unnamedCounter}`;
+      const baseName = slug ?? `img-${String(++naming.unnamedCounter)}`;
       let fileName = `${baseName}.${extension}`;
       let suffix = 2;
       while (naming.usedNames.has(fileName) || existsSync(joinPath(outputDir, fileName))) {
-        fileName = `${baseName}-${suffix}.${extension}`;
+        fileName = `${baseName}-${String(suffix)}.${extension}`;
         suffix++;
       }
       naming.usedNames.add(fileName);

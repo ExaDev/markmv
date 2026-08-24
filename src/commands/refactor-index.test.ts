@@ -5,8 +5,8 @@ import { join } from 'node:path';
 import { refactorIndex, refactorIndexCommand } from './refactor-index.js';
 import type { RefactorIndexResult } from './refactor-index.js';
 
-function parseJsonPayload<T>(json: string): T {
-  return JSON.parse(json) as T;
+function parseJsonPayload(json: string): unknown {
+  return JSON.parse(json);
 }
 
 // Mock console methods to capture output
@@ -18,7 +18,7 @@ vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 const mockProcessExit = vi
   .spyOn(process, 'exit')
   .mockImplementation((code?: string | number | null) => {
-    throw new Error(`Process exit called with code ${code}`);
+    throw new Error(`Process exit called with code ${String(code)}`);
   });
 
 describe('refactorIndex', () => {
@@ -28,7 +28,7 @@ describe('refactorIndex', () => {
     // Create a unique test directory
     testDir = join(
       tmpdir(),
-      `markmv-refactor-index-test-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+      `markmv-refactor-index-test-${String(Date.now())}-${Math.random().toString(36).slice(2, 11)}`
     );
     mkdirSync(testDir, { recursive: true });
     vi.clearAllMocks();
@@ -300,9 +300,9 @@ describe('refactorIndex', () => {
 
       await refactorIndexCommand(readmePath, { json: true });
 
-      const payload = parseJsonPayload<RefactorIndexResult>(
+      const payload = parseJsonPayload(
         mockConsoleLog.mock.calls.map((args) => args.join(' ')).join('')
-      );
+      ) as RefactorIndexResult;
       expect(payload.success).toBe(true);
       expect(payload.sourcePath).toBe(readmePath);
       expect(payload.targetPath).toBe(join(docsDir, 'index.md'));
@@ -384,9 +384,9 @@ describe('refactorIndex', () => {
         'Process exit called with code 1'
       );
 
-      const payload = parseJsonPayload<RefactorIndexResult>(
+      const payload = parseJsonPayload(
         mockConsoleLog.mock.calls.map((args) => args.join(' ')).join('')
-      );
+      ) as RefactorIndexResult;
       expect(payload.success).toBe(false);
       expect(payload.errors).toHaveLength(1);
       expect(payload.errors[0]).toContain('Only README.md and index.md files');

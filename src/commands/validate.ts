@@ -255,10 +255,12 @@ export function planLinkFixes(result: ValidateResult, knownFiles: string[]): Pla
  * @param choiceIndex - Zero-based index into fix.suggestions
  */
 export async function applyLinkFix(fix: PlannedLinkFix, choiceIndex: number): Promise<void> {
-  const suggestion = fix.suggestions[choiceIndex];
-  if (!suggestion) {
-    throw new Error(`No suggestion ${choiceIndex} for ${fix.brokenHref} in ${fix.sourceFile}`);
+  if (choiceIndex < 0 || choiceIndex >= fix.suggestions.length) {
+    throw new Error(
+      `No suggestion ${String(choiceIndex)} for ${fix.brokenHref} in ${fix.sourceFile}`
+    );
   }
+  const suggestion = fix.suggestions[choiceIndex];
   // An anchored target keeps its anchor on the replacement; the anchor sits after the path
   const [pathPart, ...fragmentParts] = fix.brokenHref.split('#');
   const fragment = fragmentParts.length > 0 ? `#${fragmentParts.join('#')}` : '';
@@ -267,12 +269,14 @@ export async function applyLinkFix(fix: PlannedLinkFix, choiceIndex: number): Pr
   const content = await readFile(fix.sourceFile, 'utf-8');
   const lines = content.split('\n');
   const lineIndex = fix.line - 1;
-  const target = lines[lineIndex];
+  const target = lines.at(lineIndex);
   if (target === undefined) {
-    throw new Error(`Line ${fix.line} not found in ${fix.sourceFile}`);
+    throw new Error(`Line ${String(fix.line)} not found in ${fix.sourceFile}`);
   }
   if (!target.includes(brokenSpan)) {
-    throw new Error(`Link ${fix.brokenHref} not found on line ${fix.line} of ${fix.sourceFile}`);
+    throw new Error(
+      `Link ${fix.brokenHref} not found on line ${String(fix.line)} of ${fix.sourceFile}`
+    );
   }
   lines[lineIndex] = target.replace(brokenSpan, `](${suggestion.replacementHref}${fragment}`);
   await writeFile(fix.sourceFile, lines.join('\n'));
@@ -283,9 +287,9 @@ async function promptFixChoice(fix: PlannedLinkFix): Promise<number | undefined>
   const { createInterface } = await import('node:readline/promises');
   const readlineInterface = createInterface({ input: process.stdin, output: process.stdout });
   try {
-    console.log(`\n🔧 ${fix.sourceFile}:${fix.line} broken link ${fix.brokenHref}`);
+    console.log(`\n🔧 ${fix.sourceFile}:${String(fix.line)} broken link ${fix.brokenHref}`);
     fix.suggestions.forEach((suggestion, index) => {
-      console.log(`  ${index + 1}. ${suggestion.replacementHref} (${suggestion.reason})`);
+      console.log(`  ${String(index + 1)}. ${suggestion.replacementHref} (${suggestion.reason})`);
     });
     console.log('  s. skip');
     const answer = await readlineInterface.question('Choice [1-s]: ');
@@ -487,7 +491,7 @@ export async function validateLinks(
 
     if (opts.verbose) {
       console.log(
-        `🔍 Git Integration: Found ${files.length} changed markdown files since ${baseRef}`
+        `🔍 Git Integration: Found ${String(files.length)} changed markdown files since ${baseRef}`
       );
     }
   } else if (opts.gitStaged && gitUtils) {
@@ -508,7 +512,7 @@ export async function validateLinks(
     };
 
     if (opts.verbose) {
-      console.log(`🔍 Git Integration: Found ${files.length} staged markdown files`);
+      console.log(`🔍 Git Integration: Found ${String(files.length)} staged markdown files`);
     }
   } else {
     // Standard mode - resolve glob patterns. Glob patterns use forward slashes on every
@@ -535,7 +539,7 @@ export async function validateLinks(
     }
 
     if (opts.verbose) {
-      console.log(`Found ${files.length} markdown files to validate`);
+      console.log(`Found ${String(files.length)} markdown files to validate`);
     }
   }
 
@@ -677,8 +681,8 @@ export async function validateLinks(
         }
 
         if (cached) {
-          validation = { brokenLinks: cached.result.brokenLinks || [] };
-          totalLinksForFile = cached.result.totalLinks || 0;
+          validation = { brokenLinks: cached.result.brokenLinks };
+          totalLinksForFile = cached.result.totalLinks;
           cacheHits++;
 
           if (opts.verbose) {
@@ -771,7 +775,7 @@ export async function validateLinks(
             (bl) => bl.reason === 'auth-required'
           ).length;
           const authenticatedCount = brokenLinks.filter(
-            (bl) => bl.authInfo?.authAttempted && bl.authInfo?.authSucceeded
+            (bl) => bl.authInfo?.authAttempted && bl.authInfo.authSucceeded
           ).length;
 
           result.authRequiredLinks = (result.authRequiredLinks ?? 0) + authRequiredCount;
@@ -949,7 +953,7 @@ export async function validateCommand(
         const knownFiles = await scanKnownFiles(finalPatterns);
         for (const fix of planLinkFixes(result, knownFiles)) {
           console.error(
-            `Did you mean one of: ${fix.suggestions.map((sg) => sg.replacementHref).join(', ')} for ${fix.brokenHref} (${fix.sourceFile}:${fix.line})`
+            `Did you mean one of: ${fix.suggestions.map((sg) => sg.replacementHref).join(', ')} for ${fix.brokenHref} (${fix.sourceFile}:${String(fix.line)})`
           );
         }
       }
@@ -961,31 +965,33 @@ export async function validateCommand(
       console.log(`\n🔍 Git Integration`);
       if (result.gitInfo.baseRef) {
         console.log(
-          `Changed since ${result.gitInfo.baseRef}: ${result.gitInfo.changedFiles} files`
+          `Changed since ${result.gitInfo.baseRef}: ${String(result.gitInfo.changedFiles)} files`
         );
       } else {
-        console.log(`Staged files: ${result.gitInfo.changedFiles} files`);
+        console.log(`Staged files: ${String(result.gitInfo.changedFiles)} files`);
       }
       if (result.gitInfo.cachedFiles > 0) {
         console.log(
-          `Cache hits: ${result.gitInfo.cachedFiles} files (${result.gitInfo.cacheHitRate}% hit rate)`
+          `Cache hits: ${String(result.gitInfo.cachedFiles)} files (${String(result.gitInfo.cacheHitRate)}% hit rate)`
         );
       }
       console.log();
     }
 
     console.log(`📊 Validation Summary`);
-    console.log(`Files processed: ${result.filesProcessed}`);
-    console.log(`Total links found: ${result.totalLinks}`);
-    console.log(`Broken links: ${result.brokenLinks}`);
-    console.log(`Processing time: ${result.processingTime}ms`);
+    console.log(`Files processed: ${String(result.filesProcessed)}`);
+    console.log(`Total links found: ${String(result.totalLinks)}`);
+    console.log(`Broken links: ${String(result.brokenLinks)}`);
+    console.log(`Processing time: ${String(result.processingTime)}ms`);
 
     if (result.gitInfo?.enabled && options.cache) {
       const savedTime =
         result.gitInfo.cacheHitRate > 0
-          ? ` (${Math.round(result.processingTime * (result.gitInfo.cacheHitRate / 100))}ms saved by cache)`
+          ? ` (${String(Math.round(result.processingTime * (result.gitInfo.cacheHitRate / 100)))}ms saved by cache)`
           : '';
-      console.log(`Cache performance: ${result.gitInfo.cacheHitRate}% hit rate${savedTime}`);
+      console.log(
+        `Cache performance: ${String(result.gitInfo.cacheHitRate)}% hit rate${savedTime}`
+      );
     }
     console.log();
 
@@ -996,8 +1002,8 @@ export async function validateCommand(
       const externalTotal = staleCount + freshCount;
 
       if (externalTotal > 0) {
-        console.log(`Fresh external links: ${freshCount}`);
-        console.log(`Stale external links: ${staleCount}`);
+        console.log(`Fresh external links: ${String(freshCount)}`);
+        console.log(`Stale external links: ${String(staleCount)}`);
       }
     }
 
@@ -1008,17 +1014,17 @@ export async function validateCommand(
       const realBrokenCount = result.brokenLinks - authRequiredCount;
 
       if (authRequiredCount > 0) {
-        console.log(`🔒 Authentication-protected links: ${authRequiredCount}`);
+        console.log(`🔒 Authentication-protected links: ${String(authRequiredCount)}`);
       }
       if (authenticatedCount > 0) {
-        console.log(`✅ Successfully authenticated links: ${authenticatedCount}`);
+        console.log(`✅ Successfully authenticated links: ${String(authenticatedCount)}`);
       }
       if (realBrokenCount > 0) {
-        console.log(`❌ Truly broken links: ${realBrokenCount}`);
+        console.log(`❌ Truly broken links: ${String(realBrokenCount)}`);
       }
     }
 
-    console.log(`Processing time: ${result.processingTime}ms\n`);
+    console.log(`Processing time: ${String(result.processingTime)}ms\n`);
 
     if (result.frontmatterViolations.length > 0 || result.formatViolations.length > 0) {
       // Standards violations fail the run exactly like broken links, including when no links
@@ -1027,7 +1033,7 @@ export async function validateCommand(
     }
 
     if (result.frontmatterViolations.length > 0) {
-      console.log(`📋 Frontmatter Violations (${result.frontmatterViolations.length}):`);
+      console.log(`📋 Frontmatter Violations (${String(result.frontmatterViolations.length)}):`);
       for (const violation of result.frontmatterViolations) {
         console.log(`  ${violation.file}: missing ${violation.missingFields.join(', ')}`);
       }
@@ -1035,17 +1041,17 @@ export async function validateCommand(
     }
 
     if (result.formatViolations.length > 0) {
-      console.log(`📐 Link Format Violations (${result.formatViolations.length}):`);
+      console.log(`📐 Link Format Violations (${String(result.formatViolations.length)}):`);
       for (const violation of result.formatViolations) {
         console.log(
-          `  ${violation.file}:${violation.line} ${violation.href} (expected ${violation.expected})`
+          `  ${violation.file}:${String(violation.line)} ${violation.href} (expected ${violation.expected})`
         );
       }
       console.log();
     }
 
     if (result.fileErrors.length > 0) {
-      console.log(`⚠️  File Errors (${result.fileErrors.length}):`);
+      console.log(`⚠️  File Errors (${String(result.fileErrors.length)}):`);
       for (const error of result.fileErrors) {
         console.log(`  ${error.file}: ${error.error}`);
       }
@@ -1088,15 +1094,15 @@ export async function validateCommand(
       // Group by link type
       for (const [linkType, brokenLinks] of Object.entries(result.brokenLinksByType)) {
         if (brokenLinks.length > 0) {
-          console.log(`\n  ${linkType.toUpperCase()} (${brokenLinks.length}):`);
+          console.log(`\n  ${linkType.toUpperCase()} (${String(brokenLinks.length)}):`);
           for (const brokenLink of brokenLinks) {
             const context =
-              options.includeContext && brokenLink.line ? ` (line ${brokenLink.line})` : '';
+              options.includeContext && brokenLink.line ? ` (line ${String(brokenLink.line)})` : '';
             const file = brokenLink.filePath ? ` in ${brokenLink.filePath}` : '';
             const freshness = brokenLink.reason === 'content-stale' ? ' [STALE]' : '';
             const authIndicator = brokenLink.reason === 'auth-required' ? ' 🔒' : '';
             console.log(`    ❌ ${brokenLink.url}${context}${file}${freshness}${authIndicator}`);
-            if (brokenLink.reason && options.verbose) {
+            if (options.verbose) {
               console.log(`       Reason: ${brokenLink.reason}`);
             }
             if (
@@ -1135,16 +1141,16 @@ export async function validateCommand(
     } else {
       // Group by file
       for (const [filePath, brokenLinks] of Object.entries(result.brokenLinksByFile)) {
-        console.log(`\n  📄 ${filePath} (${brokenLinks.length} broken):`);
+        console.log(`\n  📄 ${filePath} (${String(brokenLinks.length)} broken):`);
         for (const brokenLink of brokenLinks) {
           const context =
-            options.includeContext && brokenLink.line ? ` (line ${brokenLink.line})` : '';
+            options.includeContext && brokenLink.line ? ` (line ${String(brokenLink.line)})` : '';
           const freshness = brokenLink.reason === 'content-stale' ? ' [STALE]' : '';
           const authIndicator = brokenLink.reason === 'auth-required' ? ' 🔒' : '';
           console.log(
             `    ❌ [${brokenLink.type}] ${brokenLink.url}${context}${freshness}${authIndicator}`
           );
-          if (brokenLink.reason && options.verbose) {
+          if (options.verbose) {
             console.log(`       Reason: ${brokenLink.reason}`);
           }
           if (
@@ -1198,11 +1204,11 @@ export async function validateCommand(
           await applyLinkFix(fix, choice);
           applied++;
         }
-        console.log(`\n🔧 Applied ${applied} fix(es)`);
+        console.log(`\n🔧 Applied ${String(applied)} fix(es)`);
       } else {
         console.log('\n🔧 Suggested fixes (rerun on a terminal, or use the API, to apply):');
         for (const fix of fixes) {
-          console.log(`  ${fix.sourceFile}:${fix.line} ${fix.brokenHref}`);
+          console.log(`  ${fix.sourceFile}:${String(fix.line)} ${fix.brokenHref}`);
           for (const suggestion of fix.suggestions) {
             console.log(`    Did you mean ${suggestion.replacementHref} (${suggestion.reason})`);
           }

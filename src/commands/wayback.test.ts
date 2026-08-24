@@ -317,7 +317,7 @@ describe('Wayback Command', () => {
       errors = [];
       process.exit = (code?: number): never => {
         exitCalls.push(code ?? 0);
-        throw new Error(`halted: process.exit called with ${code ?? 0}`);
+        throw new Error(`halted: process.exit called with ${String(code ?? 0)}`);
       };
       console.error = (...args: unknown[]) => {
         errors.push(args.join(' '));

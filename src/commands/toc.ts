@@ -419,13 +419,13 @@ export async function tocCommand(filePaths: string[], cliOptions: TocCliOptions)
 
     // Format output for human consumption
     console.log(`\n📋 TOC Generation Summary`);
-    console.log(`Files processed: ${result.filesProcessed}`);
-    console.log(`Files modified: ${result.filesModified}`);
-    console.log(`Files skipped: ${result.filesSkipped}`);
-    console.log(`Processing time: ${result.processingTime}ms\n`);
+    console.log(`Files processed: ${String(result.filesProcessed)}`);
+    console.log(`Files modified: ${String(result.filesModified)}`);
+    console.log(`Files skipped: ${String(result.filesSkipped)}`);
+    console.log(`Processing time: ${String(result.processingTime)}ms\n`);
 
     if (result.fileErrors.length > 0) {
-      console.log(`⚠️  File Errors (${result.fileErrors.length}):`);
+      console.log(`⚠️  File Errors (${String(result.fileErrors.length)}):`);
       for (const error of result.fileErrors) {
         console.log(`  ${error.file}: ${error.error}`);
       }
@@ -438,7 +438,7 @@ export async function tocCommand(filePaths: string[], cliOptions: TocCliOptions)
         const status = detail.tocGenerated ? '✅' : '⏭️';
         console.log(`  ${status} ${detail.file}`);
         console.log(
-          `    Headings: ${detail.headingsFound}, TOC lines: ${detail.tocLength}, Position: ${detail.position}`
+          `    Headings: ${String(detail.headingsFound)}, TOC lines: ${String(detail.tocLength)}, Position: ${detail.position}`
         );
       }
     }
@@ -446,7 +446,7 @@ export async function tocCommand(filePaths: string[], cliOptions: TocCliOptions)
     if (result.filesModified === 0 && result.filesSkipped === 0) {
       console.log(`ℹ️  No files were modified`);
     } else if (result.filesModified > 0) {
-      console.log(`✅ Successfully added/updated TOC in ${result.filesModified} files`);
+      console.log(`✅ Successfully added/updated TOC in ${String(result.filesModified)} files`);
     }
   } catch (error) {
     console.error('TOC generation failed:', error);

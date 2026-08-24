@@ -542,7 +542,7 @@ Anchor link: [bad anchor](#non-existent)
 
       expect(result.brokenLinks).toBe(1);
       const broken = Object.values(result.brokenLinksByFile)[0]?.[0];
-      expect(broken?.url).toBe('Missing Note');
+      expect(broken.url).toBe('Missing Note');
     });
 
     it('does not validate wikilinks without obsidian mode', async () => {
@@ -567,9 +567,9 @@ Anchor link: [bad anchor](#non-existent)
 
       expect(result.brokenLinks).toBe(1);
       const broken = Object.values(result.brokenLinksByFile)[0]?.[0];
-      expect(broken?.reason).toBe('ambiguous-wikilink');
-      expect(broken?.details).toContain(join(testDir, 'a', 'Note.md'));
-      expect(broken?.details).toContain(join(testDir, 'b', 'Note.md'));
+      expect(broken.reason).toBe('ambiguous-wikilink');
+      expect(broken.details).toContain(join(testDir, 'a', 'Note.md'));
+      expect(broken.details).toContain(join(testDir, 'b', 'Note.md'));
     });
   });
 
@@ -599,7 +599,7 @@ Anchor link: [bad anchor](#non-existent)
       // The skipped domain makes no check at all; the unskipped one fails its check
       expect(result.brokenLinks).toBe(1);
       const broken = Object.values(result.brokenLinksByFile)[0]?.[0];
-      expect(broken?.url).toBe('https://normal.invalid/y');
+      expect(broken.url).toBe('https://normal.invalid/y');
     });
   });
 

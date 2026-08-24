@@ -13,7 +13,7 @@ vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 const mockProcessExit = vi
   .spyOn(process, 'exit')
   .mockImplementation((code?: string | number | null) => {
-    throw new Error(`Process exit called with code ${code}`);
+    throw new Error(`Process exit called with code ${String(code)}`);
   });
 
 describe('Move Command', () => {
@@ -23,7 +23,7 @@ describe('Move Command', () => {
     // Create a unique test directory
     testDir = join(
       tmpdir(),
-      `markmv-move-test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      `markmv-move-test-${String(Date.now())}-${Math.random().toString(36).slice(2, 11)}`
     );
     mkdirSync(testDir, { recursive: true });
 

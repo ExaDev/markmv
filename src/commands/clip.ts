@@ -389,9 +389,9 @@ function formatClipResults(result: ClipResult, options: ClipCliOptions): string 
 
   // Summary
   lines.push(`\n📊 Summary:`);
-  lines.push(`   Successfully clipped: ${result.clippedUrls.length}`);
-  lines.push(`   Failed: ${result.failedUrls.length}`);
-  lines.push(`   Files generated: ${result.generatedFiles.length}`);
+  lines.push(`   Successfully clipped: ${String(result.clippedUrls.length)}`);
+  lines.push(`   Failed: ${String(result.failedUrls.length)}`);
+  lines.push(`   Files generated: ${String(result.generatedFiles.length)}`);
 
   if (options.dryRun) {
     lines.push('\n🔍 Dry run - no files were actually created');
