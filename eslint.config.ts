@@ -62,6 +62,7 @@ export default defineConfig(
             "prettier.config.ts",
             "release.config.ts",
             ".github/scripts/check-dependency-age.ts",
+            ".github/scripts/audit-autofix.ts",
           ],
         },
         tsconfigRootDir: import.meta.dirname,

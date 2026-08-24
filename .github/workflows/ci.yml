@@ -67,16 +67,75 @@ jobs:
           task: knip
           command: pnpm run knip
 
-  # Advisory only, matching the original behaviour: a high-severity finding is surfaced but never blocks release.
-  security-audit:
+  # Self-healing: a high-severity advisory with a published, aged-out patch is auto-fixed by pinning a pnpm-workspace.yaml override and opening its own PR, dispatched and merged once that PR's own CI is green; anything not auto-fixable (no patch yet, the fix package itself is too new, a resolution conflict) is deferred and surfaced as a warning, never blocking this run's own release -- matching the original job's advisory-only behaviour.
+  audit:
     runs-on: ubuntu-latest
-    continue-on-error: true
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    outputs:
+      fixed: ${{ steps.audit-setup.outputs.fixed }}
     steps:
       - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup
+
+      - name: Audit (auto-fix findings with an aged patch, defer the rest)
+        id: audit-setup
+        uses: ./.github/actions/setup
         with:
-          task: security-audit
-          command: pnpm audit --audit-level=high
+          task: audit
+          command: node --experimental-strip-types .github/scripts/audit-autofix.ts
+        env:
+          AUDIT_LEVEL: high
+
+      # Only open a PR from main itself: a PR run has nothing of its own to fix a PR against, and this keeps the fix branch out of branches this workflow doesn't own. Landing the fix through a PR means a bad fix stays off main entirely: the merge below happens only after a full CI run on the fix branch has passed.
+      - name: Open a PR with the auto-fixed overrides
+        if: steps.audit-setup.outputs.fixed == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="audit-autofix/$(date -u +%Y%m%d%H%M%S)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add pnpm-workspace.yaml pnpm-lock.yaml
+          git commit -m "fix(deps): apply aged security overrides
+
+          $(cat /tmp/audit-fix-commit-body.txt)"
+          git push origin "$BRANCH"
+          gh pr create --title "fix(deps): apply aged security overrides" --body-file /tmp/audit-fix-commit-body.txt --base main --head "$BRANCH"
+          # A push authenticated with GITHUB_TOKEN (the git push above, same as opening the PR) never triggers another workflow run on its own -- dispatch the fix branch's checks explicitly.
+          gh workflow run ci.yml --ref "$BRANCH"
+          RUN_ID=""
+          for i in 1 2 3 4 5; do
+            sleep 10
+            RUN_ID=$(gh run list --workflow=ci.yml --branch "$BRANCH" --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId' 2>/dev/null)
+            if [ -n "$RUN_ID" ]; then break; fi
+          done
+          if [ -z "$RUN_ID" ]; then
+            echo "::error::Dispatched CI run for $BRANCH never appeared; fix PR left open for manual merge after review."
+            exit 0
+          fi
+          echo "Waiting for CI run $RUN_ID on $BRANCH..."
+          for i in $(seq 1 60); do
+            STATUS=$(gh run view "$RUN_ID" --json status,conclusion --jq '.status + ":" + (.conclusion // "pending")' 2>/dev/null || echo "query_failed")
+            if [ "$STATUS" = "completed:success" ]; then
+              echo "CI green on $BRANCH, rebase-merging the fix PR."
+              gh pr merge --rebase "$BRANCH"
+              # Same anti-recursion rule as the dispatch above: this merge is also GITHUB_TOKEN-authenticated, so the resulting push to main would never cascade into ci.yml's own push trigger on its own.
+              gh workflow run ci.yml --ref main
+              exit 0
+            fi
+            if [ "$STATUS" = "completed:failure" ] || [ "$STATUS" = "completed:cancelled" ]; then
+              echo "::error::CI on $BRANCH concluded $STATUS; fix PR left open so a broken fix cannot reach main."
+              exit 0
+            fi
+            echo "CI on $BRANCH still pending ($i/60)..."
+            sleep 20
+          done
+          echo "::error::Timed out waiting for CI run $RUN_ID on $BRANCH; fix PR left open."
+          exit 0
 
   # Cross-platform test matrix -- the one job that genuinely needs multiple OS/Node combinations. Test execution deliberately bypasses the turbo-wrapped test:run script (calling the underlying _test script directly): turbo's cache key here is keyed by OS but not by Node version, so the wrapped script would let turbo skip actually re-running tests against the second Node version whenever the source inputs are unchanged, defeating the point of testing both versions. The Build step is safe to leave turbo-wrapped: compiled output doesn't depend on the Node runtime version, so it's free to share a cache with the standalone build job on the same OS/commit.
   test:
@@ -263,7 +322,7 @@ jobs:
 
   # Release - only after every quality gate passes
   release:
-    needs: [commitlint, lint, typecheck, build, knip, security-audit, test]
+    needs: [commitlint, lint, typecheck, build, knip, audit, test]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
