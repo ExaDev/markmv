@@ -45,6 +45,7 @@ export default defineConfig(
       "commitlint.config.ts",
       "knip.config.ts",
       "prettier.config.ts",
+      "release.config.ts",
     ],
     extends: [
       ...tseslint.configs.strictTypeChecked,
@@ -58,6 +59,7 @@ export default defineConfig(
             "commitlint.config.ts",
             "knip.config.ts",
             "prettier.config.ts",
+            "release.config.ts",
           ],
         },
         tsconfigRootDir: import.meta.dirname,
