@@ -1,0 +1,2 @@
+# A newly published package version can't be installed until this many minutes have passed, giving a compromised release time to be caught and pulled before it reaches this project. 10080 minutes = 7 days, matching the global npm/pnpm min-release-age configured on this machine.
+minimumReleaseAge: 10080
