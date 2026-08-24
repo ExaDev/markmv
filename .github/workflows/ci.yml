@@ -137,7 +137,7 @@ jobs:
           cache: 'pnpm'
 
       # turbo's local cache for the build step only -- keyed by OS, not Node version, which is correct here since compiled output doesn't vary by Node runtime.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: .turbo
           key: turbo-build-${{ runner.os }}-${{ github.sha }}
