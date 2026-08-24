@@ -28,12 +28,25 @@ export default tseslint.config(
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
   },
   {
-    // Type-aware rules need parserOptions.project, which only resolves for files tsconfig.json's include covers (src/**). Scoping the type-aware presets to that same set, rather than applying them unconditionally to every .ts file eslint touches, is what stops a crash the moment a new root .ts config file is linted.
-    files: ['src/**/*.{ts,tsx}'],
+    // Type-aware rules need type information, which the TS project service resolves per file: files under src/** resolve against tsconfig.json's own project normally, while the named root config files aren't covered by any tsconfig (tsconfig.json's include is src/**/* only) and would otherwise error -- allowDefaultProject gives them a synthetic default-options program instead. Listing files by name rather than a `**` glob keeps this under the project service's own match-count budget, which exists because each extra match slows down linting.
+    files: [
+      'src/**/*.{ts,tsx}',
+      'eslint.config.ts',
+      'commitlint.config.ts',
+      'knip.config.ts',
+      'prettier.config.ts',
+    ],
     extends: [...tseslint.configs.recommendedTypeChecked, ...tseslint.configs.stylisticTypeChecked],
     languageOptions: {
       parserOptions: {
-        project: './tsconfig.json',
+        projectService: {
+          allowDefaultProject: [
+            'eslint.config.ts',
+            'commitlint.config.ts',
+            'knip.config.ts',
+            'prettier.config.ts',
+          ],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
     },
