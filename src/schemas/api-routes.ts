@@ -7,7 +7,14 @@
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import * as z from 'zod';
-import { isMethodName, methodSchemas, type MethodName } from './index.js';
+import {
+  getDescription,
+  isMethodName,
+  methodSchemas,
+  toMoveOptions,
+  toOperationResult,
+  type MethodName,
+} from './index.js';
 import { validateOutput } from './validators.js';
 import type { FileOperations } from '../core/file-operations.js';
 
@@ -45,57 +52,6 @@ async function parseRequestBody(req: IncomingMessage): Promise<unknown> {
     });
     req.on('error', reject);
   });
-}
-
-/** Convert Zod-inferred optional properties to match exactOptionalPropertyTypes interfaces */
-function toMoveOptions(data: {
-  dryRun?: boolean | undefined;
-  verbose?: boolean | undefined;
-  force?: boolean | undefined;
-  createDirectories?: boolean | undefined;
-}): import('../types/operations.js').MoveOperationOptions {
-  const result: import('../types/operations.js').MoveOperationOptions = {};
-  if (data.dryRun !== undefined) result.dryRun = data.dryRun;
-  if (data.verbose !== undefined) result.verbose = data.verbose;
-  if (data.force !== undefined) result.force = data.force;
-  if (data.createDirectories !== undefined) result.createDirectories = data.createDirectories;
-  return result;
-}
-
-/** Convert Zod-inferred OperationResult to match the TS interface with exactOptionalPropertyTypes */
-function toOperationResult(data: {
-  success: boolean;
-  modifiedFiles: string[];
-  createdFiles: string[];
-  deletedFiles: string[];
-  errors: string[];
-  warnings: string[];
-  changes: {
-    type: 'file-moved' | 'file-created' | 'file-deleted' | 'link-updated' | 'content-modified';
-    filePath: string;
-    oldValue?: string | undefined;
-    newValue?: string | undefined;
-    line?: number | undefined;
-  }[];
-}): import('../types/operations.js').OperationResult {
-  return {
-    success: data.success,
-    modifiedFiles: data.modifiedFiles,
-    createdFiles: data.createdFiles,
-    deletedFiles: data.deletedFiles,
-    errors: data.errors,
-    warnings: data.warnings,
-    changes: data.changes.map((change) => {
-      const result: import('../types/operations.js').OperationChange = {
-        type: change.type,
-        filePath: change.filePath,
-      };
-      if (change.oldValue !== undefined) result.oldValue = change.oldValue;
-      if (change.newValue !== undefined) result.newValue = change.newValue;
-      if (change.line !== undefined) result.line = change.line;
-      return result;
-    }),
-  };
 }
 
 /**
@@ -184,8 +140,7 @@ function buildApiRoutes(): ApiRoute[] {
       target: 'openapi-3.0',
       unrepresentable: 'any',
     });
-    const desc = inputSchema.description;
-    const description = typeof desc === 'string' ? desc : '';
+    const description = getDescription(schemas.input);
 
     routes.push({
       path: `/api/${camelToKebab(methodName)}`,
