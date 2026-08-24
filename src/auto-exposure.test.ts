@@ -101,7 +101,7 @@ describe('Auto-Exposure Pattern', () => {
       const start = Date.now();
       const promises = Array(10)
         .fill(0)
-        .map((_, i) => testAutoExposure(`concurrent test ${i}`));
+        .map((_, i) => testAutoExposure(`concurrent test ${String(i)}`));
 
       const results = await Promise.all(promises);
       const duration = Date.now() - start;
@@ -110,7 +110,7 @@ describe('Auto-Exposure Pattern', () => {
       expect(duration).toBeLessThan(1000); // All should complete within 1 second
 
       results.forEach((result, i) => {
-        expect(result.message).toBe(`Echo: concurrent test ${i}`);
+        expect(result.message).toBe(`Echo: concurrent test ${String(i)}`);
         expect(result.success).toBe(true);
       });
     });

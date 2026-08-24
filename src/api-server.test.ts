@@ -4,8 +4,8 @@ import { createApiServer } from './api-server.js';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { ApiResponse, ErrorResponse, HealthResponse } from './types/api.js';
 
-function parseJsonResponse<T>(data: string): T {
-  return JSON.parse(data) as T;
+function parseJsonResponse(data: string): unknown {
+  return JSON.parse(data);
 }
 
 // Mock console.log to avoid output during tests
@@ -56,7 +56,9 @@ describe('API Server', () => {
   afterEach(async () => {
     if (server) {
       await new Promise<void>((resolve) => {
-        server?.close(() => resolve());
+        server?.close(() => {
+          resolve();
+        });
       });
       server = null;
     }
@@ -75,9 +77,15 @@ describe('API Server', () => {
       });
 
       expect(server.listening).toBe(true);
-      expect(mockConsoleLog).toHaveBeenCalledWith(`markmv API server running on port ${port}`);
-      expect(mockConsoleLog).toHaveBeenCalledWith(`Health check: http://localhost:${port}/health`);
-      expect(mockConsoleLog).toHaveBeenCalledWith(`API endpoints: http://localhost:${port}/api/*`);
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        `markmv API server running on port ${String(port)}`
+      );
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        `Health check: http://localhost:${String(port)}/health`
+      );
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        `API endpoints: http://localhost:${String(port)}/api/*`
+      );
     });
 
     it('should use default port 3000 when no port specified', () => {
@@ -85,8 +93,8 @@ describe('API Server', () => {
       const originalEnv = process.env.PORT;
       delete process.env.PORT; // Ensure no PORT env var
 
-      // Since createApiServer defaults to 3000, we can test this logic without actually starting a server
-      const expectedPort = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+      // Since createApiServer defaults to 3000, we can test this logic without actually starting a server. process.env.PORT was just deleted above, so the fallback branch is the only one reachable here.
+      const expectedPort = 3000;
       expect(expectedPort).toBe(3000);
 
       // Restore original environment
@@ -101,7 +109,9 @@ describe('API Server', () => {
       server = createApiServer(port);
       await new Promise<void>((resolve) => {
         if (server) {
-          server.on('listening', () => resolve());
+          server.on('listening', () => {
+            resolve();
+          });
         }
       });
     });
@@ -118,7 +128,7 @@ describe('API Server', () => {
         (resolve, reject) => {
           const req = http.request(options, (res) => {
             let data = '';
-            res.on('data', (chunk) => (data += chunk));
+            res.on('data', (chunk: Buffer) => (data += chunk.toString()));
             res.on('end', () => {
               resolve({ res, data });
             });
@@ -133,7 +143,7 @@ describe('API Server', () => {
       expect(res.headers['content-type']).toBe('application/json');
       expect(res.headers['access-control-allow-origin']).toBe('*');
 
-      const response = parseJsonResponse<ApiResponse<HealthResponse>>(data);
+      const response = parseJsonResponse(data) as ApiResponse<HealthResponse>;
       expect(response.success).toBe(true);
       expect(response.data?.status).toBe('ok');
       expect(response.data?.version).toBe('1.0.0');
@@ -148,7 +158,9 @@ describe('API Server', () => {
       server = createApiServer(port);
       await new Promise<void>((resolve) => {
         if (server) {
-          server.on('listening', () => resolve());
+          server.on('listening', () => {
+            resolve();
+          });
         }
       });
     });
@@ -204,7 +216,9 @@ describe('API Server', () => {
       server = createApiServer(port);
       await new Promise<void>((resolve) => {
         if (server) {
-          server.on('listening', () => resolve());
+          server.on('listening', () => {
+            resolve();
+          });
         }
       });
     });
@@ -227,7 +241,7 @@ describe('API Server', () => {
         (resolve, reject) => {
           const req = http.request(options, (res) => {
             let data = '';
-            res.on('data', (chunk) => (data += chunk));
+            res.on('data', (chunk: Buffer) => (data += chunk.toString()));
             res.on('end', () => {
               resolve({ res, data });
             });
@@ -242,7 +256,7 @@ describe('API Server', () => {
       expect(res.statusCode).toBe(200);
       expect(res.headers['content-type']).toBe('application/json');
 
-      const response = parseJsonResponse<ApiResponse<string>>(data);
+      const response = parseJsonResponse(data) as ApiResponse<string>;
       expect(response.success).toBe(true);
       expect(response.data).toBe('test response');
     });
@@ -253,7 +267,9 @@ describe('API Server', () => {
       server = createApiServer(port);
       await new Promise<void>((resolve) => {
         if (server) {
-          server.on('listening', () => resolve());
+          server.on('listening', () => {
+            resolve();
+          });
         }
       });
     });
@@ -270,7 +286,7 @@ describe('API Server', () => {
         (resolve, reject) => {
           const req = http.request(options, (res) => {
             let data = '';
-            res.on('data', (chunk) => (data += chunk));
+            res.on('data', (chunk: Buffer) => (data += chunk.toString()));
             res.on('end', () => {
               resolve({ res, data });
             });
@@ -284,7 +300,7 @@ describe('API Server', () => {
       expect(res.statusCode).toBe(404);
       expect(res.headers['content-type']).toBe('application/json');
 
-      const response = parseJsonResponse<ErrorResponse>(data);
+      const response = parseJsonResponse(data) as ErrorResponse;
       expect(response.error).toBe('NotFound');
       expect(response.message).toBe('Route GET /unknown-route not found');
       expect(response.statusCode).toBe(404);
@@ -311,7 +327,7 @@ describe('API Server', () => {
         (resolve, reject) => {
           const req = http.request(options, (res) => {
             let data = '';
-            res.on('data', (chunk) => (data += chunk));
+            res.on('data', (chunk: Buffer) => (data += chunk.toString()));
             res.on('end', () => {
               resolve({ res, data });
             });
@@ -325,7 +341,7 @@ describe('API Server', () => {
 
       // The server should gracefully handle unknown routes
       expect(res.statusCode).toBe(404);
-      const response = parseJsonResponse<ErrorResponse>(data);
+      const response = parseJsonResponse(data) as ErrorResponse;
       expect(response.error).toBe('NotFound');
     });
   });
@@ -335,7 +351,9 @@ describe('API Server', () => {
       server = createApiServer(port);
       await new Promise<void>((resolve) => {
         if (server) {
-          server.on('listening', () => resolve());
+          server.on('listening', () => {
+            resolve();
+          });
         }
       });
     });
@@ -352,7 +370,7 @@ describe('API Server', () => {
         (resolve, reject) => {
           const req = http.request(options, (res) => {
             let data = '';
-            res.on('data', (chunk) => (data += chunk));
+            res.on('data', (chunk: Buffer) => (data += chunk.toString()));
             res.on('end', () => {
               resolve({ res, data });
             });
@@ -363,7 +381,7 @@ describe('API Server', () => {
         }
       );
 
-      const response = parseJsonResponse<ApiResponse>(data);
+      const response = parseJsonResponse(data) as ApiResponse;
 
       // Verify the response structure matches ApiResponse type
       expect(response).toHaveProperty('success');
@@ -392,7 +410,9 @@ describe('API Server', () => {
       expect(address.port).toBe(customPort);
 
       await new Promise<void>((resolve) => {
-        customServer.close(() => resolve());
+        customServer.close(() => {
+          resolve();
+        });
       });
     });
 
@@ -420,7 +440,9 @@ describe('API Server', () => {
       server = createApiServer(port);
       await new Promise<void>((resolve) => {
         if (server) {
-          server.on('listening', () => resolve());
+          server.on('listening', () => {
+            resolve();
+          });
         }
       });
     });
@@ -437,7 +459,7 @@ describe('API Server', () => {
         (resolve, reject) => {
           const req = http.request(options, (res) => {
             let data = '';
-            res.on('data', (chunk) => (data += chunk));
+            res.on('data', (chunk: Buffer) => (data += chunk.toString()));
             res.on('end', () => {
               resolve({ res, data });
             });
@@ -449,7 +471,7 @@ describe('API Server', () => {
       );
 
       expect(res.statusCode).toBe(404);
-      const response = parseJsonResponse<ErrorResponse>(data);
+      const response = parseJsonResponse(data) as ErrorResponse;
       expect(response.error).toBe('NotFound');
       expect(response.message).toBe('Route POST /health not found');
     });
