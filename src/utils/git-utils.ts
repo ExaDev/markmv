@@ -57,8 +57,11 @@ export interface GitStatus {
  */
 export class GitUtils {
   private rootDir: string | undefined;
+  private cwd: string;
 
-  constructor(private cwd: string = process.cwd()) {}
+  constructor(cwd: string = process.cwd()) {
+    this.cwd = cwd;
+  }
 
   /**
    * Check if current directory is within a git repository.
