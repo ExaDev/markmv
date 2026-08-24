@@ -58,9 +58,6 @@ importers:
       "@commitlint/types":
         specifier: ^21.2.0
         version: 21.2.0
-      "@eslint/config-helpers":
-        specifier: 0.7.0
-        version: 0.7.0
       "@eslint/js":
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.8.1(jiti@2.7.0)(supports-color@7.2.0))

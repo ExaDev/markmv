@@ -1,6 +1,5 @@
 import path from "node:path";
-import { defineConfig } from "eslint/config";
-import { includeIgnoreFile } from "@eslint/config-helpers";
+import { defineConfig, includeIgnoreFile } from "eslint/config";
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import globals from "globals";
