@@ -7,6 +7,11 @@
  */
 
 import * as z from 'zod';
+import type {
+  MoveOperationOptions,
+  OperationChange,
+  OperationResult,
+} from '../types/operations.js';
 
 // ── Shared option schemas ──────────────────────────────────────────────────
 
@@ -141,6 +146,58 @@ const testAutoExposureOutput = z
     success: z.boolean(),
   })
   .strict();
+
+// ── exactOptionalPropertyTypes conversion ───────────────────────────────────
+//
+// Zod's `.optional()` infers a property typed `T | undefined` that is always present on the parsed object; tsconfig.json's exactOptionalPropertyTypes distinguishes that from `?:` (property may be entirely absent), so passing a Zod-parsed object straight into a `MoveOperationOptions`- or `OperationResult`-typed parameter doesn't type-check. These converters are the single place that reconciles the two, by only ever setting a key when its Zod-parsed value isn't undefined.
+
+/** Convert a Zod-parsed MoveOptionsSchema value to MoveOperationOptions */
+export function toMoveOptions(data: z.infer<typeof MoveOptionsSchema>): MoveOperationOptions {
+  const result: MoveOperationOptions = {};
+  if (data.dryRun !== undefined) result.dryRun = data.dryRun;
+  if (data.verbose !== undefined) result.verbose = data.verbose;
+  if (data.force !== undefined) result.force = data.force;
+  if (data.createDirectories !== undefined) result.createDirectories = data.createDirectories;
+  if (data.obsidian !== undefined) result.obsidian = data.obsidian;
+  if (data.discoverySeeds !== undefined) result.discoverySeeds = data.discoverySeeds;
+  return result;
+}
+
+/** Convert a Zod-parsed OperationResultSchema value to OperationResult */
+export function toOperationResult(data: z.infer<typeof OperationResultSchema>): OperationResult {
+  return {
+    success: data.success,
+    modifiedFiles: data.modifiedFiles,
+    createdFiles: data.createdFiles,
+    deletedFiles: data.deletedFiles,
+    errors: data.errors,
+    warnings: data.warnings,
+    changes: data.changes.map((change): OperationChange => {
+      const result: OperationChange = { type: change.type, filePath: change.filePath };
+      if (change.oldValue !== undefined) result.oldValue = change.oldValue;
+      if (change.newValue !== undefined) result.newValue = change.newValue;
+      if (change.line !== undefined) result.line = change.line;
+      return result;
+    }),
+    ...(data.parseFailures !== undefined && {
+      parseFailures: data.parseFailures.map((failure) => {
+        const result: { file: string; error: string; stack?: string } = {
+          file: failure.file,
+          error: failure.error,
+        };
+        if (failure.stack !== undefined) result.stack = failure.stack;
+        return result;
+      }),
+    }),
+  };
+}
+
+/** Derive a tool/route description from a method's input schema's own .meta({ description }) */
+export function getDescription(schema: z.ZodType): string {
+  const jsonSchema = z.toJSONSchema(schema, { unrepresentable: 'any' });
+  const desc = jsonSchema.description;
+  return typeof desc === 'string' ? desc : '';
+}
 
 // ── Method registry ────────────────────────────────────────────────────────
 
