@@ -21,13 +21,13 @@ This project uses [semantic-release](https://semantic-release.gitbook.io/) with 
 
 ## Configuration Files
 
-### `.releaserc.json`
+### `release.config.ts`
 
 - Main semantic-release configuration
 - Defines plugins and rules for version analysis
 - Configures changelog generation
 
-### `.commitlintrc.json`
+### `commitlint.config.ts`
 
 - Validates commit message format
 - Enforces conventional commit standards
