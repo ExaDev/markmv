@@ -1,17 +1,16 @@
 /**
  * Example usage of markmv MCP Server
- * 
- * Demonstrates how to use the markmv MCP server with client code.
- * The MCP server exposes markmv functionality as tools for AI agents.
+ *
+ * Demonstrates how to use the markmv MCP server with client code. The MCP server exposes markmv
+ * functionality as tools for AI agents.
  */
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { CallToolResultSchema, ListToolsResultSchema } from '@modelcontextprotocol/sdk/types.js';
 import { spawn } from 'node:child_process';
 
-/**
- * Example MCP client that connects to markmv server
- */
+/** Example MCP client that connects to markmv server */
 export async function createMcpClient(): Promise<Client> {
   // Start the markmv MCP server as a child process
   const serverProcess = spawn('node', ['dist/mcp-server.js'], {
@@ -38,14 +37,12 @@ export async function createMcpClient(): Promise<Client> {
   return client;
 }
 
-/**
- * Example: Move a file using MCP
- */
+/** Example: Move a file using MCP */
 async function moveFileExample() {
   console.log('🔧 Moving file via MCP...');
-  
+
   const client = await createMcpClient();
-  
+
   try {
     const result = await client.request(
       {
@@ -63,7 +60,7 @@ async function moveFileExample() {
           },
         },
       },
-      {}
+      CallToolResultSchema
     );
 
     console.log('✅ Move operation result:');
@@ -73,14 +70,12 @@ async function moveFileExample() {
   }
 }
 
-/**
- * Example: Convert link formats using MCP
- */
+/** Example: Convert link formats using MCP */
 async function convertLinksExample() {
   console.log('🔄 Converting link formats via MCP...');
-  
+
   const client = await createMcpClient();
-  
+
   try {
     const result = await client.request(
       {
@@ -99,7 +94,7 @@ async function convertLinksExample() {
           },
         },
       },
-      {}
+      CallToolResultSchema
     );
 
     console.log('✅ Convert operation result:');
@@ -109,14 +104,12 @@ async function convertLinksExample() {
   }
 }
 
-/**
- * Example: Split a large file using MCP
- */
+/** Example: Split a large file using MCP */
 async function splitFileExample() {
   console.log('✂️ Splitting file via MCP...');
-  
+
   const client = await createMcpClient();
-  
+
   try {
     const result = await client.request(
       {
@@ -135,7 +128,7 @@ async function splitFileExample() {
           },
         },
       },
-      {}
+      CallToolResultSchema
     );
 
     console.log('✅ Split operation result:');
@@ -145,25 +138,23 @@ async function splitFileExample() {
   }
 }
 
-/**
- * Example: List available tools from MCP server
- */
+/** Example: List available tools from MCP server */
 async function listToolsExample() {
   console.log('📋 Listing available MCP tools...');
-  
+
   const client = await createMcpClient();
-  
+
   try {
     const result = await client.request(
       {
         method: 'tools/list',
         params: {},
       },
-      {}
+      ListToolsResultSchema
     );
 
     console.log('✅ Available tools:');
-    result.tools.forEach((tool: any) => {
+    result.tools.forEach((tool) => {
       console.log(`  • ${tool.name}: ${tool.description}`);
     });
   } catch (error) {
@@ -171,25 +162,23 @@ async function listToolsExample() {
   }
 }
 
-/**
- * Run all examples
- */
+/** Run all examples */
 async function runExamples() {
   console.log('🚀 Starting markmv MCP examples...\n');
 
   try {
     await listToolsExample();
     console.log('\n' + '='.repeat(50) + '\n');
-    
+
     await moveFileExample();
     console.log('\n' + '='.repeat(50) + '\n');
-    
+
     await convertLinksExample();
     console.log('\n' + '='.repeat(50) + '\n');
-    
+
     await splitFileExample();
     console.log('\n' + '='.repeat(50) + '\n');
-    
+
     console.log('✅ All examples completed!');
   } catch (error) {
     console.error('❌ Example failed:', error);
