@@ -197,7 +197,7 @@ export class AuthDetector {
         requiresAuth: true,
         finalUrl,
         detectionMethod: 'status-code',
-        warning: `HTTP ${response.status}: Authentication required`,
+        warning: `HTTP ${String(response.status)}: Authentication required`,
         suggestion: 'Provide appropriate credentials or API keys to validate this link',
       };
     }

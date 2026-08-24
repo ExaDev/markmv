@@ -104,7 +104,7 @@ export class TocGenerator {
       minDepth = 1,
       maxDepth = 6,
       includeLineNumbers = false,
-      slugify = this.defaultSlugify,
+      slugify = defaultSlugify,
     } = options;
 
     const tree = this.processor.parse(content);
@@ -170,7 +170,7 @@ export class TocGenerator {
     for (const heading of headings) {
       const indent = '  '.repeat(heading.level - minLevel);
       const link = `[${heading.text}](#${heading.slug})`;
-      const lineInfo = includeLineNumbers ? ` (line ${heading.line})` : '';
+      const lineInfo = includeLineNumbers ? ` (line ${String(heading.line)})` : '';
       lines.push(`${indent}- ${link}${lineInfo}`);
     }
 
@@ -203,20 +203,20 @@ export class TocGenerator {
       })
       .join('');
   }
+}
 
-  /**
-   * Default slugify function that converts text to URL-friendly anchors.
-   *
-   * @param text - Text to slugify
-   *
-   * @returns URL-friendly slug
-   */
-  private defaultSlugify(this: void, text: string): string {
-    return text
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, '-') // Replace special characters with hyphens
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/-+/g, '-') // Replace multiple hyphens with single
-      .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
-  }
+/**
+ * Default slugify function that converts text to URL-friendly anchors.
+ *
+ * @param text - Text to slugify
+ *
+ * @returns URL-friendly slug
+ */
+function defaultSlugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '-') // Replace special characters with hyphens
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single
+    .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
 }

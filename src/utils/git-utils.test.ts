@@ -176,12 +176,12 @@ describe('GitUtils', () => {
 
       expect(result).toHaveLength(3);
       const [first, second, third] = result;
-      expect(toPosix(first?.path ?? '')).toBe(`${resolvedRoot}/docs/readme.md`);
-      expect(first?.status).toBe('modified');
-      expect(toPosix(second?.path ?? '')).toBe(`${resolvedRoot}/docs/new-file.md`);
-      expect(second?.status).toBe('added');
-      expect(toPosix(third?.path ?? '')).toBe(`${resolvedRoot}/oldfile.md`);
-      expect(third?.status).toBe('deleted');
+      expect(toPosix(first.path)).toBe(`${resolvedRoot}/docs/readme.md`);
+      expect(first.status).toBe('modified');
+      expect(toPosix(second.path)).toBe(`${resolvedRoot}/docs/new-file.md`);
+      expect(second.status).toBe('added');
+      expect(toPosix(third.path)).toBe(`${resolvedRoot}/oldfile.md`);
+      expect(third.status).toBe('deleted');
 
       expect(mockExecSync).toHaveBeenCalledWith('git diff --name-status HEAD~1..HEAD', {
         cwd: '/test/repo',
@@ -198,9 +198,9 @@ describe('GitUtils', () => {
 
       expect(result).toHaveLength(1);
       const [rename] = result;
-      expect(toPosix(rename?.path ?? '')).toBe(`${resolvedRoot}/new-name.md`);
-      expect(rename?.status).toBe('renamed');
-      expect(toPosix(rename?.previousPath ?? '')).toBe(`${resolvedRoot}/old-name.md`);
+      expect(toPosix(rename.path)).toBe(`${resolvedRoot}/new-name.md`);
+      expect(rename.status).toBe('renamed');
+      expect(toPosix(rename.previousPath ?? '')).toBe(`${resolvedRoot}/old-name.md`);
     });
 
     it('should get staged files', () => {

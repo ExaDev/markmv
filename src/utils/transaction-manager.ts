@@ -89,7 +89,7 @@ export class TransactionManager {
 
   /** Add a file move operation to the transaction */
   addFileMove(sourcePath: string, destinationPath: string, description?: string): void {
-    const stepId = `move-${this.steps.length}`;
+    const stepId = `move-${String(this.steps.length)}`;
 
     this.steps.push({
       id: stepId,
@@ -132,7 +132,7 @@ export class TransactionManager {
 
   /** Add a content update operation to the transaction */
   addContentUpdate(filePath: string, newContent: string, description?: string): void {
-    const stepId = `update-${this.steps.length}`;
+    const stepId = `update-${String(this.steps.length)}`;
     let originalContent: string | null = null;
 
     this.steps.push({
@@ -169,7 +169,7 @@ export class TransactionManager {
 
   /** Add a file creation operation to the transaction */
   addFileCreate(filePath: string, content: string, description?: string): void {
-    const stepId = `create-${this.steps.length}`;
+    const stepId = `create-${String(this.steps.length)}`;
 
     this.steps.push({
       id: stepId,
@@ -199,7 +199,7 @@ export class TransactionManager {
 
   /** Add a file deletion operation to the transaction */
   addFileDelete(filePath: string, description?: string): void {
-    const stepId = `delete-${this.steps.length}`;
+    const stepId = `delete-${String(this.steps.length)}`;
     let originalContent: string | null = null;
 
     this.steps.push({
@@ -261,7 +261,7 @@ export class TransactionManager {
             });
           } catch (error) {
             retries++;
-            const stepErrorMessage = `Step "${step.description}" failed (attempt ${retries}): ${errorMessage(error)}`;
+            const stepErrorMessage = `Step "${step.description}" failed (attempt ${String(retries)}): ${errorMessage(error)}`;
 
             if (retries > this.options.maxRetries) {
               errors.push(stepErrorMessage);

@@ -338,7 +338,9 @@ describe('ValidationCache', () => {
 
       // Create multiple concurrent cache operations
       for (let i = 0; i < 10; i++) {
-        operations.push(cache.set(`/test/file${i}.md`, `hash${i}`, testResult, 'config'));
+        operations.push(
+          cache.set(`/test/file${String(i)}.md`, `hash${String(i)}`, testResult, 'config')
+        );
       }
 
       // All operations should complete successfully
@@ -346,7 +348,7 @@ describe('ValidationCache', () => {
 
       // Verify all entries were stored
       for (let i = 0; i < 10; i++) {
-        const cached = await cache.get(`/test/file${i}.md`, `hash${i}`, 'config');
+        const cached = await cache.get(`/test/file${String(i)}.md`, `hash${String(i)}`, 'config');
         expect(cached).toBeDefined();
       }
     });
@@ -360,7 +362,7 @@ describe('ValidationCache', () => {
             sourceFile: '/test/large.md',
             link: {
               type: 'external',
-              href: `https://example.com/link${i}`,
+              href: `https://example.com/link${String(i)}`,
               text: undefined,
               referenceId: undefined,
               line: 1,

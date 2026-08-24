@@ -263,15 +263,15 @@ export class ContentFreshnessDetector {
 
     if (years > 0) {
       return months > 0
-        ? `${years} year${years > 1 ? 's' : ''}, ${months} month${months > 1 ? 's' : ''}`
-        : `${years} year${years > 1 ? 's' : ''}`;
+        ? `${String(years)} year${years > 1 ? 's' : ''}, ${String(months)} month${months > 1 ? 's' : ''}`
+        : `${String(years)} year${years > 1 ? 's' : ''}`;
     }
     if (months > 0) {
       return days > 0
-        ? `${months} month${months > 1 ? 's' : ''}, ${days} day${days > 1 ? 's' : ''}`
-        : `${months} month${months > 1 ? 's' : ''}`;
+        ? `${String(months)} month${months > 1 ? 's' : ''}, ${String(days)} day${days > 1 ? 's' : ''}`
+        : `${String(months)} month${months > 1 ? 's' : ''}`;
     }
-    return `${days} day${days > 1 ? 's' : ''}`;
+    return `${String(days)} day${days > 1 ? 's' : ''}`;
   }
 
   /** Get cached content information. */

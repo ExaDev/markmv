@@ -460,7 +460,10 @@ describe('ContentFreshnessDetector', () => {
     });
 
     it('should handle concurrent analyses', async () => {
-      const urls = Array.from({ length: 10 }, (_, i) => `https://example.com/concurrent-${i}`);
+      const urls = Array.from(
+        { length: 10 },
+        (_, i) => `https://example.com/concurrent-${String(i)}`
+      );
       const promises = urls.map((url) => {
         const response: ResponseInfo = {
           status: 200,
