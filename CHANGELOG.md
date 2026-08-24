@@ -1,3 +1,13 @@
+## [1.39.1](https://github.com/ExaDev/markmv/compare/v1.39.0...v1.39.1) (2026-08-24)
+
+### Documentation
+
+- update .releaserc.json references to release.config.ts ([4bbd977](https://github.com/ExaDev/markmv/commit/4bbd9770576449027a5c2f777491d7550023729f))
+
+### Build System
+
+- **lint:** add commit scope-enum and match Dependabot's commit prefix to it ([1e0c626](https://github.com/ExaDev/markmv/commit/1e0c626a122a84e1bdaf66733d0b3067dce60851))
+
 ## [1.39.0](https://github.com/ExaDev/markmv/compare/v1.38.1...v1.39.0) (2026-08-24)
 
 ### Features
