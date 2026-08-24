@@ -5,5 +5,5 @@ if grep -qi "^Claude-Session:" "$1"; then
   exit 1
 fi
 
-# Enforce conventional-commit message format, with the allowed type list derived from .releaserc.json.
+# Enforce conventional-commit message format, with the allowed type list derived from release.config.ts.
 NODE_OPTIONS="--experimental-strip-types" pnpm exec commitlint --edit "$1"
