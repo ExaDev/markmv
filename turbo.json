@@ -6,7 +6,7 @@
       "outputs": ["dist/**", "tsconfig.tsbuildinfo"]
     },
     "_lint": {
-      "outputs": []
+      "outputs": [".eslintcache"]
     },
     "_typecheck": {
       "inputs": ["src/**/*.ts", "tsconfig.json"],
@@ -18,6 +18,10 @@
     },
     "_knip": {
       "inputs": ["src/**/*.ts", "knip.config.ts"],
+      "outputs": []
+    },
+    "_check": {
+      "dependsOn": ["_typecheck", "_lint"],
       "outputs": []
     }
   }
