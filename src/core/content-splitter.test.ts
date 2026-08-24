@@ -11,7 +11,7 @@ describe('ContentSplitter', () => {
 
   beforeEach(async () => {
     splitter = new ContentSplitter();
-    testDir = join(tmpdir(), `markmv-splitter-test-${Date.now()}`);
+    testDir = join(tmpdir(), `markmv-splitter-test-${String(Date.now())}`);
     await mkdir(testDir, { recursive: true });
   });
 

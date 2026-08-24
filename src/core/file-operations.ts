@@ -163,7 +163,7 @@ export class FileOperations {
         .filter((dependent) => dependent !== sourcePath);
 
       if (verbose) {
-        console.log(`Found ${dependentFiles.length} files that reference ${sourcePath}`);
+        console.log(`Found ${String(dependentFiles.length)} files that reference ${sourcePath}`);
       }
 
       // Prepare transaction
@@ -347,7 +347,7 @@ export class FileOperations {
             modifiedFiles: [],
             createdFiles: [],
             deletedFiles: [],
-            errors: [`Invalid move ${source} → ${destination}: ${validation.error}`],
+            errors: [`Invalid move ${source} → ${destination}: ${String(validation.error)}`],
             warnings: [],
             changes: [],
           };
@@ -510,29 +510,28 @@ export class FileOperations {
               }
             }
 
-            // Publish the accumulated content under the destination key so later bystander
-            // passes for co-moved files build on this pass's rewrites
+            // Publish the accumulated content under the destination key so later bystander passes for co-moved files build on this pass's rewrites
             fileContents.set(destination, selfRefactorResult.updatedContent);
 
             warnings.push(...selfRefactorResult.errors);
-          }
-        } else if (sourceFile) {
-          // Fallback to the original method if content not found
-          const selfRefactorResult = await this.linkRefactorer.refactorLinksForCurrentFileMove(
-            sourceFile,
-            destination,
-            movedPathMap
-          );
+          } else {
+            // Fallback to the original method if content not found
+            const selfRefactorResult = await this.linkRefactorer.refactorLinksForCurrentFileMove(
+              sourceFile,
+              destination,
+              movedPathMap
+            );
 
-          if (selfRefactorResult.changes.length > 0) {
-            allChanges.push(...selfRefactorResult.changes);
+            if (selfRefactorResult.changes.length > 0) {
+              allChanges.push(...selfRefactorResult.changes);
 
-            if (!dryRun) {
-              transaction.addContentUpdate(destination, selfRefactorResult.updatedContent);
+              if (!dryRun) {
+                transaction.addContentUpdate(destination, selfRefactorResult.updatedContent);
+              }
             }
-          }
 
-          warnings.push(...selfRefactorResult.errors);
+            warnings.push(...selfRefactorResult.errors);
+          }
         }
       }
 
@@ -585,13 +584,13 @@ export class FileOperations {
     // Validate source path
     const sourceValidation = PathUtils.validatePath(sourcePath);
     if (!sourceValidation.valid) {
-      return { valid: false, error: `Invalid source path: ${sourceValidation.reason}` };
+      return { valid: false, error: `Invalid source path: ${String(sourceValidation.reason)}` };
     }
 
     // Validate destination path
     const destValidation = PathUtils.validatePath(destinationPath);
     if (!destValidation.valid) {
-      return { valid: false, error: `Invalid destination path: ${destValidation.reason}` };
+      return { valid: false, error: `Invalid destination path: ${String(destValidation.reason)}` };
     }
 
     // The source must exist before any project discovery is attempted. Without this check, a nonexistent path resolves to a directory (its own dirname) that project discovery then scans, which is unbounded when the path has no real parent directory to anchor to (e.g. a nonexistent file directly under the filesystem root).
@@ -692,7 +691,7 @@ export class FileOperations {
     const warnings: string[] = [];
     for (const ambiguity of resolveWikilinks(files, vaultRoot)) {
       warnings.push(
-        `Ambiguous wikilink [[${ambiguity.stem}]] matches ${ambiguity.candidates.length} notes: ${ambiguity.candidates.join(', ')}`
+        `Ambiguous wikilink [[${ambiguity.stem}]] matches ${String(ambiguity.candidates.length)} notes: ${ambiguity.candidates.join(', ')}`
       );
     }
     for (const duplicate of findDuplicateNoteStems(files)) {

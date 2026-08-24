@@ -187,7 +187,7 @@ export class LinkRefactorer {
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        errors.push(`Failed to update link at line ${link.line}: ${message}`);
+        errors.push(`Failed to update link at line ${String(link.line)}: ${message}`);
       }
     }
 
@@ -272,7 +272,7 @@ export class LinkRefactorer {
           }
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          errors.push(`Failed to update link at line ${link.line}: ${message}`);
+          errors.push(`Failed to update link at line ${String(link.line)}: ${message}`);
         }
       }
     }
@@ -357,7 +357,7 @@ export class LinkRefactorer {
           }
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          errors.push(`Failed to update link at line ${link.line}: ${message}`);
+          errors.push(`Failed to update link at line ${String(link.line)}: ${message}`);
         }
       }
     }
@@ -649,7 +649,7 @@ export class LinkRefactorer {
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           errors.push(
-            `Failed to update reference ${reference.id} at line ${reference.line}: ${message}`
+            `Failed to update reference ${reference.id} at line ${String(reference.line)}: ${message}`
           );
         }
       }

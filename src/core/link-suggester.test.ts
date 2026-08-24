@@ -10,7 +10,7 @@ describe('link suggester', () => {
   beforeEach(async () => {
     vaultRoot = join(
       tmpdir(),
-      `markmv-suggest-test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      `markmv-suggest-test-${String(Date.now())}-${Math.random().toString(36).slice(2, 11)}`
     );
     await mkdir(join(vaultRoot, 'guides'), { recursive: true });
     await mkdir(join(vaultRoot, 'reference'), { recursive: true });

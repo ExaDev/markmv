@@ -18,7 +18,7 @@ describe('LinkParser', () => {
     parser = new LinkParser();
     testDir = join(
       tmpdir(),
-      `markmv-test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      `markmv-test-${String(Date.now())}-${Math.random().toString(36).slice(2, 11)}`
     );
     await mkdir(testDir, { recursive: true });
     // Ensure directory exists before continuing
@@ -239,10 +239,10 @@ This is a [reference link][ref1] and another [reference][ref2].
 
       expect(result.links).toHaveLength(1);
       const link = result.links[0];
-      expect(link?.type).toBe('wikilink');
-      expect(link?.href).toBe('Tailscale Relay');
-      expect(link?.text).toBeUndefined();
-      expect(link?.line).toBe(1);
+      expect(link.type).toBe('wikilink');
+      expect(link.href).toBe('Tailscale Relay');
+      expect(link.text).toBeUndefined();
+      expect(link.line).toBe(1);
     });
 
     it('should extract a wikilink with an alias, keeping the alias as text', async () => {
@@ -252,9 +252,9 @@ This is a [reference link][ref1] and another [reference][ref2].
       const result = await parser.parseFile(filePath);
 
       const link = result.links[0];
-      expect(link?.type).toBe('wikilink');
-      expect(link?.href).toBe('Tailscale Relay');
-      expect(link?.text).toBe('the relay note');
+      expect(link.type).toBe('wikilink');
+      expect(link.href).toBe('Tailscale Relay');
+      expect(link.text).toBe('the relay note');
     });
 
     it('should extract an embed as an obsidian-transclusion', async () => {
@@ -264,8 +264,8 @@ This is a [reference link][ref1] and another [reference][ref2].
       const result = await parser.parseFile(filePath);
 
       const link = result.links[0];
-      expect(link?.type).toBe('obsidian-transclusion');
-      expect(link?.href).toBe('Tailscale Relay');
+      expect(link.type).toBe('obsidian-transclusion');
+      expect(link.href).toBe('Tailscale Relay');
     });
 
     it('should extract a wikilink with an explicit extension', async () => {
@@ -287,9 +287,9 @@ This is a [reference link][ref1] and another [reference][ref2].
       const result = await parser.parseFile(filePath);
 
       const link = result.links[0];
-      expect(link?.type).toBe('wikilink');
-      expect(link?.href).toBe('devops/Tailscale Relay');
-      expect(link?.text).toBe('relay');
+      expect(link.type).toBe('wikilink');
+      expect(link.href).toBe('devops/Tailscale Relay');
+      expect(link.text).toBe('relay');
     });
 
     it('should split a block reference off the wikilink target', async () => {
@@ -332,9 +332,9 @@ This is a [reference link][ref1] and another [reference][ref2].
       const result = await parser.parseFile(filePath);
 
       const link = result.links[0];
-      expect(link?.type).toBe('claude-import');
-      expect(link?.href).toBe('~/memory/dev/foo.md');
-      expect(link?.resolvedPath).toBe(join(homedir(), 'memory/dev/foo.md'));
+      expect(link.type).toBe('claude-import');
+      expect(link.href).toBe('~/memory/dev/foo.md');
+      expect(link.resolvedPath).toBe(join(homedir(), 'memory/dev/foo.md'));
     });
 
     it(

@@ -120,7 +120,7 @@ export class ContentSplitter {
     sourceFilePath: string,
     options: SplitOperationOptions
   ): Promise<OperationResult> {
-    const { strategy = 'headers', outputDir, dryRun = false, verbose = false } = options;
+    const { strategy, outputDir, dryRun = false, verbose = false } = options;
 
     try {
       // Validate input
@@ -154,7 +154,7 @@ export class ContentSplitter {
 
       if (verbose) {
         console.log(`Parsing file: ${sourceFilePath}`);
-        console.log(`Found ${parsedFile.links.length} links`);
+        console.log(`Found ${String(parsedFile.links.length)} links`);
       }
 
       // Get the output directory
@@ -198,9 +198,9 @@ export class ContentSplitter {
       const redistributionResult = this.redistributeLinks(splitResult, parsedFile, outputDirectory);
 
       if (verbose) {
-        console.log(`Split into ${redistributionResult.updatedSections.length} sections`);
+        console.log(`Split into ${String(redistributionResult.updatedSections.length)} sections`);
         console.log(
-          `${redistributionResult.externalLinkUpdates.length} external links need updating`
+          `${String(redistributionResult.externalLinkUpdates.length)} external links need updating`
         );
       }
 
