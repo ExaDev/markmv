@@ -8,7 +8,7 @@ on:
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 concurrency:
-  group: 'ci-cd-${{ github.ref }}'
+  group: "ci-cd-${{ github.ref }}"
   cancel-in-progress: false
 
 jobs:
@@ -125,7 +125,7 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'pnpm'
+          cache: "pnpm"
 
       # turbo's local cache for the build step only -- keyed by OS, not Node version, which is correct here since compiled output doesn't vary by Node runtime.
       - uses: actions/cache@v4
@@ -287,7 +287,7 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version-file: .tool-versions
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -344,10 +344,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
           # npm publish provenance, matching the npm plugin's provenance setting in .releaserc.json
-          NPM_CONFIG_PROVENANCE: 'true'
+          NPM_CONFIG_PROVENANCE: "true"
           # Blanked, not omitted -- an inherited NPM_TOKEN/NODE_AUTH_TOKEN from a workflow-level env block or composite action would otherwise be used in preference to the OIDC exchange.
-          NPM_TOKEN: ''
-          NODE_AUTH_TOKEN: ''
+          NPM_TOKEN: ""
+          NODE_AUTH_TOKEN: ""
         run: pnpm run release
 
   # Documentation Deployment - Only after successful release with updated version
@@ -379,7 +379,7 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version-file: .tool-versions
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

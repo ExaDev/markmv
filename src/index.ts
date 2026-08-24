@@ -36,15 +36,18 @@
  */
 
 // Core library classes
-import { FileOperations } from './core/file-operations.js';
-import type { MoveOperationOptions, OperationResult } from './types/operations.js';
+import { FileOperations } from "./core/file-operations.js";
+import type {
+  MoveOperationOptions,
+  OperationResult,
+} from "./types/operations.js";
 
 export { FileOperations };
-export { LinkParser } from './core/link-parser.js';
-export { LinkRefactorer } from './core/link-refactorer.js';
-export { LinkValidator } from './core/link-validator.js';
-export { LinkConverter } from './core/link-converter.js';
-export { LinkGraphGenerator } from './core/link-graph-generator.js';
+export { LinkParser } from "./core/link-parser.js";
+export { LinkRefactorer } from "./core/link-refactorer.js";
+export { LinkValidator } from "./core/link-validator.js";
+export { LinkConverter } from "./core/link-converter.js";
+export { LinkGraphGenerator } from "./core/link-graph-generator.js";
 export {
   resolveWikilinks,
   createWikilinkResolver,
@@ -53,8 +56,11 @@ export {
   type ObsidianAmbiguity,
   type DuplicateNoteStem,
   type WikilinkResolution,
-} from './core/obsidian-vault.js';
-export { suggestLinkFixes, type LinkSuggestion } from './core/link-suggester.js';
+} from "./core/obsidian-vault.js";
+export {
+  suggestLinkFixes,
+  type LinkSuggestion,
+} from "./core/link-suggester.js";
 export {
   findLocalImages,
   findInlineImages,
@@ -65,9 +71,17 @@ export {
   type ImageLinkOccurrence,
   type ParsedImageDataUri,
   type SpanReplacement,
-} from './core/image-inline.js';
-export { embedCommand, type EmbedOptions, type EmbedSummary } from './commands/embed.js';
-export { extractCommand, type ExtractOptions, type ExtractSummary } from './commands/extract.js';
+} from "./core/image-inline.js";
+export {
+  embedCommand,
+  type EmbedOptions,
+  type EmbedSummary,
+} from "./commands/embed.js";
+export {
+  extractCommand,
+  type ExtractOptions,
+  type ExtractSummary,
+} from "./commands/extract.js";
 export {
   waybackCommand,
   toWaybackUrl,
@@ -75,7 +89,7 @@ export {
   type WaybackResult,
   type WaybackFileResult,
   type WaybackLinkChange,
-} from './commands/wayback.js';
+} from "./commands/wayback.js";
 export {
   refactorIndex,
   refactorIndexCommand,
@@ -83,7 +97,7 @@ export {
   type RefactorIndexOptions,
   type RefactorIndexCliOptions,
   type RefactorIndexResult,
-} from './commands/refactor-index.js';
+} from "./commands/refactor-index.js";
 export {
   treeCommand,
   scanMarkdownTree,
@@ -98,16 +112,16 @@ export {
   type TreeStatistics,
   type TreeFormat,
   type TreeCliOptions,
-} from './commands/tree.js';
-export { DependencyGraph } from './core/dependency-graph.js';
-export { ContentJoiner } from './core/content-joiner.js';
-export { ContentSplitter } from './core/content-splitter.js';
+} from "./commands/tree.js";
+export { DependencyGraph } from "./core/dependency-graph.js";
+export { ContentJoiner } from "./core/content-joiner.js";
+export { ContentSplitter } from "./core/content-splitter.js";
 
 // Utility classes
-export { FileUtils } from './utils/file-utils.js';
-export { PathUtils } from './utils/path-utils.js';
-export { TransactionManager } from './utils/transaction-manager.js';
-export { TocGenerator } from './utils/toc-generator.js';
+export { FileUtils } from "./utils/file-utils.js";
+export { PathUtils } from "./utils/path-utils.js";
+export { TransactionManager } from "./utils/transaction-manager.js";
+export { TocGenerator } from "./utils/toc-generator.js";
 
 // Strategy classes
 export {
@@ -116,14 +130,14 @@ export {
   AlphabeticalJoinStrategy,
   ManualOrderJoinStrategy,
   ChronologicalJoinStrategy,
-} from './strategies/join-strategies.js';
+} from "./strategies/join-strategies.js";
 
 export {
   BaseMergeStrategy,
   AppendMergeStrategy,
   PrependMergeStrategy,
   InteractiveMergeStrategy,
-} from './strategies/merge-strategies.js';
+} from "./strategies/merge-strategies.js";
 
 export {
   BaseSplitStrategy,
@@ -131,13 +145,16 @@ export {
   SizeBasedSplitStrategy,
   ManualSplitStrategy,
   LineBasedSplitStrategy,
-} from './strategies/split-strategies.js';
+} from "./strategies/split-strategies.js";
 
 // Command functions for programmatic access
-export { convertCommand } from './commands/convert.js';
-export { graphCommand, generateGraph } from './commands/graph.js';
-export { indexCommand } from './commands/index.js';
-export { tocCommand, generateToc as generateTocForFiles } from './commands/toc.js';
+export { convertCommand } from "./commands/convert.js";
+export { graphCommand, generateGraph } from "./commands/graph.js";
+export { indexCommand } from "./commands/index.js";
+export {
+  tocCommand,
+  generateToc as generateTocForFiles,
+} from "./commands/toc.js";
 export {
   validateCommand,
   validateLinks,
@@ -147,7 +164,7 @@ export {
   type ValidateResult,
   type PlannedLinkFix,
   type FixPrompter,
-} from './commands/validate.js';
+} from "./commands/validate.js";
 
 // Type definitions
 export type {
@@ -156,7 +173,7 @@ export type {
   ParsedMarkdownFile,
   LinkType,
   LinkStyle,
-} from './types/links.js';
+} from "./types/links.js";
 
 export type {
   OperationResult,
@@ -168,23 +185,35 @@ export type {
   MergeOperationOptions,
   ConvertOperationOptions,
   BarrelOperationOptions,
-} from './types/operations.js';
+} from "./types/operations.js";
 
-export type { GraphOperationOptions, GraphCliOptions, GraphResult } from './commands/graph.js';
+export type {
+  GraphOperationOptions,
+  GraphCliOptions,
+  GraphResult,
+} from "./commands/graph.js";
 export type {
   LinkGraphOptions,
   GraphNode,
   GraphEdge,
   LinkGraph,
   GraphOutputFormat,
-} from './core/link-graph-generator.js';
-export type { IndexOptions, FileMetadata, IndexableFile } from './commands/index.js';
-export type { TocOperationOptions, TocCliOptions, TocResult } from './commands/toc.js';
+} from "./core/link-graph-generator.js";
+export type {
+  IndexOptions,
+  FileMetadata,
+  IndexableFile,
+} from "./commands/index.js";
+export type {
+  TocOperationOptions,
+  TocCliOptions,
+  TocResult,
+} from "./commands/toc.js";
 export type {
   TocOptions,
   TocResult as TocGeneratorResult,
   MarkdownHeading,
-} from './utils/toc-generator.js';
+} from "./utils/toc-generator.js";
 
 // Re-export specific strategy types that might be useful
 export type {
@@ -192,20 +221,20 @@ export type {
   JoinResult,
   JoinConflict,
   JoinStrategyOptions,
-} from './strategies/join-strategies.js';
+} from "./strategies/join-strategies.js";
 
 export type {
   MergeSection,
   MergeResult,
   MergeConflict,
   MergeStrategyOptions,
-} from './strategies/merge-strategies.js';
+} from "./strategies/merge-strategies.js";
 
 export type {
   SplitSection,
   SplitResult,
   SplitStrategyOptions,
-} from './strategies/split-strategies.js';
+} from "./strategies/split-strategies.js";
 
 /**
  * Main entry point for the markmv library
@@ -254,7 +283,7 @@ export function createMarkMv(): FileOperations {
 export async function moveFile(
   sourcePath: string,
   destinationPath: string,
-  options: MoveOperationOptions = {}
+  options: MoveOperationOptions = {},
 ): Promise<OperationResult> {
   const fileOps = new FileOperations();
   return fileOps.moveFile(sourcePath, destinationPath, options);
@@ -283,7 +312,7 @@ export async function moveFile(
  */
 export async function moveFiles(
   moves: { source: string; destination: string }[],
-  options: MoveOperationOptions = {}
+  options: MoveOperationOptions = {},
 ): Promise<OperationResult> {
   const fileOps = new FileOperations();
   return fileOps.moveFiles(moves, options);
@@ -340,9 +369,9 @@ export async function validateOperation(result: OperationResult): Promise<{
  */
 export async function generateToc(
   content: string,
-  options: import('./utils/toc-generator.js').TocOptions = {}
-): Promise<import('./utils/toc-generator.js').TocResult> {
-  const { TocGenerator } = await import('./utils/toc-generator.js');
+  options: import("./utils/toc-generator.js").TocOptions = {},
+): Promise<import("./utils/toc-generator.js").TocResult> {
+  const { TocGenerator } = await import("./utils/toc-generator.js");
   const generator = new TocGenerator();
   return generator.generateToc(content, options);
 }
@@ -372,9 +401,9 @@ export async function generateToc(
  */
 export async function generateIndex(
   directory: string,
-  options: import('./commands/index.js').IndexOptions
+  options: import("./commands/index.js").IndexOptions,
 ): Promise<void> {
-  const { indexCommand } = await import('./commands/index.js');
+  const { indexCommand } = await import("./commands/index.js");
   return indexCommand(directory, options);
 }
 
@@ -403,7 +432,7 @@ export async function generateIndex(
  */
 export async function generateBarrel(
   directory: string,
-  options: import('./commands/index.js').IndexOptions
+  options: import("./commands/index.js").IndexOptions,
 ): Promise<void> {
   return generateIndex(directory, options);
 }
@@ -448,9 +477,11 @@ export async function generateBarrel(
  */
 export async function generateLinkGraph(
   patterns: string[],
-  options: import('./commands/graph.js').GraphOperationOptions = { format: 'json' }
-): Promise<import('./commands/graph.js').GraphResult> {
-  const { generateGraph } = await import('./commands/graph.js');
+  options: import("./commands/graph.js").GraphOperationOptions = {
+    format: "json",
+  },
+): Promise<import("./commands/graph.js").GraphResult> {
+  const { generateGraph } = await import("./commands/graph.js");
   return generateGraph(patterns, options);
 }
 

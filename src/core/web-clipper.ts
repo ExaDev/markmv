@@ -6,14 +6,14 @@
  * @category Core
  */
 
-import { parse, HTMLElement } from 'node-html-parser';
-import TurndownService from 'turndown';
-import { Readability } from '@mozilla/readability';
-import { JSDOM } from 'jsdom';
+import { parse, HTMLElement } from "node-html-parser";
+import TurndownService from "turndown";
+import { Readability } from "@mozilla/readability";
+import { JSDOM } from "jsdom";
 
 /** Type guard for a plain object (not an array, not null) parsed from JSON. */
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /** Returns the first truthy string among the given values, or an empty string. */
@@ -23,7 +23,7 @@ function firstTruthyString(...values: (string | undefined | null)[]): string {
       return value;
     }
   }
-  return '';
+  return "";
 }
 
 /**
@@ -32,12 +32,12 @@ function firstTruthyString(...values: (string | undefined | null)[]): string {
  * @category Core
  */
 export type ExtractionStrategy =
-  | 'auto' // Automatically choose best strategy
-  | 'readability' // Mozilla Readability algorithm
-  | 'manual' // Custom selectors
-  | 'full' // Full page content
-  | 'structured' // Schema.org and semantic extraction
-  | 'headless'; // Browser automation (future)
+  | "auto" // Automatically choose best strategy
+  | "readability" // Mozilla Readability algorithm
+  | "manual" // Custom selectors
+  | "full" // Full page content
+  | "structured" // Schema.org and semantic extraction
+  | "headless"; // Browser automation (future)
 
 /**
  * Image handling strategies.
@@ -45,10 +45,10 @@ export type ExtractionStrategy =
  * @category Core
  */
 type ImageStrategy =
-  | 'skip' // Don't process images
-  | 'link-only' // Keep as external links
-  | 'download' // Download and save locally
-  | 'base64'; // Embed as base64 (small images only)
+  | "skip" // Don't process images
+  | "link-only" // Keep as external links
+  | "download" // Download and save locally
+  | "base64"; // Embed as base64 (small images only)
 
 /**
  * Options for web clipping operations.
@@ -110,7 +110,7 @@ interface ExtractedContent {
   links: {
     url: string;
     text: string;
-    type: 'internal' | 'external';
+    type: "internal" | "external";
   }[];
   /** Structured data found */
   structuredData?: Record<string, unknown>;
@@ -147,7 +147,7 @@ export interface ClipResult {
   links: {
     url: string;
     text: string;
-    type: 'internal' | 'external';
+    type: "internal" | "external";
   }[];
   /** Structured data found */
   structuredData?: Record<string, unknown>;
@@ -155,14 +155,14 @@ export interface ClipResult {
 
 /** Default options for web clipping. */
 const DEFAULT_CLIPPER_OPTIONS: Required<
-  Omit<WebClipperOptions, 'selectors' | 'cookiesFile' | 'headers'>
+  Omit<WebClipperOptions, "selectors" | "cookiesFile" | "headers">
 > = {
-  strategy: 'auto',
-  imageStrategy: 'link-only',
-  imageDir: './images',
+  strategy: "auto",
+  imageStrategy: "link-only",
+  imageDir: "./images",
   includeFrontmatter: true,
   timeout: 30000,
-  userAgent: 'Mozilla/5.0 (compatible; markmv-clipper/1.0)',
+  userAgent: "Mozilla/5.0 (compatible; markmv-clipper/1.0)",
   followRedirects: true,
   maxRedirects: 5,
   verbose: false,
@@ -201,8 +201,10 @@ const DEFAULT_CLIPPER_OPTIONS: Required<
  *   ```
  */
 export class WebClipper {
-  private options: Required<Omit<WebClipperOptions, 'selectors' | 'cookiesFile' | 'headers'>> &
-    Pick<WebClipperOptions, 'selectors' | 'cookiesFile' | 'headers'>;
+  private options: Required<
+    Omit<WebClipperOptions, "selectors" | "cookiesFile" | "headers">
+  > &
+    Pick<WebClipperOptions, "selectors" | "cookiesFile" | "headers">;
   private turndown: TurndownService;
 
   constructor(options: WebClipperOptions = {}) {
@@ -227,7 +229,9 @@ export class WebClipper {
 
     // Determine extraction strategy
     const strategy =
-      this.options.strategy === 'auto' ? this.determineStrategy(html, url) : this.options.strategy;
+      this.options.strategy === "auto"
+        ? this.determineStrategy(html, url)
+        : this.options.strategy;
 
     if (this.options.verbose) {
       console.log(`🔧 Using strategy: ${strategy}`);
@@ -254,7 +258,8 @@ export class WebClipper {
     if (extracted.author) result.author = extracted.author;
     if (extracted.publishedDate) result.publishedDate = extracted.publishedDate;
     if (extracted.description) result.description = extracted.description;
-    if (extracted.structuredData) result.structuredData = extracted.structuredData;
+    if (extracted.structuredData)
+      result.structuredData = extracted.structuredData;
 
     return result;
   }
@@ -272,23 +277,26 @@ export class WebClipper {
 
     try {
       const headers: Record<string, string> = {
-        'User-Agent': this.options.userAgent,
-        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate',
-        Connection: 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
+        "User-Agent": this.options.userAgent,
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate",
+        Connection: "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
         ...this.options.headers,
       };
 
       const response = await fetch(url, {
         headers,
         signal: controller.signal,
-        redirect: this.options.followRedirects ? 'follow' : 'manual',
+        redirect: this.options.followRedirects ? "follow" : "manual",
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${String(response.status)}: ${response.statusText}`);
+        throw new Error(
+          `HTTP ${String(response.status)}: ${response.statusText}`,
+        );
       }
 
       return await response.text();
@@ -306,29 +314,40 @@ export class WebClipper {
     const root = parse(html);
 
     // Check for common article patterns
-    const articleSelectors = ['article', '[role="main"]', '.post-content', '.entry-content'];
-    const hasArticle = articleSelectors.some((selector) => root.querySelector(selector));
+    const articleSelectors = [
+      "article",
+      '[role="main"]',
+      ".post-content",
+      ".entry-content",
+    ];
+    const hasArticle = articleSelectors.some((selector) =>
+      root.querySelector(selector),
+    );
 
     // Check for documentation patterns
-    const docsPatterns = ['/docs/', '/documentation/', '/api/', '/guide/'];
+    const docsPatterns = ["/docs/", "/documentation/", "/api/", "/guide/"];
     const isDocs = docsPatterns.some((pattern) => url.includes(pattern));
 
     // Check for blog patterns
-    const blogPatterns = ['/blog/', '/post/', '/article/'];
+    const blogPatterns = ["/blog/", "/post/", "/article/"];
     const isBlog = blogPatterns.some((pattern) => url.includes(pattern));
 
     // Check for structured data
     const hasStructuredData =
-      root.querySelector('[itemscope]') ?? root.querySelector('script[type="application/ld+json"]');
+      root.querySelector("[itemscope]") ??
+      root.querySelector('script[type="application/ld+json"]');
 
     if (hasStructuredData) {
-      return 'structured';
-    } else if (hasArticle && (isBlog || url.includes('medium.com') || url.includes('dev.to'))) {
-      return 'readability';
+      return "structured";
+    } else if (
+      hasArticle &&
+      (isBlog || url.includes("medium.com") || url.includes("dev.to"))
+    ) {
+      return "readability";
     } else if (isDocs) {
-      return 'manual';
+      return "manual";
     } else {
-      return 'readability';
+      return "readability";
     }
   }
 
@@ -340,16 +359,16 @@ export class WebClipper {
   private extractContent(
     html: string,
     url: string,
-    strategy: ExtractionStrategy
+    strategy: ExtractionStrategy,
   ): ExtractedContent {
     switch (strategy) {
-      case 'readability':
+      case "readability":
         return this.extractWithReadability(html, url);
-      case 'manual':
+      case "manual":
         return this.extractWithSelectors(html, url);
-      case 'full':
+      case "full":
         return this.extractFullPage(html, url);
-      case 'structured':
+      case "structured":
         return this.extractStructured(html, url);
       default:
         return this.extractWithReadability(html, url);
@@ -367,7 +386,7 @@ export class WebClipper {
     const article = reader.parse();
 
     if (!article?.content) {
-      throw new Error('Could not extract article content using Readability');
+      throw new Error("Could not extract article content using Readability");
     }
 
     const root = parse(article.content);
@@ -397,13 +416,13 @@ export class WebClipper {
     const root = parse(html);
 
     const selectors = this.options.selectors ?? [
-      'article',
+      "article",
       '[role="main"]',
-      '.content',
-      '#content',
-      'main',
-      '.post-content',
-      '.entry-content',
+      ".content",
+      "#content",
+      "main",
+      ".post-content",
+      ".entry-content",
     ];
 
     let contentElement: HTMLElement | null = null;
@@ -414,10 +433,10 @@ export class WebClipper {
     }
 
     // Fallback to body
-    contentElement ??= root.querySelector('body');
+    contentElement ??= root.querySelector("body");
 
     if (!contentElement) {
-      throw new Error('Could not find content with specified selectors');
+      throw new Error("Could not find content with specified selectors");
     }
 
     const result: ExtractedContent = {
@@ -448,10 +467,10 @@ export class WebClipper {
    */
   private extractFullPage(html: string, url: string): ExtractedContent {
     const root = parse(html);
-    const body = root.querySelector('body');
+    const body = root.querySelector("body");
 
     if (!body) {
-      throw new Error('Could not find body element');
+      throw new Error("Could not find body element");
     }
 
     const result: ExtractedContent = {
@@ -484,7 +503,9 @@ export class WebClipper {
     const root = parse(html);
 
     // Try JSON-LD structured data first
-    const jsonLdScript = root.querySelector('script[type="application/ld+json"]');
+    const jsonLdScript = root.querySelector(
+      'script[type="application/ld+json"]',
+    );
     let structuredData: Record<string, unknown> | undefined;
 
     if (jsonLdScript) {
@@ -520,18 +541,21 @@ export class WebClipper {
   private extractTitle(root: HTMLElement): string | undefined {
     // Try various title sources in order of preference
     const titleSelectors = [
-      'h1',
-      'title',
+      "h1",
+      "title",
       '[property="og:title"]',
       '[name="twitter:title"]',
-      '.title',
-      '#title',
+      ".title",
+      "#title",
     ];
 
     for (const selector of titleSelectors) {
       const element = root.querySelector(selector);
       if (element) {
-        const title = firstTruthyString(element.getAttribute('content'), element.text.trim());
+        const title = firstTruthyString(
+          element.getAttribute("content"),
+          element.text.trim(),
+        );
         if (title) return title;
       }
     }
@@ -547,8 +571,8 @@ export class WebClipper {
   private extractAuthor(root: HTMLElement): string | undefined {
     const authorSelectors = [
       '[rel="author"]',
-      '.author',
-      '.byline',
+      ".author",
+      ".byline",
       '[property="article:author"]',
       '[name="author"]',
     ];
@@ -556,7 +580,10 @@ export class WebClipper {
     for (const selector of authorSelectors) {
       const element = root.querySelector(selector);
       if (element) {
-        const author = firstTruthyString(element.getAttribute('content'), element.text.trim());
+        const author = firstTruthyString(
+          element.getAttribute("content"),
+          element.text.trim(),
+        );
         if (author) return author;
       }
     }
@@ -601,7 +628,7 @@ export class WebClipper {
     for (const selector of descriptionSelectors) {
       const element = root.querySelector(selector);
       if (element) {
-        const description = element.getAttribute('content');
+        const description = element.getAttribute("content");
         if (description) return description;
       }
     }
@@ -615,12 +642,12 @@ export class WebClipper {
    * @private
    */
   private extractImages(root: HTMLElement, baseUrl: string) {
-    const images = root.querySelectorAll('img');
+    const images = root.querySelectorAll("img");
 
     return images.map((img) => {
-      const alt = img.getAttribute('alt');
+      const alt = img.getAttribute("alt");
       return {
-        originalUrl: this.resolveUrl(img.getAttribute('src') ?? '', baseUrl),
+        originalUrl: this.resolveUrl(img.getAttribute("src") ?? "", baseUrl),
         alt: alt ?? undefined,
         processed: false,
       };
@@ -633,12 +660,12 @@ export class WebClipper {
    * @private
    */
   private extractLinks(root: HTMLElement, baseUrl: string) {
-    const links = root.querySelectorAll('a[href]');
+    const links = root.querySelectorAll("a[href]");
 
     return links.map((link) => {
-      const url = this.resolveUrl(link.getAttribute('href') ?? '', baseUrl);
+      const url = this.resolveUrl(link.getAttribute("href") ?? "", baseUrl);
       const text = link.text.trim();
-      const type = this.isInternalLink(url, baseUrl) ? 'internal' : 'external';
+      const type = this.isInternalLink(url, baseUrl) ? "internal" : "external";
 
       return { url, text, type } as const;
     });
@@ -650,8 +677,12 @@ export class WebClipper {
    * @private
    */
   private processImages(
-    images: { originalUrl: string; alt: string | undefined; processed: boolean }[],
-    _baseUrl: string
+    images: {
+      originalUrl: string;
+      alt: string | undefined;
+      processed: boolean;
+    }[],
+    _baseUrl: string,
   ) {
     // For now, just mark as processed without downloading
     // TODO: Implement actual image downloading and processing
@@ -669,8 +700,8 @@ export class WebClipper {
    */
   private generateMarkdown(
     extracted: ExtractedContent,
-    _images: ClipResult['images'],
-    sourceUrl: string
+    _images: ClipResult["images"],
+    sourceUrl: string,
   ): string {
     const parts: string[] = [];
 
@@ -678,9 +709,9 @@ export class WebClipper {
     if (this.options.includeFrontmatter) {
       const frontmatter = this.generateFrontmatter(extracted, sourceUrl);
       if (frontmatter) {
-        parts.push('---');
+        parts.push("---");
         parts.push(frontmatter);
-        parts.push('---\n');
+        parts.push("---\n");
       }
     }
 
@@ -688,7 +719,7 @@ export class WebClipper {
     const markdown = this.turndown.turndown(extracted.content);
     parts.push(markdown);
 
-    return parts.join('\n');
+    return parts.join("\n");
   }
 
   /**
@@ -696,22 +727,26 @@ export class WebClipper {
    *
    * @private
    */
-  private generateFrontmatter(extracted: ExtractedContent, sourceUrl: string): string {
+  private generateFrontmatter(
+    extracted: ExtractedContent,
+    sourceUrl: string,
+  ): string {
     const frontmatter: Record<string, unknown> = {};
 
     if (extracted.title) frontmatter.title = extracted.title;
     if (extracted.author) frontmatter.author = extracted.author;
-    if (extracted.publishedDate) frontmatter.published = extracted.publishedDate;
+    if (extracted.publishedDate)
+      frontmatter.published = extracted.publishedDate;
     if (extracted.description) frontmatter.description = extracted.description;
 
     frontmatter.source = sourceUrl;
     frontmatter.clipped = new Date().toISOString();
 
-    if (Object.keys(frontmatter).length === 0) return '';
+    if (Object.keys(frontmatter).length === 0) return "";
 
     return Object.entries(frontmatter)
       .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
-      .join('\n');
+      .join("\n");
   }
 
   /**
@@ -721,23 +756,23 @@ export class WebClipper {
    */
   private configureTurndown(): TurndownService {
     const turndown = new TurndownService({
-      headingStyle: 'atx',
-      codeBlockStyle: 'fenced',
-      fence: '```',
-      emDelimiter: '*',
-      strongDelimiter: '**',
-      linkStyle: 'inlined',
-      linkReferenceStyle: 'full',
+      headingStyle: "atx",
+      codeBlockStyle: "fenced",
+      fence: "```",
+      emDelimiter: "*",
+      strongDelimiter: "**",
+      linkStyle: "inlined",
+      linkReferenceStyle: "full",
     });
 
     // Custom rules for better conversion
-    turndown.addRule('strikethrough', {
-      filter: ['del', 's'],
+    turndown.addRule("strikethrough", {
+      filter: ["del", "s"],
       replacement: (content) => `~~${content}~~`,
     });
 
-    turndown.addRule('highlight', {
-      filter: ['mark'],
+    turndown.addRule("highlight", {
+      filter: ["mark"],
       replacement: (content) => `==${content}==`,
     });
 

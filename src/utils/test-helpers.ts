@@ -1,8 +1,8 @@
 /** Cross-platform test utilities for handling filesystem differences */
 
-import { platform } from 'node:os';
-import { sep, win32, posix } from 'node:path';
-import { accessSync, constants } from 'node:fs';
+import { platform } from "node:os";
+import { sep, win32, posix } from "node:path";
+import { accessSync, constants } from "node:fs";
 
 export interface PlatformInfo {
   isWindows: boolean;
@@ -16,9 +16,9 @@ export interface PlatformInfo {
 /** Get current platform information */
 export function getPlatformInfo(): PlatformInfo {
   const currentPlatform = platform();
-  const isWindows = currentPlatform === 'win32';
-  const isMacOS = currentPlatform === 'darwin';
-  const isLinux = currentPlatform === 'linux';
+  const isWindows = currentPlatform === "win32";
+  const isMacOS = currentPlatform === "darwin";
+  const isLinux = currentPlatform === "linux";
 
   return {
     isWindows,
@@ -35,17 +35,17 @@ function getCaseSensitivity(): boolean {
   // Check environment variable first (from CI)
   const envVar = process.env.MARKMV_TEST_FILESYSTEM_CASE_SENSITIVE;
   if (envVar !== undefined) {
-    return envVar === 'true';
+    return envVar === "true";
   }
 
   // Default assumptions based on platform
   const currentPlatform = platform();
   switch (currentPlatform) {
-    case 'win32':
+    case "win32":
       return false; // Windows is typically case-insensitive
-    case 'darwin':
+    case "darwin":
       return false; // macOS is typically case-insensitive (default APFS/HFS+)
-    case 'linux':
+    case "linux":
       return true; // Linux is typically case-sensitive
     default:
       return true; // Default to case-sensitive for unknown platforms
@@ -57,16 +57,16 @@ function getSymlinkSupport(): boolean {
   // Check environment variable first (from CI)
   const envVar = process.env.MARKMV_TEST_SUPPORTS_SYMLINKS;
   if (envVar !== undefined) {
-    return envVar === 'true';
+    return envVar === "true";
   }
 
   // Default assumptions based on platform
   const currentPlatform = platform();
   switch (currentPlatform) {
-    case 'win32':
+    case "win32":
       return false; // Windows has limited symlink support
-    case 'darwin':
-    case 'linux':
+    case "darwin":
+    case "linux":
       return true; // Unix-like systems generally support symlinks
     default:
       return false; // Default to no symlink support for unknown platforms
@@ -100,14 +100,17 @@ export function convertPathSeparators(path: string): string {
   const platformInfo = getPlatformInfo();
 
   if (platformInfo.isWindows) {
-    return path.replace(/\//g, '\\');
+    return path.replace(/\//g, "\\");
   } else {
-    return path.replace(/\\/g, '/');
+    return path.replace(/\\/g, "/");
   }
 }
 
 /** Test if two filenames would conflict on the current filesystem */
-export function wouldFilenamesConflict(filename1: string, filename2: string): boolean {
+export function wouldFilenamesConflict(
+  filename1: string,
+  filename2: string,
+): boolean {
   const platformInfo = getPlatformInfo();
 
   if (platformInfo.caseSensitive) {
@@ -118,13 +121,15 @@ export function wouldFilenamesConflict(filename1: string, filename2: string): bo
 }
 
 /** Skip test if the current platform doesn't support the required feature */
-export function skipIfUnsupported(feature: 'symlinks' | 'case-sensitivity'): boolean {
+export function skipIfUnsupported(
+  feature: "symlinks" | "case-sensitivity",
+): boolean {
   const platformInfo = getPlatformInfo();
 
   switch (feature) {
-    case 'symlinks':
+    case "symlinks":
       return !platformInfo.supportsSymlinks;
-    case 'case-sensitivity':
+    case "case-sensitivity":
       return !platformInfo.caseSensitive;
     default:
       return false;
@@ -132,35 +137,37 @@ export function skipIfUnsupported(feature: 'symlinks' | 'case-sensitivity'): boo
 }
 
 /** Check if a test should be skipped based on platform capabilities */
-function shouldSkipTest(requirement: 'symlinks' | 'case-sensitivity' | 'windows' | 'unix'): {
+function shouldSkipTest(
+  requirement: "symlinks" | "case-sensitivity" | "windows" | "unix",
+): {
   skip: boolean;
   reason: string;
 } {
   const platformInfo = getPlatformInfo();
 
   switch (requirement) {
-    case 'symlinks':
+    case "symlinks":
       return {
         skip: !platformInfo.supportsSymlinks,
-        reason: 'symbolic links not supported on this platform',
+        reason: "symbolic links not supported on this platform",
       };
-    case 'case-sensitivity':
+    case "case-sensitivity":
       return {
         skip: !platformInfo.caseSensitive,
-        reason: 'filesystem is not case-sensitive',
+        reason: "filesystem is not case-sensitive",
       };
-    case 'windows':
+    case "windows":
       return {
         skip: !platformInfo.isWindows,
-        reason: 'test requires Windows',
+        reason: "test requires Windows",
       };
-    case 'unix':
+    case "unix":
       return {
         skip: platformInfo.isWindows,
-        reason: 'test requires Unix-like system',
+        reason: "test requires Unix-like system",
       };
     default:
-      return { skip: false, reason: '' };
+      return { skip: false, reason: "" };
   }
 }
 
@@ -174,8 +181,8 @@ export function createConditionalTest(testFn: {
 }) {
   return function conditionalTest(
     name: string,
-    requirement: 'symlinks' | 'case-sensitivity' | 'windows' | 'unix',
-    testCallback: () => void | Promise<void>
+    requirement: "symlinks" | "case-sensitivity" | "windows" | "unix",
+    testCallback: () => void | Promise<void>,
   ): void {
     const { skip, reason } = shouldSkipTest(requirement);
 
@@ -200,16 +207,16 @@ export function fileExists(filePath: string): boolean {
 /** Platform-specific test data for path testing */
 export const PLATFORM_TEST_PATHS = {
   windows: {
-    absolute: ['C:\\Users\\test\\file.txt', 'D:\\projects\\readme.md'],
-    relative: ['subfolder\\document.md', 'nested\\dir\\file.txt'],
-    invalid: ['C:', 'C:\\con', 'C:\\prn', 'C:\\aux'],
-    traversal: ['..\\parent\\file.txt'], // Separate category for path traversal tests
+    absolute: ["C:\\Users\\test\\file.txt", "D:\\projects\\readme.md"],
+    relative: ["subfolder\\document.md", "nested\\dir\\file.txt"],
+    invalid: ["C:", "C:\\con", "C:\\prn", "C:\\aux"],
+    traversal: ["..\\parent\\file.txt"], // Separate category for path traversal tests
   },
   unix: {
-    absolute: ['/home/test/file.txt', '/usr/local/bin/script'],
-    relative: ['subfolder/document.md', 'nested/dir/file.txt'],
-    invalid: ['', '\0path'],
-    traversal: ['../parent/file.txt'], // Separate category for path traversal tests
+    absolute: ["/home/test/file.txt", "/usr/local/bin/script"],
+    relative: ["subfolder/document.md", "nested/dir/file.txt"],
+    invalid: ["", "\0path"],
+    traversal: ["../parent/file.txt"], // Separate category for path traversal tests
   },
 };
 

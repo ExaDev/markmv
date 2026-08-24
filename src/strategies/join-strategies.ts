@@ -58,7 +58,11 @@ export interface JoinResult {
  */
 export interface JoinConflict {
   /** Type of conflict */
-  type: 'frontmatter-merge' | 'duplicate-headers' | 'link-collision' | 'content-overlap';
+  type:
+    | "frontmatter-merge"
+    | "duplicate-headers"
+    | "link-collision"
+    | "content-overlap";
   /** Description of the conflict */
   description: string;
   /** Files involved in the conflict */
@@ -81,7 +85,7 @@ export interface JoinStrategyOptions {
   /** Output file path */
   outputPath?: string;
   /** Strategy for ordering content */
-  orderStrategy?: 'alphabetical' | 'manual' | 'dependency' | 'chronological';
+  orderStrategy?: "alphabetical" | "manual" | "dependency" | "chronological";
   /** Custom section separator */
   separator?: string;
   /** Whether to merge frontmatter */
@@ -121,8 +125,8 @@ export abstract class BaseJoinStrategy {
 
   constructor(options: JoinStrategyOptions = {}) {
     this.options = {
-      orderStrategy: 'dependency',
-      separator: '\n\n---\n\n',
+      orderStrategy: "dependency",
+      separator: "\n\n---\n\n",
       mergeFrontmatter: true,
       deduplicateLinks: true,
       resolveHeaderConflicts: false,
@@ -146,17 +150,20 @@ export abstract class BaseJoinStrategy {
   }
 
   /** Extract title from content (frontmatter or first header) */
-  protected extractTitle(content: string, frontmatter?: string): string | undefined {
+  protected extractTitle(
+    content: string,
+    frontmatter?: string,
+  ): string | undefined {
     // Try frontmatter first
     if (frontmatter) {
       const titleMatch = /^title:\s*(.+)$/m.exec(frontmatter);
       if (titleMatch) {
-        return titleMatch[1].trim().replace(/['"]/g, '');
+        return titleMatch[1].trim().replace(/['"]/g, "");
       }
     }
 
     // Try first header
-    const lines = content.split('\n');
+    const lines = content.split("\n");
     for (const line of lines) {
       const headerMatch = /^#+\s+(.+)$/.exec(line);
       if (headerMatch) {
@@ -169,16 +176,17 @@ export abstract class BaseJoinStrategy {
 
   /** Merge multiple frontmatter blocks */
   protected mergeFrontmatter(sections: JoinSection[]): string {
-    const frontmatterData: Partial<Record<string, string | number | string[]>> = {};
+    const frontmatterData: Partial<Record<string, string | number | string[]>> =
+      {};
     const arrays: Partial<Record<string, string[]>> = {};
 
     for (const section of sections) {
       if (!section.frontmatter) continue;
 
       const lines = section.frontmatter
-        .replace(/^---\n/, '')
-        .replace(/\n---$/, '')
-        .split('\n');
+        .replace(/^---\n/, "")
+        .replace(/\n---$/, "")
+        .split("\n");
 
       for (const line of lines) {
         const match = /^([^:]+):\s*(.*)$/.exec(line);
@@ -186,32 +194,35 @@ export abstract class BaseJoinStrategy {
           const key = match[1].trim();
           const value = match[2].trim();
 
-          if (key === 'tags' || key === 'categories' || key === 'keywords') {
+          if (key === "tags" || key === "categories" || key === "keywords") {
             // Handle arrays
             const arrayValue = (arrays[key] ??= []);
-            if (value.startsWith('[') && value.endsWith(']')) {
+            if (value.startsWith("[") && value.endsWith("]")) {
               // Parse array format
               const items = value
                 .slice(1, -1)
-                .split(',')
-                .map((item) => item.trim().replace(/['"]/g, ''));
+                .split(",")
+                .map((item) => item.trim().replace(/['"]/g, ""));
               arrayValue.push(...items);
             } else {
-              arrayValue.push(value.replace(/['"]/g, ''));
+              arrayValue.push(value.replace(/['"]/g, ""));
             }
-          } else if (key === 'title') {
+          } else if (key === "title") {
             // Use first title found, or combine if different
             const existingTitle = frontmatterData[key];
-            const cleanValue = value.replace(/['"]/g, '');
+            const cleanValue = value.replace(/['"]/g, "");
             if (existingTitle === undefined) {
               frontmatterData[key] = cleanValue;
-            } else if (typeof existingTitle === 'string' && existingTitle !== cleanValue) {
+            } else if (
+              typeof existingTitle === "string" &&
+              existingTitle !== cleanValue
+            ) {
               frontmatterData[key] = `${existingTitle} & ${cleanValue}`;
             }
           } else {
             // Simple key-value pairs - use first found
             if (!frontmatterData[key]) {
-              const cleanValue = value.replace(/['"]/g, '');
+              const cleanValue = value.replace(/['"]/g, "");
               // Try to parse as number if it looks like one
               if (/^\d+$/.test(cleanValue)) {
                 frontmatterData[key] = Number.parseInt(cleanValue, 10);
@@ -231,20 +242,20 @@ export abstract class BaseJoinStrategy {
 
     // Generate frontmatter string
     if (Object.keys(frontmatterData).length === 0) {
-      return '';
+      return "";
     }
 
-    let result = '---\n';
+    let result = "---\n";
     for (const [key, value] of Object.entries(frontmatterData)) {
       if (Array.isArray(value)) {
-        result += `${key}: [${value.map((v) => `"${v}"`).join(', ')}]\n`;
-      } else if (typeof value === 'number') {
+        result += `${key}: [${value.map((v) => `"${v}"`).join(", ")}]\n`;
+      } else if (typeof value === "number") {
         result += `${key}: ${String(value)}\n`;
-      } else if (typeof value === 'string') {
+      } else if (typeof value === "string") {
         result += `${key}: "${value}"\n`;
       }
     }
-    result += '---\n';
+    result += "---\n";
 
     return result;
   }
@@ -273,10 +284,10 @@ export abstract class BaseJoinStrategy {
     for (const [header, files] of Object.entries(headerFiles)) {
       if ((files ?? []).length > 1) {
         conflicts.push({
-          type: 'duplicate-headers',
+          type: "duplicate-headers",
           description: `Duplicate header "${header}" found in multiple files`,
           files: files ?? [],
-          resolution: 'Consider renaming headers or adding file prefixes',
+          resolution: "Consider renaming headers or adding file prefixes",
         });
       }
     }
@@ -287,7 +298,7 @@ export abstract class BaseJoinStrategy {
 
     for (const section of sections) {
       if (section.frontmatter) {
-        const lines = section.frontmatter.split('\n');
+        const lines = section.frontmatter.split("\n");
         for (const line of lines) {
           const match = /^([^:]+):/.exec(line);
           if (match) {
@@ -306,10 +317,10 @@ export abstract class BaseJoinStrategy {
     for (const [key, files] of Object.entries(conflictingKeys)) {
       if ((files ?? []).length > 1) {
         conflicts.push({
-          type: 'frontmatter-merge',
+          type: "frontmatter-merge",
           description: `Conflicting frontmatter key "${key}" in multiple files`,
           files: files ?? [],
-          resolution: 'Values will be merged or first value used',
+          resolution: "Values will be merged or first value used",
         });
       }
     }
@@ -320,7 +331,7 @@ export abstract class BaseJoinStrategy {
   /** Extract all headers from content */
   protected extractHeaders(content: string): string[] {
     const headers: string[] = [];
-    const lines = content.split('\n');
+    const lines = content.split("\n");
 
     for (const line of lines) {
       const match = /^#+\s+(.+)$/.exec(line);
@@ -333,10 +344,13 @@ export abstract class BaseJoinStrategy {
   }
 
   /** Deduplicate links in combined content */
-  protected deduplicateLinks(content: string): { content: string; removedLinks: string[] } {
+  protected deduplicateLinks(content: string): {
+    content: string;
+    removedLinks: string[];
+  } {
     const seenLinks = new Set<string>();
     const removedLinks: string[] = [];
-    const lines = content.split('\n');
+    const lines = content.split("\n");
     const processedLines: string[] = [];
 
     for (const line of lines) {
@@ -365,7 +379,7 @@ export abstract class BaseJoinStrategy {
       for (const match of urlMatches) {
         const url = match[0];
         if (seenLinks.has(url)) {
-          processedLine = processedLine.replace(url, '');
+          processedLine = processedLine.replace(url, "");
           removedLinks.push(url);
         } else {
           seenLinks.add(url);
@@ -376,7 +390,7 @@ export abstract class BaseJoinStrategy {
     }
 
     return {
-      content: processedLines.join('\n'),
+      content: processedLines.join("\n"),
       removedLinks,
     };
   }
@@ -416,19 +430,27 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
       const orderedSections = this.topologicalSort(sections);
 
       if (!orderedSections) {
-        warnings.push('Circular dependency detected, falling back to manual order');
-        const fallbackSections = [...sections].sort((a, b) => a.order - b.order);
-        return Promise.resolve(this.buildResult(fallbackSections, conflicts, warnings, errors));
+        warnings.push(
+          "Circular dependency detected, falling back to manual order",
+        );
+        const fallbackSections = [...sections].sort(
+          (a, b) => a.order - b.order,
+        );
+        return Promise.resolve(
+          this.buildResult(fallbackSections, conflicts, warnings, errors),
+        );
       }
 
-      return Promise.resolve(this.buildResult(orderedSections, conflicts, warnings, errors));
+      return Promise.resolve(
+        this.buildResult(orderedSections, conflicts, warnings, errors),
+      );
     } catch (error) {
       errors.push(
-        `Failed to join sections: ${error instanceof Error ? error.message : String(error)}`
+        `Failed to join sections: ${error instanceof Error ? error.message : String(error)}`,
       );
       return Promise.resolve({
         success: false,
-        content: '',
+        content: "",
         frontmatter: undefined,
         sourceFiles: [],
         conflicts,
@@ -457,7 +479,10 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
       for (const dep of section.dependencies) {
         if (fileToSection.has(dep)) {
           graph.get(dep)?.add(section.filePath);
-          inDegree.set(section.filePath, (inDegree.get(section.filePath) ?? 0) + 1);
+          inDegree.set(
+            section.filePath,
+            (inDegree.get(section.filePath) ?? 0) + 1,
+          );
         }
       }
     }
@@ -504,14 +529,14 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
     orderedSections: JoinSection[],
     conflicts: JoinConflict[],
     warnings: string[],
-    errors: string[]
+    errors: string[],
   ): JoinResult {
     const sourceFiles = orderedSections.map((s) => s.filePath);
-    const separator = this.options.separator ?? '\n\n---\n\n';
+    const separator = this.options.separator ?? "\n\n---\n\n";
 
     // Combine content
     let combinedContent = orderedSections
-      .map((section) => section.content.replace(/^---\n.*?\n---\n/s, '').trim())
+      .map((section) => section.content.replace(/^---\n.*?\n---\n/s, "").trim())
       .join(separator);
 
     let deduplicatedLinks: string[] = [];
@@ -576,14 +601,16 @@ export class AlphabeticalJoinStrategy extends BaseJoinStrategy {
         return titleA.toLowerCase().localeCompare(titleB.toLowerCase());
       });
 
-      return Promise.resolve(this.buildResult(orderedSections, conflicts, warnings, errors));
+      return Promise.resolve(
+        this.buildResult(orderedSections, conflicts, warnings, errors),
+      );
     } catch (error) {
       errors.push(
-        `Failed to join sections: ${error instanceof Error ? error.message : String(error)}`
+        `Failed to join sections: ${error instanceof Error ? error.message : String(error)}`,
       );
       return Promise.resolve({
         success: false,
-        content: '',
+        content: "",
         frontmatter: undefined,
         sourceFiles: [],
         conflicts,
@@ -598,13 +625,13 @@ export class AlphabeticalJoinStrategy extends BaseJoinStrategy {
     orderedSections: JoinSection[],
     conflicts: JoinConflict[],
     warnings: string[],
-    errors: string[]
+    errors: string[],
   ): JoinResult {
     const sourceFiles = orderedSections.map((s) => s.filePath);
-    const separator = this.options.separator ?? '\n\n---\n\n';
+    const separator = this.options.separator ?? "\n\n---\n\n";
 
     let combinedContent = orderedSections
-      .map((section) => section.content.replace(/^---\n.*?\n---\n/s, '').trim())
+      .map((section) => section.content.replace(/^---\n.*?\n---\n/s, "").trim())
       .join(separator);
 
     let deduplicatedLinks: string[] = [];
@@ -672,7 +699,9 @@ export class ManualOrderJoinStrategy extends BaseJoinStrategy {
           orderedSections.push(section);
           usedSections.add(filePath);
         } else {
-          warnings.push(`File ${filePath} specified in custom order but not found in sections`);
+          warnings.push(
+            `File ${filePath} specified in custom order but not found in sections`,
+          );
         }
       }
 
@@ -687,14 +716,16 @@ export class ManualOrderJoinStrategy extends BaseJoinStrategy {
 
       orderedSections.push(...remainingSections);
 
-      return Promise.resolve(this.buildResult(orderedSections, conflicts, warnings, errors));
+      return Promise.resolve(
+        this.buildResult(orderedSections, conflicts, warnings, errors),
+      );
     } catch (error) {
       errors.push(
-        `Failed to join sections: ${error instanceof Error ? error.message : String(error)}`
+        `Failed to join sections: ${error instanceof Error ? error.message : String(error)}`,
       );
       return Promise.resolve({
         success: false,
-        content: '',
+        content: "",
         frontmatter: undefined,
         sourceFiles: [],
         conflicts,
@@ -709,13 +740,13 @@ export class ManualOrderJoinStrategy extends BaseJoinStrategy {
     orderedSections: JoinSection[],
     conflicts: JoinConflict[],
     warnings: string[],
-    errors: string[]
+    errors: string[],
   ): JoinResult {
     const sourceFiles = orderedSections.map((s) => s.filePath);
-    const separator = this.options.separator ?? '\n\n---\n\n';
+    const separator = this.options.separator ?? "\n\n---\n\n";
 
     let combinedContent = orderedSections
-      .map((section) => section.content.replace(/^---\n.*?\n---\n/s, '').trim())
+      .map((section) => section.content.replace(/^---\n.*?\n---\n/s, "").trim())
       .join(separator);
 
     let deduplicatedLinks: string[] = [];
@@ -784,14 +815,16 @@ export class ChronologicalJoinStrategy extends BaseJoinStrategy {
         return dateA.getTime() - dateB.getTime();
       });
 
-      return Promise.resolve(this.buildResult(orderedSections, conflicts, warnings, errors));
+      return Promise.resolve(
+        this.buildResult(orderedSections, conflicts, warnings, errors),
+      );
     } catch (error) {
       errors.push(
-        `Failed to join sections: ${error instanceof Error ? error.message : String(error)}`
+        `Failed to join sections: ${error instanceof Error ? error.message : String(error)}`,
       );
       return Promise.resolve({
         success: false,
-        content: '',
+        content: "",
         frontmatter: undefined,
         sourceFiles: [],
         conflicts,
@@ -807,7 +840,7 @@ export class ChronologicalJoinStrategy extends BaseJoinStrategy {
     if (section.frontmatter) {
       const dateMatch = /^date:\s*(.+)$/m.exec(section.frontmatter);
       if (dateMatch) {
-        const date = new Date(dateMatch[1].trim().replace(/['"]/g, ''));
+        const date = new Date(dateMatch[1].trim().replace(/['"]/g, ""));
         if (!Number.isNaN(date.getTime())) {
           return date;
         }
@@ -830,13 +863,13 @@ export class ChronologicalJoinStrategy extends BaseJoinStrategy {
     orderedSections: JoinSection[],
     conflicts: JoinConflict[],
     warnings: string[],
-    errors: string[]
+    errors: string[],
   ): JoinResult {
     const sourceFiles = orderedSections.map((s) => s.filePath);
-    const separator = this.options.separator ?? '\n\n---\n\n';
+    const separator = this.options.separator ?? "\n\n---\n\n";
 
     let combinedContent = orderedSections
-      .map((section) => section.content.replace(/^---\n.*?\n---\n/s, '').trim())
+      .map((section) => section.content.replace(/^---\n.*?\n---\n/s, "").trim())
       .join(separator);
 
     let deduplicatedLinks: string[] = [];

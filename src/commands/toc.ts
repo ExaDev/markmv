@@ -1,7 +1,7 @@
-import { readFile, writeFile } from 'node:fs/promises';
-import { TocGenerator } from '../utils/toc-generator.js';
-import type { TocOptions } from '../utils/toc-generator.js';
-import type { OperationOptions } from '../types/operations.js';
+import { readFile, writeFile } from "node:fs/promises";
+import { TocGenerator } from "../utils/toc-generator.js";
+import type { TocOptions } from "../utils/toc-generator.js";
+import type { OperationOptions } from "../types/operations.js";
 
 /**
  * Configuration options for TOC generation operations.
@@ -18,7 +18,7 @@ export interface TocOperationOptions extends OperationOptions {
   /** Include line numbers in TOC entries */
   includeLineNumbers: boolean;
   /** Position where to insert TOC: 'top' | 'after-title' | 'before-content' | 'replace' */
-  position: 'top' | 'after-title' | 'before-content' | 'replace';
+  position: "top" | "after-title" | "before-content" | "replace";
   /** Custom TOC title (default: "Table of Contents") */
   title: string;
   /** TOC heading level (1-6, default: 2) */
@@ -34,7 +34,7 @@ export interface TocOperationOptions extends OperationOptions {
  *
  * @category Commands
  */
-export interface TocCliOptions extends Omit<TocOperationOptions, 'position'> {
+export interface TocCliOptions extends Omit<TocOperationOptions, "position"> {
   /** Position where to insert TOC */
   position?: string;
   /** Output results in JSON format */
@@ -102,7 +102,7 @@ export interface TocResult {
  */
 export async function generateToc(
   filePaths: string[],
-  options: Partial<TocOperationOptions> = {}
+  options: Partial<TocOperationOptions> = {},
 ): Promise<TocResult> {
   const startTime = Date.now();
 
@@ -110,10 +110,10 @@ export async function generateToc(
     minDepth: options.minDepth ?? 1,
     maxDepth: options.maxDepth ?? 6,
     includeLineNumbers: options.includeLineNumbers ?? false,
-    position: options.position ?? 'after-title',
-    title: options.title ?? 'Table of Contents',
+    position: options.position ?? "after-title",
+    title: options.title ?? "Table of Contents",
     headingLevel: options.headingLevel ?? 2,
-    marker: options.marker ?? '',
+    marker: options.marker ?? "",
     skipEmpty: options.skipEmpty ?? true,
     dryRun: options.dryRun ?? false,
     verbose: options.verbose ?? false,
@@ -138,7 +138,7 @@ export async function generateToc(
       }
 
       // Read file content
-      const content = await readFile(filePath, 'utf-8');
+      const content = await readFile(filePath, "utf-8");
       result.filesProcessed++;
 
       // Generate TOC
@@ -161,20 +161,24 @@ export async function generateToc(
           headingsFound: 0,
           tocGenerated: false,
           tocLength: 0,
-          position: 'none',
+          position: "none",
         });
         continue;
       }
 
       // Generate TOC markdown
-      const tocMarkdown = generateTocMarkdown(tocResult.toc, opts.title, opts.headingLevel);
+      const tocMarkdown = generateTocMarkdown(
+        tocResult.toc,
+        opts.title,
+        opts.headingLevel,
+      );
 
       // Insert TOC into content
       const modifiedContent = insertTocIntoContent(content, tocMarkdown, opts);
 
       // Write file if not dry run and content changed
       if (!opts.dryRun && modifiedContent !== content) {
-        await writeFile(filePath, modifiedContent, 'utf-8');
+        await writeFile(filePath, modifiedContent, "utf-8");
         result.filesModified++;
 
         if (opts.verbose) {
@@ -213,8 +217,12 @@ export async function generateToc(
 }
 
 /** Generate formatted TOC markdown with title and heading level. */
-function generateTocMarkdown(toc: string, title: string, headingLevel: number): string {
-  const headingPrefix = '#'.repeat(headingLevel);
+function generateTocMarkdown(
+  toc: string,
+  title: string,
+  headingLevel: number,
+): string {
+  const headingPrefix = "#".repeat(headingLevel);
   return `${headingPrefix} ${title}\n\n${toc}`;
 }
 
@@ -222,21 +230,21 @@ function generateTocMarkdown(toc: string, title: string, headingLevel: number): 
 function insertTocIntoContent(
   content: string,
   tocMarkdown: string,
-  options: Required<TocOperationOptions>
+  options: Required<TocOperationOptions>,
 ): string {
-  const lines = content.split('\n');
+  const lines = content.split("\n");
 
   switch (options.position) {
-    case 'top':
+    case "top":
       return `${tocMarkdown}\n\n${content}`;
 
-    case 'after-title':
+    case "after-title":
       return insertAfterTitle(lines, tocMarkdown);
 
-    case 'before-content':
+    case "before-content":
       return insertBeforeContent(lines, tocMarkdown);
 
-    case 'replace':
+    case "replace":
       return replaceExistingToc(content, tocMarkdown, options);
 
     default:
@@ -246,16 +254,16 @@ function insertTocIntoContent(
 
 /** Insert TOC after the first heading (title). */
 function insertAfterTitle(lines: string[], tocMarkdown: string): string {
-  const titleIndex = lines.findIndex((line) => line.trim().startsWith('#'));
+  const titleIndex = lines.findIndex((line) => line.trim().startsWith("#"));
 
   if (titleIndex === -1) {
     // No title found, insert at top
-    return `${tocMarkdown}\n\n${lines.join('\n')}`;
+    return `${tocMarkdown}\n\n${lines.join("\n")}`;
   }
 
   // Find the end of the title section (next empty line or content)
   let insertIndex = titleIndex + 1;
-  while (insertIndex < lines.length && lines[insertIndex].trim() === '') {
+  while (insertIndex < lines.length && lines[insertIndex].trim() === "") {
     insertIndex++;
   }
 
@@ -263,7 +271,7 @@ function insertAfterTitle(lines: string[], tocMarkdown: string): string {
   const before = lines.slice(0, insertIndex);
   const after = lines.slice(insertIndex);
 
-  return [...before, '', tocMarkdown, '', ...after].join('\n');
+  return [...before, "", tocMarkdown, "", ...after].join("\n");
 }
 
 /** Insert TOC before the main content (after frontmatter if present). */
@@ -271,9 +279,9 @@ function insertBeforeContent(lines: string[], tocMarkdown: string): string {
   let insertIndex = 0;
 
   // Skip frontmatter if present
-  if (lines[0]?.trim() === '---') {
+  if (lines[0]?.trim() === "---") {
     insertIndex = 1;
-    while (insertIndex < lines.length && lines[insertIndex]?.trim() !== '---') {
+    while (insertIndex < lines.length && lines[insertIndex]?.trim() !== "---") {
       insertIndex++;
     }
     if (insertIndex < lines.length) {
@@ -282,7 +290,7 @@ function insertBeforeContent(lines: string[], tocMarkdown: string): string {
   }
 
   // Skip empty lines
-  while (insertIndex < lines.length && lines[insertIndex].trim() === '') {
+  while (insertIndex < lines.length && lines[insertIndex].trim() === "") {
     insertIndex++;
   }
 
@@ -290,23 +298,26 @@ function insertBeforeContent(lines: string[], tocMarkdown: string): string {
   const before = lines.slice(0, insertIndex);
   const after = lines.slice(insertIndex);
 
-  return [...before, tocMarkdown, '', ...after].join('\n');
+  return [...before, tocMarkdown, "", ...after].join("\n");
 }
 
 /** Replace existing TOC using marker or heuristic detection. */
 function replaceExistingToc(
   content: string,
   tocMarkdown: string,
-  options: Required<TocOperationOptions>
+  options: Required<TocOperationOptions>,
 ): string {
   // Try marker-based replacement first
   if (options.marker) {
     const markerRegex = new RegExp(
       `${escapeRegExp(options.marker)}[\\s\\S]*?${escapeRegExp(options.marker)}`,
-      'g'
+      "g",
     );
     if (markerRegex.test(content)) {
-      return content.replace(markerRegex, `${options.marker}\n${tocMarkdown}\n${options.marker}`);
+      return content.replace(
+        markerRegex,
+        `${options.marker}\n${tocMarkdown}\n${options.marker}`,
+      );
     }
   }
 
@@ -315,7 +326,7 @@ function replaceExistingToc(
   const match = tocHeadingRegex.exec(content);
 
   if (match) {
-    const lines = content.split('\n');
+    const lines = content.split("\n");
     const tocLineIndex = lines.findIndex((line) => tocHeadingRegex.test(line));
 
     if (tocLineIndex !== -1) {
@@ -327,12 +338,12 @@ function replaceExistingToc(
         const line = lines[endIndex];
 
         // If we hit another heading, that's the end
-        if (line.trim().startsWith('#')) {
+        if (line.trim().startsWith("#")) {
           break;
         }
 
         // Count empty lines
-        if (line.trim() === '') {
+        if (line.trim() === "") {
           emptyLineCount++;
           if (emptyLineCount >= 2) {
             break;
@@ -348,17 +359,17 @@ function replaceExistingToc(
       const before = lines.slice(0, tocLineIndex);
       const after = lines.slice(endIndex);
 
-      return [...before, tocMarkdown, '', ...after].join('\n');
+      return [...before, tocMarkdown, "", ...after].join("\n");
     }
   }
 
   // If no existing TOC found, insert after title
-  return insertAfterTitle(content.split('\n'), tocMarkdown);
+  return insertAfterTitle(content.split("\n"), tocMarkdown);
 }
 
 /** Escape special regex characters. */
 function escapeRegExp(string: string): string {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /**
@@ -382,21 +393,31 @@ function escapeRegExp(string: string): string {
  * @param filePaths - Array of file paths to process
  * @param cliOptions - CLI-specific options
  */
-export async function tocCommand(filePaths: string[], cliOptions: TocCliOptions): Promise<void> {
+export async function tocCommand(
+  filePaths: string[],
+  cliOptions: TocCliOptions,
+): Promise<void> {
   // Validate position option
-  const validPositions: readonly TocOperationOptions['position'][] = [
-    'top',
-    'after-title',
-    'before-content',
-    'replace',
+  const validPositions: readonly TocOperationOptions["position"][] = [
+    "top",
+    "after-title",
+    "before-content",
+    "replace",
   ];
-  const isValidPosition = (pos: string): pos is TocOperationOptions['position'] => {
-    return pos === 'top' || pos === 'after-title' || pos === 'before-content' || pos === 'replace';
+  const isValidPosition = (
+    pos: string,
+  ): pos is TocOperationOptions["position"] => {
+    return (
+      pos === "top" ||
+      pos === "after-title" ||
+      pos === "before-content" ||
+      pos === "replace"
+    );
   };
 
   if (cliOptions.position && !isValidPosition(cliOptions.position)) {
     throw new Error(
-      `Invalid position: ${cliOptions.position}. Must be one of: ${validPositions.join(', ')}`
+      `Invalid position: ${cliOptions.position}. Must be one of: ${validPositions.join(", ")}`,
     );
   }
 
@@ -406,7 +427,7 @@ export async function tocCommand(filePaths: string[], cliOptions: TocCliOptions)
     position:
       cliOptions.position && isValidPosition(cliOptions.position)
         ? cliOptions.position
-        : 'after-title',
+        : "after-title",
   };
 
   try {
@@ -435,10 +456,10 @@ export async function tocCommand(filePaths: string[], cliOptions: TocCliOptions)
     if (cliOptions.verbose) {
       console.log(`📄 File Details:`);
       for (const detail of result.fileDetails) {
-        const status = detail.tocGenerated ? '✅' : '⏭️';
+        const status = detail.tocGenerated ? "✅" : "⏭️";
         console.log(`  ${status} ${detail.file}`);
         console.log(
-          `    Headings: ${String(detail.headingsFound)}, TOC lines: ${String(detail.tocLength)}, Position: ${detail.position}`
+          `    Headings: ${String(detail.headingsFound)}, TOC lines: ${String(detail.tocLength)}, Position: ${detail.position}`,
         );
       }
     }
@@ -446,10 +467,12 @@ export async function tocCommand(filePaths: string[], cliOptions: TocCliOptions)
     if (result.filesModified === 0 && result.filesSkipped === 0) {
       console.log(`ℹ️  No files were modified`);
     } else if (result.filesModified > 0) {
-      console.log(`✅ Successfully added/updated TOC in ${String(result.filesModified)} files`);
+      console.log(
+        `✅ Successfully added/updated TOC in ${String(result.filesModified)} files`,
+      );
     }
   } catch (error) {
-    console.error('TOC generation failed:', error);
+    console.error("TOC generation failed:", error);
     process.exitCode = 1;
   }
 }

@@ -8,21 +8,21 @@
  * @category Commands
  */
 
-import { existsSync, statSync } from 'node:fs';
-import { readFile, writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
-import { glob } from 'glob';
-import { LinkParser } from '../core/link-parser.js';
-import { PathUtils } from '../utils/path-utils.js';
+import { existsSync, statSync } from "node:fs";
+import { readFile, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import { glob } from "glob";
+import { LinkParser } from "../core/link-parser.js";
+import { PathUtils } from "../utils/path-utils.js";
 
 /** Prefix that routes a URL through the Wayback Machine's any-snapshot endpoint. */
-const WAYBACK_PREFIX = 'https://web.archive.org/web/*/';
+const WAYBACK_PREFIX = "https://web.archive.org/web/*/";
 
 /** Hostname of the Wayback Machine itself; links already here are left untouched. */
-const WAYBACK_HOST = 'web.archive.org';
+const WAYBACK_HOST = "web.archive.org";
 
 /** How a link href relates to Wayback conversion. */
-type WebUrlClass = 'convertible' | 'already-archived' | 'non-web';
+type WebUrlClass = "convertible" | "already-archived" | "non-web";
 
 /** A span of the original file content to replace, as absolute character offsets. */
 interface ContentSpan {
@@ -121,7 +121,9 @@ export interface WaybackResult {
  *   HTTP(S) URL, or already pointing at the Wayback Machine)
  */
 export function toWaybackUrl(url: string): string | undefined {
-  return classifyWebUrl(url) === 'convertible' ? WAYBACK_PREFIX + url : undefined;
+  return classifyWebUrl(url) === "convertible"
+    ? WAYBACK_PREFIX + url
+    : undefined;
 }
 
 /**
@@ -137,19 +139,19 @@ function classifyWebUrl(href: string): WebUrlClass {
     parsed = new URL(href);
   } catch {
     // Not an absolute URL (internal path, anchor, or malformed href); absence is modelled explicitly rather than defaulted.
-    return 'non-web';
+    return "non-web";
   }
 
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    return 'non-web';
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return "non-web";
   }
 
   // The URL constructor lowercases hostnames, so this also covers mixed-case archive hosts.
   if (parsed.hostname === WAYBACK_HOST) {
-    return 'already-archived';
+    return "already-archived";
   }
 
-  return 'convertible';
+  return "convertible";
 }
 
 /**
@@ -181,25 +183,28 @@ function computeLineStarts(lines: string[]): number[] {
  *
  * @returns The destination span, or undefined when no plausible destination exists
  */
-function findInlineDestinationSpan(content: string, nodeStart: number): ContentSpan | undefined {
+function findInlineDestinationSpan(
+  content: string,
+  nodeStart: number,
+): ContentSpan | undefined {
   // Autolink form: the whole node is the URL enclosed in angle brackets.
-  if (content[nodeStart] === '<') {
-    const close = content.indexOf('>', nodeStart + 1);
+  if (content[nodeStart] === "<") {
+    const close = content.indexOf(">", nodeStart + 1);
     if (close === -1) {
       return undefined;
     }
     return { start: nodeStart + 1, end: close };
   }
 
-  const open = content.indexOf('](', nodeStart);
+  const open = content.indexOf("](", nodeStart);
   if (open === -1) {
     return undefined;
   }
   const destStart = open + 2;
 
   // Angle-bracketed destinations may contain spaces; the closing bracket ends the destination.
-  if (content[destStart] === '<') {
-    const close = content.indexOf('>', destStart + 1);
+  if (content[destStart] === "<") {
+    const close = content.indexOf(">", destStart + 1);
     if (close === -1) {
       return undefined;
     }
@@ -221,8 +226,11 @@ function findInlineDestinationSpan(content: string, nodeStart: number): ContentS
  *
  * @returns The destination span, or undefined when the line has no definition delimiter
  */
-function findDefinitionSpan(lineText: string, lineStart: number): ContentSpan | undefined {
-  const close = lineText.indexOf(']:');
+function findDefinitionSpan(
+  lineText: string,
+  lineStart: number,
+): ContentSpan | undefined {
+  const close = lineText.indexOf("]:");
   if (close === -1) {
     return undefined;
   }
@@ -230,14 +238,14 @@ function findDefinitionSpan(lineText: string, lineStart: number): ContentSpan | 
   let destStart = close + 2;
   while (
     destStart < lineText.length &&
-    (lineText[destStart] === ' ' || lineText[destStart] === '\t')
+    (lineText[destStart] === " " || lineText[destStart] === "\t")
   ) {
     destStart++;
   }
 
   // Angle-bracketed destinations may contain spaces; the closing bracket ends the destination.
-  if (lineText[destStart] === '<') {
-    const angleClose = lineText.indexOf('>', destStart + 1);
+  if (lineText[destStart] === "<") {
+    const angleClose = lineText.indexOf(">", destStart + 1);
     if (angleClose !== -1) {
       return { start: lineStart + destStart + 1, end: lineStart + angleClose };
     }
@@ -245,7 +253,7 @@ function findDefinitionSpan(lineText: string, lineStart: number): ContentSpan | 
 
   for (let i = destStart; i < lineText.length; i++) {
     const ch = lineText[i];
-    if (ch === ' ' || ch === '\t' || ch === ')' || ch === '\r') {
+    if (ch === " " || ch === "\t" || ch === ")" || ch === "\r") {
       return { start: lineStart + destStart, end: lineStart + i };
     }
   }
@@ -260,10 +268,13 @@ function findDefinitionSpan(lineText: string, lineStart: number): ContentSpan | 
  *
  * @returns The destination span, or undefined when the content ends before a terminator
  */
-function findBareDestinationSpan(content: string, destStart: number): ContentSpan | undefined {
+function findBareDestinationSpan(
+  content: string,
+  destStart: number,
+): ContentSpan | undefined {
   for (let i = destStart; i < content.length; i++) {
     const ch = content[i];
-    if (ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r' || ch === ')') {
+    if (ch === " " || ch === "\t" || ch === "\n" || ch === "\r" || ch === ")") {
       return { start: destStart, end: i };
     }
   }
@@ -282,7 +293,10 @@ function applyEdits(content: string, edits: ContentEdit[]): string {
   let updated = content;
   const ordered = [...edits].sort((a, b) => b.span.start - a.span.start);
   for (const edit of ordered) {
-    updated = updated.slice(0, edit.span.start) + edit.replacement + updated.slice(edit.span.end);
+    updated =
+      updated.slice(0, edit.span.start) +
+      edit.replacement +
+      updated.slice(edit.span.end);
   }
   return updated;
 }
@@ -298,11 +312,14 @@ function applyEdits(content: string, edits: ContentEdit[]): string {
  *
  * @returns The per-file outcome, with counts and per-link change details
  */
-async function processWaybackFile(filePath: string, dryRun: boolean): Promise<WaybackFileResult> {
-  const content = await readFile(filePath, 'utf-8');
+async function processWaybackFile(
+  filePath: string,
+  dryRun: boolean,
+): Promise<WaybackFileResult> {
+  const content = await readFile(filePath, "utf-8");
   const parser = new LinkParser();
   const parsed = await parser.parseFile(filePath);
-  const lines = content.split('\n');
+  const lines = content.split("\n");
   const lineStarts = computeLineStarts(lines);
 
   const result: WaybackFileResult = {
@@ -326,11 +343,11 @@ async function processWaybackFile(filePath: string, dryRun: boolean): Promise<Wa
   for (const link of parsed.links) {
     const urlClass = classifyWebUrl(link.href);
 
-    if (urlClass === 'already-archived') {
+    if (urlClass === "already-archived") {
       result.alreadyArchived++;
       continue;
     }
-    if (urlClass === 'non-web') {
+    if (urlClass === "non-web") {
       result.untouched++;
       continue;
     }
@@ -345,7 +362,7 @@ async function processWaybackFile(filePath: string, dryRun: boolean): Promise<Wa
     const span = findInlineDestinationSpan(content, nodeStart);
     if (span === undefined) {
       throw new Error(
-        `Could not locate the destination of the link at line ${String(link.line)}, column ${String(link.column)} in ${filePath}`
+        `Could not locate the destination of the link at line ${String(link.line)}, column ${String(link.column)} in ${filePath}`,
       );
     }
 
@@ -353,19 +370,24 @@ async function processWaybackFile(filePath: string, dryRun: boolean): Promise<Wa
     const replacement = WAYBACK_PREFIX + rawDestination;
     edits.push({ span, line: link.line, replacement });
     result.converted++;
-    result.changes.push({ file: filePath, line: link.line, from: rawDestination, to: replacement });
+    result.changes.push({
+      file: filePath,
+      line: link.line,
+      from: rawDestination,
+      to: replacement,
+    });
   }
 
   for (const reference of parsed.references) {
     const urlClass = classifyWebUrl(reference.url);
     const used = usedReferenceIds.has(reference.id);
 
-    if (urlClass === 'convertible') {
+    if (urlClass === "convertible") {
       const lineText = lines[reference.line - 1];
       const span = findDefinitionSpan(lineText, lineStarts[reference.line - 1]);
       if (span === undefined) {
         throw new Error(
-          `Could not locate the destination of reference definition [${reference.id}] at line ${String(reference.line)} in ${filePath}`
+          `Could not locate the destination of reference definition [${reference.id}] at line ${String(reference.line)} in ${filePath}`,
         );
       }
 
@@ -381,7 +403,7 @@ async function processWaybackFile(filePath: string, dryRun: boolean): Promise<Wa
       if (!used) {
         result.converted++;
       }
-    } else if (urlClass === 'already-archived') {
+    } else if (urlClass === "already-archived") {
       if (!used) {
         result.alreadyArchived++;
       }
@@ -393,7 +415,7 @@ async function processWaybackFile(filePath: string, dryRun: boolean): Promise<Wa
   if (edits.length > 0) {
     const updated = applyEdits(content, edits);
     if (!dryRun) {
-      await writeFile(filePath, updated, 'utf-8');
+      await writeFile(filePath, updated, "utf-8");
     }
     result.modified = !dryRun;
   }
@@ -413,7 +435,7 @@ async function processWaybackFile(filePath: string, dryRun: boolean): Promise<Wa
  */
 async function expandSourcePatterns(
   patterns: string[],
-  options: WaybackOptions
+  options: WaybackOptions,
 ): Promise<string[]> {
   const resolvedFiles = new Set<string>();
 
@@ -429,22 +451,29 @@ async function expandSourcePatterns(
       continue;
     }
 
-    if (existsSync(absolutePattern) && statSync(absolutePattern).isDirectory()) {
+    if (
+      existsSync(absolutePattern) &&
+      statSync(absolutePattern).isDirectory()
+    ) {
       // A directory expands to its markdown files: everything beneath it recursively, or only its direct children.
       // Glob patterns use forward slashes on every platform; backslashes are pattern escapes
       const globPattern = options.recursive
-        ? `${absolutePattern.replace(/\\/g, '/')}/**/*.md`
-        : `${absolutePattern.replace(/\\/g, '/')}/*.md`;
+        ? `${absolutePattern.replace(/\\/g, "/")}/**/*.md`
+        : `${absolutePattern.replace(/\\/g, "/")}/*.md`;
       const files = await glob(globPattern, { absolute: true });
       files.forEach((file) => resolvedFiles.add(file));
       if (options.verbose) {
-        console.log(`Added ${String(files.length)} files from directory: ${absolutePattern}`);
+        console.log(
+          `Added ${String(files.length)} files from directory: ${absolutePattern}`,
+        );
       }
       continue;
     }
 
-    const files = await glob(pattern.replace(/\\/g, '/'), { absolute: true });
-    const markdownFiles = files.filter((file) => PathUtils.isMarkdownFile(file));
+    const files = await glob(pattern.replace(/\\/g, "/"), { absolute: true });
+    const markdownFiles = files.filter((file) =>
+      PathUtils.isMarkdownFile(file),
+    );
     markdownFiles.forEach((file) => resolvedFiles.add(file));
   }
 
@@ -452,7 +481,7 @@ async function expandSourcePatterns(
 
   if (finalFiles.length === 0) {
     throw new Error(
-      `No markdown files found matching the provided patterns: ${patterns.join(', ')}`
+      `No markdown files found matching the provided patterns: ${patterns.join(", ")}`,
     );
   }
 
@@ -479,7 +508,7 @@ async function expandSourcePatterns(
  */
 export async function waybackCommand(
   patterns: string[],
-  options: WaybackOptions = {}
+  options: WaybackOptions = {},
 ): Promise<WaybackResult> {
   let result: WaybackResult;
   try {
@@ -512,10 +541,10 @@ export async function waybackCommand(
  */
 async function convertPatterns(
   patterns: string[],
-  options: WaybackOptions
+  options: WaybackOptions,
 ): Promise<WaybackResult> {
   if (patterns.length === 0) {
-    throw new Error('At least one file pattern must be specified');
+    throw new Error("At least one file pattern must be specified");
   }
 
   const files = await expandSourcePatterns(patterns, options);
@@ -570,11 +599,14 @@ async function convertPatterns(
  * @param result - The aggregate conversion result to report
  * @param options - The command options controlling verbosity
  */
-function printHumanSummary(result: WaybackResult, options: WaybackOptions): void {
+function printHumanSummary(
+  result: WaybackResult,
+  options: WaybackOptions,
+): void {
   if (options.verbose) {
-    console.log('🕸️ Starting Wayback Machine conversion...');
+    console.log("🕸️ Starting Wayback Machine conversion...");
     if (result.dryRun) {
-      console.log('Dry run mode: no files will be modified');
+      console.log("Dry run mode: no files will be modified");
     }
     for (const file of result.files) {
       console.log(`Processing: ${file.file}`);
@@ -582,12 +614,14 @@ function printHumanSummary(result: WaybackResult, options: WaybackOptions): void
       console.log(`  📚 Already archived: ${String(file.alreadyArchived)}`);
       console.log(`  ➡️ Untouched: ${String(file.untouched)}`);
       for (const change of file.changes) {
-        console.log(`  🔄 Line ${String(change.line)}: ${change.from} → ${change.to}`);
+        console.log(
+          `  🔄 Line ${String(change.line)}: ${change.from} → ${change.to}`,
+        );
       }
     }
   }
 
-  console.log('\n📊 Wayback Machine Summary');
+  console.log("\n📊 Wayback Machine Summary");
   console.log(`Files processed: ${String(result.filesProcessed)}`);
   console.log(`Files modified: ${String(result.filesModified)}`);
   console.log(`Links converted: ${String(result.totalConverted)}`);
@@ -595,10 +629,10 @@ function printHumanSummary(result: WaybackResult, options: WaybackOptions): void
   console.log(`Untouched: ${String(result.totalUntouched)}`);
 
   if (result.dryRun) {
-    console.log('\n(Dry run - no files were actually modified)');
+    console.log("\n(Dry run - no files were actually modified)");
   } else if (result.totalConverted === 0) {
-    console.log('\nNo HTTP(S) links needed conversion');
+    console.log("\nNo HTTP(S) links needed conversion");
   } else {
-    console.log('\n✅ Wayback conversion completed successfully');
+    console.log("\n✅ Wayback conversion completed successfully");
   }
 }

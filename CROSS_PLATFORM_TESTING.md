@@ -83,19 +83,19 @@ import {
   conditionalTest,
   getTestPaths,
   wouldFilenamesConflict,
-} from './test-helpers.js';
+} from "./test-helpers.js";
 
 // Get current platform information
 const platformInfo = getPlatformInfo();
 console.log(`Case sensitive: ${platformInfo.caseSensitive}`);
 
 // Run tests conditionally based on platform capabilities
-conditionalTest('symlink test', 'symlinks', () => {
+conditionalTest("symlink test", "symlinks", () => {
   // This test only runs if symlinks are supported
 });
 
 // Test filename conflicts based on case sensitivity
-const conflict = wouldFilenamesConflict('file.md', 'FILE.md');
+const conflict = wouldFilenamesConflict("file.md", "FILE.md");
 // Returns true on case-insensitive filesystems
 ```
 
@@ -157,24 +157,24 @@ To manually test cross-platform behavior:
 ### For Test Writing
 
 ```typescript
-import { conditionalTest, getPlatformInfo } from '../utils/test-helpers.js';
+import { conditionalTest, getPlatformInfo } from "../utils/test-helpers.js";
 
-describe('My Feature', () => {
+describe("My Feature", () => {
   const platformInfo = getPlatformInfo();
 
   // Standard test that runs on all platforms
-  test('should work on all platforms', () => {
+  test("should work on all platforms", () => {
     // Test implementation
   });
 
   // Conditional test for case-sensitive filesystems
-  conditionalTest('case sensitivity test', 'case-sensitivity', () => {
+  conditionalTest("case sensitivity test", "case-sensitivity", () => {
     // This only runs on case-sensitive filesystems
   });
 
   // Platform-specific test
   if (platformInfo.isWindows) {
-    test('Windows-specific behavior', () => {
+    test("Windows-specific behavior", () => {
       // Windows-only test
     });
   }

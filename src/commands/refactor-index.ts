@@ -1,20 +1,20 @@
-import { existsSync } from 'node:fs';
-import { basename, dirname, join, resolve } from 'node:path';
-import { FileOperations } from '../core/file-operations.js';
-import { LinkParser } from '../core/link-parser.js';
-import type { OperationChange } from '../types/operations.js';
+import { existsSync } from "node:fs";
+import { basename, dirname, join, resolve } from "node:path";
+import { FileOperations } from "../core/file-operations.js";
+import { LinkParser } from "../core/link-parser.js";
+import type { OperationChange } from "../types/operations.js";
 
 /**
  * The two index file naming conventions this command converts between.
  *
  * @category Commands
  */
-export type IndexConvention = 'readme' | 'index';
+export type IndexConvention = "readme" | "index";
 
 /** The markdown filename each convention uses. */
 const CONVENTION_FILENAMES: Record<IndexConvention, string> = {
-  readme: 'README.md',
-  index: 'index.md',
+  readme: "README.md",
+  index: "index.md",
 };
 
 /**
@@ -72,8 +72,8 @@ export interface RefactorIndexResult {
  * @returns The convention the filename belongs to, or undefined when it is neither index filename
  */
 function detectConvention(filename: string): IndexConvention | undefined {
-  if (filename === CONVENTION_FILENAMES.readme) return 'readme';
-  if (filename === CONVENTION_FILENAMES.index) return 'index';
+  if (filename === CONVENTION_FILENAMES.readme) return "readme";
+  if (filename === CONVENTION_FILENAMES.index) return "index";
   return undefined;
 }
 
@@ -85,7 +85,10 @@ function detectConvention(filename: string): IndexConvention | undefined {
  *
  * @returns A failed result describing the refusal
  */
-function refusalResult(sourcePath: string, errors: string[]): RefactorIndexResult {
+function refusalResult(
+  sourcePath: string,
+  errors: string[],
+): RefactorIndexResult {
   return {
     success: false,
     sourcePath,
@@ -114,7 +117,7 @@ function refusalResult(sourcePath: string, errors: string[]): RefactorIndexResul
  */
 export async function refactorIndex(
   filePath: string,
-  options: RefactorIndexOptions = {}
+  options: RefactorIndexOptions = {},
 ): Promise<RefactorIndexResult> {
   const sourcePath = resolve(filePath);
   const currentConvention = detectConvention(basename(sourcePath));
@@ -131,10 +134,10 @@ export async function refactorIndex(
 
   // options.to is typed as IndexConvention for well-typed callers, but this function is also part of the public library API: a plain-JS consumer, or a caller that bypasses the type system, can still pass an arbitrary string here. Widening to unknown before the check keeps it a real runtime guard instead of one TypeScript considers unreachable given options.to's own type.
   const rawTargetConvention: unknown =
-    options.to ?? (currentConvention === 'readme' ? 'index' : 'readme');
-  if (rawTargetConvention !== 'readme' && rawTargetConvention !== 'index') {
+    options.to ?? (currentConvention === "readme" ? "index" : "readme");
+  if (rawTargetConvention !== "readme" && rawTargetConvention !== "index") {
     throw new Error(
-      `Unknown index convention '${String(rawTargetConvention)}': expected readme or index`
+      `Unknown index convention '${String(rawTargetConvention)}': expected readme or index`,
     );
   }
   const targetConvention: IndexConvention = rawTargetConvention;
@@ -156,7 +159,9 @@ export async function refactorIndex(
 
   // A file that links to itself appears among its own dependents, and the move machinery then records a content update for the vacated source path alongside the rename, resurrecting the old filename next to the new one. Refuse upfront rather than corrupt the tree.
   const parsedSource = await new LinkParser().parseFile(sourcePath);
-  const selfLink = parsedSource.links.find((link) => link.resolvedPath === sourcePath);
+  const selfLink = parsedSource.links.find(
+    (link) => link.resolvedPath === sourcePath,
+  );
   if (selfLink !== undefined) {
     return refusalResult(sourcePath, [
       `"${sourcePath}" links to itself ("${selfLink.href}"); the move machinery cannot rename a self-linking file without leaving both files behind, so rewrite or remove the self-link first`,
@@ -167,17 +172,23 @@ export async function refactorIndex(
   const moveResult = await fileOps.moveFile(sourcePath, targetPath, {
     dryRun: options.dryRun ?? false,
     verbose: options.verbose ?? false,
-    ...(options.discoveryRoot ? { discoverySeeds: [options.discoveryRoot] } : {}),
+    ...(options.discoveryRoot
+      ? { discoverySeeds: [options.discoveryRoot] }
+      : {}),
   });
 
-  const linkChanges = moveResult.changes.filter((change) => change.type === 'link-updated');
+  const linkChanges = moveResult.changes.filter(
+    (change) => change.type === "link-updated",
+  );
 
   return {
     success: moveResult.success,
     sourcePath,
     targetPath,
     linksUpdated: linkChanges.length,
-    filesWithUpdatedLinks: Array.from(new Set(linkChanges.map((change) => change.filePath))),
+    filesWithUpdatedLinks: Array.from(
+      new Set(linkChanges.map((change) => change.filePath)),
+    ),
     changes: moveResult.changes,
     warnings: moveResult.warnings,
     parseFailures: moveResult.parseFailures ?? [],
@@ -215,7 +226,7 @@ export interface RefactorIndexCliOptions extends RefactorIndexOptions {
  */
 export async function refactorIndexCommand(
   filePath: string,
-  options: RefactorIndexCliOptions
+  options: RefactorIndexCliOptions,
 ): Promise<void> {
   const operationOptions: RefactorIndexOptions = {
     dryRun: options.dryRun ?? false,
@@ -243,7 +254,7 @@ export async function refactorIndexCommand(
   }
 
   if (!result.success) {
-    console.error('❌ Index file refactoring failed:');
+    console.error("❌ Index file refactoring failed:");
     for (const error of result.errors) {
       console.error(`  ${error}`);
     }
@@ -252,49 +263,57 @@ export async function refactorIndexCommand(
 
   // Every successful conversion carries a target path; a missing one is a broken result, not a partial rename to print
   if (result.targetPath === undefined) {
-    console.error('❌ Index file refactoring failed: result carried no target path');
+    console.error(
+      "❌ Index file refactoring failed: result carried no target path",
+    );
     process.exit(1);
   }
 
   if (operationOptions.dryRun) {
-    console.log('🔍 Dry run mode - no changes will be made');
-    console.log(`📄 ${result.sourcePath} would be renamed to ${result.targetPath}`);
+    console.log("🔍 Dry run mode - no changes will be made");
+    console.log(
+      `📄 ${result.sourcePath} would be renamed to ${result.targetPath}`,
+    );
 
-    const plannedChanges = result.changes.filter((change) => change.type === 'link-updated');
+    const plannedChanges = result.changes.filter(
+      (change) => change.type === "link-updated",
+    );
     if (plannedChanges.length > 0) {
-      console.log('\n🔗 Link rewrites:');
+      console.log("\n🔗 Link rewrites:");
       for (const change of plannedChanges) {
         console.log(
-          `  ${change.filePath}:${String(change.line)} ${String(change.oldValue)} → ${String(change.newValue)}`
+          `  ${change.filePath}:${String(change.line)} ${String(change.oldValue)} → ${String(change.newValue)}`,
         );
       }
     }
 
     console.log(
-      `\n📊 Summary: ${String(result.linksUpdated)} link(s) would be updated across ${String(result.filesWithUpdatedLinks.length)} file(s)`
+      `\n📊 Summary: ${String(result.linksUpdated)} link(s) would be updated across ${String(result.filesWithUpdatedLinks.length)} file(s)`,
     );
   } else {
     console.log(`✅ Renamed ${result.sourcePath} → ${result.targetPath}`);
 
     if (result.linksUpdated > 0) {
       console.log(
-        `📝 Updated ${String(result.linksUpdated)} link(s) across ${String(result.filesWithUpdatedLinks.length)} file(s)`
+        `📝 Updated ${String(result.linksUpdated)} link(s) across ${String(result.filesWithUpdatedLinks.length)} file(s)`,
       );
       if (operationOptions.verbose) {
-        console.log('\nFiles with updated links:');
+        console.log("\nFiles with updated links:");
         for (const file of result.filesWithUpdatedLinks) {
           console.log(`  ~ ${file}`);
         }
       }
     } else {
-      console.log('📝 No links needed updating');
+      console.log("📝 No links needed updating");
     }
   }
 
   // Surface parse failures: a file that could not be parsed had its links left untouched, so the operation cannot guarantee link integrity even though the rename itself succeeded
   if (result.parseFailures.length > 0) {
-    console.log(`\n⚠️  Parse Failures (${String(result.parseFailures.length)}):`);
-    console.log('  Links in these files were NOT checked or rewritten:');
+    console.log(
+      `\n⚠️  Parse Failures (${String(result.parseFailures.length)}):`,
+    );
+    console.log("  Links in these files were NOT checked or rewritten:");
     for (const failure of result.parseFailures) {
       console.log(`  ${failure.file}: ${failure.error}`);
     }
@@ -302,7 +321,7 @@ export async function refactorIndexCommand(
   }
 
   if (result.warnings.length > 0) {
-    console.log('\n⚠️  Warnings:');
+    console.log("\n⚠️  Warnings:");
     for (const warning of result.warnings) {
       console.log(`  ${warning}`);
     }

@@ -1,10 +1,13 @@
-import { constants, access } from 'node:fs/promises';
-import { readFile } from 'node:fs/promises';
-import { ContentFreshnessDetector, type FreshnessConfig } from '../utils/content-freshness.js';
-import { AuthDetector, type AuthConfig } from '../utils/auth-detection.js';
-import type { BrokenLink, ValidationResult } from '../types/config.js';
-import type { MarkdownLink, ParsedMarkdownFile } from '../types/links.js';
-import type { WikilinkResolution } from './obsidian-vault.js';
+import { constants, access } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
+import {
+  ContentFreshnessDetector,
+  type FreshnessConfig,
+} from "../utils/content-freshness.js";
+import { AuthDetector, type AuthConfig } from "../utils/auth-detection.js";
+import type { BrokenLink, ValidationResult } from "../types/config.js";
+import type { MarkdownLink, ParsedMarkdownFile } from "../types/links.js";
+import type { WikilinkResolution } from "./obsidian-vault.js";
 
 /**
  * Configuration options for link validation operations.
@@ -84,7 +87,10 @@ export interface LinkValidatorOptions {
  */
 export class LinkValidator {
   private options: Required<
-    Omit<LinkValidatorOptions, 'freshnessConfig' | 'authConfig' | 'wikilinkResolver'>
+    Omit<
+      LinkValidatorOptions,
+      "freshnessConfig" | "authConfig" | "wikilinkResolver"
+    >
   > & {
     freshnessConfig?: Partial<FreshnessConfig>;
     authConfig?: Partial<AuthConfig>;
@@ -105,13 +111,19 @@ export class LinkValidator {
       checkWikilinks: options.checkWikilinks ?? false,
       skipDomains: options.skipDomains ?? [],
       externalRetries: options.externalRetries ?? 2,
-      ...(options.wikilinkResolver ? { wikilinkResolver: options.wikilinkResolver } : {}),
-      ...(options.freshnessConfig && { freshnessConfig: options.freshnessConfig }),
+      ...(options.wikilinkResolver
+        ? { wikilinkResolver: options.wikilinkResolver }
+        : {}),
+      ...(options.freshnessConfig && {
+        freshnessConfig: options.freshnessConfig,
+      }),
       ...(options.authConfig && { authConfig: options.authConfig }),
     };
 
     if (this.options.checkContentFreshness) {
-      this.freshnessDetector = new ContentFreshnessDetector(this.options.freshnessConfig);
+      this.freshnessDetector = new ContentFreshnessDetector(
+        this.options.freshnessConfig,
+      );
     }
 
     if (this.options.enableAuthDetection) {
@@ -152,34 +164,37 @@ export class LinkValidator {
     return brokenLinks;
   }
 
-  async validateLink(link: MarkdownLink, sourceFile: string): Promise<BrokenLink | null> {
+  async validateLink(
+    link: MarkdownLink,
+    sourceFile: string,
+  ): Promise<BrokenLink | null> {
     try {
       switch (link.type) {
-        case 'internal':
+        case "internal":
           return await this.validateInternalLink(link, sourceFile);
 
-        case 'claude-import':
+        case "claude-import":
           return this.options.checkClaudeImports
             ? await this.validateClaudeImportLink(link, sourceFile)
             : null;
 
-        case 'external':
+        case "external":
           return this.options.checkExternal
             ? await this.validateExternalLink(link, sourceFile)
             : null;
 
-        case 'anchor':
+        case "anchor":
           return await this.validateAnchorLink(link, sourceFile);
 
-        case 'image':
+        case "image":
           return await this.validateImageLink(link, sourceFile);
 
-        case 'reference':
+        case "reference":
           // Reference links are validated if they resolve to an internal/external link
           return null;
 
-        case 'wikilink':
-        case 'obsidian-transclusion':
+        case "wikilink":
+        case "obsidian-transclusion":
           return this.options.checkWikilinks
             ? await this.validateWikilinkLink(link, sourceFile)
             : null;
@@ -191,7 +206,7 @@ export class LinkValidator {
       return {
         sourceFile,
         link,
-        reason: 'invalid-format',
+        reason: "invalid-format",
         details: error instanceof Error ? error.message : String(error),
       };
     }
@@ -199,14 +214,14 @@ export class LinkValidator {
 
   private async validateInternalLink(
     link: MarkdownLink,
-    sourceFile: string
+    sourceFile: string,
   ): Promise<BrokenLink | null> {
     if (!link.resolvedPath) {
       return {
         sourceFile,
         link,
-        reason: 'invalid-format',
-        details: 'Could not resolve internal link path',
+        reason: "invalid-format",
+        details: "Could not resolve internal link path",
       };
     }
 
@@ -218,7 +233,7 @@ export class LinkValidator {
         return {
           sourceFile,
           link,
-          reason: 'file-not-found',
+          reason: "file-not-found",
           details: `File does not exist: ${link.resolvedPath}`,
         };
       }
@@ -228,14 +243,14 @@ export class LinkValidator {
 
   private async validateClaudeImportLink(
     link: MarkdownLink,
-    sourceFile: string
+    sourceFile: string,
   ): Promise<BrokenLink | null> {
     if (!link.resolvedPath) {
       return {
         sourceFile,
         link,
-        reason: 'invalid-format',
-        details: 'Could not resolve Claude import path',
+        reason: "invalid-format",
+        details: "Could not resolve Claude import path",
       };
     }
 
@@ -247,7 +262,7 @@ export class LinkValidator {
       return {
         sourceFile,
         link,
-        reason: 'file-not-found',
+        reason: "file-not-found",
         details: `Claude import file does not exist: ${link.resolvedPath}`,
       };
     }
@@ -255,7 +270,7 @@ export class LinkValidator {
 
   private async validateExternalLink(
     link: MarkdownLink,
-    sourceFile: string
+    sourceFile: string,
   ): Promise<BrokenLink | null> {
     // Domains on the skip list are never contacted -- a site known to block or throttle checkers
     // would otherwise surface as broken and drown out real findings
@@ -268,7 +283,7 @@ export class LinkValidator {
       return {
         sourceFile,
         link,
-        reason: 'invalid-format',
+        reason: "invalid-format",
         details: `Could not parse external link URL: ${link.href}`,
       };
     }
@@ -280,17 +295,17 @@ export class LinkValidator {
       // Check if authentication detection is enabled and analyze the URL first
       let authInfo;
       if (this.authDetector && this.options.enableAuthDetection) {
-        headers['User-Agent'] = 'markmv-validator/1.0 (authentication-aware)';
+        headers["User-Agent"] = "markmv-validator/1.0 (authentication-aware)";
 
         authInfo = this.authDetector.analyzeAuth(link.href);
 
         // If URL is known to require auth via domain detection, return immediately
-        if (authInfo.requiresAuth && authInfo.detectionMethod === 'domain') {
+        if (authInfo.requiresAuth && authInfo.detectionMethod === "domain") {
           return {
             sourceFile,
             link,
-            reason: 'auth-required',
-            details: authInfo.warning ?? 'Link requires authentication',
+            reason: "auth-required",
+            details: authInfo.warning ?? "Link requires authentication",
             authInfo,
           };
         }
@@ -304,8 +319,9 @@ export class LinkValidator {
       }
 
       // For freshness detection, we need a GET request to read the content
-      const method = this.options.checkContentFreshness ? 'GET' : 'HEAD';
-      headers['User-Agent'] ??= 'markmv-validator/1.0 (content-freshness-detection)';
+      const method = this.options.checkContentFreshness ? "GET" : "HEAD";
+      headers["User-Agent"] ??=
+        "markmv-validator/1.0 (content-freshness-detection)";
 
       const fetchOptions: RequestInit = { method };
 
@@ -314,7 +330,7 @@ export class LinkValidator {
       }
 
       if (this.options.enableAuthDetection) {
-        fetchOptions.redirect = 'follow'; // Follow redirects to detect auth redirects
+        fetchOptions.redirect = "follow"; // Follow redirects to detect auth redirects
       }
 
       // Transient failures -- network errors, 5xx, 429 -- are retried up to externalRetries
@@ -352,22 +368,25 @@ export class LinkValidator {
         return {
           sourceFile,
           link,
-          reason: 'external-error',
-          details: 'External check exhausted all attempts without a response',
+          reason: "external-error",
+          details: "External check exhausted all attempts without a response",
         };
       }
 
       // Analyze response for authentication indicators if auth detection is enabled
       if (this.authDetector && this.options.enableAuthDetection && authInfo) {
-        const finalAuthInfo = this.authDetector.analyzeAuth(link.href, response);
+        const finalAuthInfo = this.authDetector.analyzeAuth(
+          link.href,
+          response,
+        );
         Object.assign(authInfo, finalAuthInfo);
 
         if (finalAuthInfo.requiresAuth && this.options.allowAuthRequired) {
           return {
             sourceFile,
             link,
-            reason: 'auth-required',
-            details: finalAuthInfo.warning ?? 'Link requires authentication',
+            reason: "auth-required",
+            details: finalAuthInfo.warning ?? "Link requires authentication",
             authInfo: finalAuthInfo,
           };
         }
@@ -384,16 +403,18 @@ export class LinkValidator {
             url: link.href,
             requiresAuth: true,
             redirectCount: 0,
-            authAttempted: this.authDetector?.shouldAttemptAuth(link.href) ?? false,
-            detectionMethod: 'status-code' as const,
+            authAttempted:
+              this.authDetector?.shouldAttemptAuth(link.href) ?? false,
+            detectionMethod: "status-code" as const,
             warning: `HTTP ${String(response.status)}: Authentication required`,
-            suggestion: 'Provide appropriate credentials or API keys to validate this link',
+            suggestion:
+              "Provide appropriate credentials or API keys to validate this link",
           };
 
           return {
             sourceFile,
             link,
-            reason: 'auth-required',
+            reason: "auth-required",
             details: authErrorInfo.warning,
             authInfo: authErrorInfo,
           };
@@ -402,14 +423,14 @@ export class LinkValidator {
         return {
           sourceFile,
           link,
-          reason: 'external-error',
+          reason: "external-error",
           details: `HTTP ${String(response.status)}: ${response.statusText}`,
         };
       }
 
       // Check content freshness if enabled
       if (this.options.checkContentFreshness && this.freshnessDetector) {
-        const content = method === 'GET' ? await response.text() : '';
+        const content = method === "GET" ? await response.text() : "";
         const responseHeaders: Record<string, string> = {};
 
         // Convert Headers to plain object
@@ -417,20 +438,21 @@ export class LinkValidator {
           responseHeaders[key] = value;
         });
 
-        const freshnessInfo = await this.freshnessDetector.analyzeContentFreshness(link.href, {
-          status: response.status,
-          headers: responseHeaders,
-          content,
-          finalUrl: response.url,
-        });
+        const freshnessInfo =
+          await this.freshnessDetector.analyzeContentFreshness(link.href, {
+            status: response.status,
+            headers: responseHeaders,
+            content,
+            finalUrl: response.url,
+          });
 
         // If content is stale, return as a broken link with freshness info
         if (!freshnessInfo.isFresh) {
           return {
             sourceFile,
             link,
-            reason: 'content-stale',
-            details: freshnessInfo.warning ?? 'Content appears to be outdated',
+            reason: "content-stale",
+            details: freshnessInfo.warning ?? "Content appears to be outdated",
             freshnessInfo,
           };
         }
@@ -446,7 +468,7 @@ export class LinkValidator {
       return {
         sourceFile,
         link,
-        reason: 'external-error',
+        reason: "external-error",
         details: error instanceof Error ? error.message : String(error),
       };
     }
@@ -454,11 +476,13 @@ export class LinkValidator {
 
   private async validateImageLink(
     link: MarkdownLink,
-    sourceFile: string
+    sourceFile: string,
   ): Promise<BrokenLink | null> {
     // For external images, use external validation if enabled
-    if (link.href.startsWith('http')) {
-      return this.options.checkExternal ? await this.validateExternalLink(link, sourceFile) : null;
+    if (link.href.startsWith("http")) {
+      return this.options.checkExternal
+        ? await this.validateExternalLink(link, sourceFile)
+        : null;
     }
 
     // For internal images, check if file exists
@@ -466,8 +490,8 @@ export class LinkValidator {
       return {
         sourceFile,
         link,
-        reason: 'invalid-format',
-        details: 'Could not resolve image path',
+        reason: "invalid-format",
+        details: "Could not resolve image path",
       };
     }
 
@@ -478,7 +502,7 @@ export class LinkValidator {
       return {
         sourceFile,
         link,
-        reason: 'file-not-found',
+        reason: "file-not-found",
         details: `Image file does not exist: ${link.resolvedPath}`,
       };
     }
@@ -496,7 +520,9 @@ export class LinkValidator {
     const warnings = [...validationResult.warnings];
 
     if (circularReferences.length > 0) {
-      warnings.push(`Found ${String(circularReferences.length)} circular reference(s)`);
+      warnings.push(
+        `Found ${String(circularReferences.length)} circular reference(s)`,
+      );
     }
 
     return {
@@ -517,7 +543,7 @@ export class LinkValidator {
    */
   async validateLinks(
     links: MarkdownLink[],
-    sourceFile: string
+    sourceFile: string,
   ): Promise<{ brokenLinks: BrokenLink[] }> {
     const brokenLinks: BrokenLink[] = [];
 
@@ -535,7 +561,9 @@ export class LinkValidator {
    * Check for circular references - overloaded method that supports both parsed files and file
    * paths.
    */
-  async checkCircularReferences(files: ParsedMarkdownFile[]): Promise<string[][]>;
+  async checkCircularReferences(
+    files: ParsedMarkdownFile[],
+  ): Promise<string[][]>;
   async checkCircularReferences(files: string[]): Promise<{
     hasCircularReferences: boolean;
     circularPaths?: string[] | undefined;
@@ -548,10 +576,15 @@ export class LinkValidator {
       }
   > {
     // Check if we have ParsedMarkdownFile[] (test case) or string[] (normal case)
-    if (files.length > 0 && typeof files[0] === 'object' && 'filePath' in files[0]) {
+    if (
+      files.length > 0 &&
+      typeof files[0] === "object" &&
+      "filePath" in files[0]
+    ) {
       // ParsedMarkdownFile[] case - check for circular dependencies
       const parsedFiles = files.filter(
-        (f): f is ParsedMarkdownFile => typeof f === 'object' && 'filePath' in f
+        (f): f is ParsedMarkdownFile =>
+          typeof f === "object" && "filePath" in f,
       );
       const visited = new Set<string>();
       const recursionStack = new Set<string>();
@@ -610,7 +643,7 @@ export class LinkValidator {
    */
   private async validateWikilinkLink(
     link: MarkdownLink,
-    sourceFile: string
+    sourceFile: string,
   ): Promise<BrokenLink | null> {
     const resolver = this.options.wikilinkResolver;
     if (!resolver) {
@@ -622,8 +655,8 @@ export class LinkValidator {
       return {
         sourceFile,
         link,
-        reason: 'ambiguous-wikilink',
-        details: `Ambiguous wikilink matches ${String(resolution.ambiguous.length)} notes: ${resolution.ambiguous.join(', ')}`,
+        reason: "ambiguous-wikilink",
+        details: `Ambiguous wikilink matches ${String(resolution.ambiguous.length)} notes: ${resolution.ambiguous.join(", ")}`,
       };
     }
 
@@ -632,7 +665,7 @@ export class LinkValidator {
       return {
         sourceFile,
         link,
-        reason: 'file-not-found',
+        reason: "file-not-found",
         details: `No note in the vault matches [[${link.href}]]`,
       };
     }
@@ -644,7 +677,7 @@ export class LinkValidator {
       return {
         sourceFile,
         link,
-        reason: 'file-not-found',
+        reason: "file-not-found",
         details: `File does not exist: ${resolvedPath}`,
       };
     }
@@ -652,7 +685,7 @@ export class LinkValidator {
 
   private async validateAnchorLink(
     link: MarkdownLink,
-    sourceFile: string
+    sourceFile: string,
   ): Promise<BrokenLink | null> {
     try {
       // Extract the anchor from the href (remove the #)
@@ -661,20 +694,20 @@ export class LinkValidator {
         return {
           sourceFile,
           link,
-          reason: 'invalid-format',
-          details: 'Empty anchor reference',
+          reason: "invalid-format",
+          details: "Empty anchor reference",
         };
       }
 
       // Read the source file to check for the heading
-      const content = await readFile(sourceFile, 'utf-8');
+      const content = await readFile(sourceFile, "utf-8");
 
       // Convert anchor to the format used in markdown headings
       // GitHub-style anchor generation: lowercase, replace spaces with hyphens, remove special chars
       const normalizedAnchor = anchor
         .toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^\w-]/g, '');
+        .replace(/\s+/g, "-")
+        .replace(/[^\w-]/g, "");
 
       // Look for headings in the file
       const headingRegex = /^#+\s+(.+)$/gm;
@@ -685,8 +718,8 @@ export class LinkValidator {
         const heading = match[1];
         const normalizedHeading = heading
           .toLowerCase()
-          .replace(/\s+/g, '-')
-          .replace(/[^\w-]/g, '');
+          .replace(/\s+/g, "-")
+          .replace(/[^\w-]/g, "");
 
         headings.push(normalizedHeading);
 
@@ -699,14 +732,14 @@ export class LinkValidator {
       return {
         sourceFile,
         link,
-        reason: 'file-not-found',
-        details: `Anchor "${anchor}" not found. Available headings: ${headings.join(', ')}`,
+        reason: "file-not-found",
+        details: `Anchor "${anchor}" not found. Available headings: ${headings.join(", ")}`,
       };
     } catch (error) {
       return {
         sourceFile,
         link,
-        reason: 'invalid-format',
+        reason: "invalid-format",
         details: `Error validating anchor: ${error instanceof Error ? error.message : String(error)}`,
       };
     }

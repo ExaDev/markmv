@@ -1,24 +1,24 @@
-import { existsSync } from 'node:fs';
-import { dirname, sep } from 'node:path';
-import type { ParsedMarkdownFile } from '../types/links.js';
+import { existsSync } from "node:fs";
+import { dirname, sep } from "node:path";
+import type { ParsedMarkdownFile } from "../types/links.js";
 import type {
   MoveOperationOptions,
   OperationChange,
   OperationResult,
-} from '../types/operations.js';
-import { FileUtils } from '../utils/file-utils.js';
-import { PathUtils } from '../utils/path-utils.js';
-import { TransactionManager } from '../utils/transaction-manager.js';
-import { DependencyGraph } from './dependency-graph.js';
-import { LinkParser } from './link-parser.js';
-import type { LinkRefactorResult } from './link-refactorer.js';
-import { LinkRefactorer } from './link-refactorer.js';
-import { LinkValidator } from './link-validator.js';
+} from "../types/operations.js";
+import { FileUtils } from "../utils/file-utils.js";
+import { PathUtils } from "../utils/path-utils.js";
+import { TransactionManager } from "../utils/transaction-manager.js";
+import { DependencyGraph } from "./dependency-graph.js";
+import { LinkParser } from "./link-parser.js";
+import type { LinkRefactorResult } from "./link-refactorer.js";
+import { LinkRefactorer } from "./link-refactorer.js";
+import { LinkValidator } from "./link-validator.js";
 import {
   computeNoteStemCounts,
   findDuplicateNoteStems,
   resolveWikilinks,
-} from './obsidian-vault.js';
+} from "./obsidian-vault.js";
 
 /** Format an unknown caught value as a human-readable error message. */
 function errorMessage(error: unknown): string {
@@ -69,7 +69,9 @@ function errorMessage(error: unknown): string {
  * must see each note exactly once or every moved file reports itself as a duplicate.
  */
 function uniqueByFilePath(files: ParsedMarkdownFile[]): ParsedMarkdownFile[] {
-  return Array.from(new Map(files.map((file) => [file.filePath, file])).values());
+  return Array.from(
+    new Map(files.map((file) => [file.filePath, file])).values(),
+  );
 }
 
 export class FileOperations {
@@ -121,23 +123,29 @@ export class FileOperations {
   async moveFile(
     sourcePath: string,
     destinationPath: string,
-    options: MoveOperationOptions = {}
+    options: MoveOperationOptions = {},
   ): Promise<OperationResult> {
     const { dryRun = false, verbose = false } = options;
 
     try {
       // Resolve destination in case it's a directory
-      const resolvedDestination = PathUtils.resolveDestination(sourcePath, destinationPath);
+      const resolvedDestination = PathUtils.resolveDestination(
+        sourcePath,
+        destinationPath,
+      );
 
       // Validate inputs
-      const validation = this.validateMoveOperation(sourcePath, resolvedDestination);
+      const validation = this.validateMoveOperation(
+        sourcePath,
+        resolvedDestination,
+      );
       if (!validation.valid) {
         return {
           success: false,
           modifiedFiles: [],
           createdFiles: [],
           deletedFiles: [],
-          errors: [validation.error ?? 'Validation failed'],
+          errors: [validation.error ?? "Validation failed"],
           warnings: [],
           changes: [],
         };
@@ -145,16 +153,22 @@ export class FileOperations {
 
       // Parse the source file (only meaningful for markdown, which may itself contain links to update) and build a dependency graph from the surrounding project's markdown files.
       const sourceIsMarkdown = PathUtils.isMarkdownFile(sourcePath);
-      const sourceFile = sourceIsMarkdown ? await this.linkParser.parseFile(sourcePath) : null;
+      const sourceFile = sourceIsMarkdown
+        ? await this.linkParser.parseFile(sourcePath)
+        : null;
       const {
         files: projectFiles,
         parseFailures,
         vaultRoot,
       } = await this.discoverProjectFiles([sourcePath, resolvedDestination]);
       const allParsedFiles = uniqueByFilePath(
-        sourceFile ? [...projectFiles, sourceFile] : projectFiles
+        sourceFile ? [...projectFiles, sourceFile] : projectFiles,
       );
-      const obsidianWarnings = this.prepareObsidianMode(allParsedFiles, vaultRoot, options);
+      const obsidianWarnings = this.prepareObsidianMode(
+        allParsedFiles,
+        vaultRoot,
+        options,
+      );
       const dependencyGraph = new DependencyGraph(allParsedFiles);
 
       // Find all files that link to the source file. The moved file itself is excluded: a link to its own old path is the self pass's job, and scheduling it here would write content to the vacated source path after the move, resurrecting the old file
@@ -163,7 +177,9 @@ export class FileOperations {
         .filter((dependent) => dependent !== sourcePath);
 
       if (verbose) {
-        console.log(`Found ${String(dependentFiles.length)} files that reference ${sourcePath}`);
+        console.log(
+          `Found ${String(dependentFiles.length)} files that reference ${sourcePath}`,
+        );
       }
 
       // Prepare transaction
@@ -181,7 +197,7 @@ export class FileOperations {
         transaction.addFileMove(
           sourcePath,
           resolvedDestination,
-          `Move ${sourcePath} to ${resolvedDestination}`
+          `Move ${sourcePath} to ${resolvedDestination}`,
         );
       }
 
@@ -195,7 +211,7 @@ export class FileOperations {
             await this.linkRefactorer.refactorLinksForFileMove(
               dependentFile,
               sourcePath,
-              resolvedDestination
+              resolvedDestination,
             );
 
           if (refactorResult.changes.length > 0) {
@@ -206,7 +222,7 @@ export class FileOperations {
               transaction.addContentUpdate(
                 dependentFilePath,
                 refactorResult.updatedContent,
-                `Update links in ${dependentFilePath}`
+                `Update links in ${dependentFilePath}`,
               );
             }
           }
@@ -215,7 +231,9 @@ export class FileOperations {
             warnings.push(...refactorResult.errors);
           }
         } catch (error) {
-          warnings.push(`Failed to process ${dependentFilePath}: ${errorMessage(error)}`);
+          warnings.push(
+            `Failed to process ${dependentFilePath}: ${errorMessage(error)}`,
+          );
         }
       }
 
@@ -224,11 +242,14 @@ export class FileOperations {
         try {
           // The file's own relocation is in the map so self-links point at the destination
           // rather than the vacated path
-          const selfRefactorResult = await this.linkRefactorer.refactorLinksForCurrentFileMove(
-            sourceFile,
-            resolvedDestination,
-            new Map([[PathUtils.resolvePath(sourcePath), resolvedDestination]])
-          );
+          const selfRefactorResult =
+            await this.linkRefactorer.refactorLinksForCurrentFileMove(
+              sourceFile,
+              resolvedDestination,
+              new Map([
+                [PathUtils.resolvePath(sourcePath), resolvedDestination],
+              ]),
+            );
 
           if (selfRefactorResult.changes.length > 0) {
             changes.push(...selfRefactorResult.changes);
@@ -237,7 +258,7 @@ export class FileOperations {
               transaction.addContentUpdate(
                 resolvedDestination,
                 selfRefactorResult.updatedContent,
-                'Update internal links in moved file'
+                "Update internal links in moved file",
               );
             }
           }
@@ -246,14 +267,16 @@ export class FileOperations {
             warnings.push(...selfRefactorResult.errors);
           }
         } catch (error) {
-          warnings.push(`Failed to update links in source file: ${errorMessage(error)}`);
+          warnings.push(
+            `Failed to update links in source file: ${errorMessage(error)}`,
+          );
         }
       }
 
       // Execute transaction or return dry-run results
       if (dryRun) {
         if (verbose) {
-          console.log('Dry run - changes that would be made:');
+          console.log("Dry run - changes that would be made:");
           for (const change of changes) {
             console.log(`  ${change.type}: ${change.filePath}`);
             if (change.oldValue && change.newValue) {
@@ -265,7 +288,8 @@ export class FileOperations {
         return {
           success: true,
           modifiedFiles,
-          createdFiles: resolvedDestination !== sourcePath ? [resolvedDestination] : [],
+          createdFiles:
+            resolvedDestination !== sourcePath ? [resolvedDestination] : [],
           deletedFiles: resolvedDestination !== sourcePath ? [sourcePath] : [],
           errors: [],
           warnings,
@@ -315,7 +339,7 @@ export class FileOperations {
   /** Move multiple files in a single operation */
   async moveFiles(
     moves: { source: string; destination: string }[],
-    options: MoveOperationOptions = {}
+    options: MoveOperationOptions = {},
   ): Promise<OperationResult> {
     const { dryRun = false } = options;
 
@@ -347,7 +371,9 @@ export class FileOperations {
             modifiedFiles: [],
             createdFiles: [],
             deletedFiles: [],
-            errors: [`Invalid move ${source} → ${destination}: ${String(validation.error)}`],
+            errors: [
+              `Invalid move ${source} → ${destination}: ${String(validation.error)}`,
+            ],
             warnings: [],
             changes: [],
           };
@@ -380,14 +406,23 @@ export class FileOperations {
         ...(options.discoverySeeds ?? []),
       ]);
       const allParsedFiles = uniqueByFilePath([...allFiles, ...projectFiles]);
-      const obsidianWarnings = this.prepareObsidianMode(allParsedFiles, vaultRoot, options);
+      const obsidianWarnings = this.prepareObsidianMode(
+        allParsedFiles,
+        vaultRoot,
+        options,
+      );
       const dependencyGraph = new DependencyGraph(allParsedFiles);
 
       // Store content for every parsed file, not just the moved sources. Bystander files that link to several moved files are refactored once per move, and the transaction has not executed yet: re-reading a bystander from disk on a later move would see the original bytes and silently discard the link updates planned by earlier moves in the same batch.
       const sourceFilePaths = new Set(
-        resolvedMoves.filter(({ source }) => PathUtils.isMarkdownFile(source)).map((m) => m.source)
+        resolvedMoves
+          .filter(({ source }) => PathUtils.isMarkdownFile(source))
+          .map((m) => m.source),
       );
-      for (const filePath of [...sourceFilePaths, ...projectFiles.map((f) => f.filePath)]) {
+      for (const filePath of [
+        ...sourceFilePaths,
+        ...projectFiles.map((f) => f.filePath),
+      ]) {
         if (!fileContents.has(filePath) && (await FileUtils.exists(filePath))) {
           const content = await FileUtils.readTextFile(filePath);
           fileContents.set(filePath, content);
@@ -414,7 +449,10 @@ export class FileOperations {
 
       // Second pass: Process content updates for dependent files and moved files A moved file's own links must be recomputed against the final location of every target: links between co-moved files keep pointing at their new sibling locations, not the vacated ones
       const movedPathMap = new Map(
-        resolvedMoves.map((move) => [PathUtils.resolvePath(move.source), move.destination])
+        resolvedMoves.map((move) => [
+          PathUtils.resolvePath(move.source),
+          move.destination,
+        ]),
       );
 
       for (const { source, destination } of resolvedMoves) {
@@ -424,11 +462,14 @@ export class FileOperations {
 
         // Process dependent files
         for (const dependentFilePath of dependentFiles) {
-          const dependentFile = dependencyGraph.getNode(dependentFilePath)?.data;
+          const dependentFile =
+            dependencyGraph.getNode(dependentFilePath)?.data;
           if (!dependentFile) continue;
 
           // For files being moved in this batch, use stored content and update the destination
-          const moveInfo = resolvedMoves.find((move) => move.destination === dependentFilePath);
+          const moveInfo = resolvedMoves.find(
+            (move) => move.destination === dependentFilePath,
+          );
           const actualDependentFile = dependentFile;
           let actualDependentPath = dependentFilePath;
           let contentToUse = fileContents.get(dependentFile.filePath);
@@ -439,49 +480,64 @@ export class FileOperations {
             // this pass's full-content write reverts their rewrites
             actualDependentPath = moveInfo.destination;
             contentToUse =
-              fileContents.get(actualDependentPath) ?? fileContents.get(moveInfo.source);
+              fileContents.get(actualDependentPath) ??
+              fileContents.get(moveInfo.source);
           }
 
           if (!contentToUse) {
             // Fallback to reading from file system
-            const refactorResult = await this.linkRefactorer.refactorLinksForFileMove(
-              actualDependentFile,
-              source,
-              destination
-            );
+            const refactorResult =
+              await this.linkRefactorer.refactorLinksForFileMove(
+                actualDependentFile,
+                source,
+                destination,
+              );
 
             if (refactorResult.changes.length > 0) {
               modifiedFiles.add(actualDependentPath);
               allChanges.push(...refactorResult.changes);
 
               if (!dryRun) {
-                transaction.addContentUpdate(actualDependentPath, refactorResult.updatedContent);
+                transaction.addContentUpdate(
+                  actualDependentPath,
+                  refactorResult.updatedContent,
+                );
               }
 
               // Update stored content so subsequent moves in this batch build on it
-              fileContents.set(actualDependentPath, refactorResult.updatedContent);
+              fileContents.set(
+                actualDependentPath,
+                refactorResult.updatedContent,
+              );
             }
 
             warnings.push(...refactorResult.errors);
           } else {
             // Use stored content
-            const refactorResult = this.linkRefactorer.refactorLinksForFileMoveWithContent(
-              actualDependentFile,
-              source,
-              destination,
-              contentToUse
-            );
+            const refactorResult =
+              this.linkRefactorer.refactorLinksForFileMoveWithContent(
+                actualDependentFile,
+                source,
+                destination,
+                contentToUse,
+              );
 
             if (refactorResult.changes.length > 0) {
               modifiedFiles.add(actualDependentPath);
               allChanges.push(...refactorResult.changes);
 
               if (!dryRun) {
-                transaction.addContentUpdate(actualDependentPath, refactorResult.updatedContent);
+                transaction.addContentUpdate(
+                  actualDependentPath,
+                  refactorResult.updatedContent,
+                );
               }
 
               // Update stored content for subsequent processing
-              fileContents.set(actualDependentPath, refactorResult.updatedContent);
+              fileContents.set(
+                actualDependentPath,
+                refactorResult.updatedContent,
+              );
             }
 
             warnings.push(...refactorResult.errors);
@@ -499,14 +555,17 @@ export class FileOperations {
                 sourceFile,
                 destination,
                 originalContent,
-                movedPathMap
+                movedPathMap,
               );
 
             if (selfRefactorResult.changes.length > 0) {
               allChanges.push(...selfRefactorResult.changes);
 
               if (!dryRun) {
-                transaction.addContentUpdate(destination, selfRefactorResult.updatedContent);
+                transaction.addContentUpdate(
+                  destination,
+                  selfRefactorResult.updatedContent,
+                );
               }
             }
 
@@ -516,17 +575,21 @@ export class FileOperations {
             warnings.push(...selfRefactorResult.errors);
           } else {
             // Fallback to the original method if content not found
-            const selfRefactorResult = await this.linkRefactorer.refactorLinksForCurrentFileMove(
-              sourceFile,
-              destination,
-              movedPathMap
-            );
+            const selfRefactorResult =
+              await this.linkRefactorer.refactorLinksForCurrentFileMove(
+                sourceFile,
+                destination,
+                movedPathMap,
+              );
 
             if (selfRefactorResult.changes.length > 0) {
               allChanges.push(...selfRefactorResult.changes);
 
               if (!dryRun) {
-                transaction.addContentUpdate(destination, selfRefactorResult.updatedContent);
+                transaction.addContentUpdate(
+                  destination,
+                  selfRefactorResult.updatedContent,
+                );
               }
             }
 
@@ -554,8 +617,12 @@ export class FileOperations {
       return {
         success: executionResult.success,
         modifiedFiles: Array.from(modifiedFiles),
-        createdFiles: executionResult.success ? resolvedMoves.map((m) => m.destination) : [],
-        deletedFiles: executionResult.success ? resolvedMoves.map((m) => m.source) : [],
+        createdFiles: executionResult.success
+          ? resolvedMoves.map((m) => m.destination)
+          : [],
+        deletedFiles: executionResult.success
+          ? resolvedMoves.map((m) => m.source)
+          : [],
         errors: executionResult.errors,
         warnings,
         changes: allChanges,
@@ -576,7 +643,7 @@ export class FileOperations {
 
   private validateMoveOperation(
     sourcePath: string,
-    destinationPath: string
+    destinationPath: string,
   ): {
     valid: boolean;
     error?: string;
@@ -584,18 +651,27 @@ export class FileOperations {
     // Validate source path
     const sourceValidation = PathUtils.validatePath(sourcePath);
     if (!sourceValidation.valid) {
-      return { valid: false, error: `Invalid source path: ${String(sourceValidation.reason)}` };
+      return {
+        valid: false,
+        error: `Invalid source path: ${String(sourceValidation.reason)}`,
+      };
     }
 
     // Validate destination path
     const destValidation = PathUtils.validatePath(destinationPath);
     if (!destValidation.valid) {
-      return { valid: false, error: `Invalid destination path: ${String(destValidation.reason)}` };
+      return {
+        valid: false,
+        error: `Invalid destination path: ${String(destValidation.reason)}`,
+      };
     }
 
     // The source must exist before any project discovery is attempted. Without this check, a nonexistent path resolves to a directory (its own dirname) that project discovery then scans, which is unbounded when the path has no real parent directory to anchor to (e.g. a nonexistent file directly under the filesystem root).
     if (!existsSync(sourcePath)) {
-      return { valid: false, error: `Source file does not exist: ${sourcePath}` };
+      return {
+        valid: false,
+        error: `Source file does not exist: ${sourcePath}`,
+      };
     }
 
     // A markdown file must move to another markdown file (so its own internal links stay meaningful), and a non-markdown asset must move to another non-markdown path (so it isn't silently reinterpreted as markdown). Moving markdown <-> non-markdown is not supported.
@@ -603,19 +679,23 @@ export class FileOperations {
     const destinationIsMarkdown = PathUtils.isMarkdownFile(destinationPath);
 
     if (sourceIsMarkdown && !destinationIsMarkdown) {
-      return { valid: false, error: 'Destination must be a markdown file' };
+      return { valid: false, error: "Destination must be a markdown file" };
     }
 
     if (!sourceIsMarkdown && destinationIsMarkdown) {
       return {
         valid: false,
-        error: 'Destination must not be a markdown file when the source is not a markdown file',
+        error:
+          "Destination must not be a markdown file when the source is not a markdown file",
       };
     }
 
     // Check for same source and destination
-    if (PathUtils.resolvePath(sourcePath) === PathUtils.resolvePath(destinationPath)) {
-      return { valid: false, error: 'Source and destination are the same' };
+    if (
+      PathUtils.resolvePath(sourcePath) ===
+      PathUtils.resolvePath(destinationPath)
+    ) {
+      return { valid: false, error: "Source and destination are the same" };
     }
 
     return { valid: true };
@@ -623,22 +703,33 @@ export class FileOperations {
 
   private async discoverProjectFiles(seedPaths: string[]): Promise<{
     files: ParsedMarkdownFile[];
-    parseFailures: { file: string; error: string; stack?: string | undefined }[];
+    parseFailures: {
+      file: string;
+      error: string;
+      stack?: string | undefined;
+    }[];
     vaultRoot: string;
   }> {
     try {
       // Bystanders can live anywhere between where the files came from and where they are going, so discovery is rooted at the common base of every seed path. A base at the filesystem root means the seeds span unrelated trees; scanning from there would walk the disk, so fall back to the first seed's own directory.
       let projectRoot = PathUtils.findCommonBase(seedPaths);
       if (projectRoot === sep || /^[A-Za-z]:$/.test(projectRoot)) {
-        projectRoot = dirname(seedPaths[0] || '');
+        projectRoot = dirname(seedPaths[0] || "");
       }
 
       // Find all markdown files in the project
-      const markdownFiles = await FileUtils.findMarkdownFiles(projectRoot, true);
+      const markdownFiles = await FileUtils.findMarkdownFiles(
+        projectRoot,
+        true,
+      );
 
       // Parse all files; a file that fails to parse is reported rather than silently dropped, because its links cannot be discovered or rewritten
       const parsedFiles: ParsedMarkdownFile[] = [];
-      const parseFailures: { file: string; error: string; stack?: string | undefined }[] = [];
+      const parseFailures: {
+        file: string;
+        error: string;
+        stack?: string | undefined;
+      }[] = [];
       for (const filePath of markdownFiles) {
         try {
           const parsed = await this.linkParser.parseFile(filePath);
@@ -681,7 +772,7 @@ export class FileOperations {
   private prepareObsidianMode(
     files: ParsedMarkdownFile[],
     vaultRoot: string,
-    options: MoveOperationOptions
+    options: MoveOperationOptions,
   ): string[] {
     if (!options.obsidian) {
       this.linkRefactorer = new LinkRefactorer();
@@ -691,17 +782,20 @@ export class FileOperations {
     const warnings: string[] = [];
     for (const ambiguity of resolveWikilinks(files, vaultRoot)) {
       warnings.push(
-        `Ambiguous wikilink [[${ambiguity.stem}]] matches ${String(ambiguity.candidates.length)} notes: ${ambiguity.candidates.join(', ')}`
+        `Ambiguous wikilink [[${ambiguity.stem}]] matches ${String(ambiguity.candidates.length)} notes: ${ambiguity.candidates.join(", ")}`,
       );
     }
     for (const duplicate of findDuplicateNoteStems(files)) {
       warnings.push(
-        `Duplicate note name '${duplicate.stem}': ${duplicate.paths.join(', ')} -- Obsidian resolves [[${duplicate.stem}]] by path proximity, so a move can silently rebind links to it`
+        `Duplicate note name '${duplicate.stem}': ${duplicate.paths.join(", ")} -- Obsidian resolves [[${duplicate.stem}]] by path proximity, so a move can silently rebind links to it`,
       );
     }
 
     this.linkRefactorer = new LinkRefactorer({
-      obsidianVault: { vaultRoot, noteStemCounts: computeNoteStemCounts(files) },
+      obsidianVault: {
+        vaultRoot,
+        noteStemCounts: computeNoteStemCounts(files),
+      },
     });
     return warnings;
   }
@@ -723,13 +817,15 @@ export class FileOperations {
         }
       }
 
-      const validationResult = await this.linkValidator.validateFiles(parsedFiles);
+      const validationResult =
+        await this.linkValidator.validateFiles(parsedFiles);
 
       return {
         valid: validationResult.valid,
         brokenLinks: validationResult.brokenLinks.length,
         errors: validationResult.brokenLinks.map(
-          (bl) => `${bl.sourceFile}: ${bl.reason} - ${bl.details ?? bl.link.href}`
+          (bl) =>
+            `${bl.sourceFile}: ${bl.reason} - ${bl.details ?? bl.link.href}`,
         ),
       };
     } catch (error) {

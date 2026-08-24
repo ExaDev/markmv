@@ -1,4 +1,4 @@
-import { constants } from 'node:fs';
+import { constants } from "node:fs";
 import {
   access,
   copyFile as fsCopyFile,
@@ -9,9 +9,9 @@ import {
   stat,
   unlink,
   writeFile,
-} from 'node:fs/promises';
-import { dirname, join } from 'node:path';
-import { PathUtils } from './path-utils.js';
+} from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { PathUtils } from "./path-utils.js";
 
 /**
  * File system statistics and metadata.
@@ -105,7 +105,12 @@ async function ensureDirectory(dirPath: string): Promise<void> {
     await mkdir(dirPath, { recursive: true });
   } catch (error) {
     // Ignore error if directory already exists
-    if (!(error && typeof error === 'object' && 'code' in error && error.code === 'EEXIST')) {
+    if (!(
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "EEXIST"
+    )) {
       throw error;
     }
   }
@@ -116,27 +121,27 @@ async function readTextFile(filePath: string): Promise<string> {
   const buffer = await readFile(filePath);
 
   // Simple encoding detection - assume UTF-8 for now Could be enhanced with proper encoding detection library
-  return buffer.toString('utf-8');
+  return buffer.toString("utf-8");
 }
 
 /** Safely write a file with directory creation */
 async function writeTextFile(
   filePath: string,
   content: string,
-  options: { createDirectories?: boolean } = {}
+  options: { createDirectories?: boolean } = {},
 ): Promise<void> {
   if (options.createDirectories) {
     await ensureDirectory(dirname(filePath));
   }
 
-  await writeFile(filePath, content, 'utf-8');
+  await writeFile(filePath, content, "utf-8");
 }
 
 /** Copy a file with options */
 async function copyFile(
   sourcePath: string,
   destinationPath: string,
-  options: CopyOptions = {}
+  options: CopyOptions = {},
 ): Promise<void> {
   const { overwrite = false, createDirectories = true } = options;
 
@@ -156,7 +161,7 @@ async function copyFile(
   // TODO: Preserve timestamps if requested
   if (options.preserveTimestamps) {
     const sourceStats = await stat(sourcePath);
-    const { utimes } = await import('node:fs/promises');
+    const { utimes } = await import("node:fs/promises");
     await utimes(destinationPath, sourceStats.atime, sourceStats.mtime);
   }
 }
@@ -165,9 +170,13 @@ async function copyFile(
 async function moveFile(
   sourcePath: string,
   destinationPath: string,
-  options: MoveOptions = {}
+  options: MoveOptions = {},
 ): Promise<void> {
-  const { overwrite = false, createDirectories = true, backup = false } = options;
+  const {
+    overwrite = false,
+    createDirectories = true,
+    backup = false,
+  } = options;
 
   // Validate paths
   const sourceValidation = PathUtils.validatePath(sourcePath);
@@ -177,7 +186,9 @@ async function moveFile(
 
   const destValidation = PathUtils.validatePath(destinationPath);
   if (!destValidation.valid) {
-    throw new Error(`Invalid destination path: ${String(destValidation.reason)}`);
+    throw new Error(
+      `Invalid destination path: ${String(destValidation.reason)}`,
+    );
   }
 
   // Check if source exists
@@ -207,7 +218,12 @@ async function moveFile(
     await rename(sourcePath, destinationPath);
   } catch (error) {
     // If rename fails, fall back to copy + delete
-    if (error && typeof error === 'object' && 'code' in error && error.code === 'EXDEV') {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "EXDEV"
+    ) {
       await copyFile(sourcePath, destinationPath, { overwrite: true });
       await unlink(sourcePath);
     } else {
@@ -230,7 +246,7 @@ async function listFiles(
     recursive?: boolean;
     extensions?: string[];
     includeDirectories?: boolean;
-  } = {}
+  } = {},
 ): Promise<string[]> {
   const { recursive = false, extensions, includeDirectories = false } = options;
   const files: string[] = [];
@@ -268,15 +284,21 @@ async function listFiles(
 }
 
 /** Find markdown files in a directory */
-async function findMarkdownFiles(dirPath: string, recursive = true): Promise<string[]> {
+async function findMarkdownFiles(
+  dirPath: string,
+  recursive = true,
+): Promise<string[]> {
   return listFiles(dirPath, {
     recursive,
-    extensions: ['.md', '.markdown', '.mdown', '.mkd', '.mdx'],
+    extensions: [".md", ".markdown", ".mdown", ".mkd", ".mdx"],
   });
 }
 
 /** Create a backup of a file */
-async function createBackup(filePath: string, suffix = '.backup'): Promise<string> {
+async function createBackup(
+  filePath: string,
+  suffix = ".backup",
+): Promise<string> {
   const backupPath = `${filePath}${suffix}`;
   await copyFile(filePath, backupPath);
   return backupPath;
@@ -291,7 +313,10 @@ async function getFileSize(filePath: string): Promise<number> {
 /** Check if two files have the same content */
 async function filesEqual(path1: string, path2: string): Promise<boolean> {
   try {
-    const [content1, content2] = await Promise.all([readTextFile(path1), readTextFile(path2)]);
+    const [content1, content2] = await Promise.all([
+      readTextFile(path1),
+      readTextFile(path2),
+    ]);
     return content1 === content2;
   } catch {
     return false;
@@ -302,10 +327,10 @@ async function filesEqual(path1: string, path2: string): Promise<boolean> {
 function sanitizeFilename(filename: string): string {
   // Remove or replace invalid characters
   return filename
-    .replace(/[<>:"/\\|?*]/g, '-')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
+    .replace(/[<>:"/\\|?*]/g, "-")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 /** Get relative path between two files */

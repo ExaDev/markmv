@@ -1,6 +1,15 @@
-import { existsSync, statSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { existsSync, statSync } from "node:fs";
+import { homedir } from "node:os";
+import {
+  basename,
+  dirname,
+  extname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+  sep,
+} from "node:path";
 
 /**
  * Resolve a path that may be relative, absolute, or use home directory notation.
@@ -16,7 +25,7 @@ import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } 
  * @returns Resolved absolute path
  */
 function resolvePath(path: string, basePath?: string): string {
-  if (path.startsWith('~/')) {
+  if (path.startsWith("~/")) {
     return resolve(join(homedir(), path.slice(2)));
   }
 
@@ -41,17 +50,18 @@ function updateRelativePath(
   originalLinkPath: string,
   sourceFilePath: string,
   newSourceFilePath: string,
-  movedPaths?: Map<string, string>
+  movedPaths?: Map<string, string>,
 ): string {
   // If it's not a relative path, return as-is
-  if (isAbsolute(originalLinkPath) || originalLinkPath.startsWith('~/')) {
+  if (isAbsolute(originalLinkPath) || originalLinkPath.startsWith("~/")) {
     return originalLinkPath;
   }
 
   // Resolve the original target, ignoring any anchor fragment -- the fragment names a spot in the target, not part of the path, and including it would defeat movedPaths lookups
   const sourceDir = dirname(sourceFilePath);
-  const [pathPart, ...fragmentParts] = originalLinkPath.split('#');
-  const fragment = fragmentParts.length > 0 ? `#${fragmentParts.join('#')}` : '';
+  const [pathPart, ...fragmentParts] = originalLinkPath.split("#");
+  const fragment =
+    fragmentParts.length > 0 ? `#${fragmentParts.join("#")}` : "";
   const targetPath = resolvePath(pathPart, sourceDir);
 
   // A target that is itself being moved in the same batch lands at its own destination, so the recomputed path must point there rather than at the vacated location
@@ -67,17 +77,18 @@ function updateClaudeImportPath(
   originalImportPath: string,
   sourceFilePath: string,
   newSourceFilePath: string,
-  movedPaths?: Map<string, string>
+  movedPaths?: Map<string, string>,
 ): string {
   // Handle absolute paths and home directory paths - they don't need updating
-  if (isAbsolute(originalImportPath) || originalImportPath.startsWith('~/')) {
+  if (isAbsolute(originalImportPath) || originalImportPath.startsWith("~/")) {
     return originalImportPath;
   }
 
   // For relative imports, update the path; any anchor fragment is preserved verbatim
   const sourceDir = dirname(sourceFilePath);
-  const [pathPart, ...fragmentParts] = originalImportPath.split('#');
-  const fragment = fragmentParts.length > 0 ? `#${fragmentParts.join('#')}` : '';
+  const [pathPart, ...fragmentParts] = originalImportPath.split("#");
+  const fragment =
+    fragmentParts.length > 0 ? `#${fragmentParts.join("#")}` : "";
   const targetPath = resolvePath(pathPart, sourceDir);
   const finalTargetPath = movedPaths?.get(targetPath) ?? targetPath;
   const newSourceDir = dirname(newSourceFilePath);
@@ -93,7 +104,7 @@ function normalizePath(path: string): string {
 /** Check if a path is within a given directory */
 function isWithinDirectory(filePath: string, directoryPath: string): boolean {
   const relativePath = relative(directoryPath, filePath);
-  return !relativePath.startsWith('..') && !isAbsolute(relativePath);
+  return !relativePath.startsWith("..") && !isAbsolute(relativePath);
 }
 
 /** Generate a unique filename if a file already exists */
@@ -115,18 +126,21 @@ function generateUniqueFilename(desiredPath: string): string {
 
 /** Validate that a path is safe for file operations */
 function validatePath(path: string): { valid: boolean; reason?: string } {
-  if (!path || path.trim() === '') {
-    return { valid: false, reason: 'Path cannot be empty' };
+  if (!path || path.trim() === "") {
+    return { valid: false, reason: "Path cannot be empty" };
   }
 
-  if (path.includes('\0')) {
-    return { valid: false, reason: 'Path cannot contain null bytes' };
+  if (path.includes("\0")) {
+    return { valid: false, reason: "Path cannot contain null bytes" };
   }
 
   // Check for dangerous path traversal patterns
   const normalized = resolve(path);
-  if (path.includes('..') && !isWithinDirectory(normalized, process.cwd())) {
-    return { valid: false, reason: 'Path traversal outside working directory is not allowed' };
+  if (path.includes("..") && !isWithinDirectory(normalized, process.cwd())) {
+    return {
+      valid: false,
+      reason: "Path traversal outside working directory is not allowed",
+    };
   }
 
   return { valid: true };
@@ -135,12 +149,12 @@ function validatePath(path: string): { valid: boolean; reason?: string } {
 /** Extract directory depth from a path */
 function getDirectoryDepth(path: string): number {
   const normalized = resolve(path);
-  return normalized.split(sep).filter((part) => part !== '').length;
+  return normalized.split(sep).filter((part) => part !== "").length;
 }
 
 /** Find common base directory for multiple paths */
 function findCommonBase(paths: string[]): string {
-  if (paths.length === 0) return '';
+  if (paths.length === 0) return "";
   if (paths.length === 1) return dirname(paths[0]);
 
   const resolvedPaths = paths.map((p) => resolve(p));
@@ -163,25 +177,25 @@ function findCommonBase(paths: string[]): string {
 
 /** Convert Windows paths to Unix-style for markdown links */
 function toUnixPath(path: string): string {
-  return path.replace(/\\/g, '/');
+  return path.replace(/\\/g, "/");
 }
 
 /** Get file extension with fallback handling */
 function getExtension(path: string): string {
   const ext = extname(path);
-  return ext || '';
+  return ext || "";
 }
 
 /** Check if path represents a markdown file */
 function isMarkdownFile(path: string): boolean {
   const ext = getExtension(path).toLowerCase();
-  return ['.md', '.markdown', '.mdown', '.mkd', '.mdx'].includes(ext);
+  return [".md", ".markdown", ".mdown", ".mkd", ".mdx"].includes(ext);
 }
 
 /** Safely join paths, handling edge cases */
 function safejoin(...parts: string[]): string {
-  const filteredParts = parts.filter((part) => part && part.trim() !== '');
-  if (filteredParts.length === 0) return '';
+  const filteredParts = parts.filter((part) => part && part.trim() !== "");
+  if (filteredParts.length === 0) return "";
 
   return resolve(join(...filteredParts));
 }
@@ -198,14 +212,17 @@ function isDirectory(path: string): boolean {
 
 /** Check if a path looks like a directory (ends with / or ) */
 function looksLikeDirectory(path: string): boolean {
-  return path.endsWith('/') || path.endsWith('\\');
+  return path.endsWith("/") || path.endsWith("\\");
 }
 
 /**
  * Resolve destination path when target might be a directory If destination is a directory,
  * preserves the source filename
  */
-function resolveDestination(sourcePath: string, destinationPath: string): string {
+function resolveDestination(
+  sourcePath: string,
+  destinationPath: string,
+): string {
   const resolvedDest = resolvePath(destinationPath);
 
   // If destination looks like a directory or exists as a directory

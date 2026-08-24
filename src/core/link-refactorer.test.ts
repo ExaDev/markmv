@@ -1,11 +1,15 @@
-import { promises as fs } from 'node:fs';
-import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { LinkReference, MarkdownLink, ParsedMarkdownFile } from '../types/links.js';
-import { LinkRefactorer } from './link-refactorer.js';
+import { promises as fs } from "node:fs";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type {
+  LinkReference,
+  MarkdownLink,
+  ParsedMarkdownFile,
+} from "../types/links.js";
+import { LinkRefactorer } from "./link-refactorer.js";
 
-describe('LinkRefactorer', () => {
-  const testDir = join(process.cwd(), 'test-temp-refactorer');
+describe("LinkRefactorer", () => {
+  const testDir = join(process.cwd(), "test-temp-refactorer");
   let refactorer: LinkRefactorer;
 
   beforeEach(async () => {
@@ -21,17 +25,20 @@ describe('LinkRefactorer', () => {
     }
   });
 
-  const createTestFile = async (filename: string, content: string): Promise<string> => {
+  const createTestFile = async (
+    filename: string,
+    content: string,
+  ): Promise<string> => {
     const filePath = join(testDir, filename);
-    await fs.mkdir(join(filePath, '..'), { recursive: true });
-    await fs.writeFile(filePath, content, 'utf8');
+    await fs.mkdir(join(filePath, ".."), { recursive: true });
+    await fs.writeFile(filePath, content, "utf8");
     return filePath;
   };
 
   const createMockParsedFile = (
     filePath: string,
     links: MarkdownLink[] = [],
-    references: LinkReference[] = []
+    references: LinkReference[] = [],
   ): ParsedMarkdownFile => ({
     filePath,
     links,
@@ -40,13 +47,13 @@ describe('LinkRefactorer', () => {
     dependents: [],
   });
 
-  describe('constructor and options', () => {
-    it('should use default options', () => {
+  describe("constructor and options", () => {
+    it("should use default options", () => {
       const refactorer = new LinkRefactorer();
       expect(refactorer).toBeDefined();
     });
 
-    it('should accept custom options', () => {
+    it("should accept custom options", () => {
       const refactorer = new LinkRefactorer({
         preferRelativePaths: false,
         updateClaudeImports: false,
@@ -56,22 +63,22 @@ describe('LinkRefactorer', () => {
     });
   });
 
-  describe('refactorLinksForFileMove', () => {
-    it('should update internal links when target file is moved', async () => {
+  describe("refactorLinksForFileMove", () => {
+    it("should update internal links when target file is moved", async () => {
       const sourceContent = `# Document
       
 [Link to target](./target.md)
 [Another link](./other.md)`;
 
-      const sourceFile = await createTestFile('source.md', sourceContent);
-      const targetFile = join(testDir, 'target.md');
-      const newTargetFile = join(testDir, 'renamed-target.md');
+      const sourceFile = await createTestFile("source.md", sourceContent);
+      const targetFile = join(testDir, "target.md");
+      const newTargetFile = join(testDir, "renamed-target.md");
 
       const mockParsedFile = createMockParsedFile(sourceFile, [
         {
-          text: 'Link to target',
-          href: './target.md',
-          type: 'internal',
+          text: "Link to target",
+          href: "./target.md",
+          type: "internal",
           line: 3,
           column: 1,
           resolvedPath: targetFile,
@@ -79,12 +86,12 @@ describe('LinkRefactorer', () => {
           referenceId: undefined,
         },
         {
-          text: 'Another link',
-          href: './other.md',
-          type: 'internal',
+          text: "Another link",
+          href: "./other.md",
+          type: "internal",
           line: 4,
           column: 1,
-          resolvedPath: join(testDir, 'other.md'),
+          resolvedPath: join(testDir, "other.md"),
           absolute: false,
           referenceId: undefined,
         },
@@ -93,35 +100,37 @@ describe('LinkRefactorer', () => {
       const result = await refactorer.refactorLinksForFileMove(
         mockParsedFile,
         targetFile,
-        newTargetFile
+        newTargetFile,
       );
 
       expect(result.changes).toHaveLength(1);
-      expect(result.changes[0].type).toBe('link-updated');
-      expect(result.changes[0].oldValue).toBe('./target.md');
-      expect(result.changes[0].newValue).toBe('./renamed-target.md');
+      expect(result.changes[0].type).toBe("link-updated");
+      expect(result.changes[0].oldValue).toBe("./target.md");
+      expect(result.changes[0].newValue).toBe("./renamed-target.md");
       expect(result.errors).toHaveLength(0);
-      expect(result.updatedContent).toContain('[Link to target](./renamed-target.md)');
-      expect(result.updatedContent).toContain('[Another link](./other.md)'); // Unchanged
+      expect(result.updatedContent).toContain(
+        "[Link to target](./renamed-target.md)",
+      );
+      expect(result.updatedContent).toContain("[Another link](./other.md)"); // Unchanged
     });
 
-    it('should update Claude import links when enabled', async () => {
+    it("should update Claude import links when enabled", async () => {
       const sourceContent = `# Document
       
 @./target.md
 @./other.md`;
 
-      const sourceFile = await createTestFile('source.md', sourceContent);
-      const targetFile = join(testDir, 'target.md');
-      const newTargetFile = join(testDir, 'renamed-target.md');
+      const sourceFile = await createTestFile("source.md", sourceContent);
+      const targetFile = join(testDir, "target.md");
+      const newTargetFile = join(testDir, "renamed-target.md");
 
       const refactorer = new LinkRefactorer({ updateClaudeImports: true });
 
       const mockParsedFile = createMockParsedFile(sourceFile, [
         {
-          text: '@./target.md',
-          href: './target.md',
-          type: 'claude-import',
+          text: "@./target.md",
+          href: "./target.md",
+          type: "claude-import",
           line: 3,
           column: 1,
           resolvedPath: targetFile,
@@ -129,12 +138,12 @@ describe('LinkRefactorer', () => {
           referenceId: undefined,
         },
         {
-          text: '@./other.md',
-          href: './other.md',
-          type: 'claude-import',
+          text: "@./other.md",
+          href: "./other.md",
+          type: "claude-import",
           line: 4,
           column: 1,
-          resolvedPath: join(testDir, 'other.md'),
+          resolvedPath: join(testDir, "other.md"),
           absolute: false,
           referenceId: undefined,
         },
@@ -143,31 +152,31 @@ describe('LinkRefactorer', () => {
       const result = await refactorer.refactorLinksForFileMove(
         mockParsedFile,
         targetFile,
-        newTargetFile
+        newTargetFile,
       );
 
       expect(result.changes).toHaveLength(1);
-      expect(result.changes[0].oldValue).toBe('./target.md');
-      expect(result.changes[0].newValue).toBe('./renamed-target.md');
-      expect(result.updatedContent).toContain('@./renamed-target.md');
-      expect(result.updatedContent).toContain('@./other.md'); // Unchanged
+      expect(result.changes[0].oldValue).toBe("./target.md");
+      expect(result.changes[0].newValue).toBe("./renamed-target.md");
+      expect(result.updatedContent).toContain("@./renamed-target.md");
+      expect(result.updatedContent).toContain("@./other.md"); // Unchanged
     });
 
-    it('should handle image links', async () => {
+    it("should handle image links", async () => {
       const sourceContent = `# Document
       
 ![Image](./image.png)
 ![Another](./other.png)`;
 
-      const sourceFile = await createTestFile('source.md', sourceContent);
-      const targetFile = join(testDir, 'image.png');
-      const newTargetFile = join(testDir, 'renamed-image.png');
+      const sourceFile = await createTestFile("source.md", sourceContent);
+      const targetFile = join(testDir, "image.png");
+      const newTargetFile = join(testDir, "renamed-image.png");
 
       const mockParsedFile = createMockParsedFile(sourceFile, [
         {
-          text: 'Image',
-          href: './image.png',
-          type: 'image',
+          text: "Image",
+          href: "./image.png",
+          type: "image",
           line: 3,
           column: 1,
           resolvedPath: targetFile,
@@ -175,12 +184,12 @@ describe('LinkRefactorer', () => {
           referenceId: undefined,
         },
         {
-          text: 'Another',
-          href: './other.png',
-          type: 'image',
+          text: "Another",
+          href: "./other.png",
+          type: "image",
           line: 4,
           column: 1,
-          resolvedPath: join(testDir, 'other.png'),
+          resolvedPath: join(testDir, "other.png"),
           absolute: false,
           referenceId: undefined,
         },
@@ -189,33 +198,33 @@ describe('LinkRefactorer', () => {
       const result = await refactorer.refactorLinksForFileMove(
         mockParsedFile,
         targetFile,
-        newTargetFile
+        newTargetFile,
       );
 
       expect(result.changes).toHaveLength(1);
-      expect(result.changes[0].type).toBe('link-updated');
-      expect(result.changes[0].oldValue).toBe('./image.png');
-      expect(result.changes[0].newValue).toBe('./renamed-image.png');
+      expect(result.changes[0].type).toBe("link-updated");
+      expect(result.changes[0].oldValue).toBe("./image.png");
+      expect(result.changes[0].newValue).toBe("./renamed-image.png");
       expect(result.errors).toHaveLength(0);
-      expect(result.updatedContent).toContain('![Image](./renamed-image.png)');
-      expect(result.updatedContent).toContain('![Another](./other.png)'); // Should be unchanged
+      expect(result.updatedContent).toContain("![Image](./renamed-image.png)");
+      expect(result.updatedContent).toContain("![Another](./other.png)"); // Should be unchanged
     });
 
-    it('should preserve link titles and formatting', async () => {
+    it("should preserve link titles and formatting", async () => {
       const sourceContent = `# Document
       
 [Link with title](./target.md "Title here")
 ![Image with title](./image.png "Image title")`;
 
-      const sourceFile = await createTestFile('source.md', sourceContent);
-      const targetFile = join(testDir, 'target.md');
-      const newTargetFile = join(testDir, 'renamed-target.md');
+      const sourceFile = await createTestFile("source.md", sourceContent);
+      const targetFile = join(testDir, "target.md");
+      const newTargetFile = join(testDir, "renamed-target.md");
 
       const mockParsedFile = createMockParsedFile(sourceFile, [
         {
-          text: 'Link with title',
-          href: './target.md',
-          type: 'internal',
+          text: "Link with title",
+          href: "./target.md",
+          type: "internal",
           line: 3,
           column: 1,
           resolvedPath: targetFile,
@@ -227,28 +236,28 @@ describe('LinkRefactorer', () => {
       const result = await refactorer.refactorLinksForFileMove(
         mockParsedFile,
         targetFile,
-        newTargetFile
+        newTargetFile,
       );
 
       expect(result.updatedContent).toContain(
-        '[Link with title](./renamed-target.md "Title here")'
+        '[Link with title](./renamed-target.md "Title here")',
       );
     });
 
-    it('should handle links with anchors', async () => {
+    it("should handle links with anchors", async () => {
       const sourceContent = `# Document
       
 [Link to section](./target.md#section)`;
 
-      const sourceFile = await createTestFile('source.md', sourceContent);
-      const targetFile = join(testDir, 'target.md');
-      const newTargetFile = join(testDir, 'renamed-target.md');
+      const sourceFile = await createTestFile("source.md", sourceContent);
+      const targetFile = join(testDir, "target.md");
+      const newTargetFile = join(testDir, "renamed-target.md");
 
       const mockParsedFile = createMockParsedFile(sourceFile, [
         {
-          text: 'Link to section',
-          href: './target.md#section',
-          type: 'internal',
+          text: "Link to section",
+          href: "./target.md#section",
+          type: "internal",
           line: 3,
           column: 1,
           resolvedPath: targetFile,
@@ -260,26 +269,28 @@ describe('LinkRefactorer', () => {
       const result = await refactorer.refactorLinksForFileMove(
         mockParsedFile,
         targetFile,
-        newTargetFile
+        newTargetFile,
       );
 
-      expect(result.updatedContent).toContain('[Link to section](./renamed-target.md#section)');
+      expect(result.updatedContent).toContain(
+        "[Link to section](./renamed-target.md#section)",
+      );
     });
 
-    it('should handle multiple links on same line', async () => {
+    it("should handle multiple links on same line", async () => {
       const sourceContent = `# Document
       
 Links: [First](./target.md) and [Second](./target.md#section)`;
 
-      const sourceFile = await createTestFile('source.md', sourceContent);
-      const targetFile = join(testDir, 'target.md');
-      const newTargetFile = join(testDir, 'renamed-target.md');
+      const sourceFile = await createTestFile("source.md", sourceContent);
+      const targetFile = join(testDir, "target.md");
+      const newTargetFile = join(testDir, "renamed-target.md");
 
       const mockParsedFile = createMockParsedFile(sourceFile, [
         {
-          text: 'First',
-          href: './target.md',
-          type: 'internal',
+          text: "First",
+          href: "./target.md",
+          type: "internal",
           line: 3,
           column: 8,
           resolvedPath: targetFile,
@@ -287,9 +298,9 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
           referenceId: undefined,
         },
         {
-          text: 'Second',
-          href: './target.md#section',
-          type: 'internal',
+          text: "Second",
+          href: "./target.md#section",
+          type: "internal",
           line: 3,
           column: 32,
           resolvedPath: targetFile,
@@ -301,26 +312,28 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
       const result = await refactorer.refactorLinksForFileMove(
         mockParsedFile,
         targetFile,
-        newTargetFile
+        newTargetFile,
       );
 
       expect(result.changes).toHaveLength(2);
-      expect(result.updatedContent).toContain('[First](./renamed-target.md)');
-      expect(result.updatedContent).toContain('[Second](./renamed-target.md#section)');
+      expect(result.updatedContent).toContain("[First](./renamed-target.md)");
+      expect(result.updatedContent).toContain(
+        "[Second](./renamed-target.md#section)",
+      );
     });
 
-    it('should handle error during link refactoring', async () => {
+    it("should handle error during link refactoring", async () => {
       // Create a file with invalid content that might cause parsing issues
-      const sourceFile = await createTestFile('source.md', '[Invalid link]()');
+      const sourceFile = await createTestFile("source.md", "[Invalid link]()");
 
       const mockParsedFile = createMockParsedFile(sourceFile, [
         {
-          text: 'Invalid link',
-          href: '',
-          type: 'internal',
+          text: "Invalid link",
+          href: "",
+          type: "internal",
           line: 1,
           column: 1,
-          resolvedPath: join(testDir, 'target.md'),
+          resolvedPath: join(testDir, "target.md"),
           absolute: false,
           referenceId: undefined,
         },
@@ -328,8 +341,8 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
 
       const result = await refactorer.refactorLinksForFileMove(
         mockParsedFile,
-        join(testDir, 'target.md'),
-        join(testDir, 'new-target.md')
+        join(testDir, "target.md"),
+        join(testDir, "new-target.md"),
       );
 
       // Since we're not actually creating the target file, this should succeed
@@ -338,45 +351,45 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
     });
   });
 
-  describe('refactorLinksForCurrentFileMove', () => {
-    it('should update relative links when source file moves', async () => {
+  describe("refactorLinksForCurrentFileMove", () => {
+    it("should update relative links when source file moves", async () => {
       const sourceContent = `# Document
       
 [Relative link](./target.md)
 [Absolute link](/absolute/path.md)
 [External link](https://example.com)`;
 
-      const sourceFile = await createTestFile('source.md', sourceContent);
-      const newSourceFile = join(testDir, 'subdir', 'source.md');
+      const sourceFile = await createTestFile("source.md", sourceContent);
+      const newSourceFile = join(testDir, "subdir", "source.md");
 
       const mockParsedFile = createMockParsedFile(sourceFile, [
         {
-          text: 'Relative link',
-          href: './target.md',
-          type: 'internal',
+          text: "Relative link",
+          href: "./target.md",
+          type: "internal",
           line: 3,
           column: 1,
-          resolvedPath: join(testDir, 'target.md'),
+          resolvedPath: join(testDir, "target.md"),
           absolute: false,
           referenceId: undefined,
         },
         {
-          text: 'Absolute link',
-          href: '/absolute/path.md',
-          type: 'internal',
+          text: "Absolute link",
+          href: "/absolute/path.md",
+          type: "internal",
           line: 4,
           column: 1,
-          resolvedPath: '/absolute/path.md',
+          resolvedPath: "/absolute/path.md",
           absolute: true,
           referenceId: undefined,
         },
         {
-          text: 'External link',
-          href: 'https://example.com',
-          type: 'external',
+          text: "External link",
+          href: "https://example.com",
+          type: "external",
           line: 5,
           column: 1,
-          resolvedPath: '',
+          resolvedPath: "",
           absolute: false,
           referenceId: undefined,
         },
@@ -384,54 +397,58 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
 
       const result = await refactorer.refactorLinksForCurrentFileMove(
         mockParsedFile,
-        newSourceFile
+        newSourceFile,
       );
 
       expect(result.changes).toHaveLength(1);
-      expect(result.changes[0].oldValue).toBe('./target.md');
+      expect(result.changes[0].oldValue).toBe("./target.md");
       const { newValue } = result.changes[0];
       if (newValue === undefined) {
-        throw new Error('Expected change to have a newValue');
+        throw new Error("Expected change to have a newValue");
       }
       // Normalize path separators for cross-platform compatibility
-      const normalizedNewValue = newValue.replace(/\\/g, '/');
-      expect(normalizedNewValue).toBe('../target.md');
+      const normalizedNewValue = newValue.replace(/\\/g, "/");
+      expect(normalizedNewValue).toBe("../target.md");
       // Normalize path separators for cross-platform compatibility
-      const normalizedContent = result.updatedContent.replace(/\\/g, '/');
-      expect(normalizedContent).toContain('[Relative link](../target.md)');
-      expect(result.updatedContent).toContain('[Absolute link](/absolute/path.md)'); // Unchanged
-      expect(result.updatedContent).toContain('[External link](https://example.com)'); // Unchanged
+      const normalizedContent = result.updatedContent.replace(/\\/g, "/");
+      expect(normalizedContent).toContain("[Relative link](../target.md)");
+      expect(result.updatedContent).toContain(
+        "[Absolute link](/absolute/path.md)",
+      ); // Unchanged
+      expect(result.updatedContent).toContain(
+        "[External link](https://example.com)",
+      ); // Unchanged
     });
 
-    it('should update Claude imports when enabled', async () => {
+    it("should update Claude imports when enabled", async () => {
       const sourceContent = `# Document
       
 @./target.md
 @../other.md`;
 
-      const sourceFile = await createTestFile('source.md', sourceContent);
-      const newSourceFile = join(testDir, 'subdir', 'source.md');
+      const sourceFile = await createTestFile("source.md", sourceContent);
+      const newSourceFile = join(testDir, "subdir", "source.md");
 
       const refactorer = new LinkRefactorer({ updateClaudeImports: true });
 
       const mockParsedFile = createMockParsedFile(sourceFile, [
         {
-          text: '@./target.md',
-          href: './target.md',
-          type: 'claude-import',
+          text: "@./target.md",
+          href: "./target.md",
+          type: "claude-import",
           line: 3,
           column: 1,
-          resolvedPath: join(testDir, 'target.md'),
+          resolvedPath: join(testDir, "target.md"),
           absolute: false,
           referenceId: undefined,
         },
         {
-          text: '@../other.md',
-          href: '../other.md',
-          type: 'claude-import',
+          text: "@../other.md",
+          href: "../other.md",
+          type: "claude-import",
           line: 4,
           column: 1,
-          resolvedPath: join(testDir, '..', 'other.md'),
+          resolvedPath: join(testDir, "..", "other.md"),
           absolute: false,
           referenceId: undefined,
         },
@@ -439,34 +456,34 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
 
       const result = await refactorer.refactorLinksForCurrentFileMove(
         mockParsedFile,
-        newSourceFile
+        newSourceFile,
       );
 
       expect(result.changes).toHaveLength(2);
       // Normalize path separators for cross-platform compatibility
-      const normalizedContent = result.updatedContent.replace(/\\/g, '/');
-      expect(normalizedContent).toContain('@../target.md');
-      expect(normalizedContent).toContain('@../../other.md');
+      const normalizedContent = result.updatedContent.replace(/\\/g, "/");
+      expect(normalizedContent).toContain("@../target.md");
+      expect(normalizedContent).toContain("@../../other.md");
     });
 
-    it('should skip Claude imports when disabled', async () => {
+    it("should skip Claude imports when disabled", async () => {
       const sourceContent = `# Document
       
 @./target.md`;
 
-      const sourceFile = await createTestFile('source.md', sourceContent);
-      const newSourceFile = join(testDir, 'subdir', 'source.md');
+      const sourceFile = await createTestFile("source.md", sourceContent);
+      const newSourceFile = join(testDir, "subdir", "source.md");
 
       const refactorer = new LinkRefactorer({ updateClaudeImports: false });
 
       const mockParsedFile = createMockParsedFile(sourceFile, [
         {
-          text: '@./target.md',
-          href: './target.md',
-          type: 'claude-import',
+          text: "@./target.md",
+          href: "./target.md",
+          type: "claude-import",
           line: 3,
           column: 1,
-          resolvedPath: join(testDir, 'target.md'),
+          resolvedPath: join(testDir, "target.md"),
           absolute: false,
           referenceId: undefined,
         },
@@ -474,16 +491,16 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
 
       const result = await refactorer.refactorLinksForCurrentFileMove(
         mockParsedFile,
-        newSourceFile
+        newSourceFile,
       );
 
       expect(result.changes).toHaveLength(0);
-      expect(result.updatedContent).toContain('@./target.md'); // Unchanged
+      expect(result.updatedContent).toContain("@./target.md"); // Unchanged
     });
   });
 
-  describe('refactorReferenceDefinitions', () => {
-    it('should update reference definitions when target file moves', async () => {
+  describe("refactorReferenceDefinitions", () => {
+    it("should update reference definitions when target file moves", async () => {
       const sourceContent = `# Document
 
 [Link text][ref1]
@@ -492,97 +509,104 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
 [ref1]: ./target.md "Target file"
 [ref2]: ./other.md "Other file"`;
 
-      const sourceFile = await createTestFile('source.md', sourceContent);
-      const targetFile = join(testDir, 'target.md');
-      const newTargetFile = join(testDir, 'renamed-target.md');
+      const sourceFile = await createTestFile("source.md", sourceContent);
+      const targetFile = join(testDir, "target.md");
+      const newTargetFile = join(testDir, "renamed-target.md");
 
       const mockParsedFile = createMockParsedFile(
         sourceFile,
         [],
         [
           {
-            id: 'ref1',
-            url: './target.md',
-            title: 'Target file',
+            id: "ref1",
+            url: "./target.md",
+            title: "Target file",
             line: 6,
           },
           {
-            id: 'ref2',
-            url: './other.md',
-            title: 'Other file',
+            id: "ref2",
+            url: "./other.md",
+            title: "Other file",
             line: 7,
           },
-        ]
+        ],
       );
 
       const result = await refactorer.refactorReferenceDefinitions(
         mockParsedFile,
         targetFile,
-        newTargetFile
+        newTargetFile,
       );
 
       expect(result.changes).toHaveLength(1);
-      expect(result.changes[0].oldValue).toBe('./target.md');
-      expect(result.changes[0].newValue).toBe('./renamed-target.md');
-      expect(result.updatedContent).toContain('[ref1]: ./renamed-target.md "Target file"');
-      expect(result.updatedContent).toContain('[ref2]: ./other.md "Other file"'); // Unchanged
+      expect(result.changes[0].oldValue).toBe("./target.md");
+      expect(result.changes[0].newValue).toBe("./renamed-target.md");
+      expect(result.updatedContent).toContain(
+        '[ref1]: ./renamed-target.md "Target file"',
+      );
+      expect(result.updatedContent).toContain(
+        '[ref2]: ./other.md "Other file"',
+      ); // Unchanged
     });
 
-    it('should handle references without titles', async () => {
+    it("should handle references without titles", async () => {
       const sourceContent = `# Document
 
 [Link text][ref1]
 
 [ref1]: ./target.md`;
 
-      const sourceFile = await createTestFile('source.md', sourceContent);
-      const targetFile = join(testDir, 'target.md');
-      const newTargetFile = join(testDir, 'renamed-target.md');
+      const sourceFile = await createTestFile("source.md", sourceContent);
+      const targetFile = join(testDir, "target.md");
+      const newTargetFile = join(testDir, "renamed-target.md");
 
       const mockParsedFile = createMockParsedFile(
         sourceFile,
         [],
         [
           {
-            id: 'ref1',
-            url: './target.md',
+            id: "ref1",
+            url: "./target.md",
             title: undefined,
             line: 5,
           },
-        ]
+        ],
       );
 
       const result = await refactorer.refactorReferenceDefinitions(
         mockParsedFile,
         targetFile,
-        newTargetFile
+        newTargetFile,
       );
 
       expect(result.changes).toHaveLength(1);
-      expect(result.updatedContent).toContain('[ref1]: ./renamed-target.md');
+      expect(result.updatedContent).toContain("[ref1]: ./renamed-target.md");
       expect(result.updatedContent).not.toContain('""');
     });
 
-    it('should handle error during reference refactoring', async () => {
-      const sourceFile = await createTestFile('source.md', '[ref1]: ./target.md');
+    it("should handle error during reference refactoring", async () => {
+      const sourceFile = await createTestFile(
+        "source.md",
+        "[ref1]: ./target.md",
+      );
 
       const mockParsedFile = createMockParsedFile(
         sourceFile,
         [],
         [
           {
-            id: 'ref1',
-            url: './target.md',
+            id: "ref1",
+            url: "./target.md",
             title: undefined,
             line: 1,
           },
-        ]
+        ],
       );
 
       const result = await refactorer.refactorReferenceDefinitions(
         mockParsedFile,
-        join(testDir, 'target.md'),
-        join(testDir, 'new-target.md')
+        join(testDir, "target.md"),
+        join(testDir, "new-target.md"),
       );
 
       // This should succeed since we created the file
@@ -591,21 +615,21 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
     });
   });
 
-  describe('private methods through public interface', () => {
-    it('should correctly escape regex special characters', async () => {
+  describe("private methods through public interface", () => {
+    it("should correctly escape regex special characters", async () => {
       const sourceContent = `# Document
       
 [Link](./file[special].md)`;
 
-      const sourceFile = await createTestFile('source.md', sourceContent);
-      const targetFile = join(testDir, 'file[special].md');
-      const newTargetFile = join(testDir, 'file[renamed].md');
+      const sourceFile = await createTestFile("source.md", sourceContent);
+      const targetFile = join(testDir, "file[special].md");
+      const newTargetFile = join(testDir, "file[renamed].md");
 
       const mockParsedFile = createMockParsedFile(sourceFile, [
         {
-          text: 'Link',
-          href: './file[special].md',
-          type: 'internal',
+          text: "Link",
+          href: "./file[special].md",
+          type: "internal",
           line: 3,
           column: 1,
           resolvedPath: targetFile,
@@ -617,27 +641,27 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
       const result = await refactorer.refactorLinksForFileMove(
         mockParsedFile,
         targetFile,
-        newTargetFile
+        newTargetFile,
       );
 
       expect(result.changes).toHaveLength(1);
-      expect(result.updatedContent).toContain('[Link](./file[renamed].md)');
+      expect(result.updatedContent).toContain("[Link](./file[renamed].md)");
     });
 
-    it('should handle complex file paths with spaces and special characters', async () => {
+    it("should handle complex file paths with spaces and special characters", async () => {
       const sourceContent = `# Document
       
 [Link](./My File (1).md)`;
 
-      const sourceFile = await createTestFile('source.md', sourceContent);
-      const targetFile = join(testDir, 'My File (1).md');
-      const newTargetFile = join(testDir, 'My File (Renamed).md');
+      const sourceFile = await createTestFile("source.md", sourceContent);
+      const targetFile = join(testDir, "My File (1).md");
+      const newTargetFile = join(testDir, "My File (Renamed).md");
 
       const mockParsedFile = createMockParsedFile(sourceFile, [
         {
-          text: 'Link',
-          href: './My File (1).md',
-          type: 'internal',
+          text: "Link",
+          href: "./My File (1).md",
+          type: "internal",
           line: 3,
           column: 1,
           resolvedPath: targetFile,
@@ -649,31 +673,31 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
       const result = await refactorer.refactorLinksForFileMove(
         mockParsedFile,
         targetFile,
-        newTargetFile
+        newTargetFile,
       );
 
       expect(result.changes).toHaveLength(1);
-      expect(result.updatedContent).toContain('[Link](./My File (Renamed).md)');
+      expect(result.updatedContent).toContain("[Link](./My File (Renamed).md)");
     });
   });
 
-  describe('options behavior', () => {
-    it('should respect preferRelativePaths option', async () => {
+  describe("options behavior", () => {
+    it("should respect preferRelativePaths option", async () => {
       const sourceContent = `# Document
       
 [Link](./target.md)`;
 
-      const sourceFile = await createTestFile('source.md', sourceContent);
-      const targetFile = join(testDir, 'target.md');
-      const newTargetFile = join(testDir, 'renamed-target.md');
+      const sourceFile = await createTestFile("source.md", sourceContent);
+      const targetFile = join(testDir, "target.md");
+      const newTargetFile = join(testDir, "renamed-target.md");
 
       const refactorer = new LinkRefactorer({ preferRelativePaths: false });
 
       const mockParsedFile = createMockParsedFile(sourceFile, [
         {
-          text: 'Link',
-          href: './target.md',
-          type: 'internal',
+          text: "Link",
+          href: "./target.md",
+          type: "internal",
           line: 3,
           column: 1,
           resolvedPath: targetFile,
@@ -685,22 +709,22 @@ Links: [First](./target.md) and [Second](./target.md#section)`;
       const result = await refactorer.refactorLinksForFileMove(
         mockParsedFile,
         targetFile,
-        newTargetFile
+        newTargetFile,
       );
 
       expect(result.changes).toHaveLength(1);
       // Should use absolute path when preferRelativePaths is false
       const { newValue } = result.changes[0];
       if (newValue === undefined) {
-        throw new Error('Expected change to have a newValue');
+        throw new Error("Expected change to have a newValue");
       }
       // Normalize path separators for cross-platform compatibility
-      const normalizedNewValue = newValue.replace(/\\/g, '/');
-      const normalizedExpected = newTargetFile.replace(/\\/g, '/');
+      const normalizedNewValue = newValue.replace(/\\/g, "/");
+      const normalizedExpected = newTargetFile.replace(/\\/g, "/");
       expect(normalizedNewValue).toBe(normalizedExpected);
     });
 
-    it('should preserve formatting when preserveFormatting is enabled', () => {
+    it("should preserve formatting when preserveFormatting is enabled", () => {
       // This is tested implicitly in other tests since preserveFormatting defaults to true
       // The regex-based replacement preserves titles, spacing, etc.
       expect(true).toBe(true); // Placeholder - formatting preservation is tested throughout

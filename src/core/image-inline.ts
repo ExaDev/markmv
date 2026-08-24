@@ -1,11 +1,11 @@
-import remarkParse from 'remark-parse';
-import { unified } from 'unified';
-import { visit } from 'unist-util-visit';
-import type { Node } from 'unist';
+import remarkParse from "remark-parse";
+import { unified } from "unified";
+import { visit } from "unist-util-visit";
+import type { Node } from "unist";
 
 /** MDAST image node shape, redefined locally to avoid exporting parser internals. */
 interface ImageNode extends Node {
-  type: 'image';
+  type: "image";
   url: string;
   title?: string | null | undefined;
   alt?: string | null | undefined;
@@ -59,7 +59,7 @@ export function findLocalImages(content: string): ImageLinkOccurrence[] {
  * @returns Occurrences of data URI image links in source order
  */
 export function findInlineImages(content: string): ImageLinkOccurrence[] {
-  return findImageOccurrences(content, (href) => href.startsWith('data:'));
+  return findImageOccurrences(content, (href) => href.startsWith("data:"));
 }
 
 /** The payload of a parsed inline data URI: its exact media type and base64 payload. */
@@ -85,19 +85,21 @@ const ERROR_PREVIEW_LENGTH = 60;
  * @throws Error when the URI is malformed, not base64 encoded, or not an image type
  */
 export function parseImageDataUri(href: string): ParsedImageDataUri {
-  const separatorIndex = href.indexOf(',');
-  if (!href.startsWith('data:') || separatorIndex === -1) {
-    throw new Error(`Malformed data URI (no payload): ${href.slice(0, ERROR_PREVIEW_LENGTH)}`);
+  const separatorIndex = href.indexOf(",");
+  if (!href.startsWith("data:") || separatorIndex === -1) {
+    throw new Error(
+      `Malformed data URI (no payload): ${href.slice(0, ERROR_PREVIEW_LENGTH)}`,
+    );
   }
 
-  const metadata = href.slice('data:'.length, separatorIndex);
+  const metadata = href.slice("data:".length, separatorIndex);
   const data = href.slice(separatorIndex + 1);
-  const [mimeType, ...parameters] = metadata.split(';');
+  const [mimeType, ...parameters] = metadata.split(";");
 
-  if (!mimeType.startsWith('image/')) {
+  if (!mimeType.startsWith("image/")) {
     throw new Error(`Not an image data URI: "${mimeType}"`);
   }
-  if (!parameters.includes('base64')) {
+  if (!parameters.includes("base64")) {
     throw new Error(`Only base64 data URIs are supported, got: "${metadata}"`);
   }
 
@@ -106,30 +108,30 @@ export function parseImageDataUri(href: string): ParsedImageDataUri {
 
 /** File extensions embeddable as inline data URIs, keyed by the canonical lowercase extension. */
 const MIME_BY_EXTENSION: Partial<Record<string, string>> = {
-  png: 'image/png',
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  gif: 'image/gif',
-  webp: 'image/webp',
-  svg: 'image/svg+xml',
-  bmp: 'image/bmp',
-  ico: 'image/x-icon',
-  avif: 'image/avif',
-  tif: 'image/tiff',
-  tiff: 'image/tiff',
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  webp: "image/webp",
+  svg: "image/svg+xml",
+  bmp: "image/bmp",
+  ico: "image/x-icon",
+  avif: "image/avif",
+  tif: "image/tiff",
+  tiff: "image/tiff",
 };
 
 /** Preferred file extension for each supported image mime type; jpeg deliberately maps to jpg. */
 const EXTENSION_BY_MIME: Partial<Record<string, string>> = {
-  'image/png': 'png',
-  'image/jpeg': 'jpg',
-  'image/gif': 'gif',
-  'image/webp': 'webp',
-  'image/svg+xml': 'svg',
-  'image/bmp': 'bmp',
-  'image/x-icon': 'ico',
-  'image/avif': 'avif',
-  'image/tiff': 'tiff',
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/gif": "gif",
+  "image/webp": "webp",
+  "image/svg+xml": "svg",
+  "image/bmp": "bmp",
+  "image/x-icon": "ico",
+  "image/avif": "avif",
+  "image/tiff": "tiff",
 };
 
 /**
@@ -144,11 +146,11 @@ const EXTENSION_BY_MIME: Partial<Record<string, string>> = {
  * @throws Error when the extension has no known image mime type
  */
 export function imageMimeTypeForExtension(extension: string): string {
-  const normalised = extension.replace(/^\./, '').toLowerCase();
+  const normalised = extension.replace(/^\./, "").toLowerCase();
   const mimeType = MIME_BY_EXTENSION[normalised];
   if (mimeType === undefined) {
     throw new Error(
-      `Unsupported image extension ".${normalised}"; supported extensions: ${Object.keys(MIME_BY_EXTENSION).join(', ')}`
+      `Unsupported image extension ".${normalised}"; supported extensions: ${Object.keys(MIME_BY_EXTENSION).join(", ")}`,
     );
   }
   return mimeType;
@@ -169,7 +171,7 @@ export function imageExtensionForMimeType(mimeType: string): string {
   const extension = EXTENSION_BY_MIME[mimeType.toLowerCase()];
   if (extension === undefined) {
     throw new Error(
-      `Unsupported image mime type "${mimeType}"; supported types: ${Object.keys(EXTENSION_BY_MIME).join(', ')}`
+      `Unsupported image mime type "${mimeType}"; supported types: ${Object.keys(EXTENSION_BY_MIME).join(", ")}`,
     );
   }
   return extension;
@@ -190,16 +192,22 @@ export function imageExtensionForMimeType(mimeType: string): string {
  *
  * @returns The rendered `![alt](href "title")` expression
  */
-export function renderImageMarkdown(alt: string | undefined, href: string, title?: string): string {
-  const escapedAlt = (alt ?? '').replaceAll('[', '\\[').replaceAll(']', '\\]');
+export function renderImageMarkdown(
+  alt: string | undefined,
+  href: string,
+  title?: string,
+): string {
+  const escapedAlt = (alt ?? "").replaceAll("[", "\\[").replaceAll("]", "\\]");
   const wrappedHref = /\s/.test(href) ? `<${href}>` : href;
-  const titlePart = title === undefined ? '' : ` "${title.replaceAll('"', '\\"')}"`;
+  const titlePart =
+    title === undefined ? "" : ` "${title.replaceAll('"', '\\"')}"`;
   return `![${escapedAlt}](${wrappedHref}${titlePart})`;
 }
 
 /** Whether an image href names a file on the local filesystem rather than another resource kind. */
 function isLocalImagePath(href: string): boolean {
-  if (href === '' || href.startsWith('#') || href.startsWith('data:')) return false;
+  if (href === "" || href.startsWith("#") || href.startsWith("data:"))
+    return false;
   // A leading URI scheme (https:, mailto:, file:, ...) marks a non-filesystem reference. Schemes are two or more characters so a windows drive letter (C:/pics/x.png) stays a local path.
   return !/^[a-zA-Z][a-zA-Z0-9+.-]{1,}:/.test(href);
 }
@@ -207,12 +215,12 @@ function isLocalImagePath(href: string): boolean {
 /** Walk image nodes and keep those whose href satisfies the predicate. */
 function findImageOccurrences(
   content: string,
-  keep: (href: string) => boolean
+  keep: (href: string) => boolean,
 ): ImageLinkOccurrence[] {
   const tree = unified().use(remarkParse).parse(content);
   const occurrences: ImageLinkOccurrence[] = [];
 
-  visit(tree, 'image', (node: ImageNode) => {
+  visit(tree, "image", (node: ImageNode) => {
     const startOffset = node.position?.start.offset;
     const endOffset = node.position?.end.offset;
     if (startOffset === undefined || endOffset === undefined) return;
@@ -252,25 +260,32 @@ export interface SpanReplacement {
  *
  * @throws Error when spans overlap or lie outside the content bounds
  */
-export function replaceSpans(content: string, replacements: SpanReplacement[]): string {
+export function replaceSpans(
+  content: string,
+  replacements: SpanReplacement[],
+): string {
   const ordered = [...replacements].sort((a, b) => a.start - b.start);
 
   for (let index = 0; index < ordered.length; index++) {
     const current = ordered[index];
-    if (current.start < 0 || current.end > content.length || current.start > current.end) {
+    if (
+      current.start < 0 ||
+      current.end > content.length ||
+      current.start > current.end
+    ) {
       throw new Error(
-        `Replacement span [${String(current.start)}, ${String(current.end)}) is out of bounds for content of length ${String(content.length)}`
+        `Replacement span [${String(current.start)}, ${String(current.end)}) is out of bounds for content of length ${String(content.length)}`,
       );
     }
     const next = ordered.at(index + 1);
     if (next !== undefined && next.start < current.end) {
       throw new Error(
-        `Replacement spans [${String(current.start)}, ${String(current.end)}) and [${String(next.start)}, ${String(next.end)}) overlap`
+        `Replacement spans [${String(current.start)}, ${String(current.end)}) and [${String(next.start)}, ${String(next.end)}) overlap`,
       );
     }
   }
 
-  let result = '';
+  let result = "";
   let cursor = 0;
   for (const { start, end, replacement } of ordered) {
     result += content.slice(cursor, start) + replacement;

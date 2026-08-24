@@ -8,7 +8,7 @@ on:
 
 # Allow only one concurrent deployment per ref
 concurrency:
-  group: 'cross-platform-${{ github.ref }}'
+  group: "cross-platform-${{ github.ref }}"
   cancel-in-progress: true
 
 jobs:
@@ -26,17 +26,17 @@ jobs:
             node-version: 22.x
             filesystem-case: sensitive
             test-symlinks: true
-            test-type: 'Linux case-sensitive'
+            test-type: "Linux case-sensitive"
           - os: windows-latest
             node-version: 22.x
             filesystem-case: insensitive
             test-symlinks: false
-            test-type: 'Windows case-insensitive'
+            test-type: "Windows case-insensitive"
           - os: macos-latest
             node-version: 22.x
             filesystem-case: insensitive
             test-symlinks: true
-            test-type: 'macOS case-insensitive'
+            test-type: "macOS case-insensitive"
       fail-fast: false
 
     steps:
@@ -51,7 +51,7 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -169,7 +169,7 @@ jobs:
           # Run tests with cross-platform environment
           pnpm run test:run
         env:
-          MARKMV_TEST_CROSS_PLATFORM: 'true'
+          MARKMV_TEST_CROSS_PLATFORM: "true"
 
       - name: Test CLI with cross-platform paths
         run: |

@@ -1,11 +1,11 @@
-import { describe, expect, it } from 'vitest';
-import { TocGenerator } from './toc-generator.js';
+import { describe, expect, it } from "vitest";
+import { TocGenerator } from "./toc-generator.js";
 
-describe('TocGenerator', () => {
+describe("TocGenerator", () => {
   const tocGenerator = new TocGenerator();
 
-  describe('generateToc', () => {
-    it('should generate table of contents from markdown headings', () => {
+  describe("generateToc", () => {
+    it("should generate table of contents from markdown headings", () => {
       const content = `# Main Title
 Some content here.
 
@@ -30,26 +30,28 @@ Very deep content.
       expect(result.headings).toHaveLength(6);
       expect(result.headings[0]).toEqual({
         level: 1,
-        text: 'Main Title',
-        slug: 'main-title',
+        text: "Main Title",
+        slug: "main-title",
         line: 1,
       });
       expect(result.headings[1]).toEqual({
         level: 2,
-        text: 'Section 1',
-        slug: 'section-1',
+        text: "Section 1",
+        slug: "section-1",
         line: 4,
       });
 
-      expect(result.toc).toContain('- [Main Title](#main-title)');
-      expect(result.toc).toContain('  - [Section 1](#section-1)');
-      expect(result.toc).toContain('    - [Subsection 1.1](#subsection-1-1)');
-      expect(result.toc).toContain('  - [Section 2](#section-2)');
-      expect(result.toc).toContain('    - [Subsection 2.1](#subsection-2-1)');
-      expect(result.toc).toContain('      - [Deep Subsection](#deep-subsection)');
+      expect(result.toc).toContain("- [Main Title](#main-title)");
+      expect(result.toc).toContain("  - [Section 1](#section-1)");
+      expect(result.toc).toContain("    - [Subsection 1.1](#subsection-1-1)");
+      expect(result.toc).toContain("  - [Section 2](#section-2)");
+      expect(result.toc).toContain("    - [Subsection 2.1](#subsection-2-1)");
+      expect(result.toc).toContain(
+        "      - [Deep Subsection](#deep-subsection)",
+      );
     });
 
-    it('should respect minDepth and maxDepth options', () => {
+    it("should respect minDepth and maxDepth options", () => {
       const content = `# Main Title
 ## Section 1
 ### Subsection 1.1
@@ -67,12 +69,12 @@ Very deep content.
       expect(result.headings[0].level).toBe(2);
       expect(result.headings[1].level).toBe(3);
       expect(result.headings[2].level).toBe(4);
-      expect(result.toc).not.toContain('Main Title');
-      expect(result.toc).not.toContain('Very Deep');
-      expect(result.toc).not.toContain('Extremely Deep');
+      expect(result.toc).not.toContain("Main Title");
+      expect(result.toc).not.toContain("Very Deep");
+      expect(result.toc).not.toContain("Extremely Deep");
     });
 
-    it('should include line numbers when requested', () => {
+    it("should include line numbers when requested", () => {
       const content = `# Title
 ## Section 1
 ### Subsection
@@ -83,21 +85,21 @@ Very deep content.
         includeLineNumbers: true,
       });
 
-      expect(result.toc).toContain('- [Title](#title) (line 1)');
-      expect(result.toc).toContain('  - [Section 1](#section-1) (line 2)');
-      expect(result.toc).toContain('    - [Subsection](#subsection) (line 3)');
-      expect(result.toc).toContain('  - [Section 2](#section-2) (line 4)');
+      expect(result.toc).toContain("- [Title](#title) (line 1)");
+      expect(result.toc).toContain("  - [Section 1](#section-1) (line 2)");
+      expect(result.toc).toContain("    - [Subsection](#subsection) (line 3)");
+      expect(result.toc).toContain("  - [Section 2](#section-2) (line 4)");
     });
 
-    it('should handle empty content gracefully', () => {
-      const content = '';
+    it("should handle empty content gracefully", () => {
+      const content = "";
       const result = tocGenerator.generateToc(content);
 
       expect(result.headings).toHaveLength(0);
-      expect(result.toc).toBe('');
+      expect(result.toc).toBe("");
     });
 
-    it('should handle content with no headings', () => {
+    it("should handle content with no headings", () => {
       const content = `This is just regular content.
 
 Some more content here.
@@ -108,10 +110,10 @@ And even more content.
       const result = tocGenerator.generateToc(content);
 
       expect(result.headings).toHaveLength(0);
-      expect(result.toc).toBe('');
+      expect(result.toc).toBe("");
     });
 
-    it('should handle headings with special characters', () => {
+    it("should handle headings with special characters", () => {
       const content = `# Title with "Quotes" and Special Characters!
 ## Section with $pecial Ch@rs & Symbols
 ### Another Section: With Colons
@@ -120,29 +122,34 @@ And even more content.
       const result = tocGenerator.generateToc(content);
 
       expect(result.headings).toHaveLength(3);
-      expect(result.headings[0].slug).toBe('title-with-quotes-and-special-characters');
-      expect(result.headings[1].slug).toBe('section-with-pecial-ch-rs-symbols');
-      expect(result.headings[2].slug).toBe('another-section-with-colons');
+      expect(result.headings[0].slug).toBe(
+        "title-with-quotes-and-special-characters",
+      );
+      expect(result.headings[1].slug).toBe("section-with-pecial-ch-rs-symbols");
+      expect(result.headings[2].slug).toBe("another-section-with-colons");
     });
 
-    it('should use custom slugify function when provided', () => {
+    it("should use custom slugify function when provided", () => {
       const content = `# Test Title
 ## Another Section
 `;
 
-      const customSlugify = (text: string) => `custom-${text.toLowerCase().replace(/\s+/g, '-')}`;
+      const customSlugify = (text: string) =>
+        `custom-${text.toLowerCase().replace(/\s+/g, "-")}`;
 
       const result = tocGenerator.generateToc(content, {
         slugify: customSlugify,
       });
 
-      expect(result.headings[0].slug).toBe('custom-test-title');
-      expect(result.headings[1].slug).toBe('custom-another-section');
-      expect(result.toc).toContain('[Test Title](#custom-test-title)');
-      expect(result.toc).toContain('[Another Section](#custom-another-section)');
+      expect(result.headings[0].slug).toBe("custom-test-title");
+      expect(result.headings[1].slug).toBe("custom-another-section");
+      expect(result.toc).toContain("[Test Title](#custom-test-title)");
+      expect(result.toc).toContain(
+        "[Another Section](#custom-another-section)",
+      );
     });
 
-    it('should handle headings with inline code and links', () => {
+    it("should handle headings with inline code and links", () => {
       const content = `# Title with \`code\` and [link](url)
 ## Section with **bold** and *italic*
 `;
@@ -150,11 +157,11 @@ And even more content.
       const result = tocGenerator.generateToc(content);
 
       expect(result.headings).toHaveLength(2);
-      expect(result.headings[0].text).toBe('Title with  and link');
-      expect(result.headings[1].text).toBe('Section with bold and italic');
+      expect(result.headings[0].text).toBe("Title with  and link");
+      expect(result.headings[1].text).toBe("Section with bold and italic");
     });
 
-    it('should maintain proper indentation for nested headings', () => {
+    it("should maintain proper indentation for nested headings", () => {
       const content = `# Level 1
 ## Level 2
 ### Level 3
@@ -165,18 +172,18 @@ And even more content.
 
       const result = tocGenerator.generateToc(content);
 
-      const lines = result.toc.split('\n');
-      expect(lines[0]).toBe('- [Level 1](#level-1)');
-      expect(lines[1]).toBe('  - [Level 2](#level-2)');
-      expect(lines[2]).toBe('    - [Level 3](#level-3)');
-      expect(lines[3]).toBe('      - [Level 4](#level-4)');
-      expect(lines[4]).toBe('        - [Level 5](#level-5)');
-      expect(lines[5]).toBe('          - [Level 6](#level-6)');
+      const lines = result.toc.split("\n");
+      expect(lines[0]).toBe("- [Level 1](#level-1)");
+      expect(lines[1]).toBe("  - [Level 2](#level-2)");
+      expect(lines[2]).toBe("    - [Level 3](#level-3)");
+      expect(lines[3]).toBe("      - [Level 4](#level-4)");
+      expect(lines[4]).toBe("        - [Level 5](#level-5)");
+      expect(lines[5]).toBe("          - [Level 6](#level-6)");
     });
   });
 
-  describe('extractHeadings', () => {
-    it('should extract headings without generating TOC', () => {
+  describe("extractHeadings", () => {
+    it("should extract headings without generating TOC", () => {
       const content = `# Title
 ## Section 1
 ### Subsection
@@ -188,19 +195,19 @@ And even more content.
       expect(headings).toHaveLength(4);
       expect(headings[0]).toEqual({
         level: 1,
-        text: 'Title',
-        slug: 'title',
+        text: "Title",
+        slug: "title",
         line: 1,
       });
       expect(headings[1]).toEqual({
         level: 2,
-        text: 'Section 1',
-        slug: 'section-1',
+        text: "Section 1",
+        slug: "section-1",
         line: 2,
       });
     });
 
-    it('should respect depth options when extracting headings', () => {
+    it("should respect depth options when extracting headings", () => {
       const content = `# Title
 ## Section 1
 ### Subsection
@@ -218,22 +225,34 @@ And even more content.
     });
   });
 
-  describe('default slugify function', () => {
-    it('should handle various text patterns correctly', () => {
+  describe("default slugify function", () => {
+    it("should handle various text patterns correctly", () => {
       const testCases = [
-        { input: 'Simple Title', expected: 'simple-title' },
-        { input: 'Title with UPPERCASE', expected: 'title-with-uppercase' },
-        { input: 'Title with    multiple    spaces', expected: 'title-with-multiple-spaces' },
+        { input: "Simple Title", expected: "simple-title" },
+        { input: "Title with UPPERCASE", expected: "title-with-uppercase" },
+        {
+          input: "Title with    multiple    spaces",
+          expected: "title-with-multiple-spaces",
+        },
         {
           input: 'Title with "quotes" and punctuation!',
-          expected: 'title-with-quotes-and-punctuation',
+          expected: "title-with-quotes-and-punctuation",
         },
-        { input: 'Title with números and émojis', expected: 'title-with-n-meros-and-mojis' },
-        { input: '---Leading and trailing hyphens---', expected: 'leading-and-trailing-hyphens' },
-        { input: 'Title--with--double--hyphens', expected: 'title-with-double-hyphens' },
         {
-          input: 'Title with $pecial ch@rs & symbols',
-          expected: 'title-with-pecial-ch-rs-symbols',
+          input: "Title with números and émojis",
+          expected: "title-with-n-meros-and-mojis",
+        },
+        {
+          input: "---Leading and trailing hyphens---",
+          expected: "leading-and-trailing-hyphens",
+        },
+        {
+          input: "Title--with--double--hyphens",
+          expected: "title-with-double-hyphens",
+        },
+        {
+          input: "Title with $pecial ch@rs & symbols",
+          expected: "title-with-pecial-ch-rs-symbols",
         },
       ];
 

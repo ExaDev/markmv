@@ -4,21 +4,21 @@
  * @file Tests the full validation pipeline with freshness analysis
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { validateLinks } from './validate.js';
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { validateLinks } from "./validate.js";
 
 // Mock fetch globally
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-describe('Validate Command with Content Freshness Detection', () => {
+describe("Validate Command with Content Freshness Detection", () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'validate-freshness-test-'));
+    tempDir = await mkdtemp(join(tmpdir(), "validate-freshness-test-"));
     vi.clearAllMocks();
   });
 
@@ -26,9 +26,9 @@ describe('Validate Command with Content Freshness Detection', () => {
     await rm(tempDir, { recursive: true, force: true });
   });
 
-  describe('Fresh Content Validation', () => {
-    it('should validate fresh external links without flagging them', async () => {
-      const testFile = join(tempDir, 'fresh-links.md');
+  describe("Fresh Content Validation", () => {
+    it("should validate fresh external links without flagging them", async () => {
+      const testFile = join(tempDir, "fresh-links.md");
       await writeFile(
         testFile,
         `
@@ -36,7 +36,7 @@ describe('Validate Command with Content Freshness Detection', () => {
 
 Check out this [fresh documentation](https://example.com/fresh-docs).
 Also see this [recent API guide](https://api.example.com/guide).
-      `
+      `,
       );
 
       const recentDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
@@ -45,22 +45,28 @@ Also see this [recent API guide](https://api.example.com/guide).
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
-          headers: new Map([['last-modified', recentDate.toUTCString()]]),
-          text: () => Promise.resolve('<html><body>Fresh documentation content</body></html>'),
-          url: 'https://example.com/fresh-docs',
+          headers: new Map([["last-modified", recentDate.toUTCString()]]),
+          text: () =>
+            Promise.resolve(
+              "<html><body>Fresh documentation content</body></html>",
+            ),
+          url: "https://example.com/fresh-docs",
         })
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
-          headers: new Map([['last-modified', recentDate.toUTCString()]]),
-          text: () => Promise.resolve('<html><body>Recent API guide content</body></html>'),
-          url: 'https://api.example.com/guide',
+          headers: new Map([["last-modified", recentDate.toUTCString()]]),
+          text: () =>
+            Promise.resolve(
+              "<html><body>Recent API guide content</body></html>",
+            ),
+          url: "https://api.example.com/guide",
         });
 
       const result = await validateLinks([testFile], {
         checkExternal: true,
         checkContentFreshness: true,
-        cacheDir: join(tempDir, 'freshness-cache'),
+        cacheDir: join(tempDir, "freshness-cache"),
         freshnessThreshold: 365, // 1 year threshold
       });
 
@@ -71,8 +77,8 @@ Also see this [recent API guide](https://api.example.com/guide).
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
-    it('should flag stale external links with detailed freshness info', async () => {
-      const testFile = join(tempDir, 'stale-links.md');
+    it("should flag stale external links with detailed freshness info", async () => {
+      const testFile = join(tempDir, "stale-links.md");
       await writeFile(
         testFile,
         `
@@ -80,7 +86,7 @@ Also see this [recent API guide](https://api.example.com/guide).
 
 This [old tutorial](https://example.com/old-tutorial) is outdated.
 The [deprecated API](https://api.example.com/deprecated) should be avoided.
-      `
+      `,
       );
 
       const oldDate = new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000); // 3 years ago
@@ -89,9 +95,12 @@ The [deprecated API](https://api.example.com/deprecated) should be avoided.
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
-          headers: new Map([['last-modified', oldDate.toUTCString()]]),
-          text: () => Promise.resolve('<html><body>Old tutorial content from 2021</body></html>'),
-          url: 'https://example.com/old-tutorial',
+          headers: new Map([["last-modified", oldDate.toUTCString()]]),
+          text: () =>
+            Promise.resolve(
+              "<html><body>Old tutorial content from 2021</body></html>",
+            ),
+          url: "https://example.com/old-tutorial",
         })
         .mockResolvedValueOnce({
           ok: true,
@@ -104,13 +113,13 @@ The [deprecated API](https://api.example.com/deprecated) should be avoided.
               <p>This API is deprecated and no longer supported.</p>
             </body></html>
           `),
-          url: 'https://api.example.com/deprecated',
+          url: "https://api.example.com/deprecated",
         });
 
       const result = await validateLinks([testFile], {
         checkExternal: true,
         checkContentFreshness: true,
-        cacheDir: join(tempDir, 'freshness-cache'),
+        cacheDir: join(tempDir, "freshness-cache"),
         freshnessThreshold: 730, // 2 years threshold
       });
 
@@ -123,21 +132,27 @@ The [deprecated API](https://api.example.com/deprecated) should be avoided.
       expect(brokenLinks).toHaveLength(2);
 
       // First link should be stale due to age
-      const firstLink = brokenLinks.find((link) => link.url.includes('old-tutorial'));
-      expect(firstLink?.reason).toBe('content-stale');
+      const firstLink = brokenLinks.find((link) =>
+        link.url.includes("old-tutorial"),
+      );
+      expect(firstLink?.reason).toBe("content-stale");
       expect(firstLink?.freshnessInfo?.isFresh).toBe(false);
       expect(firstLink?.freshnessInfo?.lastModified).toBeDefined();
-      expect(firstLink?.freshnessInfo?.warning).toContain('old');
+      expect(firstLink?.freshnessInfo?.warning).toContain("old");
 
       // Second link should be stale due to deprecation pattern
-      const secondLink = brokenLinks.find((link) => link.url.includes('deprecated'));
-      expect(secondLink?.reason).toBe('content-stale');
-      expect(secondLink?.freshnessInfo?.stalePatterns).toContain('deprecated');
-      expect(secondLink?.freshnessInfo?.stalePatterns).toContain('no longer supported');
+      const secondLink = brokenLinks.find((link) =>
+        link.url.includes("deprecated"),
+      );
+      expect(secondLink?.reason).toBe("content-stale");
+      expect(secondLink?.freshnessInfo?.stalePatterns).toContain("deprecated");
+      expect(secondLink?.freshnessInfo?.stalePatterns).toContain(
+        "no longer supported",
+      );
     });
 
-    it('should apply domain-specific freshness thresholds', async () => {
-      const testFile = join(tempDir, 'domain-thresholds.md');
+    it("should apply domain-specific freshness thresholds", async () => {
+      const testFile = join(tempDir, "domain-thresholds.md");
       await writeFile(
         testFile,
         `
@@ -146,38 +161,40 @@ The [deprecated API](https://api.example.com/deprecated) should be avoided.
 Firebase guide: [Cloud Functions](https://firebase.google.com/docs/functions)
 GitHub Actions: [Workflow syntax](https://docs.github.com/actions/reference)
 General docs: [Example site](https://example.com/docs)
-      `
+      `,
       );
 
-      const eightMonthsAgo = new Date(Date.now() - 8 * 30 * 24 * 60 * 60 * 1000);
+      const eightMonthsAgo = new Date(
+        Date.now() - 8 * 30 * 24 * 60 * 60 * 1000,
+      );
 
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
-          headers: new Map([['last-modified', eightMonthsAgo.toUTCString()]]),
-          text: () => Promise.resolve('Firebase Cloud Functions documentation'),
-          url: 'https://firebase.google.com/docs/functions',
+          headers: new Map([["last-modified", eightMonthsAgo.toUTCString()]]),
+          text: () => Promise.resolve("Firebase Cloud Functions documentation"),
+          url: "https://firebase.google.com/docs/functions",
         })
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
-          headers: new Map([['last-modified', eightMonthsAgo.toUTCString()]]),
-          text: () => Promise.resolve('GitHub Actions workflow syntax'),
-          url: 'https://docs.github.com/actions/reference',
+          headers: new Map([["last-modified", eightMonthsAgo.toUTCString()]]),
+          text: () => Promise.resolve("GitHub Actions workflow syntax"),
+          url: "https://docs.github.com/actions/reference",
         })
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
-          headers: new Map([['last-modified', eightMonthsAgo.toUTCString()]]),
-          text: () => Promise.resolve('Example site documentation'),
-          url: 'https://example.com/docs',
+          headers: new Map([["last-modified", eightMonthsAgo.toUTCString()]]),
+          text: () => Promise.resolve("Example site documentation"),
+          url: "https://example.com/docs",
         });
 
       const result = await validateLinks([testFile], {
         checkExternal: true,
         checkContentFreshness: true,
-        cacheDir: join(tempDir, 'freshness-cache'),
+        cacheDir: join(tempDir, "freshness-cache"),
         freshnessThreshold: 730, // 2 years default
       });
 
@@ -189,12 +206,12 @@ General docs: [Example site](https://example.com/docs)
     });
   });
 
-  describe('Mixed Content Types', () => {
-    it('should handle files with mixed internal and external links', async () => {
-      const internalFile = join(tempDir, 'internal.md');
-      await writeFile(internalFile, '# Internal Document\nContent here.');
+  describe("Mixed Content Types", () => {
+    it("should handle files with mixed internal and external links", async () => {
+      const internalFile = join(tempDir, "internal.md");
+      await writeFile(internalFile, "# Internal Document\nContent here.");
 
-      const testFile = join(tempDir, 'mixed-links.md');
+      const testFile = join(tempDir, "mixed-links.md");
       await writeFile(
         testFile,
         `
@@ -207,7 +224,7 @@ Anchor link: [Section](#section)
 
 ## Section
 Content here.
-      `
+      `,
       );
 
       const freshDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000); // 10 days ago
@@ -217,22 +234,22 @@ Content here.
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
-          headers: new Map([['last-modified', freshDate.toUTCString()]]),
-          text: () => Promise.resolve('Fresh website content'),
-          url: 'https://example.com/fresh',
+          headers: new Map([["last-modified", freshDate.toUTCString()]]),
+          text: () => Promise.resolve("Fresh website content"),
+          url: "https://example.com/fresh",
         })
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
-          headers: new Map([['last-modified', staleDate.toUTCString()]]),
-          text: () => Promise.resolve('Stale website content'),
-          url: 'https://example.com/stale',
+          headers: new Map([["last-modified", staleDate.toUTCString()]]),
+          text: () => Promise.resolve("Stale website content"),
+          url: "https://example.com/stale",
         });
 
       const result = await validateLinks([testFile], {
         checkExternal: true,
         checkContentFreshness: true,
-        cacheDir: join(tempDir, 'freshness-cache'),
+        cacheDir: join(tempDir, "freshness-cache"),
         strictInternal: true,
       });
 
@@ -245,25 +262,25 @@ Content here.
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
-    it('should count freshness statistics correctly across multiple files', async () => {
-      const file1 = join(tempDir, 'file1.md');
+    it("should count freshness statistics correctly across multiple files", async () => {
+      const file1 = join(tempDir, "file1.md");
       await writeFile(
         file1,
         `
 # File 1
 [Fresh link 1](https://example.com/fresh1)
 [Stale link 1](https://example.com/stale1)
-      `
+      `,
       );
 
-      const file2 = join(tempDir, 'file2.md');
+      const file2 = join(tempDir, "file2.md");
       await writeFile(
         file2,
         `
 # File 2
 [Fresh link 2](https://example.com/fresh2)
 [Stale link 2](https://example.com/stale2)
-      `
+      `,
       );
 
       const freshDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
@@ -273,36 +290,36 @@ Content here.
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
-          headers: new Map([['last-modified', freshDate.toUTCString()]]),
-          text: () => Promise.resolve('Fresh content 1'),
-          url: 'https://example.com/fresh1',
+          headers: new Map([["last-modified", freshDate.toUTCString()]]),
+          text: () => Promise.resolve("Fresh content 1"),
+          url: "https://example.com/fresh1",
         })
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
-          headers: new Map([['last-modified', staleDate.toUTCString()]]),
-          text: () => Promise.resolve('Stale content 1'),
-          url: 'https://example.com/stale1',
+          headers: new Map([["last-modified", staleDate.toUTCString()]]),
+          text: () => Promise.resolve("Stale content 1"),
+          url: "https://example.com/stale1",
         })
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
-          headers: new Map([['last-modified', freshDate.toUTCString()]]),
-          text: () => Promise.resolve('Fresh content 2'),
-          url: 'https://example.com/fresh2',
+          headers: new Map([["last-modified", freshDate.toUTCString()]]),
+          text: () => Promise.resolve("Fresh content 2"),
+          url: "https://example.com/fresh2",
         })
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
-          headers: new Map([['last-modified', staleDate.toUTCString()]]),
-          text: () => Promise.resolve('Stale content 2'),
-          url: 'https://example.com/stale2',
+          headers: new Map([["last-modified", staleDate.toUTCString()]]),
+          text: () => Promise.resolve("Stale content 2"),
+          url: "https://example.com/stale2",
         });
 
       const result = await validateLinks([file1, file2], {
         checkExternal: true,
         checkContentFreshness: true,
-        cacheDir: join(tempDir, 'freshness-cache'),
+        cacheDir: join(tempDir, "freshness-cache"),
       });
 
       expect(result.filesProcessed).toBe(2);
@@ -313,9 +330,9 @@ Content here.
     });
   });
 
-  describe('Content Pattern Detection', () => {
-    it('should detect various staleness patterns', async () => {
-      const testFile = join(tempDir, 'pattern-detection.md');
+  describe("Content Pattern Detection", () => {
+    it("should detect various staleness patterns", async () => {
+      const testFile = join(tempDir, "pattern-detection.md");
       await writeFile(
         testFile,
         `
@@ -325,7 +342,7 @@ Content here.
 [Moved page](https://example.com/moved)
 [Legacy docs](https://docs.example.com/legacy)
 [EOL product](https://products.example.com/eol)
-      `
+      `,
       );
 
       mockFetch
@@ -333,35 +350,38 @@ Content here.
           ok: true,
           status: 200,
           headers: new Map(),
-          text: () => Promise.resolve('This API is deprecated and will be removed.'),
-          url: 'https://api.example.com/deprecated',
+          text: () =>
+            Promise.resolve("This API is deprecated and will be removed."),
+          url: "https://api.example.com/deprecated",
         })
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
           headers: new Map(),
-          text: () => Promise.resolve('This page has moved to a new location.'),
-          url: 'https://example.com/moved',
+          text: () => Promise.resolve("This page has moved to a new location."),
+          url: "https://example.com/moved",
         })
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
           headers: new Map(),
-          text: () => Promise.resolve('Legacy documentation - archived content.'),
-          url: 'https://docs.example.com/legacy',
+          text: () =>
+            Promise.resolve("Legacy documentation - archived content."),
+          url: "https://docs.example.com/legacy",
         })
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
           headers: new Map(),
-          text: () => Promise.resolve('End of life product - no longer supported.'),
-          url: 'https://products.example.com/eol',
+          text: () =>
+            Promise.resolve("End of life product - no longer supported."),
+          url: "https://products.example.com/eol",
         });
 
       const result = await validateLinks([testFile], {
         checkExternal: true,
         checkContentFreshness: true,
-        cacheDir: join(tempDir, 'freshness-cache'),
+        cacheDir: join(tempDir, "freshness-cache"),
         // Single-attempt semantics: this test mocks one response per link, and retry attempts
         // would consume the queued responses out of order
         externalRetries: 0,
@@ -373,23 +393,31 @@ Content here.
       const brokenLinks = Object.values(result.brokenLinksByFile)[0];
 
       // Check that different patterns are detected
-      const deprecatedLink = brokenLinks.find((link) => link.url.includes('deprecated'));
-      expect(deprecatedLink?.freshnessInfo?.stalePatterns).toContain('deprecated');
+      const deprecatedLink = brokenLinks.find((link) =>
+        link.url.includes("deprecated"),
+      );
+      expect(deprecatedLink?.freshnessInfo?.stalePatterns).toContain(
+        "deprecated",
+      );
 
-      const movedLink = brokenLinks.find((link) => link.url.includes('moved'));
-      expect(movedLink?.freshnessInfo?.stalePatterns).toContain('this page has moved');
+      const movedLink = brokenLinks.find((link) => link.url.includes("moved"));
+      expect(movedLink?.freshnessInfo?.stalePatterns).toContain(
+        "this page has moved",
+      );
 
-      const legacyLink = brokenLinks.find((link) => link.url.includes('legacy'));
-      expect(legacyLink?.freshnessInfo?.stalePatterns).toContain('archived');
+      const legacyLink = brokenLinks.find((link) =>
+        link.url.includes("legacy"),
+      );
+      expect(legacyLink?.freshnessInfo?.stalePatterns).toContain("archived");
 
-      const eolLink = brokenLinks.find((link) => link.url.includes('eol'));
-      expect(eolLink?.freshnessInfo?.stalePatterns).toContain('end of life');
+      const eolLink = brokenLinks.find((link) => link.url.includes("eol"));
+      expect(eolLink?.freshnessInfo?.stalePatterns).toContain("end of life");
     });
   });
 
-  describe('Error Handling', () => {
-    it('should handle mixed success and error responses', async () => {
-      const testFile = join(tempDir, 'mixed-responses.md');
+  describe("Error Handling", () => {
+    it("should handle mixed success and error responses", async () => {
+      const testFile = join(tempDir, "mixed-responses.md");
       await writeFile(
         testFile,
         `
@@ -399,7 +427,7 @@ Content here.
 [Broken link](https://example.com/broken)
 [Fresh link](https://example.com/fresh)
 [Network error link](https://example.com/network-error)
-      `
+      `,
       );
 
       const freshDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
@@ -408,30 +436,30 @@ Content here.
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
-          headers: new Map([['last-modified', freshDate.toUTCString()]]),
-          text: () => Promise.resolve('Working content'),
-          url: 'https://example.com/working',
+          headers: new Map([["last-modified", freshDate.toUTCString()]]),
+          text: () => Promise.resolve("Working content"),
+          url: "https://example.com/working",
         })
         .mockResolvedValueOnce({
           ok: false,
           status: 404,
-          statusText: 'Not Found',
+          statusText: "Not Found",
           headers: new Map(),
-          url: 'https://example.com/broken',
+          url: "https://example.com/broken",
         })
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
-          headers: new Map([['last-modified', freshDate.toUTCString()]]),
-          text: () => Promise.resolve('Fresh content'),
-          url: 'https://example.com/fresh',
+          headers: new Map([["last-modified", freshDate.toUTCString()]]),
+          text: () => Promise.resolve("Fresh content"),
+          url: "https://example.com/fresh",
         })
-        .mockRejectedValueOnce(new Error('Network timeout'));
+        .mockRejectedValueOnce(new Error("Network timeout"));
 
       const result = await validateLinks([testFile], {
         checkExternal: true,
         checkContentFreshness: true,
-        cacheDir: join(tempDir, 'freshness-cache'),
+        cacheDir: join(tempDir, "freshness-cache"),
         // Single-attempt semantics: this test mocks one response per link, and retry attempts
         // would consume the queued responses out of order
         externalRetries: 0,
@@ -444,17 +472,19 @@ Content here.
 
       const brokenLinks = Object.values(result.brokenLinksByFile)[0];
 
-      const httpError = brokenLinks.find((link) => link.url.includes('broken'));
-      expect(httpError?.reason).toBe('external-error');
-      expect(httpError?.details).toContain('404');
+      const httpError = brokenLinks.find((link) => link.url.includes("broken"));
+      expect(httpError?.reason).toBe("external-error");
+      expect(httpError?.details).toContain("404");
 
-      const networkError = brokenLinks.find((link) => link.url.includes('network-error'));
-      expect(networkError?.reason).toBe('external-error');
-      expect(networkError?.details).toContain('Network timeout');
+      const networkError = brokenLinks.find((link) =>
+        link.url.includes("network-error"),
+      );
+      expect(networkError?.reason).toBe("external-error");
+      expect(networkError?.details).toContain("Network timeout");
     });
 
-    it('should continue processing other links when one fails', async () => {
-      const testFile = join(tempDir, 'partial-failure.md');
+    it("should continue processing other links when one fails", async () => {
+      const testFile = join(tempDir, "partial-failure.md");
       await writeFile(
         testFile,
         `
@@ -463,7 +493,7 @@ Content here.
 [First link](https://example.com/first)
 [Failing link](https://example.com/fail)
 [Last link](https://example.com/last)
-      `
+      `,
       );
 
       const freshDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
@@ -472,23 +502,23 @@ Content here.
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
-          headers: new Map([['last-modified', freshDate.toUTCString()]]),
-          text: () => Promise.resolve('First content'),
-          url: 'https://example.com/first',
+          headers: new Map([["last-modified", freshDate.toUTCString()]]),
+          text: () => Promise.resolve("First content"),
+          url: "https://example.com/first",
         })
-        .mockRejectedValueOnce(new Error('Connection refused'))
+        .mockRejectedValueOnce(new Error("Connection refused"))
         .mockResolvedValueOnce({
           ok: true,
           status: 200,
-          headers: new Map([['last-modified', freshDate.toUTCString()]]),
-          text: () => Promise.resolve('Last content'),
-          url: 'https://example.com/last',
+          headers: new Map([["last-modified", freshDate.toUTCString()]]),
+          text: () => Promise.resolve("Last content"),
+          url: "https://example.com/last",
         });
 
       const result = await validateLinks([testFile], {
         checkExternal: true,
         checkContentFreshness: true,
-        cacheDir: join(tempDir, 'freshness-cache'),
+        cacheDir: join(tempDir, "freshness-cache"),
         // Single-attempt semantics: this test mocks one response per link, and retry attempts
         // would consume the queued responses out of order
         externalRetries: 0,
@@ -502,23 +532,23 @@ Content here.
     });
   });
 
-  describe('Disabled Freshness Detection', () => {
-    it('should not perform freshness checks when disabled', async () => {
-      const testFile = join(tempDir, 'no-freshness.md');
+  describe("Disabled Freshness Detection", () => {
+    it("should not perform freshness checks when disabled", async () => {
+      const testFile = join(tempDir, "no-freshness.md");
       await writeFile(
         testFile,
         `
 # No Freshness Check
 
 [External link](https://example.com/external)
-      `
+      `,
       );
 
       mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
         headers: new Map(),
-        url: 'https://example.com/external',
+        url: "https://example.com/external",
       });
 
       const result = await validateLinks([testFile], {
@@ -531,26 +561,26 @@ Content here.
       expect(result.freshLinks).toBe(0);
 
       // Should use HEAD method instead of GET
-      expect(mockFetch).toHaveBeenCalledWith('https://example.com/external', {
-        method: 'HEAD',
+      expect(mockFetch).toHaveBeenCalledWith("https://example.com/external", {
+        method: "HEAD",
         signal: expect.any(AbortSignal),
         headers: {
-          'User-Agent': 'markmv-validator/1.0 (content-freshness-detection)',
+          "User-Agent": "markmv-validator/1.0 (content-freshness-detection)",
         },
       });
     });
   });
 
-  describe('Content Change Detection Integration', () => {
-    it('should track content changes across validation runs', async () => {
-      const testFile = join(tempDir, 'content-changes.md');
+  describe("Content Change Detection Integration", () => {
+    it("should track content changes across validation runs", async () => {
+      const testFile = join(tempDir, "content-changes.md");
       await writeFile(
         testFile,
         `
 # Content Change Test
 
 [Changing content](https://example.com/changing)
-      `
+      `,
       );
 
       // First validation
@@ -558,14 +588,14 @@ Content here.
         ok: true,
         status: 200,
         headers: new Map(),
-        text: () => Promise.resolve('Original content version'),
-        url: 'https://example.com/changing',
+        text: () => Promise.resolve("Original content version"),
+        url: "https://example.com/changing",
       });
 
       const result1 = await validateLinks([testFile], {
         checkExternal: true,
         checkContentFreshness: true,
-        cacheDir: join(tempDir, 'freshness-cache'),
+        cacheDir: join(tempDir, "freshness-cache"),
       });
 
       expect(result1.brokenLinks).toBe(0);
@@ -576,14 +606,14 @@ Content here.
         ok: true,
         status: 200,
         headers: new Map(),
-        text: () => Promise.resolve('Completely different content version'),
-        url: 'https://example.com/changing',
+        text: () => Promise.resolve("Completely different content version"),
+        url: "https://example.com/changing",
       });
 
       const result2 = await validateLinks([testFile], {
         checkExternal: true,
         checkContentFreshness: true,
-        cacheDir: join(tempDir, 'freshness-cache'),
+        cacheDir: join(tempDir, "freshness-cache"),
       });
 
       // Content change alone doesn't make it stale unless there are other factors

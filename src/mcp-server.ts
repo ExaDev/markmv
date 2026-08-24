@@ -7,14 +7,14 @@
  * integration with Claude and other MCP clients.
  */
 
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { createMarkMv, testAutoExposure } from './index.js';
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { createMarkMv, testAutoExposure } from "./index.js";
 import {
   getDescription,
   methodSchemas,
   toMoveOptions,
   toOperationResult,
-} from './schemas/index.js';
+} from "./schemas/index.js";
 
 const markmv = createMarkMv();
 
@@ -25,15 +25,17 @@ function camelToSnake(str: string): string {
 
 /** Wrap a method's result in the single text content block every markmv tool returns */
 function textResult(value: unknown) {
-  return { content: [{ type: 'text' as const, text: JSON.stringify(value, null, 2) }] };
+  return {
+    content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }],
+  };
 }
 
 /** Create and configure the MCP server for markmv */
 export function createMcpServer(): McpServer {
-  const server = new McpServer({ name: 'markmv-mcp', version: '1.0.0' });
+  const server = new McpServer({ name: "markmv-mcp", version: "1.0.0" });
 
   server.registerTool(
-    camelToSnake('moveFile'),
+    camelToSnake("moveFile"),
     {
       description: getDescription(methodSchemas.moveFile.input),
       inputSchema: methodSchemas.moveFile.input,
@@ -42,38 +44,43 @@ export function createMcpServer(): McpServer {
       const result = await markmv.moveFile(
         sourcePath,
         destinationPath,
-        toMoveOptions(options ?? {})
+        toMoveOptions(options ?? {}),
       );
       return textResult(result);
-    }
+    },
   );
 
   server.registerTool(
-    camelToSnake('moveFiles'),
+    camelToSnake("moveFiles"),
     {
       description: getDescription(methodSchemas.moveFiles.input),
       inputSchema: methodSchemas.moveFiles.input,
     },
     async ({ moves, options }) => {
-      const result = await markmv.moveFiles(moves, toMoveOptions(options ?? {}));
+      const result = await markmv.moveFiles(
+        moves,
+        toMoveOptions(options ?? {}),
+      );
       return textResult(result);
-    }
+    },
   );
 
   server.registerTool(
-    camelToSnake('validateOperation'),
+    camelToSnake("validateOperation"),
     {
       description: getDescription(methodSchemas.validateOperation.input),
       inputSchema: methodSchemas.validateOperation.input,
     },
     async ({ result: operationResult }) => {
-      const result = await markmv.validateOperation(toOperationResult(operationResult));
+      const result = await markmv.validateOperation(
+        toOperationResult(operationResult),
+      );
       return textResult(result);
-    }
+    },
   );
 
   server.registerTool(
-    camelToSnake('testAutoExposure'),
+    camelToSnake("testAutoExposure"),
     {
       description: getDescription(methodSchemas.testAutoExposure.input),
       inputSchema: methodSchemas.testAutoExposure.input,
@@ -81,7 +88,7 @@ export function createMcpServer(): McpServer {
     async ({ input }) => {
       const result = await testAutoExposure(input);
       return textResult(result);
-    }
+    },
   );
 
   return server;
@@ -91,17 +98,18 @@ export function createMcpServer(): McpServer {
 export async function startMcpServer(): Promise<void> {
   const server = createMcpServer();
 
-  const { StdioServerTransport } = await import('@modelcontextprotocol/sdk/server/stdio.js');
+  const { StdioServerTransport } =
+    await import("@modelcontextprotocol/sdk/server/stdio.js");
   const transport = new StdioServerTransport();
   await server.connect(transport);
 
-  console.error('markmv MCP server started');
+  console.error("markmv MCP server started");
 }
 
 // For direct execution
-if (process.argv[1]?.endsWith('mcp-server.js')) {
+if (process.argv[1]?.endsWith("mcp-server.js")) {
   startMcpServer().catch((error: unknown) => {
-    console.error('Failed to start MCP server:', error);
+    console.error("Failed to start MCP server:", error);
     process.exit(1);
   });
 }

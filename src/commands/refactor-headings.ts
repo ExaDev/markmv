@@ -1,10 +1,10 @@
-import { glob, type GlobOptionsWithFileTypesFalse } from 'glob';
-import { statSync } from 'fs';
-import { posix } from 'path';
-import { readFile, writeFile } from 'fs/promises';
-import { TocGenerator } from '../utils/toc-generator.js';
-import { LinkParser } from '../core/link-parser.js';
-import type { OperationOptions } from '../types/operations.js';
+import { glob, type GlobOptionsWithFileTypesFalse } from "glob";
+import { statSync } from "fs";
+import { posix } from "path";
+import { readFile, writeFile } from "fs/promises";
+import { TocGenerator } from "../utils/toc-generator.js";
+import { LinkParser } from "../core/link-parser.js";
+import type { OperationOptions } from "../types/operations.js";
 
 /**
  * Configuration options for heading refactoring operations.
@@ -75,7 +75,7 @@ interface LinkUpdate {
   /** Updated link text/href */
   newLink: string;
   /** Type of link updated */
-  linkType: 'anchor' | 'reference';
+  linkType: "anchor" | "reference";
 }
 
 /**
@@ -103,12 +103,13 @@ export interface RefactorHeadingsResult {
 }
 
 /** Default configuration for heading refactoring. */
-const DEFAULT_REFACTOR_HEADINGS_OPTIONS: Partial<RefactorHeadingsOperationOptions> = {
-  dryRun: false,
-  verbose: false,
-  recursive: false,
-  updateCrossReferences: true,
-};
+const DEFAULT_REFACTOR_HEADINGS_OPTIONS: Partial<RefactorHeadingsOperationOptions> =
+  {
+    dryRun: false,
+    verbose: false,
+    recursive: false,
+    updateCrossReferences: true,
+  };
 
 /**
  * Refactors headings in markdown files and updates all affected links.
@@ -152,13 +153,13 @@ const DEFAULT_REFACTOR_HEADINGS_OPTIONS: Partial<RefactorHeadingsOperationOption
  */
 export async function refactorHeadings(
   files: string[],
-  options: RefactorHeadingsOperationOptions
+  options: RefactorHeadingsOperationOptions,
 ): Promise<RefactorHeadingsResult> {
   const startTime = Date.now();
   const mergedOptions = { ...DEFAULT_REFACTOR_HEADINGS_OPTIONS, ...options };
 
   if (mergedOptions.verbose) {
-    console.log('🔧 Starting heading refactoring...');
+    console.log("🔧 Starting heading refactoring...");
     console.log(`📋 Configuration:
   - Old heading: "${options.oldHeading}"
   - New heading: "${options.newHeading}"
@@ -185,11 +186,11 @@ export async function refactorHeadings(
     try {
       if (statSync(filePattern).isDirectory()) {
         const dirPattern = mergedOptions.recursive
-          ? posix.join(filePattern, '**/*.md')
-          : posix.join(filePattern, '*.md');
+          ? posix.join(filePattern, "**/*.md")
+          : posix.join(filePattern, "*.md");
 
         const globOptions: GlobOptionsWithFileTypesFalse = {
-          ignore: ['node_modules/**', '.git/**'],
+          ignore: ["node_modules/**", ".git/**"],
         };
         if (mergedOptions.maxDepth !== undefined) {
           globOptions.maxDepth = mergedOptions.maxDepth;
@@ -197,9 +198,9 @@ export async function refactorHeadings(
 
         const matches = await glob(dirPattern, globOptions);
         matches.forEach((file) => resolvedFiles.add(file));
-      } else if (filePattern.includes('*')) {
+      } else if (filePattern.includes("*")) {
         const globOptions: GlobOptionsWithFileTypesFalse = {
-          ignore: ['node_modules/**', '.git/**'],
+          ignore: ["node_modules/**", ".git/**"],
         };
         if (mergedOptions.maxDepth !== undefined) {
           globOptions.maxDepth = mergedOptions.maxDepth;
@@ -222,7 +223,9 @@ export async function refactorHeadings(
   result.filesProcessed = fileList.length;
 
   if (mergedOptions.verbose) {
-    console.log(`📁 Found ${String(fileList.length)} markdown files to process`);
+    console.log(
+      `📁 Found ${String(fileList.length)} markdown files to process`,
+    );
   }
 
   // Initialize generators and parsers
@@ -242,12 +245,12 @@ export async function refactorHeadings(
   // Step 1: Find and update headings in all files
   for (const filePath of fileList) {
     try {
-      const content = await readFile(filePath, 'utf-8');
+      const content = await readFile(filePath, "utf-8");
       const tocResult = tocGenerator.generateToc(content);
 
       // Find headings that match the old heading text
       const matchingHeadings = tocResult.headings.filter(
-        (heading) => heading.text.trim() === options.oldHeading.trim()
+        (heading) => heading.text.trim() === options.oldHeading.trim(),
       );
 
       if (matchingHeadings.length === 0) {
@@ -255,7 +258,9 @@ export async function refactorHeadings(
       }
 
       if (mergedOptions.verbose) {
-        console.log(`\n📄 ${filePath}: found ${String(matchingHeadings.length)} matching headings`);
+        console.log(
+          `\n📄 ${filePath}: found ${String(matchingHeadings.length)} matching headings`,
+        );
       }
 
       // Update headings in content
@@ -264,7 +269,9 @@ export async function refactorHeadings(
 
       for (const heading of matchingHeadings) {
         // Use custom slugify if provided, otherwise use the heading's existing slug
-        const actualOldSlug = mergedOptions.slugify ? slugify(heading.text) : heading.slug;
+        const actualOldSlug = mergedOptions.slugify
+          ? slugify(heading.text)
+          : heading.slug;
 
         // Create heading change record
         const headingChange: HeadingChange = {
@@ -283,17 +290,20 @@ export async function refactorHeadings(
         // Replace the heading text in content
         const headingRegex = new RegExp(
           `^(#{${String(heading.level)}}\\s+)${escapeRegExp(heading.text.trim())}(\\s*)$`,
-          'gm'
+          "gm",
         );
 
-        updatedContent = updatedContent.replace(headingRegex, `$1${options.newHeading}$2`);
+        updatedContent = updatedContent.replace(
+          headingRegex,
+          `$1${options.newHeading}$2`,
+        );
       }
 
       result.headingsChanged += headingChanges.length;
 
       // Write updated content if not dry run
       if (!mergedOptions.dryRun && headingChanges.length > 0) {
-        await writeFile(filePath, updatedContent, 'utf-8');
+        await writeFile(filePath, updatedContent, "utf-8");
       }
     } catch (error) {
       result.fileErrors.push({
@@ -306,7 +316,9 @@ export async function refactorHeadings(
   // Step 2: Update anchor links and cross-references if requested
   if (mergedOptions.updateCrossReferences && oldSlug !== newSlug) {
     if (mergedOptions.verbose) {
-      console.log(`\n🔍 Searching for anchor links to update: #${oldSlug} → #${newSlug}`);
+      console.log(
+        `\n🔍 Searching for anchor links to update: #${oldSlug} → #${newSlug}`,
+      );
     }
 
     for (const filePath of fileList) {
@@ -315,7 +327,7 @@ export async function refactorHeadings(
 
         // Find anchor links that reference the old slug
         const anchorLinks = parseResult.links.filter(
-          (link) => link.type === 'anchor' && link.href === `#${oldSlug}`
+          (link) => link.type === "anchor" && link.href === `#${oldSlug}`,
         );
 
         if (anchorLinks.length === 0) {
@@ -323,11 +335,13 @@ export async function refactorHeadings(
         }
 
         if (mergedOptions.verbose) {
-          console.log(`📄 ${filePath}: found ${String(anchorLinks.length)} anchor links to update`);
+          console.log(
+            `📄 ${filePath}: found ${String(anchorLinks.length)} anchor links to update`,
+          );
         }
 
         // Update anchor links
-        const content = await readFile(filePath, 'utf-8');
+        const content = await readFile(filePath, "utf-8");
         let updatedContent = content;
 
         for (const link of anchorLinks) {
@@ -336,21 +350,27 @@ export async function refactorHeadings(
             line: link.line,
             oldLink: `#${oldSlug}`,
             newLink: `#${newSlug}`,
-            linkType: 'anchor',
+            linkType: "anchor",
           };
 
           result.linkUpdates.push(linkUpdate);
 
           // Replace the anchor link
-          const oldLinkPattern = new RegExp(`#${escapeRegExp(oldSlug)}(?![\\w-])`, 'g');
-          updatedContent = updatedContent.replace(oldLinkPattern, `#${newSlug}`);
+          const oldLinkPattern = new RegExp(
+            `#${escapeRegExp(oldSlug)}(?![\\w-])`,
+            "g",
+          );
+          updatedContent = updatedContent.replace(
+            oldLinkPattern,
+            `#${newSlug}`,
+          );
         }
 
         result.linksUpdated += anchorLinks.length;
 
         // Write updated content if not dry run
         if (!mergedOptions.dryRun && anchorLinks.length > 0) {
-          await writeFile(filePath, updatedContent, 'utf-8');
+          await writeFile(filePath, updatedContent, "utf-8");
         }
       } catch (error) {
         result.fileErrors.push({
@@ -369,9 +389,11 @@ export async function refactorHeadings(
   }
 
   if (mergedOptions.verbose) {
-    console.log(`\n✅ Refactoring completed in ${String(result.processingTime)}ms`);
     console.log(
-      `📊 Summary: ${String(result.headingsChanged)} headings changed, ${String(result.linksUpdated)} links updated`
+      `\n✅ Refactoring completed in ${String(result.processingTime)}ms`,
+    );
+    console.log(
+      `📊 Summary: ${String(result.headingsChanged)} headings changed, ${String(result.linksUpdated)} links updated`,
     );
 
     if (mergedOptions.dryRun) {
@@ -384,17 +406,19 @@ export async function refactorHeadings(
 
 /** Command handler for the refactor-headings CLI command. */
 export async function refactorHeadingsCommand(
-  files: string[] = ['.'],
-  options: RefactorHeadingsCliOptions
+  files: string[] = ["."],
+  options: RefactorHeadingsCliOptions,
 ): Promise<void> {
   try {
     if (!options.oldHeading || !options.newHeading) {
-      console.error('💥 Error: Both --old-heading and --new-heading are required');
+      console.error(
+        "💥 Error: Both --old-heading and --new-heading are required",
+      );
       process.exit(1);
     }
 
     if (options.oldHeading === options.newHeading) {
-      console.error('💥 Error: Old heading and new heading cannot be the same');
+      console.error("💥 Error: Old heading and new heading cannot be the same");
       process.exit(1);
     }
 
@@ -426,11 +450,11 @@ export async function refactorHeadingsCommand(
       process.exit(1);
     }
   } catch (error) {
-    console.error('💥 Error running refactor-headings command:');
+    console.error("💥 Error running refactor-headings command:");
     console.error(error instanceof Error ? error.message : String(error));
 
     if (options.verbose && error instanceof Error && error.stack) {
-      console.error('\nStack trace:');
+      console.error("\nStack trace:");
       console.error(error.stack);
     }
 
@@ -441,13 +465,13 @@ export async function refactorHeadingsCommand(
 /** Formats the refactor-headings results for display. */
 export function formatRefactorHeadingsResults(
   result: RefactorHeadingsResult,
-  options: RefactorHeadingsOperationOptions
+  options: RefactorHeadingsOperationOptions,
 ): string {
   const lines: string[] = [];
 
-  lines.push('🔧 Heading Refactoring Results');
-  lines.push(''.padEnd(50, '='));
-  lines.push('');
+  lines.push("🔧 Heading Refactoring Results");
+  lines.push("".padEnd(50, "="));
+  lines.push("");
 
   // Summary
   lines.push(`📊 Summary:`);
@@ -460,39 +484,40 @@ export function formatRefactorHeadingsResults(
     lines.push(`  🔍 Dry run - no files were actually modified`);
   }
 
-  lines.push('');
+  lines.push("");
 
   // Show heading changes
   if (result.headingChanges.length > 0) {
-    lines.push('📝 Heading Changes:');
-    lines.push(''.padEnd(30, '-'));
+    lines.push("📝 Heading Changes:");
+    lines.push("".padEnd(30, "-"));
 
     result.headingChanges.forEach((change) => {
       lines.push(`\n📄 ${change.filePath} (line ${String(change.line)}):`);
-      lines.push(`  ${'#'.repeat(change.level)} ${change.oldText}`);
+      lines.push(`  ${"#".repeat(change.level)} ${change.oldText}`);
       lines.push(`  ↓`);
-      lines.push(`  ${'#'.repeat(change.level)} ${change.newText}`);
+      lines.push(`  ${"#".repeat(change.level)} ${change.newText}`);
       lines.push(`  Slug: ${change.oldSlug} → ${change.newSlug}`);
     });
   }
 
   // Show link updates
   if (result.linkUpdates.length > 0) {
-    lines.push('\n🔗 Link Updates:');
-    lines.push(''.padEnd(30, '-'));
+    lines.push("\n🔗 Link Updates:");
+    lines.push("".padEnd(30, "-"));
 
-    const linksByFile: Partial<Record<string, LinkUpdate[]>> = result.linkUpdates.reduce(
-      (acc: Partial<Record<string, LinkUpdate[]>>, update) => {
-        (acc[update.filePath] ??= []).push(update);
-        return acc;
-      },
-      {}
-    );
+    const linksByFile: Partial<Record<string, LinkUpdate[]>> =
+      result.linkUpdates.reduce(
+        (acc: Partial<Record<string, LinkUpdate[]>>, update) => {
+          (acc[update.filePath] ??= []).push(update);
+          return acc;
+        },
+        {},
+      );
 
     Object.entries(linksByFile).forEach(([file, updates]) => {
       lines.push(`\n📄 ${file}:`);
       (updates ?? []).forEach((update) => {
-        const lineInfo = update.line ? ` (line ${String(update.line)})` : '';
+        const lineInfo = update.line ? ` (line ${String(update.line)})` : "";
         lines.push(`  🔗 ${update.oldLink} → ${update.newLink}${lineInfo}`);
       });
     });
@@ -500,19 +525,19 @@ export function formatRefactorHeadingsResults(
 
   // Show errors if any
   if (result.fileErrors.length > 0) {
-    lines.push('\n💥 Errors:');
-    lines.push(''.padEnd(30, '-'));
+    lines.push("\n💥 Errors:");
+    lines.push("".padEnd(30, "-"));
     result.fileErrors.forEach((error) => {
       lines.push(`  💥 ${error.file}: ${error.error}`);
     });
   }
 
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 /** Escapes special regex characters in a string. */
 function escapeRegExp(string: string): string {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /**
@@ -522,8 +547,8 @@ function escapeRegExp(string: string): string {
 function defaultSlugify(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[^\w\s-]/g, '-')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
+    .replace(/[^\w\s-]/g, "-")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
 }

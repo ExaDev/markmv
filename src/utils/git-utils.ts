@@ -6,8 +6,8 @@
  * @category Utils
  */
 
-import { execSync } from 'node:child_process';
-import { resolve } from 'node:path';
+import { execSync } from "node:child_process";
+import { resolve } from "node:path";
 
 /**
  * Information about a file change in git.
@@ -18,7 +18,7 @@ export interface GitFileChange {
   /** Path to the changed file */
   path: string;
   /** Type of change */
-  status: 'added' | 'modified' | 'deleted' | 'renamed' | 'copied';
+  status: "added" | "modified" | "deleted" | "renamed" | "copied";
   /** Previous path if renamed */
   previousPath?: string;
 }
@@ -67,7 +67,7 @@ export class GitUtils {
    */
   isGitRepository(): boolean {
     try {
-      this.execGit('rev-parse --git-dir');
+      this.execGit("rev-parse --git-dir");
       return true;
     } catch {
       return false;
@@ -87,13 +87,13 @@ export class GitUtils {
     }
 
     try {
-      const output = this.execGit('rev-parse --show-toplevel');
+      const output = this.execGit("rev-parse --show-toplevel");
       this.rootDir = output.trim();
       return this.rootDir;
     } catch (error) {
       throw new Error(
         `Not in a git repository: ${error instanceof Error ? error.message : String(error)}`,
-        { cause: error }
+        { cause: error },
       );
     }
   }
@@ -123,13 +123,13 @@ export class GitUtils {
    * @returns Current branch name
    */
   getCurrentBranch(): string {
-    const branch = this.execGit('branch --show-current').trim();
+    const branch = this.execGit("branch --show-current").trim();
     if (branch.length > 0) {
       return branch;
     }
 
     // Detached HEAD prints nothing for --show-current; report the short commit hash instead
-    return this.execGit('rev-parse --short HEAD').trim();
+    return this.execGit("rev-parse --short HEAD").trim();
   }
 
   /**
@@ -138,7 +138,7 @@ export class GitUtils {
    * @returns Current commit hash (full)
    */
   getCurrentCommit(): string {
-    return this.execGit('rev-parse HEAD').trim();
+    return this.execGit("rev-parse HEAD").trim();
   }
 
   /**
@@ -148,7 +148,7 @@ export class GitUtils {
    */
   hasUncommittedChanges(): boolean {
     try {
-      const output = this.execGit('status --porcelain');
+      const output = this.execGit("status --porcelain");
       return output.trim().length > 0;
     } catch {
       return false;
@@ -168,7 +168,7 @@ export class GitUtils {
    *
    * @returns Array of changed files
    */
-  getChangedFiles(base: string, head = 'HEAD'): GitFileChange[] {
+  getChangedFiles(base: string, head = "HEAD"): GitFileChange[] {
     try {
       const repositoryRoot = this.getRepositoryRoot();
       const output = this.execGit(`diff --name-status ${base}..${head}`);
@@ -176,7 +176,7 @@ export class GitUtils {
     } catch (error) {
       throw new Error(
         `Failed to get changed files: ${error instanceof Error ? error.message : String(error)}`,
-        { cause: error }
+        { cause: error },
       );
     }
   }
@@ -189,12 +189,12 @@ export class GitUtils {
   getStagedFiles(): GitFileChange[] {
     try {
       const repositoryRoot = this.getRepositoryRoot();
-      const output = this.execGit('diff --cached --name-status');
+      const output = this.execGit("diff --cached --name-status");
       return this.parseFileChanges(output, repositoryRoot);
     } catch (error) {
       throw new Error(
         `Failed to get staged files: ${error instanceof Error ? error.message : String(error)}`,
-        { cause: error }
+        { cause: error },
       );
     }
   }
@@ -207,12 +207,12 @@ export class GitUtils {
   getUnstagedFiles(): GitFileChange[] {
     try {
       const repositoryRoot = this.getRepositoryRoot();
-      const output = this.execGit('diff --name-status');
+      const output = this.execGit("diff --name-status");
       return this.parseFileChanges(output, repositoryRoot);
     } catch (error) {
       throw new Error(
         `Failed to get unstaged files: ${error instanceof Error ? error.message : String(error)}`,
-        { cause: error }
+        { cause: error },
       );
     }
   }
@@ -227,17 +227,17 @@ export class GitUtils {
   getTrackedFiles(pattern?: string): string[] {
     try {
       const repositoryRoot = this.getRepositoryRoot();
-      const cmd = pattern ? `ls-files ${pattern}` : 'ls-files';
+      const cmd = pattern ? `ls-files ${pattern}` : "ls-files";
       const output = this.execGit(cmd);
       return output
-        .split('\n')
+        .split("\n")
         .map((line) => line.trim())
         .filter((line) => line.length > 0)
         .map((path) => resolve(repositoryRoot, path));
     } catch (error) {
       throw new Error(
         `Failed to get tracked files: ${error instanceof Error ? error.message : String(error)}`,
-        { cause: error }
+        { cause: error },
       );
     }
   }
@@ -272,7 +272,7 @@ export class GitUtils {
     } catch (error) {
       throw new Error(
         `Failed to get merge base: ${error instanceof Error ? error.message : String(error)}`,
-        { cause: error }
+        { cause: error },
       );
     }
   }
@@ -319,12 +319,15 @@ export class GitUtils {
     try {
       return execSync(`git ${command}`, {
         cwd: this.cwd,
-        encoding: 'utf8',
-        stdio: 'pipe',
+        encoding: "utf8",
+        stdio: "pipe",
       });
     } catch (error) {
       if (error instanceof Error) {
-        throw new Error(`Git command failed: git ${command}\n${error.message}`, { cause: error });
+        throw new Error(
+          `Git command failed: git ${command}\n${error.message}`,
+          { cause: error },
+        );
       }
       throw error;
     }
@@ -335,34 +338,37 @@ export class GitUtils {
    *
    * @private
    */
-  private parseFileChanges(output: string, repositoryRoot: string): GitFileChange[] {
+  private parseFileChanges(
+    output: string,
+    repositoryRoot: string,
+  ): GitFileChange[] {
     if (!output.trim()) {
       return [];
     }
 
     return output
-      .split('\n')
+      .split("\n")
       .map((line) => line.trim())
       .filter((line) => line.length > 0)
       .map((line) => {
-        const [status, ...pathParts] = line.split('\t');
-        let path = pathParts.join('\t'); // Handle paths with tabs
+        const [status, ...pathParts] = line.split("\t");
+        let path = pathParts.join("\t"); // Handle paths with tabs
 
-        let changeStatus: GitFileChange['status'];
+        let changeStatus: GitFileChange["status"];
         let previousPath: string | undefined;
 
         switch (status.charAt(0)) {
-          case 'A':
-            changeStatus = 'added';
+          case "A":
+            changeStatus = "added";
             break;
-          case 'M':
-            changeStatus = 'modified';
+          case "M":
+            changeStatus = "modified";
             break;
-          case 'D':
-            changeStatus = 'deleted';
+          case "D":
+            changeStatus = "deleted";
             break;
-          case 'R': {
-            changeStatus = 'renamed';
+          case "R": {
+            changeStatus = "renamed";
             // For renames, git shows "R<score>\toldpath\tnewpath": the new path is the file's path and the old one becomes previousPath. pathParts is untrusted external process output, so its length isn't guaranteed -- .at() (unlike [] indexing, with noUncheckedIndexedAccess off) always types its result as possibly undefined, which is what makes the check below meaningful.
             const oldPath = pathParts.at(0);
             const newPath = pathParts.at(1);
@@ -372,11 +378,11 @@ export class GitUtils {
             }
             break;
           }
-          case 'C':
-            changeStatus = 'copied';
+          case "C":
+            changeStatus = "copied";
             break;
           default:
-            changeStatus = 'modified';
+            changeStatus = "modified";
         }
 
         const change: GitFileChange = {

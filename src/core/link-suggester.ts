@@ -1,4 +1,4 @@
-import { basename, dirname, relative, resolve } from 'node:path';
+import { basename, dirname, relative, resolve } from "node:path";
 
 /**
  * A candidate replacement for a broken link target.
@@ -18,8 +18,8 @@ export interface LinkSuggestion {
 function normalise(name: string): string {
   return name
     .toLowerCase()
-    .replace(/\.(md|markdown|mdx)$/, '')
-    .replace(/[\s_-]+/g, '-');
+    .replace(/\.(md|markdown|mdx)$/, "")
+    .replace(/[\s_-]+/g, "-");
 }
 
 /** Classic bounded edit distance, cheap enough for suggestion ranking over small file sets */
@@ -33,7 +33,7 @@ function editDistance(a: string, b: string): number {
       previous[j] = Math.min(
         previous[j] + 1,
         previous[j - 1] + 1,
-        carry + (a[i - 1] === b[j - 1] ? 0 : 1)
+        carry + (a[i - 1] === b[j - 1] ? 0 : 1),
       );
       carry = temp;
     }
@@ -66,10 +66,10 @@ export function suggestLinkFixes(
   brokenHref: string,
   sourceFilePath: string,
   knownFiles: string[],
-  limit = 3
+  limit = 3,
 ): LinkSuggestion[] {
   const target = normalise(basename(brokenHref));
-  if (target === '') {
+  if (target === "") {
     return [];
   }
 
@@ -80,21 +80,24 @@ export function suggestLinkFixes(
       let reason: string;
       if (candidateStem === target) {
         score = 0;
-        reason = 'same note name';
-      } else if (candidateStem.includes(target) || target.includes(candidateStem)) {
+        reason = "same note name";
+      } else if (
+        candidateStem.includes(target) ||
+        target.includes(candidateStem)
+      ) {
         score = 1 + Math.abs(candidateStem.length - target.length);
-        reason = 'name variation';
+        reason = "name variation";
       } else {
         const distance = editDistance(target, candidateStem);
         const bound = Math.max(2, Math.floor(target.length / 2));
         if (distance > bound) {
           return {
-            suggestion: { candidatePath, replacementHref: '', reason: '' },
+            suggestion: { candidatePath, replacementHref: "", reason: "" },
             score: Number.MAX_SAFE_INTEGER,
           };
         }
         score = 10 + distance;
-        reason = 'near miss';
+        reason = "near miss";
       }
       return {
         suggestion: {
@@ -108,15 +111,19 @@ export function suggestLinkFixes(
     .filter((entry) => entry.score !== Number.MAX_SAFE_INTEGER)
     .sort(
       (a, b) =>
-        a.score - b.score || a.suggestion.candidatePath.localeCompare(b.suggestion.candidatePath)
+        a.score - b.score ||
+        a.suggestion.candidatePath.localeCompare(b.suggestion.candidatePath),
     );
 
   return scored.slice(0, limit).map((entry) => entry.suggestion);
 }
 
 /** Relative href from the linking file to a candidate, ./-prefixed with posix separators */
-function toMarkdownRelative(candidatePath: string, sourceFilePath: string): string {
+function toMarkdownRelative(
+  candidatePath: string,
+  sourceFilePath: string,
+): string {
   const fromDir = dirname(resolve(sourceFilePath));
-  const rel = relative(fromDir, candidatePath).replace(/\\/g, '/');
-  return rel.startsWith('.') ? rel : `./${rel}`;
+  const rel = relative(fromDir, candidatePath).replace(/\\/g, "/");
+  return rel.startsWith(".") ? rel : `./${rel}`;
 }

@@ -1,15 +1,15 @@
-import { existsSync, statSync } from 'node:fs';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, relative, resolve } from 'node:path';
-import { glob } from 'glob';
-import { PathUtils } from '../utils/path-utils.js';
+import { existsSync, statSync } from "node:fs";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, relative, resolve } from "node:path";
+import { glob } from "glob";
+import { PathUtils } from "../utils/path-utils.js";
 import {
   findInlineImages,
   imageExtensionForMimeType,
   parseImageDataUri,
   renderImageMarkdown,
   replaceSpans,
-} from '../core/image-inline.js';
+} from "../core/image-inline.js";
 
 /**
  * Configuration options for extract command operations.
@@ -37,7 +37,7 @@ export interface ExtractOptions {
  */
 export interface ExtractSummary {
   /** Always "extract", so JSON consumers can identify the command */
-  command: 'extract';
+  command: "extract";
   /** Whether the run completed without errors */
   success: boolean;
   /** Whether this was a dry run, so no files were touched */
@@ -86,19 +86,25 @@ interface ExtractFileResult {
  *
  * @throws Will exit the process with code 1 if the operation fails
  */
-export async function extractCommand(patterns: string[], options: ExtractOptions): Promise<void> {
+export async function extractCommand(
+  patterns: string[],
+  options: ExtractOptions,
+): Promise<void> {
   if (patterns.length === 0) {
-    reportUsageError(options, 'At least one file pattern must be specified');
+    reportUsageError(options, "At least one file pattern must be specified");
   }
 
   const files = await expandMarkdownPatterns(patterns);
 
   if (files.length === 0) {
-    reportUsageError(options, `No markdown files found matching: ${patterns.join(', ')}`);
+    reportUsageError(
+      options,
+      `No markdown files found matching: ${patterns.join(", ")}`,
+    );
   }
 
   const summary: ExtractSummary = {
-    command: 'extract',
+    command: "extract",
     success: true,
     dryRun: options.dryRun === true,
     filesProcessed: files.length,
@@ -111,10 +117,13 @@ export async function extractCommand(patterns: string[], options: ExtractOptions
 
   const humanOutput = options.json !== true;
   if (options.dryRun && humanOutput) {
-    console.log('🔍 Dry run - no files will be modified');
+    console.log("🔍 Dry run - no files will be modified");
   }
 
-  const naming: ExtractNamingState = { usedNames: new Set<string>(), unnamedCounter: 0 };
+  const naming: ExtractNamingState = {
+    usedNames: new Set<string>(),
+    unnamedCounter: 0,
+  };
   for (const file of files) {
     if (options.verbose && humanOutput) {
       console.log(`📄 Processing ${file}`);
@@ -142,7 +151,9 @@ export async function extractCommand(patterns: string[], options: ExtractOptions
         for (const created of result.createdImages) {
           console.log(`🖼️  Created ${created}`);
         }
-        console.log(`✅ Extracted ${String(result.extractedCount)} image(s) from ${file}`);
+        console.log(
+          `✅ Extracted ${String(result.extractedCount)} image(s) from ${file}`,
+        );
       }
     }
   }
@@ -151,10 +162,10 @@ export async function extractCommand(patterns: string[], options: ExtractOptions
     console.log(JSON.stringify(summary, null, 2));
   } else if (summary.success) {
     console.log(
-      `📊 Summary: extracted ${String(summary.imagesExtracted)} image(s) across ${String(summary.filesModified.length)} file(s)`
+      `📊 Summary: extracted ${String(summary.imagesExtracted)} image(s) across ${String(summary.filesModified.length)} file(s)`,
     );
     if (options.dryRun) {
-      console.log('(Dry run - no files were actually modified)');
+      console.log("(Dry run - no files were actually modified)");
     }
   }
 
@@ -167,7 +178,7 @@ export async function extractCommand(patterns: string[], options: ExtractOptions
 function reportUsageError(options: ExtractOptions, message: string): never {
   if (options.json) {
     const summary: ExtractSummary = {
-      command: 'extract',
+      command: "extract",
       success: false,
       dryRun: options.dryRun === true,
       filesProcessed: 0,
@@ -180,7 +191,7 @@ function reportUsageError(options: ExtractOptions, message: string): never {
     console.log(JSON.stringify(summary, null, 2));
   } else {
     console.error(`❌ Error: ${message}`);
-    console.error('Usage: markmv extract <files...> [options]');
+    console.error("Usage: markmv extract <files...> [options]");
   }
   process.exit(1);
 }
@@ -210,15 +221,20 @@ async function expandMarkdownPatterns(patterns: string[]): Promise<string[]> {
       continue;
     }
 
-    if (existsSync(absolutePattern) && statSync(absolutePattern).isDirectory()) {
+    if (
+      existsSync(absolutePattern) &&
+      statSync(absolutePattern).isDirectory()
+    ) {
       // Glob patterns use forward slashes on every platform; backslashes are pattern escapes
-      const files = await glob(`${absolutePattern.replace(/\\/g, '/')}/*.md`, { absolute: true });
+      const files = await glob(`${absolutePattern.replace(/\\/g, "/")}/*.md`, {
+        absolute: true,
+      });
       files.forEach((file) => resolvedFiles.add(file));
       continue;
     }
 
-    const globFiles = await glob(pattern.replace(/\\/g, '/'), {
-      ignore: ['node_modules/**', '.git/**', 'dist/**'],
+    const globFiles = await glob(pattern.replace(/\\/g, "/"), {
+      ignore: ["node_modules/**", ".git/**", "dist/**"],
       absolute: true,
       nodir: true,
     });
@@ -256,15 +272,17 @@ interface ExtractNamingState {
 async function extractFile(
   file: string,
   options: ExtractOptions,
-  naming: ExtractNamingState
+  naming: ExtractNamingState,
 ): Promise<ExtractFileResult> {
-  const content = await readFile(file, 'utf-8');
+  const content = await readFile(file, "utf-8");
   const inlineImages = findInlineImages(content);
   if (inlineImages.length === 0) {
     return { error: undefined, createdImages: [], extractedCount: 0 };
   }
 
-  const outputDir = options.outputDir ? resolve(options.outputDir) : dirname(file);
+  const outputDir = options.outputDir
+    ? resolve(options.outputDir)
+    : dirname(file);
 
   const replacements = [];
   const writes: { path: string; bytes: Buffer }[] = [];
@@ -277,16 +295,22 @@ async function extractFile(
       const baseName = slug ?? `img-${String(++naming.unnamedCounter)}`;
       let fileName = `${baseName}.${extension}`;
       let suffix = 2;
-      while (naming.usedNames.has(fileName) || existsSync(joinPath(outputDir, fileName))) {
+      while (
+        naming.usedNames.has(fileName) ||
+        existsSync(joinPath(outputDir, fileName))
+      ) {
         fileName = `${baseName}-${String(suffix)}.${extension}`;
         suffix++;
       }
       naming.usedNames.add(fileName);
 
       const imagePath = joinPath(outputDir, fileName);
-      writes.push({ path: imagePath, bytes: Buffer.from(parsed.data, 'base64') });
+      writes.push({
+        path: imagePath,
+        bytes: Buffer.from(parsed.data, "base64"),
+      });
 
-      const linkHref = relative(dirname(file), imagePath).replace(/\\/g, '/');
+      const linkHref = relative(dirname(file), imagePath).replace(/\\/g, "/");
       replacements.push({
         start: image.start,
         end: image.end,
@@ -315,7 +339,7 @@ async function extractFile(
   }
 
   const rewritten = replaceSpans(content, replacements);
-  await writeFile(file, rewritten, 'utf-8');
+  await writeFile(file, rewritten, "utf-8");
   return {
     error: undefined,
     createdImages: writes.map((w) => w.path),
@@ -333,12 +357,12 @@ function slugifyFileName(alt: string | undefined): string | undefined {
   if (alt === undefined) return undefined;
   const slug = alt
     .toLowerCase()
-    .replaceAll(/[^a-z0-9_-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-  return slug === '' ? undefined : slug;
+    .replaceAll(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug === "" ? undefined : slug;
 }
 
 /** Join path segments, producing forward slashes so paths stay valid in markdown hrefs. */
 function joinPath(directory: string, name: string): string {
-  return `${directory.replace(/\\/g, '/')}/${name}`;
+  return `${directory.replace(/\\/g, "/")}/${name}`;
 }

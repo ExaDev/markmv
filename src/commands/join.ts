@@ -1,5 +1,5 @@
-import { ContentJoiner } from '../core/content-joiner.js';
-import type { JoinOperationOptions } from '../types/operations.js';
+import { ContentJoiner } from "../core/content-joiner.js";
+import type { JoinOperationOptions } from "../types/operations.js";
 
 /**
  * Configuration options for join command operations.
@@ -15,7 +15,7 @@ export interface JoinOptions {
   /** Perform a dry run without making actual changes */
   dryRun?: boolean;
   /** Strategy for ordering content when joining files */
-  orderStrategy?: 'alphabetical' | 'manual' | 'dependency' | 'chronological';
+  orderStrategy?: "alphabetical" | "manual" | "dependency" | "chronological";
   /** Enable verbose output with detailed progress information */
   verbose?: boolean;
 }
@@ -62,16 +62,19 @@ export interface JoinOptions {
  *
  * @throws Will exit the process with code 1 if the operation fails
  */
-export async function joinCommand(files: string[], options: JoinOptions): Promise<void> {
+export async function joinCommand(
+  files: string[],
+  options: JoinOptions,
+): Promise<void> {
   const joiner = new ContentJoiner();
 
   if (files.length === 0) {
-    console.error('❌ No files provided to join');
+    console.error("❌ No files provided to join");
     process.exit(1);
   }
 
   if (files.length === 1) {
-    console.error('❌ At least two files are required for joining');
+    console.error("❌ At least two files are required for joining");
     process.exit(1);
   }
 
@@ -79,19 +82,19 @@ export async function joinCommand(files: string[], options: JoinOptions): Promis
     output: options.output ?? undefined,
     dryRun: options.dryRun ?? false,
     verbose: options.verbose ?? false,
-    orderStrategy: options.orderStrategy ?? 'dependency',
+    orderStrategy: options.orderStrategy ?? "dependency",
   };
 
   if (options.verbose) {
     console.log(
-      `🔗 Joining ${String(files.length)} files using ${String(joinOptions.orderStrategy)} strategy`
+      `🔗 Joining ${String(files.length)} files using ${String(joinOptions.orderStrategy)} strategy`,
     );
-    console.log(`📁 Input files: ${files.join(', ')}`);
+    console.log(`📁 Input files: ${files.join(", ")}`);
     if (options.output) {
       console.log(`📄 Output file: ${options.output}`);
     }
     if (options.dryRun) {
-      console.log('🔍 Dry run mode - no changes will be made');
+      console.log("🔍 Dry run mode - no changes will be made");
     }
   }
 
@@ -99,7 +102,7 @@ export async function joinCommand(files: string[], options: JoinOptions): Promis
     const result = await joiner.joinFiles(files, joinOptions);
 
     if (!result.success) {
-      console.error('❌ Join operation failed:');
+      console.error("❌ Join operation failed:");
       for (const error of result.errors) {
         console.error(`  ${error}`);
       }
@@ -108,52 +111,56 @@ export async function joinCommand(files: string[], options: JoinOptions): Promis
 
     // Display results
     if (options.dryRun) {
-      console.log('\\n📋 Changes that would be made:');
+      console.log("\\n📋 Changes that would be made:");
 
       if (result.createdFiles.length > 0) {
-        console.log('\\n📄 Files that would be created:');
+        console.log("\\n📄 Files that would be created:");
         for (const file of result.createdFiles) {
           console.log(`  + ${file}`);
         }
       }
 
       if (result.modifiedFiles.length > 0) {
-        console.log('\\n📝 Files that would be modified:');
+        console.log("\\n📝 Files that would be modified:");
         for (const file of result.modifiedFiles) {
           console.log(`  ~ ${file}`);
         }
       }
 
       if (result.changes.length > 0 && options.verbose) {
-        console.log('\\n🔗 Changes:');
+        console.log("\\n🔗 Changes:");
         for (const change of result.changes) {
-          if (change.type === 'file-created') {
+          if (change.type === "file-created") {
             console.log(`  + Created: ${change.filePath}`);
-          } else if (change.type === 'link-updated') {
+          } else if (change.type === "link-updated") {
             console.log(`  ~ Updated links in: ${change.filePath}`);
           }
         }
       }
 
       console.log(
-        `\\n📊 Summary: Would create ${String(result.createdFiles.length)} file(s) and modify ${String(result.modifiedFiles.length)} file(s)`
+        `\\n📊 Summary: Would create ${String(result.createdFiles.length)} file(s) and modify ${String(result.modifiedFiles.length)} file(s)`,
       );
     } else {
-      console.log('✅ Join operation completed successfully!');
+      console.log("✅ Join operation completed successfully!");
 
       if (result.createdFiles.length > 0) {
         console.log(`📄 Created file: ${result.createdFiles[0]}`);
       }
 
       if (result.modifiedFiles.length > 0) {
-        console.log(`\\n📝 Modified ${String(result.modifiedFiles.length)} file(s):`);
+        console.log(
+          `\\n📝 Modified ${String(result.modifiedFiles.length)} file(s):`,
+        );
         for (const file of result.modifiedFiles) {
           console.log(`  ~ ${file}`);
         }
       }
 
       if (options.verbose && result.changes.length > 0) {
-        const linkUpdates = result.changes.filter((c) => c.type === 'link-updated').length;
+        const linkUpdates = result.changes.filter(
+          (c) => c.type === "link-updated",
+        ).length;
         if (linkUpdates > 0) {
           console.log(`\\n🔗 Updated links in ${String(linkUpdates)} file(s)`);
         }
@@ -162,7 +169,7 @@ export async function joinCommand(files: string[], options: JoinOptions): Promis
 
     // Display warnings
     if (result.warnings.length > 0) {
-      console.log('\\n⚠️  Warnings:');
+      console.log("\\n⚠️  Warnings:");
       for (const warning of result.warnings) {
         console.log(`  ${warning}`);
       }
@@ -170,15 +177,17 @@ export async function joinCommand(files: string[], options: JoinOptions): Promis
 
     // Show helpful tips
     if (!options.dryRun) {
-      console.log('\\n💡 Tips:');
-      console.log('  • Use --dry-run to preview changes before joining');
-      console.log('  • Use --verbose for detailed operation logs');
-      if (joinOptions.orderStrategy === 'dependency') {
-        console.log('  • Files are ordered by dependency relationships');
-      } else if (joinOptions.orderStrategy === 'alphabetical') {
-        console.log('  • Files are ordered alphabetically by title');
-      } else if (joinOptions.orderStrategy === 'chronological') {
-        console.log('  • Files are ordered by date (from frontmatter or filename)');
+      console.log("\\n💡 Tips:");
+      console.log("  • Use --dry-run to preview changes before joining");
+      console.log("  • Use --verbose for detailed operation logs");
+      if (joinOptions.orderStrategy === "dependency") {
+        console.log("  • Files are ordered by dependency relationships");
+      } else if (joinOptions.orderStrategy === "alphabetical") {
+        console.log("  • Files are ordered alphabetically by title");
+      } else if (joinOptions.orderStrategy === "chronological") {
+        console.log(
+          "  • Files are ordered by date (from frontmatter or filename)",
+        );
       }
     }
   } catch (error) {

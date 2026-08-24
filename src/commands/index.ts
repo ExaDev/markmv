@@ -1,8 +1,8 @@
-import { existsSync, statSync } from 'node:fs';
-import { basename, join, relative, resolve } from 'node:path';
-import { glob, type GlobOptionsWithFileTypesFalse } from 'glob';
-import { FileUtils } from '../utils/file-utils.js';
-import { TocGenerator, type TocOptions } from '../utils/toc-generator.js';
+import { existsSync, statSync } from "node:fs";
+import { basename, join, relative, resolve } from "node:path";
+import { glob, type GlobOptionsWithFileTypesFalse } from "glob";
+import { FileUtils } from "../utils/file-utils.js";
+import { TocGenerator, type TocOptions } from "../utils/toc-generator.js";
 
 // Test PR creation with trailing spaces on main branch
 
@@ -16,15 +16,15 @@ import { TocGenerator, type TocOptions } from '../utils/toc-generator.js';
  */
 export interface IndexOptions {
   /** Type of index content to generate */
-  type: 'links' | 'import' | 'embed' | 'hybrid';
+  type: "links" | "import" | "embed" | "hybrid";
   /** Strategy for organizing files in the index */
-  strategy: 'directory' | 'metadata' | 'manual';
+  strategy: "directory" | "metadata" | "manual";
   /** Where to place generated index files */
-  location: 'all' | 'root' | 'branch' | 'existing';
+  location: "all" | "root" | "branch" | "existing";
   /** Name for generated index files */
   name: string;
   /** Style for embedded content (Obsidian or standard markdown) */
-  embedStyle: 'obsidian' | 'markdown';
+  embedStyle: "obsidian" | "markdown";
   /** Path to custom template file */
   template?: string;
   /** Perform a dry run without making actual changes */
@@ -96,11 +96,11 @@ export interface IndexableFile {
  */
 /** CLI options interface for the index command */
 interface IndexCliOptions {
-  type?: 'links' | 'import' | 'embed' | 'hybrid';
-  strategy?: 'directory' | 'metadata' | 'manual';
-  location?: 'all' | 'root' | 'branch' | 'existing';
+  type?: "links" | "import" | "embed" | "hybrid";
+  strategy?: "directory" | "metadata" | "manual";
+  location?: "all" | "root" | "branch" | "existing";
   name?: string;
-  embedStyle?: 'obsidian' | 'markdown';
+  embedStyle?: "obsidian" | "markdown";
   template?: string;
   dryRun?: boolean;
   verbose?: boolean;
@@ -139,14 +139,14 @@ interface IndexCliOptions {
  */
 export async function indexCommand(
   directory: string | undefined,
-  cliOptions: IndexCliOptions
+  cliOptions: IndexCliOptions,
 ): Promise<void> {
   const options: IndexOptions = {
-    type: cliOptions.type ?? 'links',
-    strategy: cliOptions.strategy ?? 'directory',
-    location: cliOptions.location ?? 'root',
-    name: cliOptions.name ?? 'index.md',
-    embedStyle: cliOptions.embedStyle ?? 'obsidian',
+    type: cliOptions.type ?? "links",
+    strategy: cliOptions.strategy ?? "directory",
+    location: cliOptions.location ?? "root",
+    name: cliOptions.name ?? "index.md",
+    embedStyle: cliOptions.embedStyle ?? "obsidian",
     dryRun: cliOptions.dryRun ?? false,
     verbose: cliOptions.verbose ?? false,
     noTraverseUp: cliOptions.noTraverseUp ?? false,
@@ -162,14 +162,17 @@ export async function indexCommand(
   };
 
   if (cliOptions.json) {
-    return generateIndexFilesJson(options, directory ?? '.');
+    return generateIndexFilesJson(options, directory ?? ".");
   } else {
-    return generateIndexFiles(options, directory ?? '.');
+    return generateIndexFiles(options, directory ?? ".");
   }
 }
 
 /** Generate index files for markdown documentation (JSON output) */
-async function generateIndexFilesJson(options: IndexOptions, directory: string): Promise<void> {
+async function generateIndexFilesJson(
+  options: IndexOptions,
+  directory: string,
+): Promise<void> {
   const targetDir = resolve(directory);
 
   if (!existsSync(targetDir)) {
@@ -204,7 +207,7 @@ async function generateIndexFilesJson(options: IndexOptions, directory: string):
             relativePath: file.relativePath,
             title: nonEmptyOr(file.metadata.title, file.relativePath),
           })),
-        ])
+        ]),
       ),
       files: files.map((file) => ({
         path: file.path,
@@ -216,14 +219,19 @@ async function generateIndexFilesJson(options: IndexOptions, directory: string):
     console.log(JSON.stringify(jsonOutput, null, 2));
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(`Failed to generate index: ${error.message}`, { cause: error });
+      throw new Error(`Failed to generate index: ${error.message}`, {
+        cause: error,
+      });
     }
     throw error;
   }
 }
 
 /** Generate index files for markdown documentation */
-async function generateIndexFiles(options: IndexOptions, directory: string): Promise<void> {
+async function generateIndexFiles(
+  options: IndexOptions,
+  directory: string,
+): Promise<void> {
   const targetDir = resolve(directory);
 
   if (!existsSync(targetDir)) {
@@ -237,7 +245,7 @@ async function generateIndexFiles(options: IndexOptions, directory: string): Pro
   if (options.verbose) {
     console.log(`Generating indexes in: ${targetDir}`);
     console.log(
-      `Type: ${options.type}, Strategy: ${options.strategy}, Location: ${options.location}`
+      `Type: ${options.type}, Strategy: ${options.strategy}, Location: ${options.location}`,
     );
   }
 
@@ -253,15 +261,23 @@ async function generateIndexFiles(options: IndexOptions, directory: string): Pro
 
     // Generate each index file
     for (const indexPath of indexPaths) {
-      const relevantFiles = getRelevantFilesForIndex(indexPath, organizedFiles, options);
-      const indexContent = generateIndexContent(indexPath, relevantFiles, options);
+      const relevantFiles = getRelevantFilesForIndex(
+        indexPath,
+        organizedFiles,
+        options,
+      );
+      const indexContent = generateIndexContent(
+        indexPath,
+        relevantFiles,
+        options,
+      );
 
       if (options.dryRun) {
         console.log(`Would create: ${indexPath}`);
         if (options.verbose) {
-          console.log('Content:');
+          console.log("Content:");
           console.log(indexContent);
-          console.log('---');
+          console.log("---");
         }
       } else {
         await writeIndexFile(indexPath, indexContent, options);
@@ -269,7 +285,7 @@ async function generateIndexFiles(options: IndexOptions, directory: string): Pro
       }
     }
   } catch (error) {
-    console.error('Error generating indexes:', error);
+    console.error("Error generating indexes:", error);
     throw error;
   }
 }
@@ -277,23 +293,28 @@ async function generateIndexFiles(options: IndexOptions, directory: string): Pro
 /** Discover all markdown files in the target directory */
 async function discoverMarkdownFiles(
   targetDir: string,
-  options: IndexOptions
+  options: IndexOptions,
 ): Promise<IndexableFile[]> {
   // Determine the effective boundary for file scanning
-  const effectiveBoundary = options.boundary ? resolve(options.boundary) : targetDir;
+  const effectiveBoundary = options.boundary
+    ? resolve(options.boundary)
+    : targetDir;
 
   // Build glob pattern based on maxDepth option
   let globPattern: string;
   if (options.maxDepth !== undefined) {
     // Create depth-limited pattern
-    const depthPattern = Array.from({ length: options.maxDepth }, () => '*').join('/');
-    globPattern = join(targetDir, depthPattern, '*.md').replace(/\\/g, '/');
+    const depthPattern = Array.from(
+      { length: options.maxDepth },
+      () => "*",
+    ).join("/");
+    globPattern = join(targetDir, depthPattern, "*.md").replace(/\\/g, "/");
   } else {
-    globPattern = join(targetDir, '**/*.md').replace(/\\/g, '/');
+    globPattern = join(targetDir, "**/*.md").replace(/\\/g, "/");
   }
 
   const globOptions: GlobOptionsWithFileTypesFalse = {
-    ignore: ['**/node_modules/**'],
+    ignore: ["**/node_modules/**"],
   };
 
   // Only set cwd if noTraverseUp is enabled
@@ -314,7 +335,7 @@ async function discoverMarkdownFiles(
       // Ensure file is within the boundary directory
       if (options.boundary) {
         const relativeToBoundary = relative(effectiveBoundary, resolvedPath);
-        if (relativeToBoundary.startsWith('..')) {
+        if (relativeToBoundary.startsWith("..")) {
           return false; // File is outside boundary
         }
       }
@@ -322,7 +343,7 @@ async function discoverMarkdownFiles(
       // Ensure file is within or below target directory when noTraverseUp is enabled
       if (options.noTraverseUp) {
         const relativeToTarget = relative(targetDir, resolvedPath);
-        if (relativeToTarget.startsWith('..')) {
+        if (relativeToTarget.startsWith("..")) {
           return false; // File is above target directory
         }
       }
@@ -345,7 +366,7 @@ async function discoverMarkdownFiles(
 
       files.push({
         path: filePath,
-        relativePath: relative(targetDir, filePath).replace(/\\/g, '/'),
+        relativePath: relative(targetDir, filePath).replace(/\\/g, "/"),
         metadata,
         content,
       });
@@ -382,31 +403,33 @@ function extractFrontmatter(content: string): FileMetadata {
     const metadata: FileMetadata = {};
 
     // Simple YAML parsing for common fields
-    const lines = frontmatter.split('\n');
+    const lines = frontmatter.split("\n");
     for (const line of lines) {
       const match = /^(\w+):\s*(.+)$/.exec(line);
       if (match) {
         const [, key, value] = match;
         switch (key) {
-          case 'title':
-            metadata.title = value.replace(/['"]/g, '');
+          case "title":
+            metadata.title = value.replace(/['"]/g, "");
             break;
-          case 'description':
-            metadata.description = value.replace(/['"]/g, '');
+          case "description":
+            metadata.description = value.replace(/['"]/g, "");
             break;
-          case 'category':
-            metadata.category = value.replace(/['"]/g, '');
+          case "category":
+            metadata.category = value.replace(/['"]/g, "");
             break;
-          case 'order':
+          case "order":
             metadata.order = Number.parseInt(value, 10);
             break;
-          case 'tags': {
+          case "tags": {
             // Handle array format: [tag1, tag2] or simple string
             const tagMatch = /\[(.*)\]/.exec(value);
             if (tagMatch) {
-              metadata.tags = tagMatch[1].split(',').map((t) => t.trim().replace(/['"]/g, ''));
+              metadata.tags = tagMatch[1]
+                .split(",")
+                .map((t) => t.trim().replace(/['"]/g, ""));
             } else {
-              metadata.tags = [value.replace(/['"]/g, '')];
+              metadata.tags = [value.replace(/['"]/g, "")];
             }
             break;
           }
@@ -423,7 +446,7 @@ function extractFrontmatter(content: string): FileMetadata {
 /** Organize files based on the specified strategy */
 function organizeFiles(
   files: IndexableFile[],
-  options: IndexOptions
+  options: IndexOptions,
 ): Map<string, IndexableFile[]> {
   const organized = new Map<string, IndexableFile[]>();
 
@@ -431,26 +454,26 @@ function organizeFiles(
     let groupKey: string;
 
     switch (options.strategy) {
-      case 'directory': {
+      case "directory": {
         // Group by immediate parent directory
-        const pathParts = file.relativePath.split('/');
-        groupKey = pathParts.length > 1 ? pathParts[0] : 'root';
+        const pathParts = file.relativePath.split("/");
+        groupKey = pathParts.length > 1 ? pathParts[0] : "root";
         break;
       }
 
-      case 'metadata':
+      case "metadata":
         // Group by category from frontmatter
-        groupKey = nonEmptyOr(file.metadata.category, 'uncategorized');
+        groupKey = nonEmptyOr(file.metadata.category, "uncategorized");
         break;
 
-      case 'manual':
+      case "manual":
         // For now, treat as directory-based, but this could be extended
         // to read configuration from a special file
-        groupKey = nonEmptyOr(file.relativePath.split('/')[0], 'root');
+        groupKey = nonEmptyOr(file.relativePath.split("/")[0], "root");
         break;
 
       default:
-        groupKey = 'all';
+        groupKey = "all";
     }
 
     if (!organized.has(groupKey)) {
@@ -484,22 +507,25 @@ function organizeFiles(
 function determineIndexLocations(
   targetDir: string,
   files: IndexableFile[],
-  options: IndexOptions
+  options: IndexOptions,
 ): string[] {
   const locations: string[] = [];
 
   switch (options.location) {
-    case 'root':
+    case "root":
       locations.push(join(targetDir, options.name));
       break;
 
-    case 'all': {
+    case "all": {
       // Get all unique directories
       const directories = new Set<string>();
       directories.add(targetDir); // Root directory
 
       for (const file of files) {
-        const fileDir = join(targetDir, file.relativePath.split('/').slice(0, -1).join('/'));
+        const fileDir = join(
+          targetDir,
+          file.relativePath.split("/").slice(0, -1).join("/"),
+        );
         directories.add(fileDir);
       }
 
@@ -509,13 +535,13 @@ function determineIndexLocations(
       break;
     }
 
-    case 'branch': {
+    case "branch": {
       // Only directories that contain subdirectories
       const branchDirs = new Set<string>();
       branchDirs.add(targetDir); // Always include root
 
       for (const file of files) {
-        const pathParts = file.relativePath.split('/');
+        const pathParts = file.relativePath.split("/");
         if (pathParts.length > 2) {
           // Has subdirectories
           const branchDir = join(targetDir, pathParts[0]);
@@ -529,10 +555,13 @@ function determineIndexLocations(
       break;
     }
 
-    case 'existing': {
+    case "existing": {
       // Only where index files already exist
       for (const file of files) {
-        const dir = join(targetDir, file.relativePath.split('/').slice(0, -1).join('/'));
+        const dir = join(
+          targetDir,
+          file.relativePath.split("/").slice(0, -1).join("/"),
+        );
         const potentialIndex = join(dir, options.name);
         if (existsSync(potentialIndex)) {
           locations.push(potentialIndex);
@@ -554,7 +583,7 @@ function determineIndexLocations(
 function getRelevantFilesForIndex(
   _indexPath: string,
   organizedFiles: Map<string, IndexableFile[]>,
-  _options: IndexOptions
+  _options: IndexOptions,
 ): Map<string, IndexableFile[]> {
   // For now, return all organized files
   // This could be refined to only include files in the same directory tree
@@ -565,10 +594,14 @@ function getRelevantFilesForIndex(
 function generateIndexContent(
   indexPath: string,
   organizedFiles: Map<string, IndexableFile[]>,
-  options: IndexOptions
+  options: IndexOptions,
 ): string {
   const now = new Date().toISOString();
-  const indexDir = indexPath.replace(/\\/g, '/').split('/').slice(0, -1).join('/');
+  const indexDir = indexPath
+    .replace(/\\/g, "/")
+    .split("/")
+    .slice(0, -1)
+    .join("/");
   const tocGenerator = new TocGenerator();
 
   let content = `---
@@ -588,67 +621,76 @@ updated: ${now}
 
     // Capitalize and format group name
     const displayName = groupName
-      .split('-')
+      .split("-")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+      .join(" ");
 
     content += `## ${displayName}\n\n`;
 
     for (const file of files) {
-      const relativePath = relative(indexDir, file.path).replace(/\\/g, '/');
+      const relativePath = relative(indexDir, file.path).replace(/\\/g, "/");
       const title = nonEmptyOr(
         file.metadata.title,
-        nonEmptyOr(file.relativePath.split('/').pop()?.replace('.md', ''), 'Untitled')
+        nonEmptyOr(
+          file.relativePath.split("/").pop()?.replace(".md", ""),
+          "Untitled",
+        ),
       );
       const description = file.metadata.description;
 
       switch (options.type) {
-        case 'links':
+        case "links":
           content += `- [${title}](${relativePath})`;
           if (description) {
             content += ` - ${description}`;
           }
-          content += '\n';
+          content += "\n";
 
           // Add TOC if enabled and file has headings
           if (options.generateToc) {
-            const tocResult = tocGenerator.generateToc(file.content, options.tocOptions);
+            const tocResult = tocGenerator.generateToc(
+              file.content,
+              options.tocOptions,
+            );
             if (tocResult.toc && tocResult.headings.length > 0) {
               content += `  - Table of Contents:\n`;
               const indentedToc = tocResult.toc
-                .split('\n')
+                .split("\n")
                 .map((line) => `    ${line}`)
-                .join('\n');
+                .join("\n");
               content += `${indentedToc}\n`;
             }
           }
           break;
 
-        case 'import':
+        case "import":
           content += `### ${title}\n`;
           content += `@${relativePath}\n\n`;
           break;
 
-        case 'embed':
+        case "embed":
           content += `### ${title}\n`;
-          if (options.embedStyle === 'obsidian') {
+          if (options.embedStyle === "obsidian") {
             content += `![[${relativePath}]]\n\n`;
           } else {
             content += `![${title}](${relativePath})\n\n`;
           }
           break;
 
-        case 'hybrid':
+        case "hybrid":
           content += `### [${title}](${relativePath})\n`;
           if (description) {
             content += `> ${description}\n\n`;
           } else {
-            content += '\n';
+            content += "\n";
           }
 
           // Add TOC if enabled and file has headings
           if (options.generateToc) {
-            const tocResult = tocGenerator.generateToc(file.content, options.tocOptions);
+            const tocResult = tocGenerator.generateToc(
+              file.content,
+              options.tocOptions,
+            );
             if (tocResult.toc && tocResult.headings.length > 0) {
               content += `#### Table of Contents\n\n`;
               content += `${tocResult.toc}\n\n`;
@@ -658,7 +700,7 @@ updated: ${now}
       }
     }
 
-    content += '\n';
+    content += "\n";
   }
 
   return content;
@@ -668,7 +710,9 @@ updated: ${now}
 async function writeIndexFile(
   indexPath: string,
   content: string,
-  _options: IndexOptions
+  _options: IndexOptions,
 ): Promise<void> {
-  await FileUtils.writeTextFile(indexPath, content, { createDirectories: true });
+  await FileUtils.writeTextFile(indexPath, content, {
+    createDirectories: true,
+  });
 }

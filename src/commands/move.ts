@@ -1,10 +1,13 @@
-import { existsSync, statSync } from 'node:fs';
-import { readdir, rmdir } from 'node:fs/promises';
-import { basename, join, relative, resolve } from 'node:path';
-import { glob } from 'glob';
-import { FileOperations } from '../core/file-operations.js';
-import type { MoveOperationOptions, OperationResult } from '../types/operations.js';
-import { PathUtils } from '../utils/path-utils.js';
+import { existsSync, statSync } from "node:fs";
+import { readdir, rmdir } from "node:fs/promises";
+import { basename, join, relative, resolve } from "node:path";
+import { glob } from "glob";
+import { FileOperations } from "../core/file-operations.js";
+import type {
+  MoveOperationOptions,
+  OperationResult,
+} from "../types/operations.js";
+import { PathUtils } from "../utils/path-utils.js";
 
 /**
  * Configuration options for move command operations.
@@ -54,7 +57,10 @@ export interface MoveOptions {
  *
  * @internal
  */
-async function expandSourcePatterns(patterns: string[], verbose = false): Promise<string[]> {
+async function expandSourcePatterns(
+  patterns: string[],
+  verbose = false,
+): Promise<string[]> {
   const allFiles = new Set<string>();
 
   for (const pattern of patterns) {
@@ -74,14 +80,16 @@ async function expandSourcePatterns(patterns: string[], verbose = false): Promis
     // Expand glob pattern
     try {
       // Glob patterns use forward slashes on every platform; backslashes are pattern escapes
-      const globResults = await glob(pattern.replace(/\\/g, '/'), {
-        ignore: ['node_modules/**', '.git/**', 'dist/**'],
+      const globResults = await glob(pattern.replace(/\\/g, "/"), {
+        ignore: ["node_modules/**", ".git/**", "dist/**"],
         absolute: true,
         nodir: true, // Only return files, not directories
       });
 
       if (verbose && globResults.length > 0) {
-        console.log(`   📁 Found ${String(globResults.length)} file(s) matching pattern`);
+        console.log(
+          `   📁 Found ${String(globResults.length)} file(s) matching pattern`,
+        );
       }
 
       for (const file of globResults) {
@@ -104,7 +112,7 @@ async function expandSourcePatterns(patterns: string[], verbose = false): Promis
 }
 
 /** Directory names never moved as part of a directory source expansion */
-const IGNORED_DIRECTORY_NAMES = new Set(['node_modules', '.git', 'dist']);
+const IGNORED_DIRECTORY_NAMES = new Set(["node_modules", ".git", "dist"]);
 
 /**
  * Collect every file inside a directory tree, recursively, mirroring the ignores that glob
@@ -207,14 +215,19 @@ async function pruneEmptyDirectories(directoryRoot: string): Promise<void> {
  *
  * @throws Will exit the process with code 1 if the operation fails
  */
-export async function moveCommand(sources: string[], options: MoveOptions): Promise<void> {
+export async function moveCommand(
+  sources: string[],
+  options: MoveOptions,
+): Promise<void> {
   if (sources.length < 2) {
-    console.error('❌ Error: At least 2 arguments required (source(s) and destination)');
-    console.error('Usage: markmv move <sources...> <destination>');
-    console.error('Examples:');
-    console.error('  markmv move file.md ./target/');
-    console.error('  markmv move file1.md file2.md ./target/');
-    console.error('  markmv move directory ./target/');
+    console.error(
+      "❌ Error: At least 2 arguments required (source(s) and destination)",
+    );
+    console.error("Usage: markmv move <sources...> <destination>");
+    console.error("Examples:");
+    console.error("  markmv move file.md ./target/");
+    console.error("  markmv move file1.md file2.md ./target/");
+    console.error("  markmv move directory ./target/");
     console.error('  markmv move "*.md" ./target/');
     console.error('  markmv move "**/*.md" ./archive/');
     process.exit(1);
@@ -237,10 +250,13 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
     }
 
     // Expand glob patterns to actual file paths
-    const sourceFiles = await expandSourcePatterns(nonDirectoryPatterns, options.verbose);
+    const sourceFiles = await expandSourcePatterns(
+      nonDirectoryPatterns,
+      options.verbose,
+    );
 
     if (sourceFiles.length === 0 && directorySources.length === 0) {
-      console.error('❌ No files found matching the specified patterns');
+      console.error("❌ No files found matching the specified patterns");
       process.exit(1);
     }
 
@@ -252,7 +268,9 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
       directorySources.length > 0;
 
     if (sourceFiles.length > 1 && !isDestDirectory) {
-      console.error('❌ Error: When moving multiple files, destination must be a directory');
+      console.error(
+        "❌ Error: When moving multiple files, destination must be a directory",
+      );
       console.error(`   Destination: ${destination}`);
       console.error(`   Found ${String(sourceFiles.length)} source files`);
       process.exit(1);
@@ -264,13 +282,16 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
       const filesInDirectory = await collectDirectoryFiles(directorySource);
       if (options.verbose) {
         console.log(
-          `📁 Directory source ${directorySource}: ${String(filesInDirectory.length)} file(s)`
+          `📁 Directory source ${directorySource}: ${String(filesInDirectory.length)} file(s)`,
         );
       }
       for (const file of filesInDirectory) {
         directoryMoves.push({
           source: file,
-          destination: join(resolvedDestination, relative(directorySource, file)),
+          destination: join(
+            resolvedDestination,
+            relative(directorySource, file),
+          ),
         });
       }
     }
@@ -278,7 +299,9 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
     const totalSourceFiles = sourceFiles.length + directoryMoves.length;
 
     if (options.verbose) {
-      console.log(`🎯 Destination: ${destination} ${isDestDirectory ? '(directory)' : '(file)'}`);
+      console.log(
+        `🎯 Destination: ${destination} ${isDestDirectory ? "(directory)" : "(file)"}`,
+      );
       console.log(`📁 Found ${String(totalSourceFiles)} source file(s):`);
       for (const file of sourceFiles) {
         console.log(`   • ${file}`);
@@ -288,7 +311,7 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
       }
 
       if (options.dryRun) {
-        console.log('🔍 Dry run mode - no changes will be made');
+        console.log("🔍 Dry run mode - no changes will be made");
       }
     }
 
@@ -311,7 +334,9 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
         ...directoryMoves,
         ...sourceFiles.map((source) => ({
           source,
-          destination: isDestDirectory ? join(resolvedDestination, basename(source)) : destination,
+          destination: isDestDirectory
+            ? join(resolvedDestination, basename(source))
+            : destination,
         })),
       ];
       result = await fileOps.moveFiles(moves, moveOptions);
@@ -325,7 +350,7 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
     }
 
     if (!result.success) {
-      console.error('❌ Move operation failed:');
+      console.error("❌ Move operation failed:");
       for (const error of result.errors) {
         console.error(`  ${error}`);
       }
@@ -333,58 +358,62 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
     }
 
     // Display results. Link updates can land in bystander files and in the moved files themselves, so counts derive from the recorded changes rather than the bystander-only modifiedFiles list.
-    const linkChanges = result.changes.filter((change) => change.type === 'link-updated');
-    const changedFilePaths = Array.from(new Set(linkChanges.map((change) => change.filePath)));
+    const linkChanges = result.changes.filter(
+      (change) => change.type === "link-updated",
+    );
+    const changedFilePaths = Array.from(
+      new Set(linkChanges.map((change) => change.filePath)),
+    );
 
     if (options.dryRun) {
-      console.log('\n📋 Changes that would be made:');
+      console.log("\n📋 Changes that would be made:");
 
       if (result.createdFiles.length > 0) {
-        console.log('\n✅ Files that would be created:');
+        console.log("\n✅ Files that would be created:");
         for (const file of result.createdFiles) {
           console.log(`  + ${file}`);
         }
       }
 
       if (result.deletedFiles.length > 0) {
-        console.log('\n🗑️  Files that would be deleted:');
+        console.log("\n🗑️  Files that would be deleted:");
         for (const file of result.deletedFiles) {
           console.log(`  - ${file}`);
         }
       }
 
       if (changedFilePaths.length > 0) {
-        console.log('\n📝 Files whose links would be updated:');
+        console.log("\n📝 Files whose links would be updated:");
         for (const file of changedFilePaths) {
           console.log(`  ~ ${file}`);
         }
       }
 
       if (linkChanges.length > 0) {
-        console.log('\n🔗 Link rewrites:');
+        console.log("\n🔗 Link rewrites:");
         for (const change of linkChanges) {
           console.log(
-            `  ${change.filePath}:${String(change.line)} ${String(change.oldValue)} → ${String(change.newValue)}`
+            `  ${change.filePath}:${String(change.line)} ${String(change.oldValue)} → ${String(change.newValue)}`,
           );
         }
       }
 
       console.log(
-        `\n📊 Summary: ${String(linkChanges.length)} link(s) would be updated across ${String(changedFilePaths.length)} file(s)`
+        `\n📊 Summary: ${String(linkChanges.length)} link(s) would be updated across ${String(changedFilePaths.length)} file(s)`,
       );
     } else {
-      console.log('✅ Move operation completed successfully!');
+      console.log("✅ Move operation completed successfully!");
 
       if (linkChanges.length > 0) {
         console.log(
-          `📝 Updated ${String(linkChanges.length)} link(s) across ${String(changedFilePaths.length)} file(s)`
+          `📝 Updated ${String(linkChanges.length)} link(s) across ${String(changedFilePaths.length)} file(s)`,
         );
       } else {
-        console.log('📝 No links needed updating');
+        console.log("📝 No links needed updating");
       }
 
       if (options.verbose && changedFilePaths.length > 0) {
-        console.log('\nFiles with updated links:');
+        console.log("\nFiles with updated links:");
         for (const file of changedFilePaths) {
           console.log(`  ~ ${file}`);
         }
@@ -393,8 +422,10 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
 
     // Surface parse failures: a file that could not be parsed had its links left untouched, so the operation cannot guarantee link integrity even though the move itself succeeded
     if (result.parseFailures && result.parseFailures.length > 0) {
-      console.log(`\n⚠️  Parse Failures (${String(result.parseFailures.length)}):`);
-      console.log('  Links in these files were NOT checked or rewritten:');
+      console.log(
+        `\n⚠️  Parse Failures (${String(result.parseFailures.length)}):`,
+      );
+      console.log("  Links in these files were NOT checked or rewritten:");
       for (const failure of result.parseFailures) {
         console.log(`  ${failure.file}: ${failure.error}`);
       }
@@ -403,7 +434,7 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
 
     // Display warnings
     if (result.warnings.length > 0) {
-      console.log('\n⚠️  Warnings:');
+      console.log("\n⚠️  Warnings:");
       for (const warning of result.warnings) {
         console.log(`  ${warning}`);
       }
@@ -411,13 +442,15 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
 
     // Validate the operation
     if (!options.dryRun && options.verbose) {
-      console.log('\n🔍 Validating link integrity...');
+      console.log("\n🔍 Validating link integrity...");
       const validation = await fileOps.validateOperation(result);
 
       if (validation.valid) {
-        console.log('✅ All links are valid');
+        console.log("✅ All links are valid");
       } else {
-        console.log(`⚠️  Found ${String(validation.brokenLinks)} broken link(s):`);
+        console.log(
+          `⚠️  Found ${String(validation.brokenLinks)} broken link(s):`,
+        );
         for (const error of validation.errors) {
           console.log(`  ${error}`);
         }

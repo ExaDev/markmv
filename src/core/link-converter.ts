@@ -1,31 +1,31 @@
-import { readFile, writeFile } from 'node:fs/promises';
-import { dirname, isAbsolute, relative, resolve } from 'node:path';
-import { unified } from 'unified';
-import remarkParse from 'remark-parse';
-import remarkStringify from 'remark-stringify';
-import { visit } from 'unist-util-visit';
-import type { Node } from 'unist';
+import { readFile, writeFile } from "node:fs/promises";
+import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { unified } from "unified";
+import remarkParse from "remark-parse";
+import remarkStringify from "remark-stringify";
+import { visit } from "unist-util-visit";
+import type { Node } from "unist";
 import type {
   ConvertOperationOptions,
   OperationResult,
   OperationChange,
-} from '../types/operations.js';
-import type { MarkdownLink } from '../types/links.js';
-import { LinkParser } from './link-parser.js';
+} from "../types/operations.js";
+import type { MarkdownLink } from "../types/links.js";
+import { LinkParser } from "./link-parser.js";
 
 // Define MDAST node types for conversion
 interface LinkNode extends Node {
-  type: 'link' | 'image' | 'linkReference' | 'imageReference';
+  type: "link" | "image" | "linkReference" | "imageReference";
   url?: string;
   title?: string | null | undefined;
   alt?: string | null | undefined;
   identifier?: string;
-  referenceType?: 'full' | 'collapsed' | 'shortcut';
+  referenceType?: "full" | "collapsed" | "shortcut";
   children?: { type: string; value?: string }[];
 }
 
 interface TextNode extends Node {
-  type: 'text';
+  type: "text";
   value: string;
 }
 
@@ -65,7 +65,10 @@ export class LinkConverter {
    *
    * @returns Promise resolving to operation result with conversion details
    */
-  async convertFile(filePath: string, options: ConvertOperationOptions): Promise<OperationResult> {
+  async convertFile(
+    filePath: string,
+    options: ConvertOperationOptions,
+  ): Promise<OperationResult> {
     const result: OperationResult = {
       success: false,
       modifiedFiles: [],
@@ -78,11 +81,16 @@ export class LinkConverter {
 
     try {
       // Read and parse the file
-      const content = await readFile(filePath, 'utf-8');
+      const content = await readFile(filePath, "utf-8");
       const parsed = await this.parser.parseFile(filePath);
 
       // Convert the content
-      const convertedContent = this.convertContent(content, parsed.links, filePath, options);
+      const convertedContent = this.convertContent(
+        content,
+        parsed.links,
+        filePath,
+        options,
+      );
 
       // Check if content actually changed
       if (convertedContent === content) {
@@ -95,7 +103,7 @@ export class LinkConverter {
 
       // Write the converted content (unless dry run)
       if (!options.dryRun) {
-        await writeFile(filePath, convertedContent, 'utf-8');
+        await writeFile(filePath, convertedContent, "utf-8");
         result.modifiedFiles.push(filePath);
       }
 
@@ -109,7 +117,8 @@ export class LinkConverter {
 
       result.success = true;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       result.errors.push(`Failed to convert ${filePath}: ${errorMessage}`);
     }
 
@@ -126,7 +135,7 @@ export class LinkConverter {
    */
   async convertFiles(
     filePaths: string[],
-    options: ConvertOperationOptions
+    options: ConvertOperationOptions,
   ): Promise<OperationResult> {
     const combinedResult: OperationResult = {
       success: true,
@@ -173,11 +182,11 @@ export class LinkConverter {
     content: string,
     _links: MarkdownLink[],
     filePath: string,
-    options: ConvertOperationOptions
+    options: ConvertOperationOptions,
   ): string {
     // Parse markdown AST
     const processor = unified().use(remarkParse).use(remarkStringify, {
-      bullet: '-',
+      bullet: "-",
       fences: true,
       incrementListMarker: false,
     });
@@ -193,7 +202,7 @@ export class LinkConverter {
         if (transformed) {
           changeCount++;
         }
-      } else if (node.type === 'text' && options.linkStyle) {
+      } else if (node.type === "text" && options.linkStyle) {
         // Handle Claude imports and other text-based link formats
         if (this.isTextNode(node)) {
           const transformed = this.transformTextLinks(node, filePath, options);
@@ -209,7 +218,7 @@ export class LinkConverter {
     }
 
     const result = processor.stringify(tree);
-    return typeof result === 'string' ? result : String(result);
+    return typeof result === "string" ? result : String(result);
   }
 
   /**
@@ -226,7 +235,7 @@ export class LinkConverter {
   private transformLinkNode(
     node: LinkNode,
     filePath: string,
-    options: ConvertOperationOptions
+    options: ConvertOperationOptions,
   ): boolean {
     if (!node.url) return false;
 
@@ -238,7 +247,7 @@ export class LinkConverter {
         node.url,
         filePath,
         options.pathResolution,
-        options.basePath
+        options.basePath,
       );
       if (newUrl !== node.url) {
         node.url = newUrl;
@@ -268,25 +277,28 @@ export class LinkConverter {
   private transformTextLinks(
     node: TextNode,
     filePath: string,
-    options: ConvertOperationOptions
+    options: ConvertOperationOptions,
   ): boolean {
     const originalValue = node.value;
     let newValue = node.value;
 
     // Handle Claude imports (@./file.md, @~/file.md)
     const claudeImportRegex = /@(\.\/|~\/|[^@\s]+)/g;
-    newValue = newValue.replace(claudeImportRegex, (match: string, path: string) => {
-      if (options.pathResolution) {
-        const convertedPath = this.convertPathResolution(
-          path,
-          filePath,
-          options.pathResolution,
-          options.basePath
-        );
-        return `@${convertedPath}`;
-      }
-      return match;
-    });
+    newValue = newValue.replace(
+      claudeImportRegex,
+      (match: string, path: string) => {
+        if (options.pathResolution) {
+          const convertedPath = this.convertPathResolution(
+            path,
+            filePath,
+            options.pathResolution,
+            options.basePath,
+          );
+          return `@${convertedPath}`;
+        }
+        return match;
+      },
+    );
 
     if (newValue !== originalValue) {
       node.value = newValue;
@@ -311,18 +323,18 @@ export class LinkConverter {
   private convertPathResolution(
     linkPath: string,
     sourceFile: string,
-    targetResolution: 'absolute' | 'relative',
-    basePath?: string
+    targetResolution: "absolute" | "relative",
+    basePath?: string,
   ): string {
     // Skip external URLs and anchors
-    if (linkPath.startsWith('http') || linkPath.startsWith('#')) {
+    if (linkPath.startsWith("http") || linkPath.startsWith("#")) {
       return linkPath;
     }
 
     const sourceDir = dirname(sourceFile);
     const base = basePath ?? process.cwd();
 
-    if (targetResolution === 'absolute') {
+    if (targetResolution === "absolute") {
       // Convert to absolute path
       if (isAbsolute(linkPath)) {
         return linkPath;
@@ -369,13 +381,13 @@ export class LinkConverter {
 
     // Convert based on target style
     switch (targetStyle) {
-      case 'combined':
+      case "combined":
         return this.convertToCombined(node, text, url);
-      case 'claude':
+      case "claude":
         return this.convertToClaude(node, text, url);
-      case 'wikilink':
+      case "wikilink":
         return this.convertToWikilink(node, text, url);
-      case 'markdown':
+      case "markdown":
         return this.convertToMarkdown(node, text, url);
       default:
         return false;
@@ -384,32 +396,40 @@ export class LinkConverter {
 
   /** Extract text content from link node children. */
   private extractLinkText(node: LinkNode): string {
-    if (!node.children) return '';
+    if (!node.children) return "";
 
     return node.children
-      .filter((child) => child.type === 'text')
-      .map((child) => child.value ?? '')
-      .join('');
+      .filter((child) => child.type === "text")
+      .map((child) => child.value ?? "")
+      .join("");
   }
 
   /** Detect the current link style of a node. */
-  private detectCurrentLinkStyle(_node: LinkNode, text: string, _url: string): string {
+  private detectCurrentLinkStyle(
+    _node: LinkNode,
+    text: string,
+    _url: string,
+  ): string {
     // Check for combined format: text starting with @
-    if (text.startsWith('@')) {
-      return 'combined';
+    if (text.startsWith("@")) {
+      return "combined";
     }
 
     // For now, assume standard markdown if it's a regular link node
     // More sophisticated detection could be added here
-    return 'markdown';
+    return "markdown";
   }
 
   /** Convert link to combined format [@url](url). */
-  private convertToCombined(node: LinkNode, text: string, url: string): boolean {
+  private convertToCombined(
+    node: LinkNode,
+    text: string,
+    url: string,
+  ): boolean {
     if (!node.children || !this.isInternalLink(url)) return false;
 
     // Only convert if text doesn't already start with @
-    if (text.startsWith('@')) {
+    if (text.startsWith("@")) {
       return false;
     }
 
@@ -417,7 +437,7 @@ export class LinkConverter {
     const newText = `@${url}`;
 
     // Update the text node
-    if (node.children.length > 0 && node.children[0].type === 'text') {
+    if (node.children.length > 0 && node.children[0].type === "text") {
       node.children[0].value = newText;
       return true;
     }
@@ -429,7 +449,11 @@ export class LinkConverter {
    * Convert link to Claude import format @url. Note: This requires AST restructuring which is
    * complex. For now, this returns false to indicate no changes made.
    */
-  private convertToClaude(_node: LinkNode, _text: string, url: string): boolean {
+  private convertToClaude(
+    _node: LinkNode,
+    _text: string,
+    url: string,
+  ): boolean {
     if (!this.isInternalLink(url)) return false;
 
     // TODO: Implement proper AST restructuring for Claude imports
@@ -443,7 +467,11 @@ export class LinkConverter {
    * Convert link to wikilink format [[url]]. Note: This requires AST restructuring which is
    * complex. For now, this returns false to indicate no changes made.
    */
-  private convertToWikilink(_node: LinkNode, _text: string, url: string): boolean {
+  private convertToWikilink(
+    _node: LinkNode,
+    _text: string,
+    url: string,
+  ): boolean {
     if (!this.isInternalLink(url)) return false;
 
     // TODO: Implement proper AST restructuring for wikilinks
@@ -454,14 +482,18 @@ export class LinkConverter {
   }
 
   /** Convert link to standard markdown format [text](url). */
-  private convertToMarkdown(node: LinkNode, text: string, _url: string): boolean {
+  private convertToMarkdown(
+    node: LinkNode,
+    text: string,
+    _url: string,
+  ): boolean {
     if (!node.children) return false;
 
     // If text starts with @, remove it for standard markdown
-    if (text.startsWith('@')) {
+    if (text.startsWith("@")) {
       const newText = text.substring(1);
 
-      if (node.children.length > 0 && node.children[0].type === 'text') {
+      if (node.children.length > 0 && node.children[0].type === "text") {
         node.children[0].value = newText;
         return true;
       }
@@ -481,22 +513,26 @@ export class LinkConverter {
    *
    * @returns Array of detected changes
    */
-  private detectChanges(original: string, converted: string, filePath: string): OperationChange[] {
+  private detectChanges(
+    original: string,
+    converted: string,
+    filePath: string,
+  ): OperationChange[] {
     const changes: OperationChange[] = [];
 
     // Simple line-by-line comparison for now
-    const originalLines = original.split('\n');
-    const convertedLines = converted.split('\n');
+    const originalLines = original.split("\n");
+    const convertedLines = converted.split("\n");
 
     const maxLines = Math.max(originalLines.length, convertedLines.length);
 
     for (let i = 0; i < maxLines; i++) {
-      const originalLine = originalLines[i] || '';
-      const convertedLine = convertedLines[i] || '';
+      const originalLine = originalLines[i] || "";
+      const convertedLine = convertedLines[i] || "";
 
       if (originalLine !== convertedLine) {
         changes.push({
-          type: 'link-updated',
+          type: "link-updated",
           filePath,
           oldValue: originalLine,
           newValue: convertedLine,
@@ -518,7 +554,9 @@ export class LinkConverter {
    * @returns Whether the node is a link node
    */
   private isLinkNode(node: Node): node is LinkNode {
-    return ['link', 'image', 'linkReference', 'imageReference'].includes(node.type);
+    return ["link", "image", "linkReference", "imageReference"].includes(
+      node.type,
+    );
   }
 
   /**
@@ -531,7 +569,7 @@ export class LinkConverter {
    * @returns Whether the node is a text node
    */
   private isTextNode(node: Node): node is TextNode {
-    return node.type === 'text';
+    return node.type === "text";
   }
 
   /**
@@ -544,6 +582,10 @@ export class LinkConverter {
    * @returns Whether the URL is an internal link
    */
   private isInternalLink(url: string): boolean {
-    return !url.startsWith('http') && !url.startsWith('#') && !url.startsWith('mailto:');
+    return (
+      !url.startsWith("http") &&
+      !url.startsWith("#") &&
+      !url.startsWith("mailto:")
+    );
   }
 }

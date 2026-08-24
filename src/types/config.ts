@@ -59,20 +59,20 @@ export interface BrokenLink {
   /** File containing the broken link */
   sourceFile: string;
   /** The broken link */
-  link: import('./links.js').MarkdownLink;
+  link: import("./links.js").MarkdownLink;
   /** Reason the link is broken */
   reason:
-    | 'file-not-found'
-    | 'external-error'
-    | 'invalid-format'
-    | 'circular-reference'
-    | 'content-stale'
-    | 'auth-required'
-    | 'ambiguous-wikilink';
+    | "file-not-found"
+    | "external-error"
+    | "invalid-format"
+    | "circular-reference"
+    | "content-stale"
+    | "auth-required"
+    | "ambiguous-wikilink";
   /** Additional error details */
   details?: string;
   /** Content freshness information for external links */
-  freshnessInfo?: import('../utils/content-freshness.js').ContentFreshnessInfo;
+  freshnessInfo?: import("../utils/content-freshness.js").ContentFreshnessInfo;
   /** Authentication information if applicable */
-  authInfo?: import('../utils/auth-detection.js').AuthInfo;
+  authInfo?: import("../utils/auth-detection.js").AuthInfo;
 }
