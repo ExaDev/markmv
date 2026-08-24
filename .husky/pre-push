@@ -1,3 +1,10 @@
 # Typecheck and unit tests before push, to catch breakage before it reaches CI.
 pnpm run typecheck
 pnpm run test:run
+
+# actionlint gates CI workflows; warn-and-continue when the binary is missing locally (CI always runs it), so contributors without it are not blocked.
+if command -v actionlint >/dev/null 2>&1; then
+  actionlint .github/workflows/*.yml
+else
+  echo "note: actionlint not installed - workflow YAML not linted locally (brew install actionlint)"
+fi

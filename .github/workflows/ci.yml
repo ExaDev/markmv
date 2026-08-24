@@ -40,6 +40,13 @@ jobs:
           task: lint
           command: pnpm run lint
 
+      # Workflow YAML linting: the pre-push hook runs this too, but warns and continues when the binary isn't installed locally, so this is the one place it's guaranteed to actually run.
+      - name: Lint workflow YAML (actionlint)
+        run: |
+          VERSION="1.7.12"
+          curl -sSfL "https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash" | bash -s -- "$VERSION"
+          ./actionlint -color
+
   typecheck:
     runs-on: ubuntu-latest
     steps:
