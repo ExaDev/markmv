@@ -34,7 +34,7 @@ export default defineConfig({
         "vitest.config.ts",
         ".eslintrc.*",
         "commitlint.config.*",
-        ".releaserc.*",
+        "release.config.*",
       ],
       include: ["src/**/*.ts"],
       thresholds: {

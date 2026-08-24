@@ -13,7 +13,7 @@ updates:
     assignees:
       - "ExaDev"
     commit-message:
-      # "deps"/"deps-dev" are not conventional-commit types; commitlint's type-enum (derived from .releaserc.json) would reject every Dependabot commit otherwise.
+      # "deps"/"deps-dev" are not conventional-commit types; commitlint's type-enum (derived from release.config.ts) would reject every Dependabot commit otherwise.
       prefix: "chore"
       prefix-development: "chore"
       include: "scope"

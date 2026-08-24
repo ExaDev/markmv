@@ -343,7 +343,7 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.SEMANTIC_RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
-          # npm publish provenance, matching the npm plugin's provenance setting in .releaserc.json
+          # npm publish provenance, matching the npm plugin's provenance setting in release.config.ts
           NPM_CONFIG_PROVENANCE: "true"
           # Blanked, not omitted -- an inherited NPM_TOKEN/NODE_AUTH_TOKEN from a workflow-level env block or composite action would otherwise be used in preference to the OIDC exchange.
           NPM_TOKEN: ""
