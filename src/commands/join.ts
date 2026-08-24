@@ -83,7 +83,9 @@ export async function joinCommand(files: string[], options: JoinOptions): Promis
   };
 
   if (options.verbose) {
-    console.log(`🔗 Joining ${files.length} files using ${joinOptions.orderStrategy} strategy`);
+    console.log(
+      `🔗 Joining ${String(files.length)} files using ${String(joinOptions.orderStrategy)} strategy`
+    );
     console.log(`📁 Input files: ${files.join(', ')}`);
     if (options.output) {
       console.log(`📄 Output file: ${options.output}`);
@@ -134,7 +136,7 @@ export async function joinCommand(files: string[], options: JoinOptions): Promis
       }
 
       console.log(
-        `\\n📊 Summary: Would create ${result.createdFiles.length} file(s) and modify ${result.modifiedFiles.length} file(s)`
+        `\\n📊 Summary: Would create ${String(result.createdFiles.length)} file(s) and modify ${String(result.modifiedFiles.length)} file(s)`
       );
     } else {
       console.log('✅ Join operation completed successfully!');
@@ -144,7 +146,7 @@ export async function joinCommand(files: string[], options: JoinOptions): Promis
       }
 
       if (result.modifiedFiles.length > 0) {
-        console.log(`\\n📝 Modified ${result.modifiedFiles.length} file(s):`);
+        console.log(`\\n📝 Modified ${String(result.modifiedFiles.length)} file(s):`);
         for (const file of result.modifiedFiles) {
           console.log(`  ~ ${file}`);
         }
@@ -153,7 +155,7 @@ export async function joinCommand(files: string[], options: JoinOptions): Promis
       if (options.verbose && result.changes.length > 0) {
         const linkUpdates = result.changes.filter((c) => c.type === 'link-updated').length;
         if (linkUpdates > 0) {
-          console.log(`\\n🔗 Updated links in ${linkUpdates} file(s)`);
+          console.log(`\\n🔗 Updated links in ${String(linkUpdates)} file(s)`);
         }
       }
     }
@@ -167,7 +169,7 @@ export async function joinCommand(files: string[], options: JoinOptions): Promis
     }
 
     // Show helpful tips
-    if (!options.dryRun && result.success) {
+    if (!options.dryRun) {
       console.log('\\n💡 Tips:');
       console.log('  • Use --dry-run to preview changes before joining');
       console.log('  • Use --verbose for detailed operation logs');

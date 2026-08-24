@@ -81,7 +81,7 @@ async function expandSourcePatterns(patterns: string[], verbose = false): Promis
       });
 
       if (verbose && globResults.length > 0) {
-        console.log(`   📁 Found ${globResults.length} file(s) matching pattern`);
+        console.log(`   📁 Found ${String(globResults.length)} file(s) matching pattern`);
       }
 
       for (const file of globResults) {
@@ -254,7 +254,7 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
     if (sourceFiles.length > 1 && !isDestDirectory) {
       console.error('❌ Error: When moving multiple files, destination must be a directory');
       console.error(`   Destination: ${destination}`);
-      console.error(`   Found ${sourceFiles.length} source files`);
+      console.error(`   Found ${String(sourceFiles.length)} source files`);
       process.exit(1);
     }
 
@@ -263,7 +263,9 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
     for (const directorySource of directorySources) {
       const filesInDirectory = await collectDirectoryFiles(directorySource);
       if (options.verbose) {
-        console.log(`📁 Directory source ${directorySource}: ${filesInDirectory.length} file(s)`);
+        console.log(
+          `📁 Directory source ${directorySource}: ${String(filesInDirectory.length)} file(s)`
+        );
       }
       for (const file of filesInDirectory) {
         directoryMoves.push({
@@ -277,7 +279,7 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
 
     if (options.verbose) {
       console.log(`🎯 Destination: ${destination} ${isDestDirectory ? '(directory)' : '(file)'}`);
-      console.log(`📁 Found ${totalSourceFiles} source file(s):`);
+      console.log(`📁 Found ${String(totalSourceFiles)} source file(s):`);
       for (const file of sourceFiles) {
         console.log(`   • ${file}`);
       }
@@ -362,20 +364,20 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
         console.log('\n🔗 Link rewrites:');
         for (const change of linkChanges) {
           console.log(
-            `  ${change.filePath}:${change.line} ${change.oldValue} → ${change.newValue}`
+            `  ${change.filePath}:${String(change.line)} ${String(change.oldValue)} → ${String(change.newValue)}`
           );
         }
       }
 
       console.log(
-        `\n📊 Summary: ${linkChanges.length} link(s) would be updated across ${changedFilePaths.length} file(s)`
+        `\n📊 Summary: ${String(linkChanges.length)} link(s) would be updated across ${String(changedFilePaths.length)} file(s)`
       );
     } else {
       console.log('✅ Move operation completed successfully!');
 
       if (linkChanges.length > 0) {
         console.log(
-          `📝 Updated ${linkChanges.length} link(s) across ${changedFilePaths.length} file(s)`
+          `📝 Updated ${String(linkChanges.length)} link(s) across ${String(changedFilePaths.length)} file(s)`
         );
       } else {
         console.log('📝 No links needed updating');
@@ -391,7 +393,7 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
 
     // Surface parse failures: a file that could not be parsed had its links left untouched, so the operation cannot guarantee link integrity even though the move itself succeeded
     if (result.parseFailures && result.parseFailures.length > 0) {
-      console.log(`\n⚠️  Parse Failures (${result.parseFailures.length}):`);
+      console.log(`\n⚠️  Parse Failures (${String(result.parseFailures.length)}):`);
       console.log('  Links in these files were NOT checked or rewritten:');
       for (const failure of result.parseFailures) {
         console.log(`  ${failure.file}: ${failure.error}`);
@@ -415,7 +417,7 @@ export async function moveCommand(sources: string[], options: MoveOptions): Prom
       if (validation.valid) {
         console.log('✅ All links are valid');
       } else {
-        console.log(`⚠️  Found ${validation.brokenLinks} broken link(s):`);
+        console.log(`⚠️  Found ${String(validation.brokenLinks)} broken link(s):`);
         for (const error of validation.errors) {
           console.log(`  ${error}`);
         }

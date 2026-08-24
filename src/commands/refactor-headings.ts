@@ -162,9 +162,9 @@ export async function refactorHeadings(
     console.log(`📋 Configuration:
   - Old heading: "${options.oldHeading}"
   - New heading: "${options.newHeading}"
-  - Recursive: ${mergedOptions.recursive}
-  - Update cross-references: ${mergedOptions.updateCrossReferences}
-  - Dry run: ${mergedOptions.dryRun}`);
+  - Recursive: ${String(mergedOptions.recursive)}
+  - Update cross-references: ${String(mergedOptions.updateCrossReferences)}
+  - Dry run: ${String(mergedOptions.dryRun)}`);
   }
 
   // Initialize result structure
@@ -222,7 +222,7 @@ export async function refactorHeadings(
   result.filesProcessed = fileList.length;
 
   if (mergedOptions.verbose) {
-    console.log(`📁 Found ${fileList.length} markdown files to process`);
+    console.log(`📁 Found ${String(fileList.length)} markdown files to process`);
   }
 
   // Initialize generators and parsers
@@ -255,7 +255,7 @@ export async function refactorHeadings(
       }
 
       if (mergedOptions.verbose) {
-        console.log(`\n📄 ${filePath}: found ${matchingHeadings.length} matching headings`);
+        console.log(`\n📄 ${filePath}: found ${String(matchingHeadings.length)} matching headings`);
       }
 
       // Update headings in content
@@ -282,7 +282,7 @@ export async function refactorHeadings(
 
         // Replace the heading text in content
         const headingRegex = new RegExp(
-          `^(#{${heading.level}}\\s+)${escapeRegExp(heading.text.trim())}(\\s*)$`,
+          `^(#{${String(heading.level)}}\\s+)${escapeRegExp(heading.text.trim())}(\\s*)$`,
           'gm'
         );
 
@@ -323,7 +323,7 @@ export async function refactorHeadings(
         }
 
         if (mergedOptions.verbose) {
-          console.log(`📄 ${filePath}: found ${anchorLinks.length} anchor links to update`);
+          console.log(`📄 ${filePath}: found ${String(anchorLinks.length)} anchor links to update`);
         }
 
         // Update anchor links
@@ -369,9 +369,9 @@ export async function refactorHeadings(
   }
 
   if (mergedOptions.verbose) {
-    console.log(`\n✅ Refactoring completed in ${result.processingTime}ms`);
+    console.log(`\n✅ Refactoring completed in ${String(result.processingTime)}ms`);
     console.log(
-      `📊 Summary: ${result.headingsChanged} headings changed, ${result.linksUpdated} links updated`
+      `📊 Summary: ${String(result.headingsChanged)} headings changed, ${String(result.linksUpdated)} links updated`
     );
 
     if (mergedOptions.dryRun) {
@@ -451,10 +451,10 @@ export function formatRefactorHeadingsResults(
 
   // Summary
   lines.push(`📊 Summary:`);
-  lines.push(`  Files processed: ${result.filesProcessed}`);
-  lines.push(`  Headings changed: ${result.headingsChanged}`);
-  lines.push(`  Links updated: ${result.linksUpdated}`);
-  lines.push(`  Processing time: ${result.processingTime}ms`);
+  lines.push(`  Files processed: ${String(result.filesProcessed)}`);
+  lines.push(`  Headings changed: ${String(result.headingsChanged)}`);
+  lines.push(`  Links updated: ${String(result.linksUpdated)}`);
+  lines.push(`  Processing time: ${String(result.processingTime)}ms`);
 
   if (options.dryRun) {
     lines.push(`  🔍 Dry run - no files were actually modified`);
@@ -468,7 +468,7 @@ export function formatRefactorHeadingsResults(
     lines.push(''.padEnd(30, '-'));
 
     result.headingChanges.forEach((change) => {
-      lines.push(`\n📄 ${change.filePath} (line ${change.line}):`);
+      lines.push(`\n📄 ${change.filePath} (line ${String(change.line)}):`);
       lines.push(`  ${'#'.repeat(change.level)} ${change.oldText}`);
       lines.push(`  ↓`);
       lines.push(`  ${'#'.repeat(change.level)} ${change.newText}`);
@@ -481,12 +481,9 @@ export function formatRefactorHeadingsResults(
     lines.push('\n🔗 Link Updates:');
     lines.push(''.padEnd(30, '-'));
 
-    const linksByFile: Record<string, LinkUpdate[]> = result.linkUpdates.reduce(
-      (acc: Record<string, LinkUpdate[]>, update) => {
-        if (!acc[update.filePath]) {
-          acc[update.filePath] = [];
-        }
-        acc[update.filePath].push(update);
+    const linksByFile: Partial<Record<string, LinkUpdate[]>> = result.linkUpdates.reduce(
+      (acc: Partial<Record<string, LinkUpdate[]>>, update) => {
+        (acc[update.filePath] ??= []).push(update);
         return acc;
       },
       {}
@@ -494,8 +491,8 @@ export function formatRefactorHeadingsResults(
 
     Object.entries(linksByFile).forEach(([file, updates]) => {
       lines.push(`\n📄 ${file}:`);
-      updates.forEach((update) => {
-        const lineInfo = update.line ? ` (line ${update.line})` : '';
+      (updates ?? []).forEach((update) => {
+        const lineInfo = update.line ? ` (line ${String(update.line)})` : '';
         lines.push(`  🔗 ${update.oldLink} → ${update.newLink}${lineInfo}`);
       });
     });

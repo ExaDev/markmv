@@ -345,7 +345,7 @@ async function processWaybackFile(filePath: string, dryRun: boolean): Promise<Wa
     const span = findInlineDestinationSpan(content, nodeStart);
     if (span === undefined) {
       throw new Error(
-        `Could not locate the destination of the link at line ${link.line}, column ${link.column} in ${filePath}`
+        `Could not locate the destination of the link at line ${String(link.line)}, column ${String(link.column)} in ${filePath}`
       );
     }
 
@@ -365,7 +365,7 @@ async function processWaybackFile(filePath: string, dryRun: boolean): Promise<Wa
       const span = findDefinitionSpan(lineText, lineStarts[reference.line - 1]);
       if (span === undefined) {
         throw new Error(
-          `Could not locate the destination of reference definition [${reference.id}] at line ${reference.line} in ${filePath}`
+          `Could not locate the destination of reference definition [${reference.id}] at line ${String(reference.line)} in ${filePath}`
         );
       }
 
@@ -438,7 +438,7 @@ async function expandSourcePatterns(
       const files = await glob(globPattern, { absolute: true });
       files.forEach((file) => resolvedFiles.add(file));
       if (options.verbose) {
-        console.log(`Added ${files.length} files from directory: ${absolutePattern}`);
+        console.log(`Added ${String(files.length)} files from directory: ${absolutePattern}`);
       }
       continue;
     }
@@ -514,7 +514,7 @@ async function convertPatterns(
   patterns: string[],
   options: WaybackOptions
 ): Promise<WaybackResult> {
-  if (!patterns || patterns.length === 0) {
+  if (patterns.length === 0) {
     throw new Error('At least one file pattern must be specified');
   }
 
@@ -553,7 +553,9 @@ async function convertPatterns(
     console.log(JSON.stringify(result, null, 2));
   } else {
     printHumanSummary(result, options);
-    result.errors.forEach((error) => console.error(`❌ ${error}`));
+    result.errors.forEach((error) => {
+      console.error(`❌ ${error}`);
+    });
   }
 
   return result;
@@ -576,21 +578,21 @@ function printHumanSummary(result: WaybackResult, options: WaybackOptions): void
     }
     for (const file of result.files) {
       console.log(`Processing: ${file.file}`);
-      console.log(`  ✅ Converted: ${file.converted}`);
-      console.log(`  📚 Already archived: ${file.alreadyArchived}`);
-      console.log(`  ➡️ Untouched: ${file.untouched}`);
+      console.log(`  ✅ Converted: ${String(file.converted)}`);
+      console.log(`  📚 Already archived: ${String(file.alreadyArchived)}`);
+      console.log(`  ➡️ Untouched: ${String(file.untouched)}`);
       for (const change of file.changes) {
-        console.log(`  🔄 Line ${change.line}: ${change.from} → ${change.to}`);
+        console.log(`  🔄 Line ${String(change.line)}: ${change.from} → ${change.to}`);
       }
     }
   }
 
   console.log('\n📊 Wayback Machine Summary');
-  console.log(`Files processed: ${result.filesProcessed}`);
-  console.log(`Files modified: ${result.filesModified}`);
-  console.log(`Links converted: ${result.totalConverted}`);
-  console.log(`Already archived: ${result.totalAlreadyArchived}`);
-  console.log(`Untouched: ${result.totalUntouched}`);
+  console.log(`Files processed: ${String(result.filesProcessed)}`);
+  console.log(`Files modified: ${String(result.filesModified)}`);
+  console.log(`Links converted: ${String(result.totalConverted)}`);
+  console.log(`Already archived: ${String(result.totalAlreadyArchived)}`);
+  console.log(`Untouched: ${String(result.totalUntouched)}`);
 
   if (result.dryRun) {
     console.log('\n(Dry run - no files were actually modified)');

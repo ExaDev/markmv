@@ -172,7 +172,7 @@ export async function mergeCommand(
       console.log(`📝 Modified: ${target}`);
 
       if (result.transclusions.length > 0) {
-        console.log(`\\n🔗 Created ${result.transclusions.length} transclusion(s):`);
+        console.log(`\\n🔗 Created ${String(result.transclusions.length)} transclusion(s):`);
         for (const transclusion of result.transclusions) {
           console.log(`  + ${transclusion}`);
         }
@@ -202,7 +202,7 @@ export async function mergeCommand(
     }
 
     // Show helpful tips
-    if (!options.dryRun && result.success) {
+    if (!options.dryRun) {
       console.log('\\n💡 Tips:');
       console.log('  • Use --dry-run to preview changes before merging');
       console.log('  • Use --verbose for detailed operation logs');
@@ -210,7 +210,7 @@ export async function mergeCommand(
         console.log('  • Content was appended to the end of the target file');
       } else if (strategy === 'prepend') {
         console.log('  • Content was prepended to the beginning of the target file');
-      } else if (strategy === 'interactive') {
+      } else {
         console.log('  • Review merge conflicts and resolve manually if needed');
       }
       console.log(

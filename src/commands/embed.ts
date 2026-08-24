@@ -86,7 +86,7 @@ interface EmbedFileResult {
  * @throws Will exit the process with code 1 if the operation fails
  */
 export async function embedCommand(patterns: string[], options: EmbedOptions): Promise<void> {
-  if (!patterns || patterns.length === 0) {
+  if (patterns.length === 0) {
     reportUsageError(options, 'At least one file pattern must be specified');
   }
 
@@ -139,7 +139,7 @@ export async function embedCommand(patterns: string[], options: EmbedOptions): P
     if (result.rewrites.length > 0 && options.dryRun !== true) {
       summary.filesModified.push(file);
       if (humanOutput) {
-        console.log(`✅ Embedded ${result.rewrites.length} image(s) in ${file}`);
+        console.log(`✅ Embedded ${String(result.rewrites.length)} image(s) in ${file}`);
       }
       embeddedImages.push(...result.embeddedImages);
     }
@@ -166,7 +166,7 @@ export async function embedCommand(patterns: string[], options: EmbedOptions): P
     console.log(JSON.stringify(summary, null, 2));
   } else if (summary.success) {
     console.log(
-      `📊 Summary: embedded ${summary.imagesEmbedded} image(s) across ${summary.filesModified.length} file(s)`
+      `📊 Summary: embedded ${String(summary.imagesEmbedded)} image(s) across ${String(summary.filesModified.length)} file(s)`
     );
     if (options.dryRun) {
       console.log('(Dry run - no files were actually modified)');

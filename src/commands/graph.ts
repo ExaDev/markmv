@@ -176,29 +176,29 @@ export async function generateGraph(
       result.outputFile = outputPath;
 
       if (opts.verbose) {
-        console.log('Graph written to: ' + outputPath);
+        console.log(`Graph written to: ${outputPath}`);
       }
     }
 
     // Add warnings for analysis results
     if (result.analysis.circularReferenceCount > 0) {
       result.warnings.push(
-        'Found ' + result.analysis.circularReferenceCount + ' circular reference(s)'
+        `Found ${String(result.analysis.circularReferenceCount)} circular reference(s)`
       );
     }
 
     if (result.analysis.orphanCount > 0) {
       result.warnings.push(
-        'Found ' + result.analysis.orphanCount + ' orphaned file(s) with no links'
+        `Found ${String(result.analysis.orphanCount)} orphaned file(s) with no links`
       );
     }
 
     if (opts.verbose) {
       console.log(
-        'Graph generated: ' + result.nodeCount + ' nodes, ' + result.edgeCount + ' edges'
+        `Graph generated: ${String(result.nodeCount)} nodes, ${String(result.edgeCount)} edges`
       );
       console.log(
-        'Hubs: ' + result.analysis.hubCount + ', Orphans: ' + result.analysis.orphanCount
+        `Hubs: ${String(result.analysis.hubCount)}, Orphans: ${String(result.analysis.orphanCount)}`
       );
     }
   } catch (error) {
@@ -247,7 +247,7 @@ export async function graphCommand(patterns: string[], cliOptions: GraphCliOptio
   // Validate the format before using it as a GraphOutputFormat
   const format = cliOptions.format ?? 'json';
   if (!isGraphOutputFormat(format)) {
-    console.error('Invalid format: ' + format + '. Valid formats: json, mermaid, dot, html');
+    console.error(`Invalid format: ${format}. Valid formats: json, mermaid, dot, html`);
     process.exitCode = 1;
     return;
   }
@@ -267,34 +267,34 @@ export async function graphCommand(patterns: string[], cliOptions: GraphCliOptio
 
     // Format output for human consumption
     console.log('\n📊 Graph Generation Summary');
-    console.log('Files processed: ' + result.filesProcessed);
-    console.log('Nodes: ' + result.nodeCount);
-    console.log('Edges: ' + result.edgeCount);
-    console.log('Format: ' + format);
-    console.log('Processing time: ' + result.processingTime + 'ms\n');
+    console.log(`Files processed: ${String(result.filesProcessed)}`);
+    console.log(`Nodes: ${String(result.nodeCount)}`);
+    console.log(`Edges: ${String(result.edgeCount)}`);
+    console.log(`Format: ${format}`);
+    console.log(`Processing time: ${String(result.processingTime)}ms\n`);
 
     if (result.outputFile) {
-      console.log('📁 Output written to: ' + result.outputFile + '\n');
+      console.log(`📁 Output written to: ${result.outputFile}\n`);
     }
 
     // Analysis summary
     console.log('🔍 Graph Analysis:');
-    console.log('  Hub nodes (high connectivity): ' + result.analysis.hubCount);
-    console.log('  Orphaned nodes (no connections): ' + result.analysis.orphanCount);
-    console.log('  Circular references: ' + result.analysis.circularReferenceCount + '\n');
+    console.log(`  Hub nodes (high connectivity): ${String(result.analysis.hubCount)}`);
+    console.log(`  Orphaned nodes (no connections): ${String(result.analysis.orphanCount)}`);
+    console.log(`  Circular references: ${String(result.analysis.circularReferenceCount)}\n`);
 
     if (result.warnings.length > 0) {
-      console.log('⚠️  Warnings (' + result.warnings.length + '):');
+      console.log(`⚠️  Warnings (${String(result.warnings.length)}):`);
       for (const warning of result.warnings) {
-        console.log('  ' + warning);
+        console.log(`  ${warning}`);
       }
       console.log();
     }
 
     if (result.errors.length > 0) {
-      console.log('❌ Errors (' + result.errors.length + '):');
+      console.log(`❌ Errors (${String(result.errors.length)}):`);
       for (const error of result.errors) {
-        console.log('  ' + error);
+        console.log(`  ${error}`);
       }
       console.log();
       process.exitCode = 1;
@@ -309,13 +309,13 @@ export async function graphCommand(patterns: string[], cliOptions: GraphCliOptio
 
     // Show content preview for small outputs or if no output file
     if (!result.outputFile && result.content.length < 5000) {
-      console.log('📋 Generated ' + format.toUpperCase() + ':');
+      console.log(`📋 Generated ${format.toUpperCase()}:`);
       console.log(result.content);
     } else if (!result.outputFile) {
       console.log(
-        '📋 Generated ' + format.toUpperCase() + ' (' + result.content.length + ' characters)'
+        `📋 Generated ${format.toUpperCase()} (${String(result.content.length)} characters)`
       );
-      console.log(result.content.substring(0, 500) + '...');
+      console.log(`${result.content.substring(0, 500)}...`);
     }
 
     console.log('✅ Graph generation completed successfully!');

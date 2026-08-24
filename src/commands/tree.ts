@@ -261,8 +261,8 @@ export function buildFileTree(files: ScannedMarkdownFile[], maxDepth?: number): 
 
 /** Render a file annotation in the form "(8 words, 2 links)" with singular forms for counts of one */
 function formatAnnotation(file: TreeFileNode): string {
-  const words = `${file.wordCount} ${file.wordCount === 1 ? 'word' : 'words'}`;
-  const links = `${file.linkCount} ${file.linkCount === 1 ? 'link' : 'links'}`;
+  const words = `${String(file.wordCount)} ${file.wordCount === 1 ? 'word' : 'words'}`;
+  const links = `${String(file.linkCount)} ${file.linkCount === 1 ? 'link' : 'links'}`;
   return ` (${words}, ${links})`;
 }
 
@@ -273,7 +273,7 @@ function formatAnnotation(file: TreeFileNode): string {
 function formatWarningMarkers(file: TreeFileNode): string {
   let markers = '';
   if (file.brokenInternalLinkCount > 0) {
-    markers += ` [${file.brokenInternalLinkCount} broken]`;
+    markers += ` [${String(file.brokenInternalLinkCount)} broken]`;
   }
   if (file.orphaned) {
     markers += ' [orphan]';
@@ -507,13 +507,15 @@ export async function treeCommand(
       options.maxDepth !== undefined &&
       (!Number.isInteger(options.maxDepth) || options.maxDepth < 1)
     ) {
-      throw new Error(`Invalid max depth: ${options.maxDepth}. Must be a positive integer`);
+      throw new Error(`Invalid max depth: ${String(options.maxDepth)}. Must be a positive integer`);
     }
 
     if (options.verbose) {
       console.log(`Analysing markdown tree: ${target}`);
       if (options.maxDepth !== undefined) {
-        console.log(`Rendering depth limit: ${options.maxDepth} (statistics cover the full scan)`);
+        console.log(
+          `Rendering depth limit: ${String(options.maxDepth)} (statistics cover the full scan)`
+        );
       }
     }
 
@@ -534,12 +536,12 @@ export async function treeCommand(
 
     console.log('');
     console.log('📊 Markdown Tree Statistics');
-    console.log(`📁 Markdown files: ${statistics.totalFiles}`);
-    console.log(`📝 Total words: ${statistics.totalWords}`);
-    console.log(`🔗 Internal links: ${statistics.totalInternalLinks}`);
-    console.log(`🌐 External links: ${statistics.totalExternalLinks}`);
-    console.log(`❌ Broken internal links: ${statistics.brokenInternalLinks}`);
-    console.log(`🔍 Orphaned files: ${statistics.orphanedFiles}`);
+    console.log(`📁 Markdown files: ${String(statistics.totalFiles)}`);
+    console.log(`📝 Total words: ${String(statistics.totalWords)}`);
+    console.log(`🔗 Internal links: ${String(statistics.totalInternalLinks)}`);
+    console.log(`🌐 External links: ${String(statistics.totalExternalLinks)}`);
+    console.log(`❌ Broken internal links: ${String(statistics.brokenInternalLinks)}`);
+    console.log(`🔍 Orphaned files: ${String(statistics.orphanedFiles)}`);
     console.log('');
     console.log('✅ Tree analysis completed successfully');
   } catch (error) {
