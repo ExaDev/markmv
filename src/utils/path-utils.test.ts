@@ -306,7 +306,7 @@ describe('PathUtils', () => {
 
   describe('generateUniqueFilename', () => {
     it('should return the desired path when it does not exist', () => {
-      const desired = join(tmpdir(), `markmv-unique-free-${Date.now()}.md`);
+      const desired = join(tmpdir(), `markmv-unique-free-${String(Date.now())}.md`);
 
       const result = PathUtils.generateUniqueFilename(desired);
 

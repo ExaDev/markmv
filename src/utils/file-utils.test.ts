@@ -8,7 +8,7 @@ describe('FileUtils', () => {
   let testDir: string;
 
   beforeEach(async () => {
-    testDir = join(tmpdir(), `markmv-fileutils-test-${Date.now()}`);
+    testDir = join(tmpdir(), `markmv-fileutils-test-${String(Date.now())}`);
     await mkdir(testDir, { recursive: true });
   });
 
