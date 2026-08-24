@@ -105,7 +105,7 @@ export function parseImageDataUri(href: string): ParsedImageDataUri {
 }
 
 /** File extensions embeddable as inline data URIs, keyed by the canonical lowercase extension. */
-const MIME_BY_EXTENSION: Record<string, string> = {
+const MIME_BY_EXTENSION: Partial<Record<string, string>> = {
   png: 'image/png',
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
@@ -120,7 +120,7 @@ const MIME_BY_EXTENSION: Record<string, string> = {
 };
 
 /** Preferred file extension for each supported image mime type; jpeg deliberately maps to jpg. */
-const EXTENSION_BY_MIME: Record<string, string> = {
+const EXTENSION_BY_MIME: Partial<Record<string, string>> = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
   'image/gif': 'gif',
@@ -259,13 +259,13 @@ export function replaceSpans(content: string, replacements: SpanReplacement[]): 
     const current = ordered[index];
     if (current.start < 0 || current.end > content.length || current.start > current.end) {
       throw new Error(
-        `Replacement span [${current.start}, ${current.end}) is out of bounds for content of length ${content.length}`
+        `Replacement span [${String(current.start)}, ${String(current.end)}) is out of bounds for content of length ${String(content.length)}`
       );
     }
-    const next = ordered[index + 1];
+    const next = ordered.at(index + 1);
     if (next !== undefined && next.start < current.end) {
       throw new Error(
-        `Replacement spans [${current.start}, ${current.end}) and [${next.start}, ${next.end}) overlap`
+        `Replacement spans [${String(current.start)}, ${String(current.end)}) and [${String(next.start)}, ${String(next.end)}) overlap`
       );
     }
   }

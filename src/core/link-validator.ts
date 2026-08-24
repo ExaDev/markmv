@@ -299,9 +299,7 @@ export class LinkValidator {
         if (this.authDetector.shouldAttemptAuth(link.href)) {
           const authHeaders = this.authDetector.getAuthHeaders(link.href);
           Object.assign(headers, authHeaders);
-          if (authInfo) {
-            authInfo.authAttempted = true;
-          }
+          authInfo.authAttempted = true;
         }
       }
 
@@ -325,7 +323,9 @@ export class LinkValidator {
       let response: Response | undefined;
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), this.options.externalTimeout);
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+        }, this.options.externalTimeout);
         try {
           const attemptResponse = await fetch(link.href, {
             ...fetchOptions,
@@ -386,7 +386,7 @@ export class LinkValidator {
             redirectCount: 0,
             authAttempted: this.authDetector?.shouldAttemptAuth(link.href) ?? false,
             detectionMethod: 'status-code' as const,
-            warning: `HTTP ${response.status}: Authentication required`,
+            warning: `HTTP ${String(response.status)}: Authentication required`,
             suggestion: 'Provide appropriate credentials or API keys to validate this link',
           };
 
@@ -403,7 +403,7 @@ export class LinkValidator {
           sourceFile,
           link,
           reason: 'external-error',
-          details: `HTTP ${response.status}: ${response.statusText}`,
+          details: `HTTP ${String(response.status)}: ${response.statusText}`,
         };
       }
 
@@ -496,7 +496,7 @@ export class LinkValidator {
     const warnings = [...validationResult.warnings];
 
     if (circularReferences.length > 0) {
-      warnings.push(`Found ${circularReferences.length} circular reference(s)`);
+      warnings.push(`Found ${String(circularReferences.length)} circular reference(s)`);
     }
 
     return {
@@ -551,7 +551,7 @@ export class LinkValidator {
     if (files.length > 0 && typeof files[0] === 'object' && 'filePath' in files[0]) {
       // ParsedMarkdownFile[] case - check for circular dependencies
       const parsedFiles = files.filter(
-        (f): f is ParsedMarkdownFile => typeof f === 'object' && f !== null && 'filePath' in f
+        (f): f is ParsedMarkdownFile => typeof f === 'object' && 'filePath' in f
       );
       const visited = new Set<string>();
       const recursionStack = new Set<string>();
@@ -623,7 +623,7 @@ export class LinkValidator {
         sourceFile,
         link,
         reason: 'ambiguous-wikilink',
-        details: `Ambiguous wikilink matches ${resolution.ambiguous.length} notes: ${resolution.ambiguous.join(', ')}`,
+        details: `Ambiguous wikilink matches ${String(resolution.ambiguous.length)} notes: ${resolution.ambiguous.join(', ')}`,
       };
     }
 

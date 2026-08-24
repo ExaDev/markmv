@@ -11,7 +11,7 @@ describe('LinkValidator', () => {
 
   beforeEach(async () => {
     validator = new LinkValidator();
-    testDir = join(tmpdir(), `markmv-test-${Date.now()}`);
+    testDir = join(tmpdir(), `markmv-test-${String(Date.now())}`);
     await mkdir(testDir, { recursive: true });
   });
 

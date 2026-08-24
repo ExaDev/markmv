@@ -266,7 +266,9 @@ export class WebClipper {
    */
   private async fetchHtml(url: string): Promise<string> {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.options.timeout);
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, this.options.timeout);
 
     try {
       const headers: Record<string, string> = {
@@ -286,7 +288,7 @@ export class WebClipper {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(`HTTP ${String(response.status)}: ${response.statusText}`);
       }
 
       return await response.text();
@@ -529,7 +531,7 @@ export class WebClipper {
     for (const selector of titleSelectors) {
       const element = root.querySelector(selector);
       if (element) {
-        const title = firstTruthyString(element.getAttribute('content'), element.text?.trim());
+        const title = firstTruthyString(element.getAttribute('content'), element.text.trim());
         if (title) return title;
       }
     }
@@ -554,7 +556,7 @@ export class WebClipper {
     for (const selector of authorSelectors) {
       const element = root.querySelector(selector);
       if (element) {
-        const author = firstTruthyString(element.getAttribute('content'), element.text?.trim());
+        const author = firstTruthyString(element.getAttribute('content'), element.text.trim());
         if (author) return author;
       }
     }
@@ -635,7 +637,7 @@ export class WebClipper {
 
     return links.map((link) => {
       const url = this.resolveUrl(link.getAttribute('href') ?? '', baseUrl);
-      const text = link.text?.trim() ?? '';
+      const text = link.text.trim();
       const type = this.isInternalLink(url, baseUrl) ? 'internal' : 'external';
 
       return { url, text, type } as const;

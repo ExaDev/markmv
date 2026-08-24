@@ -141,9 +141,10 @@ export class LinkParser {
         const isEmbed = wikilinkMatch[1] === '!';
         const inner = wikilinkMatch[2];
 
-        // Split off any display alias, then any block/section reference
-        const [targetWithBlock, alias] = inner.split('|', 2);
-        const targetWithoutAlias = targetWithBlock ?? '';
+        // Split off any display alias, then any block/section reference. `.at()` is used instead of array destructuring because TypeScript types `string[]` destructuring as always-defined, hiding the genuine possibility that no alias was present.
+        const parts = inner.split('|', 2);
+        const targetWithoutAlias = parts.at(0) ?? '';
+        const alias = parts.at(1);
         const hashIndex = targetWithoutAlias.indexOf('#');
         const target = hashIndex >= 0 ? targetWithoutAlias.slice(0, hashIndex) : targetWithoutAlias;
         const blockReference = hashIndex >= 0 ? targetWithoutAlias.slice(hashIndex) : undefined;

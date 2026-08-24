@@ -104,7 +104,7 @@ export class LinkConverter {
       result.changes.push(...changes);
 
       if (options.verbose) {
-        console.log(`Converted ${changes.length} links in ${filePath}`);
+        console.log(`Converted ${String(changes.length)} links in ${filePath}`);
       }
 
       result.success = true;
@@ -183,27 +183,28 @@ export class LinkConverter {
     });
 
     const tree = processor.parse(content);
-    let hasChanges = false;
+    // A plain boolean flag mutated only inside the visit() callback isn't tracked by TypeScript's control-flow analysis across the call boundary, which makes the later `if` look permanently false to it; a counter avoids that blind spot.
+    let changeCount = 0;
 
     // Transform links in the AST
     visit(tree, (node: Node) => {
       if (this.isLinkNode(node)) {
         const transformed = this.transformLinkNode(node, filePath, options);
         if (transformed) {
-          hasChanges = true;
+          changeCount++;
         }
       } else if (node.type === 'text' && options.linkStyle) {
         // Handle Claude imports and other text-based link formats
         if (this.isTextNode(node)) {
           const transformed = this.transformTextLinks(node, filePath, options);
           if (transformed) {
-            hasChanges = true;
+            changeCount++;
           }
         }
       }
     });
 
-    if (!hasChanges) {
+    if (changeCount === 0) {
       return content;
     }
 

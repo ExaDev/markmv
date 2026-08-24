@@ -17,7 +17,7 @@ describe('obsidian vault resolution', () => {
     parser = new LinkParser();
     vaultRoot = join(
       tmpdir(),
-      `markmv-vault-test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      `markmv-vault-test-${String(Date.now())}-${Math.random().toString(36).slice(2, 11)}`
     );
     await mkdir(vaultRoot, { recursive: true });
   });

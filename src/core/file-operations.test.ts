@@ -12,7 +12,7 @@ describe('FileOperations', () => {
 
   beforeEach(async () => {
     fileOps = new FileOperations();
-    testDir = join(tmpdir(), `markmv-ops-test-${Date.now()}`);
+    testDir = join(tmpdir(), `markmv-ops-test-${String(Date.now())}`);
     await mkdir(testDir, { recursive: true });
   });
 
