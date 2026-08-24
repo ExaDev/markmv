@@ -125,7 +125,7 @@ export abstract class BaseSplitStrategy {
   /** Generate a safe filename from a title */
   protected generateFilename(title: string, index: number, originalFilename: string): string {
     const pattern = BaseSplitStrategy.stringOrDefault(this.options.filenamePattern, '{title}');
-    const baseName = this.sanitizeFilename(title) || `section-${index + 1}`;
+    const baseName = this.sanitizeFilename(title) || `section-${String(index + 1)}`;
     const extension = /\.[^.]+$/.exec(originalFilename)?.[0] ?? '.md';
 
     return (
@@ -241,11 +241,11 @@ export class HeaderBasedSplitStrategy extends BaseSplitStrategy {
         const headerLevel = this.getHeaderLevel(line);
 
         if (!title.trim()) {
-          warnings.push(`Empty header found at line ${i + 1}`);
+          warnings.push(`Empty header found at line ${String(i + 1)}`);
         }
 
         currentSection = {
-          title: title || `Section ${sections.length + 1}`,
+          title: title || `Section ${String(sections.length + 1)}`,
           content: [line],
           startLine: i,
           headerLevel,
@@ -268,7 +268,7 @@ export class HeaderBasedSplitStrategy extends BaseSplitStrategy {
     }
 
     if (sections.length === 0) {
-      errors.push(`No headers found at level ${targetLevel} or above`);
+      errors.push(`No headers found at level ${String(targetLevel)} or above`);
     }
 
     return Promise.resolve({
@@ -327,7 +327,7 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
       if (!currentSection) {
         const title = BaseSplitStrategy.stringOrDefault(
           this.findNearestHeader(lines, i),
-          `Part ${sectionCount + 1}`
+          `Part ${String(sectionCount + 1)}`
         );
         currentSection = {
           title,
@@ -355,7 +355,7 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
         // Start new section
         const title = BaseSplitStrategy.stringOrDefault(
           this.findNearestHeader(lines, i),
-          `Part ${sections.length + 1}`
+          `Part ${String(sections.length + 1)}`
         );
         currentSection = {
           title,
@@ -422,12 +422,12 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
     originalFilename: string
   ): string {
     const pattern = BaseSplitStrategy.stringOrDefault(this.options.filenamePattern, '{title}');
-    let baseName = this.sanitizeFilename(title) || `part-${index + 1}`;
+    let baseName = this.sanitizeFilename(title) || `part-${String(index + 1)}`;
     const extension = /\.[^.]+$/.exec(originalFilename)?.[0] ?? '.md';
 
     // Always append index for size-based splits to ensure uniqueness
     if (index > 0) {
-      baseName = `${baseName}-${index + 1}`;
+      baseName = `${baseName}-${String(index + 1)}`;
     }
 
     return (
@@ -504,7 +504,7 @@ export class ManualSplitStrategy extends BaseSplitStrategy {
         // Find title for this section
         const title = BaseSplitStrategy.stringOrDefault(
           this.findSectionTitle(sectionLines),
-          `Section ${i + 1}`
+          `Section ${String(i + 1)}`
         );
 
         sections.push({
@@ -596,9 +596,13 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
 
     for (const lineNum of splitLines) {
       if (lineNum < 1) {
-        warnings.push(`Invalid line number ${lineNum}: file has ${totalLines} lines`);
+        warnings.push(
+          `Invalid line number ${String(lineNum)}: file has ${String(totalLines)} lines`
+        );
       } else if (lineNum > totalLines) {
-        warnings.push(`Invalid line number ${lineNum}: file has ${totalLines} lines`);
+        warnings.push(
+          `Invalid line number ${String(lineNum)}: file has ${String(totalLines)} lines`
+        );
         // Adjust to split at end if reasonably close
         if (lineNum <= totalLines + 2) {
           validSplitLines.push(totalLines);
@@ -652,7 +656,7 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
           // Find title for this section
           const title = BaseSplitStrategy.stringOrDefault(
             this.findLineSectionTitle(sectionLines, startLine + 1),
-            `Lines ${startLine + 1}-${endLine}`
+            `Lines ${String(startLine + 1)}-${String(endLine)}`
           );
 
           sections.push({
@@ -721,6 +725,6 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
       }
     }
 
-    return `Section starting at line ${actualStartLine}`;
+    return `Section starting at line ${String(actualStartLine)}`;
   }
 }

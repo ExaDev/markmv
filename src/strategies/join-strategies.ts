@@ -169,8 +169,8 @@ export abstract class BaseJoinStrategy {
 
   /** Merge multiple frontmatter blocks */
   protected mergeFrontmatter(sections: JoinSection[]): string {
-    const frontmatterData: Record<string, string | number | string[]> = {};
-    const arrays: Record<string, string[]> = {};
+    const frontmatterData: Partial<Record<string, string | number | string[]>> = {};
+    const arrays: Partial<Record<string, string[]>> = {};
 
     for (const section of sections) {
       if (!section.frontmatter) continue;
@@ -188,16 +188,16 @@ export abstract class BaseJoinStrategy {
 
           if (key === 'tags' || key === 'categories' || key === 'keywords') {
             // Handle arrays
-            if (!arrays[key]) arrays[key] = [];
+            const arrayValue = (arrays[key] ??= []);
             if (value.startsWith('[') && value.endsWith(']')) {
               // Parse array format
               const items = value
                 .slice(1, -1)
                 .split(',')
                 .map((item) => item.trim().replace(/['"]/g, ''));
-              arrays[key].push(...items);
+              arrayValue.push(...items);
             } else {
-              arrays[key].push(value.replace(/['"]/g, ''));
+              arrayValue.push(value.replace(/['"]/g, ''));
             }
           } else if (key === 'title') {
             // Use first title found, or combine if different
@@ -239,8 +239,8 @@ export abstract class BaseJoinStrategy {
       if (Array.isArray(value)) {
         result += `${key}: [${value.map((v) => `"${v}"`).join(', ')}]\n`;
       } else if (typeof value === 'number') {
-        result += `${key}: ${value}\n`;
-      } else {
+        result += `${key}: ${String(value)}\n`;
+      } else if (typeof value === 'string') {
         result += `${key}: "${value}"\n`;
       }
     }
@@ -253,7 +253,7 @@ export abstract class BaseJoinStrategy {
   protected detectConflicts(sections: JoinSection[]): JoinConflict[] {
     const conflicts: JoinConflict[] = [];
     const seenHeaders = new Set<string>();
-    const headerFiles: Record<string, string[]> = {};
+    const headerFiles: Partial<Record<string, string[]>> = {};
 
     // Check for duplicate headers
     for (const section of sections) {
@@ -261,10 +261,7 @@ export abstract class BaseJoinStrategy {
       for (const header of headers) {
         const normalizedHeader = header.toLowerCase().trim();
         if (seenHeaders.has(normalizedHeader)) {
-          if (!headerFiles[normalizedHeader]) {
-            headerFiles[normalizedHeader] = [];
-          }
-          headerFiles[normalizedHeader].push(section.filePath);
+          (headerFiles[normalizedHeader] ??= []).push(section.filePath);
         } else {
           seenHeaders.add(normalizedHeader);
           headerFiles[normalizedHeader] = [section.filePath];
@@ -274,11 +271,11 @@ export abstract class BaseJoinStrategy {
 
     // Add conflicts for duplicate headers
     for (const [header, files] of Object.entries(headerFiles)) {
-      if (files.length > 1) {
+      if ((files ?? []).length > 1) {
         conflicts.push({
           type: 'duplicate-headers',
           description: `Duplicate header "${header}" found in multiple files`,
-          files,
+          files: files ?? [],
           resolution: 'Consider renaming headers or adding file prefixes',
         });
       }
@@ -286,7 +283,7 @@ export abstract class BaseJoinStrategy {
 
     // Check for frontmatter conflicts
     const frontmatterKeys = new Set<string>();
-    const conflictingKeys: Record<string, string[]> = {};
+    const conflictingKeys: Partial<Record<string, string[]>> = {};
 
     for (const section of sections) {
       if (section.frontmatter) {
@@ -296,10 +293,7 @@ export abstract class BaseJoinStrategy {
           if (match) {
             const key = match[1].trim();
             if (frontmatterKeys.has(key)) {
-              if (!conflictingKeys[key]) {
-                conflictingKeys[key] = [];
-              }
-              conflictingKeys[key].push(section.filePath);
+              (conflictingKeys[key] ??= []).push(section.filePath);
             } else {
               frontmatterKeys.add(key);
               conflictingKeys[key] = [section.filePath];
@@ -310,11 +304,11 @@ export abstract class BaseJoinStrategy {
     }
 
     for (const [key, files] of Object.entries(conflictingKeys)) {
-      if (files.length > 1) {
+      if ((files ?? []).length > 1) {
         conflicts.push({
           type: 'frontmatter-merge',
           description: `Conflicting frontmatter key "${key}" in multiple files`,
-          files,
+          files: files ?? [],
           resolution: 'Values will be merged or first value used',
         });
       }
