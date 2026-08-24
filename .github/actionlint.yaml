@@ -1,0 +1,12 @@
+self-hosted-runner:
+  labels: []
+
+config-variables: null
+
+# actionlint's shellcheck integration reports every shellcheck finding regardless of severity, including info/style-level suggestions (unquoted variable expansion, redirect style) across `run:` blocks that were never linted before this config existed and are a pre-existing style backlog, not a correctness problem -- fixing all of them is unrelated cleanup work, out of scope here. Ignored by code rather than disabling shellcheck outright, so a genuine shellcheck finding (a real bug, not a style nit) still fails the check.
+paths:
+  .github/workflows/**/*.yml:
+    ignore:
+      - "SC2086:"
+      - "SC2129:"
+      - "SC2012:"
