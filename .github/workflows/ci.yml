@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Exempt from the anti-recursion rule that suppresses push/pull_request events caused by GITHUB_TOKEN, so a GITHUB_TOKEN-authenticated merge (the audit-autofix job's own fix-PR merge, dependabot-auto-merge.yml's auto-merge) can still trigger a real CI/release run by dispatching this explicitly.
+  workflow_dispatch:
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 concurrency:

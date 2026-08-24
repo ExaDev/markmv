@@ -46,6 +46,7 @@ export default defineConfig(
       "knip.config.ts",
       "prettier.config.ts",
       "release.config.ts",
+      ".github/scripts/*.ts",
     ],
     extends: [
       ...tseslint.configs.strictTypeChecked,
@@ -60,6 +61,7 @@ export default defineConfig(
             "knip.config.ts",
             "prettier.config.ts",
             "release.config.ts",
+            ".github/scripts/check-dependency-age.ts",
           ],
         },
         tsconfigRootDir: import.meta.dirname,

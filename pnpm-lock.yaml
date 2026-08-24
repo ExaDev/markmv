@@ -163,6 +163,9 @@ importers:
       vitest:
         specifier: ^3.2.3
         version: 3.2.7(@types/debug@4.1.13)(@types/node@25.9.5)(jiti@2.7.0)(jsdom@26.1.0(supports-color@7.2.0))(supports-color@7.2.0)(tsx@4.23.12)(yaml@2.9.0)
+      yaml:
+        specifier: 2.9.0
+        version: 2.9.0
       yaml-eslint-parser:
         specifier: 2.1.0
         version: 2.1.0
