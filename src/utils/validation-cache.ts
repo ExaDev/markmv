@@ -95,7 +95,11 @@ export interface CacheConfig {
  */
 function isCachedValidationResult(value: unknown): value is CachedValidationResult {
   if (typeof value !== 'object' || value === null) return false;
-  if (!('filePath' in value) || !('contentHash' in value) || !('result' in value)) return false;
+  if (!('filePath' in value) || typeof value.filePath !== 'string') return false;
+  if (!('contentHash' in value) || typeof value.contentHash !== 'string') return false;
+  if (!('result' in value) || typeof value.result !== 'object' || value.result === null) {
+    return false;
+  }
   return true;
 }
 
@@ -412,11 +416,6 @@ export class ValidationCache {
       const content = await readFile(cacheFile, 'utf-8');
       const parsed: unknown = JSON.parse(content);
       if (!isCachedValidationResult(parsed)) {
-        return undefined;
-      }
-
-      // Validate structure
-      if (!parsed.filePath || !parsed.contentHash || !parsed.result) {
         return undefined;
       }
 

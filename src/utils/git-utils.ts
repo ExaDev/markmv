@@ -363,8 +363,9 @@ export class GitUtils {
             break;
           case 'R': {
             changeStatus = 'renamed';
-            // For renames, git shows "R<score>\toldpath\tnewpath": the new path is the file's path and the old one becomes previousPath
-            const [oldPath, newPath] = pathParts;
+            // For renames, git shows "R<score>\toldpath\tnewpath": the new path is the file's path and the old one becomes previousPath. pathParts is untrusted external process output, so its length isn't guaranteed -- .at() (unlike [] indexing, with noUncheckedIndexedAccess off) always types its result as possibly undefined, which is what makes the check below meaningful.
+            const oldPath = pathParts.at(0);
+            const newPath = pathParts.at(1);
             if (oldPath !== undefined && newPath !== undefined) {
               previousPath = oldPath;
               path = newPath;
