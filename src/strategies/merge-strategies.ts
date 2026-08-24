@@ -264,7 +264,7 @@ export abstract class BaseMergeStrategy {
       if (Array.isArray(value)) {
         result += `${key}: [${value.map((v) => `"${v}"`).join(', ')}]\n`;
       } else {
-        result += `${key}: "${value}"\n`;
+        result += `${key}: "${String(value)}"\n`;
       }
     }
     result += '---\n';
@@ -384,7 +384,8 @@ export class AppendMergeStrategy extends BaseMergeStrategy {
         } else {
           // Create transclusion instead of appending content
           const transclusionRef = this.createTransclusion(sourceFile);
-          const finalContent = targetMainContent + this.options.separator + transclusionRef;
+          const separator = this.options.separator ?? '\n\n';
+          const finalContent = targetMainContent + separator + transclusionRef;
           transclusions.push(transclusionRef);
 
           return Promise.resolve({
