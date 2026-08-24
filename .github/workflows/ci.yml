@@ -144,7 +144,7 @@ jobs:
           echo "::error::Timed out waiting for CI run $RUN_ID on $BRANCH; fix PR left open."
           exit 0
 
-  # Cross-platform test matrix -- the one job that genuinely needs multiple OS/Node combinations. Test execution deliberately bypasses the turbo-wrapped test:run script (calling the underlying _test script directly): turbo's cache key here is keyed by OS but not by Node version, so the wrapped script would let turbo skip actually re-running tests against the second Node version whenever the source inputs are unchanged, defeating the point of testing both versions. The Build step is safe to leave turbo-wrapped: compiled output doesn't depend on the Node runtime version, so it's free to share a cache with the standalone build job on the same OS/commit.
+  # Cross-platform test matrix -- the one job that genuinely needs multiple OS/Node combinations. The Build step's turbo cache is keyed by OS only, not Node version, which is correct there since compiled output doesn't depend on the Node runtime -- it's free to share a cache with the standalone build job on the same OS/commit. The test run below gets its own separate cache block keyed by OS *and* Node version, so turbo can't skip actually re-running tests against the second Node version just because the first one already produced a cache entry for the same source inputs.
   test:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -270,11 +270,19 @@ jobs:
           cd ../..
         shell: bash
 
+      # Node-version-aware, unlike the Build cache above: a test result cached under one Node version must never be replayed as if it verified another.
+      - uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-test-${{ runner.os }}-${{ matrix.node-version }}-${{ github.sha }}
+          restore-keys: |
+            turbo-test-${{ runner.os }}-${{ matrix.node-version }}-
+
       - name: Run tests with OS-specific environment
         env:
           MARKMV_TEST_FILESYSTEM_CASE_SENSITIVE: ${{ env.FILESYSTEM_IS_CASE_SENSITIVE }}
           MARKMV_TEST_SUPPORTS_SYMLINKS: ${{ env.FILESYSTEM_SUPPORTS_SYMLINKS }}
-        run: pnpm run _test
+        run: pnpm run test:run
 
       - name: Report filesystem test results
         run: |
