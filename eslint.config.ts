@@ -4,6 +4,7 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import json from '@eslint/json';
 import markdown from '@eslint/markdown';
+import depend from 'eslint-plugin-depend';
 import * as yamlParser from 'yaml-eslint-parser';
 import prettierRecommended from 'eslint-plugin-prettier/recommended';
 import type { Linter } from 'eslint';
@@ -119,6 +120,15 @@ export default tseslint.config(
     language: 'json/json',
     plugins: { json },
     extends: [json.configs.recommended],
+  },
+  {
+    // glob's flag is current and real (fs.glob/tinyglobby/fdir are genuine Node-22+ alternatives) -- allowlisted only because the actual migration is separate follow-up work, not because the flag is wrong. lint-staged's flag is a stale false positive: module-replacements only ever suggested nano-staged as the alternative, which es-tooling/module-replacements#214 got removed in 3.0.0 for being unmaintained for 3+ years while lint-staged itself is actively maintained -- eslint-plugin-depend@1.5.0 still pins module-replacements@^2.10.1, so the bad entry persists here until eslint-plugin-depend's own open es-tooling/eslint-plugin-depend#65 ("try updating module-replacements to v3") lands; module-replacements 3.x changed its manifest schema, so overriding the version locally isn't safe without that plugin-side update.
+    files: ['package.json'],
+    language: 'json/json',
+    extends: [depend.configs['flat/recommended']],
+    rules: {
+      'depend/ban-dependencies': ['error', { allowed: ['lint-staged', 'glob'] }],
+    },
   },
   ...markdown.configs.recommended,
   {
