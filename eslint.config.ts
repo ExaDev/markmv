@@ -1,15 +1,16 @@
 import path from 'node:path';
+import { defineConfig } from 'eslint/config';
 import { includeIgnoreFile } from '@eslint/config-helpers';
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import globals from 'globals';
 import json from '@eslint/json';
 import markdown from '@eslint/markdown';
 import depend from 'eslint-plugin-depend';
 import * as yamlParser from 'yaml-eslint-parser';
 import prettierRecommended from 'eslint-plugin-prettier/recommended';
-import type { Linter } from 'eslint';
 
-export default tseslint.config(
+export default defineConfig(
   // The lint script runs `eslint .`, so this keeps lint scope matching git's own idea of what belongs to the project -- generated/vendored output (dist/, docs/, docs-markdown/, coverage/, node_modules/, .turbo/, .markmv-cache/), editor/agent-local state (.vscode/, .claude/), and anything else .gitignore already excludes -- as one source of truth instead of a second, independently maintained ignore list that drifts from it.
   includeIgnoreFile(path.resolve(import.meta.dirname, '.gitignore')),
   {
@@ -26,6 +27,10 @@ export default tseslint.config(
     // Scoped to JS/TS files specifically now that `eslint .` also reaches JSON, Markdown, and YAML files below -- eslint:recommended and typescript-eslint's rules assume a JS-compatible SourceCode (e.g. sourceCode.getAllComments), which the JSON/Markdown/YAML languages below don't implement, and applying them unscoped crashes rather than no-ops on those files. This also carries the TS parser for every .ts file, including root-level config files, which still need a parser assigned even though they never get type-aware linting (see below).
     files: ['**/*.{ts,tsx,mts,cts,js,mjs,cjs}'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    languageOptions: {
+      // Every plain .js/.mjs/.cjs file here runs directly under Node (scripts/, examples/programmatic-usage.js), so no-undef needs the real Node global set to tell an actual typo apart from a legitimate global like require/__dirname/process. .ts files don't need this: they get 'no-undef': 'off' below and rely on the type checker instead.
+      globals: globals.node,
+    },
   },
   {
     // Type-aware rules need type information, which the TS project service resolves per file: files under src/** resolve against tsconfig.json's own project normally, while the named root config files aren't covered by any tsconfig (tsconfig.json's include is src/**/* only) and would otherwise error -- allowDefaultProject gives them a synthetic default-options program instead. Listing files by name rather than a `**` glob keeps this under the project service's own match-count budget, which exists because each extra match slows down linting.
@@ -36,7 +41,7 @@ export default tseslint.config(
       'knip.config.ts',
       'prettier.config.ts',
     ],
-    extends: [...tseslint.configs.recommendedTypeChecked, ...tseslint.configs.stylisticTypeChecked],
+    extends: [...tseslint.configs.strictTypeChecked, ...tseslint.configs.stylisticTypeChecked],
     languageOptions: {
       parserOptions: {
         projectService: {
@@ -171,4 +176,4 @@ export default tseslint.config(
     },
   },
   prettierRecommended
-) satisfies Linter.Config[];
+);
