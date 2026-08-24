@@ -17,7 +17,7 @@ npx markmv --help
 ## ✨ Key Features
 
 - 🚀 **Move files/directories** with automatic link updates
-- ✂️ **Split large files** by headers, size, or manual markers  
+- ✂️ **Split large files** by headers, size, or manual markers
 - 🔗 **Join multiple files** with conflict resolution
 - 🧠 **Merge content** with interactive conflict handling
 - 📚 **Generate indexes** for documentation organization
@@ -59,21 +59,25 @@ npx markmv index --type links --strategy directory
 markmv provides multiple interfaces for different use cases:
 
 ### CLI Tool
+
 ```bash
 npx markmv move old.md new.md --json  # JSON output for scripting
 ```
 
 ### REST API Server
+
 ```bash
 npx --package=markmv markmv-api  # Start HTTP server on port 3000
 ```
 
 ### MCP Server (AI Integration)
+
 ```bash
 npx --package=markmv markmv-mcp  # Model Context Protocol server
 ```
 
 ### Programmatic API
+
 ```typescript
 import { moveFile } from 'markmv';
 const result = await moveFile('old.md', 'new.md');
@@ -95,10 +99,7 @@ Add markmv to your Claude Desktop configuration:
   "mcpServers": {
     "markmv": {
       "command": "npx",
-      "args": [
-        "--package=markmv",
-        "markmv-mcp"
-      ],
+      "args": ["--package=markmv", "markmv-mcp"],
       "env": {
         "NODE_OPTIONS": "--no-warnings"
       }
@@ -112,10 +113,10 @@ Add markmv to your Claude Desktop configuration:
 Once configured, Claude can use these markmv tools:
 
 - **`move_file`** - Move/rename files with link updates
-- **`move_files`** - Move multiple files in batch  
+- **`move_files`** - Move multiple files in batch
 - **`validate_operation`** - Check for broken links
 
-*Note: Additional tools (split, join, merge, convert, index) will be added in future releases.*
+_Note: Additional tools (split, join, merge, convert, index) will be added in future releases._
 
 ### Example Usage with Claude
 
@@ -134,7 +135,7 @@ Restart Claude Desktop and look for the 🔧 MCP icon in the chat. If configured
 ## 📖 Documentation
 
 - 📚 **[Complete User Guide](https://exadev.github.io/markmv/)** - Detailed usage instructions and examples
-- 🔧 **[API Reference](https://exadev.github.io/markmv/)** - TypeScript API documentation  
+- 🔧 **[API Reference](https://exadev.github.io/markmv/)** - TypeScript API documentation
 - 🌐 **[REST API Docs](https://exadev.github.io/markmv/)** - HTTP endpoints and examples
 - 🤖 **[MCP Integration](https://exadev.github.io/markmv/)** - AI agent setup and configuration
 

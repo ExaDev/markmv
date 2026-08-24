@@ -20,6 +20,7 @@ This document explains how the automated publishing system works for markmv.
 ### Release Process
 
 #### Automatic Process (via semantic-release)
+
 ```mermaid
 graph LR
     A[Push to main] --> B[Run CI Tests]
@@ -33,6 +34,7 @@ graph LR
 ```
 
 #### Manual Process
+
 ```bash
 # Trigger manual publishing workflow
 gh workflow run publish.yml -f tag=v1.0.0
@@ -41,12 +43,14 @@ gh workflow run publish.yml -f tag=v1.0.0
 ## 📦 Package Configuration
 
 ### Files Included in Package
+
 - `dist/**/*` - Compiled TypeScript output
 - `README.md` - Project documentation
 - `CHANGELOG.md` - Generated release notes
 - `CONTRIBUTING.md` - Contribution guidelines
 
 ### Publishing Settings
+
 - **Registry**: npm public registry
 - **Access**: Public package
 - **Node.js**: Requires >= 18.0.0
@@ -57,11 +61,13 @@ gh workflow run publish.yml -f tag=v1.0.0
 To enable automatic publishing, configure these GitHub repository secrets:
 
 ### NPM_TOKEN
+
 1. Create npm account and login: `npm login`
 2. Generate access token: `npm token create --access public`
 3. Add token to GitHub repository secrets as `NPM_TOKEN`
 
 ### GITHUB_TOKEN
+
 - Automatically provided by GitHub Actions
 - Used for creating releases and updating repository
 
@@ -88,16 +94,17 @@ Before each publish, the system automatically:
 
 Based on conventional commits:
 
-| Commit Type | Version Bump | Example |
-|-------------|--------------|---------|
-| `feat:` | Minor (0.1.0 → 0.2.0) | `feat: add new splitting strategy` |
-| `fix:` | Patch (0.1.0 → 0.1.1) | `fix: resolve link parsing issue` |
-| `BREAKING CHANGE:` | Major (0.1.0 → 1.0.0) | `feat!: redesign CLI interface` |
-| Other types | Patch | `docs: update README` |
+| Commit Type        | Version Bump          | Example                            |
+| ------------------ | --------------------- | ---------------------------------- |
+| `feat:`            | Minor (0.1.0 → 0.2.0) | `feat: add new splitting strategy` |
+| `fix:`             | Patch (0.1.0 → 0.1.1) | `fix: resolve link parsing issue`  |
+| `BREAKING CHANGE:` | Major (0.1.0 → 1.0.0) | `feat!: redesign CLI interface`    |
+| Other types        | Patch                 | `docs: update README`              |
 
 ## 🚦 Release Status
 
 ### Current Status
+
 - ✅ CI/CD pipeline configured
 - ✅ Semantic release setup
 - ✅ npm publishing enabled
@@ -105,6 +112,7 @@ Based on conventional commits:
 - ✅ Changelog generation
 
 ### Monitoring Releases
+
 - **GitHub**: Check [Releases page](https://github.com/joe-mearman/markmv/releases)
 - **npm**: Check [npm package page](https://www.npmjs.com/package/markmv)
 - **CI/CD**: Monitor [Actions tab](https://github.com/joe-mearman/markmv/actions)
@@ -114,16 +122,19 @@ Based on conventional commits:
 ### Common Issues
 
 **Publishing fails with authentication error:**
+
 - Verify `NPM_TOKEN` secret is correctly set
 - Ensure token has public publishing permissions
 - Check token hasn't expired
 
 **Version not bumping:**
+
 - Verify commit messages follow conventional format
 - Check if commits contain changes that warrant version bump
 - Review semantic-release logs for analysis details
 
 **Build fails during publishing:**
+
 - Ensure all tests pass locally
 - Check TypeScript compilation errors
 - Verify all dependencies are properly declared

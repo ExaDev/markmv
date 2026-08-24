@@ -6,7 +6,6 @@
       "outputs": ["dist/**", "tsconfig.tsbuildinfo"]
     },
     "_lint": {
-      "inputs": ["src/**/*.ts", "eslint.config.ts"],
       "outputs": []
     },
     "_typecheck": {
