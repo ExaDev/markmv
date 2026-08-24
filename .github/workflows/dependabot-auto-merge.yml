@@ -1,29 +1,108 @@
 name: Dependabot auto-merge
 
-# A minor or patch bump merges itself once the pull request's own CI is green; a major bump still opens a pull request but is left for manual review. Auto-merge is enforced by CI actually passing on the pull request's head commit: this workflow only requests the merge, GitHub itself withholds it until checks conclude.
+# A minor or patch bump merges itself once the pull request's own CI is green and its newly introduced package versions clear the same 7-day release-age cooldown pnpm itself enforces at install time (pnpm-workspace.yaml's minimumReleaseAge); a major bump still opens a pull request but is left for manual review. Auto-merge is enforced by CI actually passing on the pull request's head commit: this workflow only requests the merge, GitHub itself withholds it until checks conclude.
 #
-# pull_request_target, not pull_request -- a workflow run triggered by dependabot[bot]'s own pull_request event gets no secret access at all (a hard GitHub Actions security restriction against a compromised dependency update exfiltrating secrets). pull_request_target runs using the base branch's own workflow file and normal secret access instead. Safe here specifically because this job never checks out or executes the pull request's own code -- it only calls the GitHub API (fetch-metadata, gh pr merge), which is exactly the case pull_request_target's own security guidance calls out as safe.
+# pull_request_target, not pull_request -- a workflow run triggered by dependabot[bot]'s own pull_request event gets no secret access at all (a hard GitHub Actions security restriction against a compromised dependency update exfiltrating secrets). pull_request_target runs using the base branch's own workflow file and normal secret access instead. Safe here specifically because this job never checks out or executes the pull request's own code -- it only calls the GitHub API (gh pr view/merge) and reads the PR's own lockfile via a plain git fetch, exactly the case pull_request_target's own security guidance calls out as safe.
+#
+# The schedule trigger exists for two reasons a single pull_request_target run can't cover on its own: a PR whose dependency was too new to merge when opened needs to be reconsidered once it ages out, and a PR whose auto-merge was enabled but completed asynchronously (GitHub merges it once checks turn green, outside this job's own lifetime) needs something to eventually notice the merge landed and trigger a release for it.
 on:
   pull_request_target:
+    types: [opened]
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
 
 permissions:
   contents: write
   pull-requests: write
+  actions: write
 
 jobs:
   auto-merge:
-    if: github.actor == 'dependabot[bot]'
+    if: github.event_name != 'pull_request_target' || github.actor == 'dependabot[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
-      - name: Fetch Dependabot metadata
-        id: metadata
-        uses: dependabot/fetch-metadata@v2
+      - uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        run: corepack enable
+
+      - uses: actions/setup-node@v7
         with:
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
-      - name: Enable auto-merge for minor and patch updates
-        if: steps.metadata.outputs.update-type == 'version-update:semver-minor' || steps.metadata.outputs.update-type == 'version-update:semver-patch'
-        run: gh pr merge --auto --rebase "$PR_URL"
+          node-version-file: .tool-versions
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Find target Dependabot PRs
+        id: find-prs
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request_target" ]; then
+            echo "numbers=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          else
+            NUMBERS=$(gh pr list --author "dependabot[bot]" --state open --json number --jq '.[].number' | tr '\n' ' ')
+            echo "numbers=$NUMBERS" >> "$GITHUB_OUTPUT"
+          fi
         env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge for minor and patch updates past the age check
+        id: merge-attempt
+        if: steps.find-prs.outputs.numbers != ''
+        run: |
+          MERGED_ANY=0
+          for PR in ${{ steps.find-prs.outputs.numbers }}; do
+            echo "Processing PR #$PR..."
+
+            # Dependabot embeds each bump's update-type (version-update:semver-major/minor/patch) as a trailer in its own commit message, not the PR body -- checking every commit (not just the first) also covers a grouped update, which lists one updated-dependencies entry per package in the group.
+            COMMIT_BODIES=$(gh pr view "$PR" --json commits --jq '[.commits[].messageBody] | join("\n")')
+            if echo "$COMMIT_BODIES" | grep -q "update-type: version-update:semver-major"; then
+              echo "PR #$PR is a major version bump, leaving for manual review."
+              continue
+            fi
+
+            # `cmd; STATUS=$?` does not capture the real exit code under this runner's default `bash -e`: a non-zero exit on the bare command line aborts the whole script before the assignment on the next line ever runs. `cmd || STATUS=$?` is the exempted form -- the failing command sits on the left of `||`, so its non-zero status doesn't trigger errexit.
+            AGE_STATUS=0
+            node --experimental-strip-types .github/scripts/check-dependency-age.ts "$PR" || AGE_STATUS=$?
+            if [ "$AGE_STATUS" -eq 1 ]; then
+              echo "PR #$PR bumps a package published within the last 7 days, skipping until it ages out."
+              continue
+            elif [ "$AGE_STATUS" -ne 0 ]; then
+              echo "::error::Dependency age check failed unexpectedly for PR #$PR (exit $AGE_STATUS) — skipping without merging, needs investigation."
+              continue
+            fi
+
+            echo "PR #$PR passed the age check, enabling auto-merge."
+            gh pr merge --auto --rebase "$PR"
+
+            # gh pr merge --auto only defers to GitHub's background auto-merge when checks are still pending; when they're already green it merges synchronously right here, in which case this run itself already knows to trigger a release below instead of waiting for the next scheduled sweep to notice.
+            STATE=$(gh pr view "$PR" --json state --jq '.state' 2>/dev/null || echo "")
+            if [ "$STATE" = "MERGED" ]; then
+              echo "PR #$PR merged immediately."
+              MERGED_ANY=1
+            fi
+          done
+          echo "merged_any=$MERGED_ANY" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check for merges completed since the last sweep
+        id: recent-merges
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
+          # A 12-hour lookback against a 6-hour cron gives every run a full cycle of overlap, so a delayed or skipped cron tick can never let a completed merge fall through the gap. A redundant dispatch when nothing new actually merged is harmless: semantic-release itself only tags a release when there is something new to release, so it silently no-ops rather than double-releasing.
+          SINCE=$(date -u -d '12 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+          COUNT=$(gh pr list --search "author:dependabot[bot] is:merged merged:>=$SINCE" --json number --jq 'length')
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Dispatch a release for any Dependabot merge
+        if: steps.merge-attempt.outputs.merged_any == '1' || steps.recent-merges.outputs.count > '0'
+        run: |
+          # A GITHUB_TOKEN-authenticated merge (gh pr merge above, whether run synchronously here or completed later by GitHub's own background auto-merge) produces a push to main that GitHub's anti-recursion rule refuses to cascade into ci.yml's own push trigger -- workflow_dispatch is the one event type that rule exempts, so it is dispatched explicitly whenever this run found a merge to release.
+          echo "Dispatching ci.yml on main to release the merged bump(s)."
+          gh workflow run ci.yml --ref main
+        env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
