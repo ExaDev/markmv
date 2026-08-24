@@ -3,7 +3,7 @@
   "version": "1.38.1",
   "description": "TypeScript CLI for markdown file operations with intelligent link refactoring",
   "type": "module",
-  "packageManager": "pnpm@10.33.1",
+  "packageManager": "pnpm@11.22.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
@@ -104,7 +104,8 @@
     "prettier": "^3.8.3",
     "prettier-plugin-jsdoc": "^1.8.0",
     "semantic-release": "^25.0.3",
-    "turbo": "^2.10.11",
+    "tsx": "4.23.12",
+    "turbo": "^2.10.10",
     "typedoc": "^0.28.19",
     "typedoc-material-theme": "^1.4.1",
     "typedoc-plugin-coverage": "^4.0.3",
@@ -156,13 +157,6 @@
   "config": {
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"
-    }
-  },
-  "pnpm": {
-    "overrides": {
-      "rollup": "4.62.4",
-      "fast-uri": "3.1.5",
-      "js-yaml": "4.3.1"
     }
   }
 }

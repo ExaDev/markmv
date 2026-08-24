@@ -1,2 +1,15 @@
 # A newly published package version can't be installed until this many minutes have passed, giving a compromised release time to be caught and pulled before it reaches this project. 10080 minutes = 7 days, matching the global npm/pnpm min-release-age configured on this machine.
 minimumReleaseAge: 10080
+
+# Moved from package.json's pnpm.overrides field -- pnpm 11 no longer reads settings from package.json's pnpm field.
+overrides:
+  rollup: 4.62.4
+  fast-uri: 3.1.5
+  js-yaml: 4.3.1
+
+# Moved from .npmrc -- pnpm 11 restricts .npmrc to auth and registry settings; everything else lives here.
+nodeLinker: hoisted
+strictPeerDependencies: false
+# esbuild's install script only selects and verifies its own platform-native binary (a transitive dependency of vitest/vite); it runs no other logic, so allowing it is safe.
+allowBuilds:
+  esbuild: true
