@@ -21,7 +21,7 @@ import { PathUtils } from "./path-utils.js";
  *
  * @category Utilities
  */
-export interface FileStats {
+interface FileStats {
   path: string;
   size: number;
   isFile: boolean;
@@ -38,7 +38,7 @@ export interface FileStats {
  *
  * @category Utilities
  */
-export interface CopyOptions {
+interface CopyOptions {
   overwrite?: boolean;
   preserveTimestamps?: boolean;
   createDirectories?: boolean;
@@ -52,7 +52,7 @@ export interface CopyOptions {
  *
  * @category Utilities
  */
-export interface MoveOptions extends CopyOptions {
+interface MoveOptions extends CopyOptions {
   backup?: boolean;
 }
 
