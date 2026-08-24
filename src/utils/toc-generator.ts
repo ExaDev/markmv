@@ -1,10 +1,10 @@
-import remarkParse from 'remark-parse';
-import { unified } from 'unified';
-import type { Node } from 'unist';
-import { visit } from 'unist-util-visit';
+import remarkParse from "remark-parse";
+import { unified } from "unified";
+import type { Node } from "unist";
+import { visit } from "unist-util-visit";
 
 interface HeadingNode extends Node {
-  type: 'heading';
+  type: "heading";
   depth: number;
   children: { type: string; value?: string }[];
 }
@@ -111,7 +111,7 @@ export class TocGenerator {
     const headings: MarkdownHeading[] = [];
 
     // Extract headings from AST
-    visit(tree, 'heading', (node: HeadingNode) => {
+    visit(tree, "heading", (node: HeadingNode) => {
       if (!node.position) return;
 
       // Skip headings outside depth range
@@ -146,7 +146,10 @@ export class TocGenerator {
    *
    * @returns Array of headings
    */
-  extractHeadings(content: string, options: TocOptions = {}): MarkdownHeading[] {
+  extractHeadings(
+    content: string,
+    options: TocOptions = {},
+  ): MarkdownHeading[] {
     const result = this.generateToc(content, options);
     return result.headings;
   }
@@ -159,22 +162,27 @@ export class TocGenerator {
    *
    * @returns Formatted TOC markdown
    */
-  private formatToc(headings: MarkdownHeading[], includeLineNumbers: boolean): string {
+  private formatToc(
+    headings: MarkdownHeading[],
+    includeLineNumbers: boolean,
+  ): string {
     if (headings.length === 0) {
-      return '';
+      return "";
     }
 
     const lines: string[] = [];
     const minLevel = Math.min(...headings.map((h) => h.level));
 
     for (const heading of headings) {
-      const indent = '  '.repeat(heading.level - minLevel);
+      const indent = "  ".repeat(heading.level - minLevel);
       const link = `[${heading.text}](#${heading.slug})`;
-      const lineInfo = includeLineNumbers ? ` (line ${String(heading.line)})` : '';
+      const lineInfo = includeLineNumbers
+        ? ` (line ${String(heading.line)})`
+        : "";
       lines.push(`${indent}- ${link}${lineInfo}`);
     }
 
-    return lines.join('\n');
+    return lines.join("\n");
   }
 
   /**
@@ -185,23 +193,28 @@ export class TocGenerator {
    * @returns Combined text content
    */
   private extractTextFromNodes(
-    nodes: { type: string; value?: string; children?: unknown[] }[]
+    nodes: { type: string; value?: string; children?: unknown[] }[],
   ): string {
     return nodes
       .map((node) => {
-        if (node.type === 'text') {
-          return node.value ?? '';
+        if (node.type === "text") {
+          return node.value ?? "";
         } else if (node.children && Array.isArray(node.children)) {
           // Recursively extract text from children, filtering for valid node structure
           const childNodes = node.children.filter(
-            (child): child is { type: string; value?: string; children?: unknown[] } =>
-              typeof child === 'object' && child !== null && 'type' in child
+            (
+              child,
+            ): child is {
+              type: string;
+              value?: string;
+              children?: unknown[];
+            } => typeof child === "object" && child !== null && "type" in child,
           );
           return this.extractTextFromNodes(childNodes);
         }
-        return '';
+        return "";
       })
-      .join('');
+      .join("");
   }
 }
 
@@ -215,8 +228,8 @@ export class TocGenerator {
 function defaultSlugify(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[^\w\s-]/g, '-') // Replace special characters with hyphens
-    .replace(/\s+/g, '-') // Replace spaces with hyphens
-    .replace(/-+/g, '-') // Replace multiple hyphens with single
-    .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+    .replace(/[^\w\s-]/g, "-") // Replace special characters with hyphens
+    .replace(/\s+/g, "-") // Replace spaces with hyphens
+    .replace(/-+/g, "-") // Replace multiple hyphens with single
+    .replace(/^-|-$/g, ""); // Remove leading/trailing hyphens
 }

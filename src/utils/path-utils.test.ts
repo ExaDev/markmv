@@ -1,301 +1,314 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { homedir, tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
-import { PathUtils } from './path-utils.js';
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { describe, expect, it } from "vitest";
+import { PathUtils } from "./path-utils.js";
 import {
   getPlatformInfo,
   createConditionalTest,
   getTestPaths,
   createPath,
   convertPathSeparators,
-} from './test-helpers.js';
+} from "./test-helpers.js";
 
-describe('PathUtils', () => {
-  describe('resolvePath', () => {
-    it('should resolve absolute paths', () => {
-      const result = PathUtils.resolvePath('/absolute/path');
-      expect(result).toBe(resolve('/absolute/path'));
+describe("PathUtils", () => {
+  describe("resolvePath", () => {
+    it("should resolve absolute paths", () => {
+      const result = PathUtils.resolvePath("/absolute/path");
+      expect(result).toBe(resolve("/absolute/path"));
     });
 
-    it('should resolve home directory paths', () => {
-      const result = PathUtils.resolvePath('~/documents');
-      expect(result).toBe(resolve(join(homedir(), 'documents')));
+    it("should resolve home directory paths", () => {
+      const result = PathUtils.resolvePath("~/documents");
+      expect(result).toBe(resolve(join(homedir(), "documents")));
     });
 
-    it('should resolve relative paths with base', () => {
-      const result = PathUtils.resolvePath('./relative', '/base/dir');
-      expect(result).toBe(resolve('/base/dir/relative'));
+    it("should resolve relative paths with base", () => {
+      const result = PathUtils.resolvePath("./relative", "/base/dir");
+      expect(result).toBe(resolve("/base/dir/relative"));
     });
 
-    it('should resolve relative paths without base', () => {
-      const result = PathUtils.resolvePath('./relative');
-      expect(result).toBe(resolve('./relative'));
-    });
-  });
-
-  describe('makeRelative', () => {
-    it('should create relative path between directories', () => {
-      const result = PathUtils.makeRelative('/project/docs/file.md', '/project');
-      // Normalize path separators for cross-platform compatibility
-      const normalizedResult = result.replace(/\\/g, '/');
-      expect(normalizedResult).toBe('docs/file.md');
-    });
-
-    it('should create relative path for sibling files', () => {
-      const result = PathUtils.makeRelative('/project/target.md', '/project');
-      expect(result).toBe('target.md');
+    it("should resolve relative paths without base", () => {
+      const result = PathUtils.resolvePath("./relative");
+      expect(result).toBe(resolve("./relative"));
     });
   });
 
-  describe('updateRelativePath', () => {
-    it('should update relative path when source moves', () => {
-      const result = PathUtils.updateRelativePath(
-        './target.md',
-        '/project/docs/source.md',
-        '/project/moved/source.md'
+  describe("makeRelative", () => {
+    it("should create relative path between directories", () => {
+      const result = PathUtils.makeRelative(
+        "/project/docs/file.md",
+        "/project",
       );
       // Normalize path separators for cross-platform compatibility
-      const normalizedResult = result.replace(/\\/g, '/');
-      expect(normalizedResult).toBe('../docs/target.md');
+      const normalizedResult = result.replace(/\\/g, "/");
+      expect(normalizedResult).toBe("docs/file.md");
     });
 
-    it('should not change absolute paths', () => {
-      const result = PathUtils.updateRelativePath(
-        '/absolute/target.md',
-        '/project/docs/source.md',
-        '/project/moved/source.md'
-      );
-      expect(result).toBe('/absolute/target.md');
-    });
-
-    it('should not change home directory paths', () => {
-      const result = PathUtils.updateRelativePath(
-        '~/target.md',
-        '/project/docs/source.md',
-        '/project/moved/source.md'
-      );
-      expect(result).toBe('~/target.md');
+    it("should create relative path for sibling files", () => {
+      const result = PathUtils.makeRelative("/project/target.md", "/project");
+      expect(result).toBe("target.md");
     });
   });
 
-  describe('updateClaudeImportPath', () => {
-    it('should update relative Claude import paths', () => {
+  describe("updateRelativePath", () => {
+    it("should update relative path when source moves", () => {
+      const result = PathUtils.updateRelativePath(
+        "./target.md",
+        "/project/docs/source.md",
+        "/project/moved/source.md",
+      );
+      // Normalize path separators for cross-platform compatibility
+      const normalizedResult = result.replace(/\\/g, "/");
+      expect(normalizedResult).toBe("../docs/target.md");
+    });
+
+    it("should not change absolute paths", () => {
+      const result = PathUtils.updateRelativePath(
+        "/absolute/target.md",
+        "/project/docs/source.md",
+        "/project/moved/source.md",
+      );
+      expect(result).toBe("/absolute/target.md");
+    });
+
+    it("should not change home directory paths", () => {
+      const result = PathUtils.updateRelativePath(
+        "~/target.md",
+        "/project/docs/source.md",
+        "/project/moved/source.md",
+      );
+      expect(result).toBe("~/target.md");
+    });
+  });
+
+  describe("updateClaudeImportPath", () => {
+    it("should update relative Claude import paths", () => {
       const result = PathUtils.updateClaudeImportPath(
-        './config.md',
-        '/project/docs/source.md',
-        '/project/moved/source.md'
+        "./config.md",
+        "/project/docs/source.md",
+        "/project/moved/source.md",
       );
       // Normalize path separators for cross-platform compatibility
-      const normalizedResult = result.replace(/\\/g, '/');
-      expect(normalizedResult).toBe('../docs/config.md');
+      const normalizedResult = result.replace(/\\/g, "/");
+      expect(normalizedResult).toBe("../docs/config.md");
     });
 
-    it('should preserve absolute Claude import paths', () => {
+    it("should preserve absolute Claude import paths", () => {
       const result = PathUtils.updateClaudeImportPath(
-        '/global/config.md',
-        '/project/docs/source.md',
-        '/project/moved/source.md'
+        "/global/config.md",
+        "/project/docs/source.md",
+        "/project/moved/source.md",
       );
-      expect(result).toBe('/global/config.md');
+      expect(result).toBe("/global/config.md");
     });
   });
 
-  describe('validatePath', () => {
-    it('should validate normal paths', () => {
-      const result = PathUtils.validatePath('/valid/path/file.md');
+  describe("validatePath", () => {
+    it("should validate normal paths", () => {
+      const result = PathUtils.validatePath("/valid/path/file.md");
       expect(result.valid).toBe(true);
     });
 
-    it('should reject empty paths', () => {
-      const result = PathUtils.validatePath('');
+    it("should reject empty paths", () => {
+      const result = PathUtils.validatePath("");
       expect(result.valid).toBe(false);
-      expect(result.reason).toBe('Path cannot be empty');
+      expect(result.reason).toBe("Path cannot be empty");
     });
 
-    it('should reject paths with null bytes', () => {
-      const result = PathUtils.validatePath('/path/with\0null');
+    it("should reject paths with null bytes", () => {
+      const result = PathUtils.validatePath("/path/with\0null");
       expect(result.valid).toBe(false);
-      expect(result.reason).toBe('Path cannot contain null bytes');
+      expect(result.reason).toBe("Path cannot contain null bytes");
     });
   });
 
-  describe('isMarkdownFile', () => {
-    it('should identify markdown files', () => {
-      expect(PathUtils.isMarkdownFile('file.md')).toBe(true);
-      expect(PathUtils.isMarkdownFile('file.markdown')).toBe(true);
-      expect(PathUtils.isMarkdownFile('file.mdx')).toBe(true);
+  describe("isMarkdownFile", () => {
+    it("should identify markdown files", () => {
+      expect(PathUtils.isMarkdownFile("file.md")).toBe(true);
+      expect(PathUtils.isMarkdownFile("file.markdown")).toBe(true);
+      expect(PathUtils.isMarkdownFile("file.mdx")).toBe(true);
     });
 
-    it('should reject non-markdown files', () => {
-      expect(PathUtils.isMarkdownFile('file.txt')).toBe(false);
-      expect(PathUtils.isMarkdownFile('file.html')).toBe(false);
-      expect(PathUtils.isMarkdownFile('file')).toBe(false);
+    it("should reject non-markdown files", () => {
+      expect(PathUtils.isMarkdownFile("file.txt")).toBe(false);
+      expect(PathUtils.isMarkdownFile("file.html")).toBe(false);
+      expect(PathUtils.isMarkdownFile("file")).toBe(false);
     });
   });
 
-  describe('findCommonBase', () => {
-    it('should find common base directory', () => {
-      const paths = ['/project/docs/file1.md', '/project/docs/file2.md', '/project/src/file3.md'];
+  describe("findCommonBase", () => {
+    it("should find common base directory", () => {
+      const paths = [
+        "/project/docs/file1.md",
+        "/project/docs/file2.md",
+        "/project/src/file3.md",
+      ];
       const result = PathUtils.findCommonBase(paths);
       // Normalize path separators for cross-platform compatibility
-      const normalizedResult = result.replace(/\\/g, '/');
+      const normalizedResult = result.replace(/\\/g, "/");
       // On Windows, absolute paths may include drive letters
       expect(normalizedResult).toMatch(/^([A-Z]:)?\/project$/);
     });
 
-    it('should handle single path', () => {
-      const result = PathUtils.findCommonBase(['/project/docs/file.md']);
+    it("should handle single path", () => {
+      const result = PathUtils.findCommonBase(["/project/docs/file.md"]);
       // Normalize path separators for cross-platform compatibility
-      const normalizedResult = result.replace(/\\/g, '/');
+      const normalizedResult = result.replace(/\\/g, "/");
       // On Windows, absolute paths may include drive letters
       expect(normalizedResult).toMatch(/^([A-Z]:)?\/project\/docs$/);
     });
 
-    it('should handle empty array', () => {
+    it("should handle empty array", () => {
       const result = PathUtils.findCommonBase([]);
-      expect(result).toBe('');
+      expect(result).toBe("");
     });
   });
 
-  describe('toUnixPath', () => {
-    it('should convert Windows paths to Unix style', () => {
-      const result = PathUtils.toUnixPath('path\\to\\file.md');
-      expect(result).toBe('path/to/file.md');
+  describe("toUnixPath", () => {
+    it("should convert Windows paths to Unix style", () => {
+      const result = PathUtils.toUnixPath("path\\to\\file.md");
+      expect(result).toBe("path/to/file.md");
     });
 
-    it('should leave Unix paths unchanged', () => {
-      const result = PathUtils.toUnixPath('path/to/file.md');
-      expect(result).toBe('path/to/file.md');
+    it("should leave Unix paths unchanged", () => {
+      const result = PathUtils.toUnixPath("path/to/file.md");
+      expect(result).toBe("path/to/file.md");
     });
   });
 
-  describe('Cross-Platform Path Behavior', () => {
+  describe("Cross-Platform Path Behavior", () => {
     const platformInfo = getPlatformInfo();
     const testPaths = getTestPaths();
     const conditionalTest = createConditionalTest(it);
 
-    describe('Platform-specific path handling', () => {
-      it('should handle platform-appropriate absolute paths', () => {
+    describe("Platform-specific path handling", () => {
+      it("should handle platform-appropriate absolute paths", () => {
         testPaths.absolute.forEach((testPath) => {
           const result = PathUtils.validatePath(testPath);
           expect(result.valid).toBe(true);
         });
       });
 
-      it('should handle platform-appropriate relative paths', () => {
+      it("should handle platform-appropriate relative paths", () => {
         testPaths.relative.forEach((testPath) => {
           const result = PathUtils.validatePath(testPath);
           expect(result.valid).toBe(true);
         });
       });
 
-      it('should handle path traversal validation appropriately', () => {
+      it("should handle path traversal validation appropriately", () => {
         // Test traversal paths separately since they may be rejected for security
         const traversalPaths = platformInfo.isWindows
-          ? ['..\\parent\\file.txt']
-          : ['../parent/file.txt'];
+          ? ["..\\parent\\file.txt"]
+          : ["../parent/file.txt"];
 
         traversalPaths.forEach((testPath) => {
           const result = PathUtils.validatePath(testPath);
           // Path traversal may be rejected for security - this is platform/implementation dependent
-          expect(typeof result.valid).toBe('boolean');
+          expect(typeof result.valid).toBe("boolean");
           if (!result.valid) {
             expect(result.reason).toBeDefined();
           }
         });
       });
 
-      conditionalTest('Windows drive letter handling', 'windows', () => {
-        expect(PathUtils.validatePath('C:\\Users\\test\\file.md').valid).toBe(true);
-        expect(PathUtils.validatePath('D:\\Projects\\readme.md').valid).toBe(true);
+      conditionalTest("Windows drive letter handling", "windows", () => {
+        expect(PathUtils.validatePath("C:\\Users\\test\\file.md").valid).toBe(
+          true,
+        );
+        expect(PathUtils.validatePath("D:\\Projects\\readme.md").valid).toBe(
+          true,
+        );
       });
 
-      conditionalTest('Unix absolute path handling', 'unix', () => {
-        expect(PathUtils.validatePath('/home/user/file.md').valid).toBe(true);
-        expect(PathUtils.validatePath('/usr/local/share/doc.md').valid).toBe(true);
+      conditionalTest("Unix absolute path handling", "unix", () => {
+        expect(PathUtils.validatePath("/home/user/file.md").valid).toBe(true);
+        expect(PathUtils.validatePath("/usr/local/share/doc.md").valid).toBe(
+          true,
+        );
       });
     });
 
-    describe('Path separator handling', () => {
-      it('should handle native path separators', () => {
-        const nativePath = createPath('folder', 'subfolder', 'file.md');
+    describe("Path separator handling", () => {
+      it("should handle native path separators", () => {
+        const nativePath = createPath("folder", "subfolder", "file.md");
         const result = PathUtils.validatePath(nativePath);
         expect(result.valid).toBe(true);
       });
 
-      it('should convert path separators when needed', () => {
+      it("should convert path separators when needed", () => {
         if (platformInfo.isWindows) {
-          const unixPath = 'folder/subfolder/file.md';
+          const unixPath = "folder/subfolder/file.md";
           const windowsPath = convertPathSeparators(unixPath);
-          expect(windowsPath).toBe('folder\\subfolder\\file.md');
+          expect(windowsPath).toBe("folder\\subfolder\\file.md");
           expect(PathUtils.validatePath(windowsPath).valid).toBe(true);
         } else {
-          const windowsPath = 'folder\\subfolder\\file.md';
+          const windowsPath = "folder\\subfolder\\file.md";
           const unixPath = convertPathSeparators(windowsPath);
-          expect(unixPath).toBe('folder/subfolder/file.md');
+          expect(unixPath).toBe("folder/subfolder/file.md");
           expect(PathUtils.validatePath(unixPath).valid).toBe(true);
         }
       });
     });
 
-    describe('toUnixPath cross-platform behavior', () => {
-      it('should consistently convert to Unix paths regardless of platform', () => {
+    describe("toUnixPath cross-platform behavior", () => {
+      it("should consistently convert to Unix paths regardless of platform", () => {
         const mixedPaths = [
-          'folder\\subfolder\\file.md',
-          'folder/subfolder/file.md',
-          'folder\\mixed/path\\file.md',
+          "folder\\subfolder\\file.md",
+          "folder/subfolder/file.md",
+          "folder\\mixed/path\\file.md",
         ];
 
         mixedPaths.forEach((path) => {
           const result = PathUtils.toUnixPath(path);
-          expect(result).not.toContain('\\');
+          expect(result).not.toContain("\\");
           expect(result).toMatch(/\//);
         });
       });
     });
 
-    describe('Relative path updates across platforms', () => {
-      it('should handle relative path updates with platform-specific paths', () => {
+    describe("Relative path updates across platforms", () => {
+      it("should handle relative path updates with platform-specific paths", () => {
         if (platformInfo.isWindows) {
           const result = PathUtils.updateRelativePath(
-            '.\\target.md',
-            'C:\\project\\docs\\source.md',
-            'C:\\project\\moved\\source.md'
+            ".\\target.md",
+            "C:\\project\\docs\\source.md",
+            "C:\\project\\moved\\source.md",
           );
           // Should work regardless of path separator style
           expect(result).toMatch(/\.\.[\\/]docs[\\/]target\.md/);
         } else {
           const result = PathUtils.updateRelativePath(
-            './target.md',
-            '/project/docs/source.md',
-            '/project/moved/source.md'
+            "./target.md",
+            "/project/docs/source.md",
+            "/project/moved/source.md",
           );
-          expect(result).toBe('../docs/target.md');
+          expect(result).toBe("../docs/target.md");
         }
       });
     });
 
-    describe('findCommonBase with mixed path separators', () => {
-      it('should find common base even with mixed separators', () => {
+    describe("findCommonBase with mixed path separators", () => {
+      it("should find common base even with mixed separators", () => {
         let paths: string[];
         let expectedBase: string;
 
         if (platformInfo.isWindows) {
           paths = [
-            'C:\\project\\docs\\file1.md',
-            'C:/project/docs/file2.md', // Mixed separator style
-            'C:\\project\\src\\file3.md',
+            "C:\\project\\docs\\file1.md",
+            "C:/project/docs/file2.md", // Mixed separator style
+            "C:\\project\\src\\file3.md",
           ];
-          expectedBase = 'C:\\project';
+          expectedBase = "C:\\project";
         } else {
           // Use consistent separators for Unix systems
           paths = [
-            '/tmp/project/docs/file1.md',
-            '/tmp/project/docs/file2.md',
-            '/tmp/project/src/file3.md',
+            "/tmp/project/docs/file1.md",
+            "/tmp/project/docs/file2.md",
+            "/tmp/project/src/file3.md",
           ];
-          expectedBase = '/tmp/project';
+          expectedBase = "/tmp/project";
         }
 
         const result = PathUtils.findCommonBase(paths);
@@ -304,23 +317,26 @@ describe('PathUtils', () => {
     });
   });
 
-  describe('generateUniqueFilename', () => {
-    it('should return the desired path when it does not exist', () => {
-      const desired = join(tmpdir(), `markmv-unique-free-${String(Date.now())}.md`);
+  describe("generateUniqueFilename", () => {
+    it("should return the desired path when it does not exist", () => {
+      const desired = join(
+        tmpdir(),
+        `markmv-unique-free-${String(Date.now())}.md`,
+      );
 
       const result = PathUtils.generateUniqueFilename(desired);
 
       expect(result).toBe(desired);
     });
 
-    it('should append a counter when the desired path is taken', () => {
-      const dir = mkdtempSync(join(tmpdir(), 'markmv-unique-'));
-      const desired = join(dir, 'note.md');
-      writeFileSync(desired, 'taken');
+    it("should append a counter when the desired path is taken", () => {
+      const dir = mkdtempSync(join(tmpdir(), "markmv-unique-"));
+      const desired = join(dir, "note.md");
+      writeFileSync(desired, "taken");
 
       const result = PathUtils.generateUniqueFilename(desired);
 
-      expect(result).toBe(join(dir, 'note-1.md'));
+      expect(result).toBe(join(dir, "note-1.md"));
       rmSync(dir, { recursive: true, force: true });
     });
   });

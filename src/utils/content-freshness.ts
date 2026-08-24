@@ -4,10 +4,10 @@
  * @file Detects potentially stale external content even when links are valid
  */
 
-import { createHash } from 'node:crypto';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
-import { join, dirname } from 'node:path';
-import { existsSync } from 'node:fs';
+import { createHash } from "node:crypto";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { join, dirname } from "node:path";
+import { existsSync } from "node:fs";
 
 /** Configuration for content freshness detection. */
 export interface FreshnessConfig {
@@ -81,13 +81,13 @@ export interface ResponseInfo {
 
 /** Narrow untrusted cache-file JSON entries into CachedContentInfo values. */
 function isCachedContentInfo(value: unknown): value is CachedContentInfo {
-  if (typeof value !== 'object' || value === null) return false;
-  return 'url' in value && 'contentHash' in value && 'lastChecked' in value;
+  if (typeof value !== "object" || value === null) return false;
+  return "url" in value && "contentHash" in value && "lastChecked" in value;
 }
 
 /** Type guard for a plain object (not an array, not null) parsed from JSON. */
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export class ContentFreshnessDetector {
@@ -97,35 +97,36 @@ export class ContentFreshnessDetector {
   constructor(config: Partial<FreshnessConfig> = {}) {
     this.config = {
       enabled: config.enabled ?? true,
-      defaultThreshold: config.defaultThreshold ?? 2 * 365 * 24 * 60 * 60 * 1000, // 2 years
+      defaultThreshold:
+        config.defaultThreshold ?? 2 * 365 * 24 * 60 * 60 * 1000, // 2 years
       domainThresholds: config.domainThresholds ?? {
-        'firebase.google.com': 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
-        'docs.github.com': 6 * 30 * 24 * 60 * 60 * 1000, // 6 months
-        'api.github.com': 6 * 30 * 24 * 60 * 60 * 1000, // 6 months
-        'developers.google.com': 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
-        'docs.aws.amazon.com': 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
-        'docs.microsoft.com': 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
+        "firebase.google.com": 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
+        "docs.github.com": 6 * 30 * 24 * 60 * 60 * 1000, // 6 months
+        "api.github.com": 6 * 30 * 24 * 60 * 60 * 1000, // 6 months
+        "developers.google.com": 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
+        "docs.aws.amazon.com": 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
+        "docs.microsoft.com": 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
       },
       stalePatterns: config.stalePatterns ?? [
-        'deprecated',
-        'no longer supported',
-        'this page has moved',
-        'page not found',
-        'content has moved',
-        'redirected permanently',
-        'legacy documentation',
-        'archived',
-        'end of life',
-        'discontinued',
-        'migration notice',
-        'breaking changes',
-        'version no longer maintained',
+        "deprecated",
+        "no longer supported",
+        "this page has moved",
+        "page not found",
+        "content has moved",
+        "redirected permanently",
+        "legacy documentation",
+        "archived",
+        "end of life",
+        "discontinued",
+        "migration notice",
+        "breaking changes",
+        "version no longer maintained",
       ],
-      cacheDir: config.cacheDir ?? '.markmv-cache',
+      cacheDir: config.cacheDir ?? ".markmv-cache",
       detectContentChanges: config.detectContentChanges ?? true,
     };
 
-    this.cacheFile = join(this.config.cacheDir, 'content-freshness.json');
+    this.cacheFile = join(this.config.cacheDir, "content-freshness.json");
   }
 
   /** Check if freshness detection is enabled. */
@@ -136,7 +137,7 @@ export class ContentFreshnessDetector {
   /** Analyze content freshness for a given URL response. */
   async analyzeContentFreshness(
     url: string,
-    response: ResponseInfo
+    response: ResponseInfo,
   ): Promise<ContentFreshnessInfo> {
     if (!this.config.enabled) {
       return {
@@ -148,7 +149,8 @@ export class ContentFreshnessDetector {
     }
 
     const domain = this.extractDomain(url);
-    const thresholdMs = this.config.domainThresholds[domain] ?? this.config.defaultThreshold;
+    const thresholdMs =
+      this.config.domainThresholds[domain] ?? this.config.defaultThreshold;
 
     // Initialize result
     const result: ContentFreshnessInfo = {
@@ -167,7 +169,7 @@ export class ContentFreshnessDetector {
       if (result.ageMs > thresholdMs) {
         result.isFresh = false;
         result.warning = `Content is ${this.formatAge(result.ageMs)} old`;
-        result.suggestion = 'Check for newer version or updated documentation';
+        result.suggestion = "Check for newer version or updated documentation";
       }
     }
 
@@ -176,8 +178,10 @@ export class ContentFreshnessDetector {
     if (detectedPatterns.length > 0) {
       result.stalePatterns = detectedPatterns;
       result.isFresh = false;
-      result.warning = result.warning ?? 'Content contains staleness indicators';
-      result.suggestion = result.suggestion ?? 'Review content for updates or alternatives';
+      result.warning =
+        result.warning ?? "Content contains staleness indicators";
+      result.suggestion =
+        result.suggestion ?? "Review content for updates or alternatives";
     }
 
     // Content change detection
@@ -191,13 +195,19 @@ export class ContentFreshnessDetector {
         result.hasContentChanged = true;
 
         if (!result.warning) {
-          result.warning = 'Content has changed since last validation';
-          result.suggestion = 'Review changes to ensure links are still relevant';
+          result.warning = "Content has changed since last validation";
+          result.suggestion =
+            "Review changes to ensure links are still relevant";
         }
       }
 
       // Update cache
-      await this.updateCachedContent(url, contentHash, response.headers, lastModified);
+      await this.updateCachedContent(
+        url,
+        contentHash,
+        response.headers,
+        lastModified,
+      );
     }
 
     return result;
@@ -208,13 +218,13 @@ export class ContentFreshnessDetector {
     try {
       return new URL(url).hostname;
     } catch {
-      return '';
+      return "";
     }
   }
 
   /** Parse Last-Modified header. */
   private parseLastModified(headers: Record<string, string>): Date | undefined {
-    const lastModified = headers['last-modified'] || headers['Last-Modified'];
+    const lastModified = headers["last-modified"] || headers["Last-Modified"];
     if (!lastModified) {
       return undefined;
     }
@@ -244,44 +254,52 @@ export class ContentFreshnessDetector {
   private calculateContentHash(content: string): string {
     // Normalize content to reduce false positives
     const normalized = content
-      .replace(/\s+/g, ' ') // Normalize whitespace
-      .replace(/<!--.*?-->/gs, '') // Remove HTML comments
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
-      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '') // Remove styles
-      .replace(/\d{4}-\d{2}-\d{2}/g, 'DATE') // Replace dates
-      .replace(/\b\d{1,2}:\d{2}(:\d{2})?\b/g, 'TIME') // Replace times
+      .replace(/\s+/g, " ") // Normalize whitespace
+      .replace(/<!--.*?-->/gs, "") // Remove HTML comments
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "") // Remove scripts
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "") // Remove styles
+      .replace(/\d{4}-\d{2}-\d{2}/g, "DATE") // Replace dates
+      .replace(/\b\d{1,2}:\d{2}(:\d{2})?\b/g, "TIME") // Replace times
       .trim();
 
-    return createHash('sha256').update(normalized, 'utf8').digest('hex');
+    return createHash("sha256").update(normalized, "utf8").digest("hex");
   }
 
   /** Format age in human-readable format. */
   private formatAge(ageMs: number): string {
     const years = Math.floor(ageMs / (365 * 24 * 60 * 60 * 1000));
-    const months = Math.floor((ageMs % (365 * 24 * 60 * 60 * 1000)) / (30 * 24 * 60 * 60 * 1000));
-    const days = Math.floor((ageMs % (30 * 24 * 60 * 60 * 1000)) / (24 * 60 * 60 * 1000));
+    const months = Math.floor(
+      (ageMs % (365 * 24 * 60 * 60 * 1000)) / (30 * 24 * 60 * 60 * 1000),
+    );
+    const days = Math.floor(
+      (ageMs % (30 * 24 * 60 * 60 * 1000)) / (24 * 60 * 60 * 1000),
+    );
 
     if (years > 0) {
       return months > 0
-        ? `${String(years)} year${years > 1 ? 's' : ''}, ${String(months)} month${months > 1 ? 's' : ''}`
-        : `${String(years)} year${years > 1 ? 's' : ''}`;
+        ? `${String(years)} year${years > 1 ? "s" : ""}, ${String(months)} month${months > 1 ? "s" : ""}`
+        : `${String(years)} year${years > 1 ? "s" : ""}`;
     }
     if (months > 0) {
       return days > 0
-        ? `${String(months)} month${months > 1 ? 's' : ''}, ${String(days)} day${days > 1 ? 's' : ''}`
-        : `${String(months)} month${months > 1 ? 's' : ''}`;
+        ? `${String(months)} month${months > 1 ? "s" : ""}, ${String(days)} day${days > 1 ? "s" : ""}`
+        : `${String(months)} month${months > 1 ? "s" : ""}`;
     }
-    return `${String(days)} day${days > 1 ? 's' : ''}`;
+    return `${String(days)} day${days > 1 ? "s" : ""}`;
   }
 
   /** Get cached content information. */
-  private async getCachedContent(url: string): Promise<CachedContentInfo | undefined> {
+  private async getCachedContent(
+    url: string,
+  ): Promise<CachedContentInfo | undefined> {
     try {
       if (!existsSync(this.cacheFile)) {
         return undefined;
       }
 
-      const cacheData: unknown = JSON.parse(await readFile(this.cacheFile, 'utf8'));
+      const cacheData: unknown = JSON.parse(
+        await readFile(this.cacheFile, "utf8"),
+      );
       if (!isPlainRecord(cacheData) || !(url in cacheData)) {
         return undefined;
       }
@@ -298,7 +316,7 @@ export class ContentFreshnessDetector {
     url: string,
     contentHash: string,
     headers: Record<string, string>,
-    lastModified?: Date
+    lastModified?: Date,
   ): Promise<void> {
     try {
       // Ensure cache directory exists
@@ -308,7 +326,9 @@ export class ContentFreshnessDetector {
 
       if (existsSync(this.cacheFile)) {
         try {
-          const parsed: unknown = JSON.parse(await readFile(this.cacheFile, 'utf8'));
+          const parsed: unknown = JSON.parse(
+            await readFile(this.cacheFile, "utf8"),
+          );
           if (isPlainRecord(parsed)) {
             for (const [key, value] of Object.entries(parsed)) {
               if (isCachedContentInfo(value)) {
@@ -327,18 +347,24 @@ export class ContentFreshnessDetector {
         lastChecked: Date.now(),
         ...(lastModified && { lastModified: lastModified.getTime() }),
         headers: {
-          'last-modified': headers['last-modified'] || headers['Last-Modified'] || '',
-          etag: headers.etag || headers.ETag || '',
-          'cache-control': headers['cache-control'] || headers['Cache-Control'] || '',
+          "last-modified":
+            headers["last-modified"] || headers["Last-Modified"] || "",
+          etag: headers.etag || headers.ETag || "",
+          "cache-control":
+            headers["cache-control"] || headers["Cache-Control"] || "",
         },
       };
 
-      await writeFile(this.cacheFile, JSON.stringify(cacheData, null, 2), 'utf8');
+      await writeFile(
+        this.cacheFile,
+        JSON.stringify(cacheData, null, 2),
+        "utf8",
+      );
     } catch (error) {
       // Fail silently for cache updates
-      if (process.env.NODE_ENV !== 'test') {
+      if (process.env.NODE_ENV !== "test") {
         console.warn(
-          `Warning: Failed to update content freshness cache: ${error instanceof Error ? error.message : String(error)}`
+          `Warning: Failed to update content freshness cache: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     }
@@ -348,25 +374,31 @@ export class ContentFreshnessDetector {
   async clearCache(): Promise<void> {
     try {
       if (existsSync(this.cacheFile)) {
-        await writeFile(this.cacheFile, '{}', 'utf8');
+        await writeFile(this.cacheFile, "{}", "utf8");
       }
     } catch (error) {
       throw new Error(
         `Failed to clear content freshness cache: ${error instanceof Error ? error.message : String(error)}`,
-        { cause: error }
+        { cause: error },
       );
     }
   }
 
   /** Get cache statistics. */
-  async getCacheStats(): Promise<{ totalEntries: number; oldestEntry?: Date; newestEntry?: Date }> {
+  async getCacheStats(): Promise<{
+    totalEntries: number;
+    oldestEntry?: Date;
+    newestEntry?: Date;
+  }> {
     try {
       if (!existsSync(this.cacheFile)) {
         return { totalEntries: 0 };
       }
 
-      const cacheData: unknown = JSON.parse(await readFile(this.cacheFile, 'utf8'));
-      if (typeof cacheData !== 'object' || cacheData === null) {
+      const cacheData: unknown = JSON.parse(
+        await readFile(this.cacheFile, "utf8"),
+      );
+      if (typeof cacheData !== "object" || cacheData === null) {
         return { totalEntries: 0 };
       }
       const entries = Object.values(cacheData).filter(isCachedContentInfo);
@@ -392,28 +424,28 @@ export const DEFAULT_FRESHNESS_CONFIG: FreshnessConfig = {
   enabled: true,
   defaultThreshold: 2 * 365 * 24 * 60 * 60 * 1000, // 2 years
   domainThresholds: {
-    'firebase.google.com': 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
-    'docs.github.com': 6 * 30 * 24 * 60 * 60 * 1000, // 6 months
-    'api.github.com': 6 * 30 * 24 * 60 * 60 * 1000, // 6 months
-    'developers.google.com': 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
-    'docs.aws.amazon.com': 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
-    'docs.microsoft.com': 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
+    "firebase.google.com": 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
+    "docs.github.com": 6 * 30 * 24 * 60 * 60 * 1000, // 6 months
+    "api.github.com": 6 * 30 * 24 * 60 * 60 * 1000, // 6 months
+    "developers.google.com": 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
+    "docs.aws.amazon.com": 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
+    "docs.microsoft.com": 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
   },
   stalePatterns: [
-    'deprecated',
-    'no longer supported',
-    'this page has moved',
-    'page not found',
-    'content has moved',
-    'redirected permanently',
-    'legacy documentation',
-    'archived',
-    'end of life',
-    'discontinued',
-    'migration notice',
-    'breaking changes',
-    'version no longer maintained',
+    "deprecated",
+    "no longer supported",
+    "this page has moved",
+    "page not found",
+    "content has moved",
+    "redirected permanently",
+    "legacy documentation",
+    "archived",
+    "end of life",
+    "discontinued",
+    "migration notice",
+    "breaking changes",
+    "version no longer maintained",
   ],
-  cacheDir: '.markmv-cache',
+  cacheDir: ".markmv-cache",
   detectContentChanges: true,
 };

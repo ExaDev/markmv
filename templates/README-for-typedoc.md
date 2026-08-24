@@ -79,8 +79,8 @@ npx --package=markmv markmv-mcp  # Model Context Protocol server
 ### Programmatic API
 
 ```typescript
-import { moveFile } from 'markmv';
-const result = await moveFile('old.md', 'new.md');
+import { moveFile } from "markmv";
+const result = await moveFile("old.md", "new.md");
 ```
 
 ## 🤖 MCP Setup (AI Integration)

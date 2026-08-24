@@ -6,11 +6,11 @@
  * @category Utils
  */
 
-import { createHash } from 'node:crypto';
-import { readFile, writeFile, mkdir, stat } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
-import { existsSync } from 'node:fs';
-import type { BrokenLink } from '../types/config.js';
+import { createHash } from "node:crypto";
+import { readFile, writeFile, mkdir, stat } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { existsSync } from "node:fs";
+import type { BrokenLink } from "../types/config.js";
 
 /**
  * The per-file validation outcome stored in the cache.
@@ -93,11 +93,19 @@ export interface CacheConfig {
  * fields is not deeply validated; the content/config/version checks in isCacheValid reject stale or
  * incompatible entries.
  */
-function isCachedValidationResult(value: unknown): value is CachedValidationResult {
-  if (typeof value !== 'object' || value === null) return false;
-  if (!('filePath' in value) || typeof value.filePath !== 'string') return false;
-  if (!('contentHash' in value) || typeof value.contentHash !== 'string') return false;
-  if (!('result' in value) || typeof value.result !== 'object' || value.result === null) {
+function isCachedValidationResult(
+  value: unknown,
+): value is CachedValidationResult {
+  if (typeof value !== "object" || value === null) return false;
+  if (!("filePath" in value) || typeof value.filePath !== "string")
+    return false;
+  if (!("contentHash" in value) || typeof value.contentHash !== "string")
+    return false;
+  if (
+    !("result" in value) ||
+    typeof value.result !== "object" ||
+    value.result === null
+  ) {
     return false;
   }
   return true;
@@ -105,7 +113,7 @@ function isCachedValidationResult(value: unknown): value is CachedValidationResu
 
 /** Default cache configuration. */
 const DEFAULT_CACHE_CONFIG: CacheConfig = {
-  cacheDir: '.markmv-cache',
+  cacheDir: ".markmv-cache",
   externalLinksTtl: 24 * 60 * 60 * 1000, // 24 hours
   maxSizeBytes: 100 * 1024 * 1024, // 100MB
   compression: true,
@@ -169,7 +177,7 @@ export class ValidationCache {
   async get(
     filePath: string,
     contentHash: string,
-    configHash: string
+    configHash: string,
   ): Promise<CachedValidationResult | undefined> {
     try {
       const cacheFile = this.getCacheFilePath(filePath);
@@ -212,7 +220,7 @@ export class ValidationCache {
     contentHash: string,
     result: ValidationResult,
     configHash: string,
-    gitCommit?: string
+    gitCommit?: string,
   ): Promise<void> {
     try {
       const cacheFile = this.getCacheFilePath(filePath);
@@ -247,7 +255,7 @@ export class ValidationCache {
     try {
       const cacheFile = this.getCacheFilePath(filePath);
       if (existsSync(cacheFile)) {
-        const { unlink } = await import('node:fs/promises');
+        const { unlink } = await import("node:fs/promises");
         await unlink(cacheFile);
       }
     } catch {
@@ -259,13 +267,13 @@ export class ValidationCache {
   async clear(): Promise<void> {
     try {
       if (existsSync(this.config.cacheDir)) {
-        const { rm } = await import('node:fs/promises');
+        const { rm } = await import("node:fs/promises");
         await rm(this.config.cacheDir, { recursive: true, force: true });
       }
     } catch (error) {
       throw new Error(
         `Failed to clear cache: ${error instanceof Error ? error.message : String(error)}`,
-        { cause: error }
+        { cause: error },
       );
     }
   }
@@ -286,11 +294,11 @@ export class ValidationCache {
       let sizeBytes = 0;
 
       if (existsSync(this.config.cacheDir)) {
-        const { readdir } = await import('node:fs/promises');
+        const { readdir } = await import("node:fs/promises");
         const files = await readdir(this.config.cacheDir, { recursive: true });
 
         for (const file of files) {
-          if (typeof file === 'string' && file.endsWith('.json')) {
+          if (typeof file === "string" && file.endsWith(".json")) {
             const filePath = join(this.config.cacheDir, file);
             try {
               const stats = await stat(filePath);
@@ -326,7 +334,7 @@ export class ValidationCache {
     } catch (error) {
       throw new Error(
         `Failed to get cache metadata: ${error instanceof Error ? error.message : String(error)}`,
-        { cause: error }
+        { cause: error },
       );
     }
   }
@@ -344,23 +352,23 @@ export class ValidationCache {
         return removedCount;
       }
 
-      const { readdir } = await import('node:fs/promises');
+      const { readdir } = await import("node:fs/promises");
       const files = await readdir(this.config.cacheDir, { recursive: true });
 
       for (const file of files) {
-        if (typeof file === 'string' && file.endsWith('.json')) {
+        if (typeof file === "string" && file.endsWith(".json")) {
           const filePath = join(this.config.cacheDir, file);
           try {
             const cached = await this.readCacheFile(filePath);
             if (cached && this.shouldRemoveFromCache(cached)) {
-              const { unlink } = await import('node:fs/promises');
+              const { unlink } = await import("node:fs/promises");
               await unlink(filePath);
               removedCount++;
             }
           } catch {
             // Remove invalid cache files
             try {
-              const { unlink } = await import('node:fs/promises');
+              const { unlink } = await import("node:fs/promises");
               await unlink(filePath);
               removedCount++;
             } catch {
@@ -377,7 +385,7 @@ export class ValidationCache {
     } catch (error) {
       throw new Error(
         `Failed to cleanup cache: ${error instanceof Error ? error.message : String(error)}`,
-        { cause: error }
+        { cause: error },
       );
     }
   }
@@ -402,7 +410,7 @@ export class ValidationCache {
    * @private
    */
   private getCacheFilePath(filePath: string): string {
-    const hash = createHash('sha256').update(filePath).digest('hex');
+    const hash = createHash("sha256").update(filePath).digest("hex");
     return join(this.config.cacheDir, `${hash}.json`);
   }
 
@@ -411,9 +419,11 @@ export class ValidationCache {
    *
    * @private
    */
-  private async readCacheFile(cacheFile: string): Promise<CachedValidationResult | undefined> {
+  private async readCacheFile(
+    cacheFile: string,
+  ): Promise<CachedValidationResult | undefined> {
     try {
-      const content = await readFile(cacheFile, 'utf-8');
+      const content = await readFile(cacheFile, "utf-8");
       const parsed: unknown = JSON.parse(content);
       if (!isCachedValidationResult(parsed)) {
         return undefined;
@@ -430,9 +440,16 @@ export class ValidationCache {
    *
    * @private
    */
-  private async writeCacheFile(cacheFile: string, cached: CachedValidationResult): Promise<void> {
-    const content = JSON.stringify(cached, null, this.config.compression ? 0 : 2);
-    await writeFile(cacheFile, content, 'utf-8');
+  private async writeCacheFile(
+    cacheFile: string,
+    cached: CachedValidationResult,
+  ): Promise<void> {
+    const content = JSON.stringify(
+      cached,
+      null,
+      this.config.compression ? 0 : 2,
+    );
+    await writeFile(cacheFile, content, "utf-8");
   }
 
   /**
@@ -443,7 +460,7 @@ export class ValidationCache {
   private isCacheValid(
     cached: CachedValidationResult,
     contentHash: string,
-    configHash: string
+    configHash: string,
   ): boolean {
     // Check content hash
     if (cached.contentHash !== contentHash) {
@@ -527,7 +544,7 @@ export class ValidationCache {
    */
   private getVersion(): string {
     // This would typically read from package.json
-    return '1.29.0';
+    return "1.29.0";
   }
 }
 
@@ -542,12 +559,12 @@ export class ValidationCache {
  */
 export async function calculateFileHash(filePath: string): Promise<string> {
   try {
-    const content = await readFile(filePath, 'utf-8');
-    return createHash('sha256').update(content).digest('hex');
+    const content = await readFile(filePath, "utf-8");
+    return createHash("sha256").update(content).digest("hex");
   } catch (error) {
     throw new Error(
       `Failed to calculate hash for ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
-      { cause: error }
+      { cause: error },
     );
   }
 }
@@ -563,5 +580,5 @@ export async function calculateFileHash(filePath: string): Promise<string> {
  */
 export function calculateConfigHash(config: Record<string, unknown>): string {
   const configString = JSON.stringify(config, Object.keys(config).sort());
-  return createHash('sha256').update(configString).digest('hex');
+  return createHash("sha256").update(configString).digest("hex");
 }

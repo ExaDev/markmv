@@ -1,32 +1,37 @@
-import { readFile, readdir } from 'node:fs/promises';
-import { homedir } from 'node:os';
-import { dirname, extname, isAbsolute, join, resolve } from 'node:path';
-import remarkParse from 'remark-parse';
-import { unified } from 'unified';
-import type { Node } from 'unist';
-import { visit } from 'unist-util-visit';
-import type { LinkReference, LinkType, MarkdownLink, ParsedMarkdownFile } from '../types/links.js';
+import { readFile, readdir } from "node:fs/promises";
+import { homedir } from "node:os";
+import { dirname, extname, isAbsolute, join, resolve } from "node:path";
+import remarkParse from "remark-parse";
+import { unified } from "unified";
+import type { Node } from "unist";
+import { visit } from "unist-util-visit";
+import type {
+  LinkReference,
+  LinkType,
+  MarkdownLink,
+  ParsedMarkdownFile,
+} from "../types/links.js";
 
 // Define the MDAST node types we need to avoid import issues
 interface DefinitionNode extends Node {
-  type: 'definition';
+  type: "definition";
   identifier: string;
   url: string;
   title?: string | null | undefined;
 }
 
 interface TextNode extends Node {
-  type: 'text';
+  type: "text";
   value: string;
 }
 
 interface LinkNode extends Node {
-  type: 'link' | 'image' | 'linkReference' | 'imageReference';
+  type: "link" | "image" | "linkReference" | "imageReference";
   url?: string;
   title?: string | null | undefined;
   alt?: string | null | undefined;
   identifier?: string;
-  referenceType?: 'full' | 'collapsed' | 'shortcut';
+  referenceType?: "full" | "collapsed" | "shortcut";
   children?: { type: string; value?: string }[];
 }
 
@@ -90,14 +95,14 @@ export class LinkParser {
    */
   async parseFile(filePath: string): Promise<ParsedMarkdownFile> {
     const absolutePath = resolve(filePath);
-    const content = await readFile(absolutePath, 'utf-8');
+    const content = await readFile(absolutePath, "utf-8");
     const tree = this.processor.parse(content);
 
     const links: MarkdownLink[] = [];
     const references: LinkReference[] = [];
 
     // Extract link references/definitions
-    visit(tree, 'definition', (node: DefinitionNode) => {
+    visit(tree, "definition", (node: DefinitionNode) => {
       if (node.position) {
         references.push({
           id: node.identifier,
@@ -109,7 +114,7 @@ export class LinkParser {
     });
 
     // Extract Claude import links from text nodes
-    visit(tree, 'text', (node: TextNode) => {
+    visit(tree, "text", (node: TextNode) => {
       if (!node.position) return;
 
       const claudeImportRegex = /@([^\s\n]+)/g;
@@ -118,17 +123,20 @@ export class LinkParser {
       while ((match = claudeImportRegex.exec(node.value)) !== null) {
         const importPath = match[1];
         const link: MarkdownLink = {
-          type: 'claude-import',
+          type: "claude-import",
           href: importPath,
           text: match[0], // Full "@path" text
           referenceId: undefined,
           line: node.position.start.line,
           column: node.position.start.column + match.index,
-          absolute: importPath.startsWith('/') || importPath.startsWith('~'),
+          absolute: importPath.startsWith("/") || importPath.startsWith("~"),
         };
 
         // Resolve Claude import paths
-        link.resolvedPath = this.resolveClaudeImportPath(importPath, dirname(absolutePath));
+        link.resolvedPath = this.resolveClaudeImportPath(
+          importPath,
+          dirname(absolutePath),
+        );
 
         links.push(link);
       }
@@ -138,22 +146,26 @@ export class LinkParser {
       let wikilinkMatch: RegExpExecArray | null;
 
       while ((wikilinkMatch = wikilinkRegex.exec(node.value)) !== null) {
-        const isEmbed = wikilinkMatch[1] === '!';
+        const isEmbed = wikilinkMatch[1] === "!";
         const inner = wikilinkMatch[2];
 
         // Split off any display alias, then any block/section reference. `.at()` is used instead of array destructuring because TypeScript types `string[]` destructuring as always-defined, hiding the genuine possibility that no alias was present.
-        const parts = inner.split('|', 2);
-        const targetWithoutAlias = parts.at(0) ?? '';
+        const parts = inner.split("|", 2);
+        const targetWithoutAlias = parts.at(0) ?? "";
         const alias = parts.at(1);
-        const hashIndex = targetWithoutAlias.indexOf('#');
-        const target = hashIndex >= 0 ? targetWithoutAlias.slice(0, hashIndex) : targetWithoutAlias;
-        const blockReference = hashIndex >= 0 ? targetWithoutAlias.slice(hashIndex) : undefined;
+        const hashIndex = targetWithoutAlias.indexOf("#");
+        const target =
+          hashIndex >= 0
+            ? targetWithoutAlias.slice(0, hashIndex)
+            : targetWithoutAlias;
+        const blockReference =
+          hashIndex >= 0 ? targetWithoutAlias.slice(hashIndex) : undefined;
 
         const trimmedTarget = target.trim();
-        if (trimmedTarget === '') continue;
+        if (trimmedTarget === "") continue;
 
         const link: MarkdownLink = {
-          type: isEmbed ? 'obsidian-transclusion' : 'wikilink',
+          type: isEmbed ? "obsidian-transclusion" : "wikilink",
           href: trimmedTarget,
           text: undefined,
           referenceId: undefined,
@@ -161,7 +173,7 @@ export class LinkParser {
           column: node.position.start.column + wikilinkMatch.index,
           absolute: false,
         };
-        if (alias !== undefined && alias.trim() !== '') {
+        if (alias !== undefined && alias.trim() !== "") {
           link.text = alias.trim();
         }
         if (blockReference !== undefined) {
@@ -181,32 +193,33 @@ export class LinkParser {
       let referenceId: string | undefined;
       let linkType: LinkType;
 
-      if (node.type === 'link' || node.type === 'image') {
-        href = node.url ?? '';
-        linkType = node.type === 'image' ? 'image' : this.determineLinkType(href);
+      if (node.type === "link" || node.type === "image") {
+        href = node.url ?? "";
+        linkType =
+          node.type === "image" ? "image" : this.determineLinkType(href);
 
-        if (node.type === 'image') {
+        if (node.type === "image") {
           text = node.alt ?? undefined;
         } else if (node.children) {
           text = node.children
-            .filter((child): child is TextNode => child.type === 'text')
+            .filter((child): child is TextNode => child.type === "text")
             .map((child) => child.value)
-            .join('');
+            .join("");
         }
       } else {
         // Reference-style links
         referenceId = node.identifier;
         const reference = references.find((ref) => ref.id === referenceId);
-        href = reference?.url ?? '';
-        linkType = node.type === 'imageReference' ? 'image' : 'reference';
+        href = reference?.url ?? "";
+        linkType = node.type === "imageReference" ? "image" : "reference";
 
-        if (node.type === 'imageReference') {
+        if (node.type === "imageReference") {
           text = node.alt ?? undefined;
         } else if (node.children) {
           text = node.children
-            .filter((child): child is TextNode => child.type === 'text')
+            .filter((child): child is TextNode => child.type === "text")
             .map((child) => child.value)
-            .join('');
+            .join("");
         }
       }
 
@@ -221,17 +234,20 @@ export class LinkParser {
       };
 
       // Resolve internal links and image paths
-      if (linkType === 'internal' || linkType === 'image') {
-        link.resolvedPath = this.resolveInternalPath(href, dirname(absolutePath));
+      if (linkType === "internal" || linkType === "image") {
+        link.resolvedPath = this.resolveInternalPath(
+          href,
+          dirname(absolutePath),
+        );
       }
 
       links.push(link);
     };
 
-    visit(tree, 'link', processLinkNode);
-    visit(tree, 'image', processLinkNode);
-    visit(tree, 'linkReference', processLinkNode);
-    visit(tree, 'imageReference', processLinkNode);
+    visit(tree, "link", processLinkNode);
+    visit(tree, "image", processLinkNode);
+    visit(tree, "linkReference", processLinkNode);
+    visit(tree, "imageReference", processLinkNode);
 
     const dependencies = this.extractDependencies(links);
 
@@ -245,25 +261,25 @@ export class LinkParser {
   }
 
   private determineLinkType(href: string): LinkType {
-    if (!href) return 'internal';
+    if (!href) return "internal";
 
     // External links (http/https/ftp/mailto)
     if (/^(https?|ftp|mailto):/i.test(href)) {
-      return 'external';
+      return "external";
     }
 
     // Anchor links (starting with #)
-    if (href.startsWith('#')) {
-      return 'anchor';
+    if (href.startsWith("#")) {
+      return "anchor";
     }
 
     // Internal links (relative or absolute file paths)
-    return 'internal';
+    return "internal";
   }
 
   private resolveInternalPath(href: string, baseDir: string): string {
     // Remove anchor fragments
-    const pathPart = href.split('#')[0];
+    const pathPart = href.split("#")[0];
 
     if (isAbsolute(pathPart)) {
       return pathPart;
@@ -274,7 +290,7 @@ export class LinkParser {
 
   private resolveClaudeImportPath(importPath: string, baseDir: string): string {
     // Handle home directory paths (~)
-    if (importPath.startsWith('~/')) {
+    if (importPath.startsWith("~/")) {
       return resolve(join(homedir(), importPath.slice(2)));
     }
 
@@ -291,8 +307,10 @@ export class LinkParser {
     return links
       .filter(
         (link) =>
-          (link.type === 'internal' || link.type === 'claude-import' || link.type === 'image') &&
-          link.resolvedPath
+          (link.type === "internal" ||
+            link.type === "claude-import" ||
+            link.type === "image") &&
+          link.resolvedPath,
       )
       .map((link) => link.resolvedPath)
       .filter((path): path is string => path !== undefined)
@@ -301,20 +319,25 @@ export class LinkParser {
 
   async parseDirectory(
     dirPath: string,
-    extensions = ['.md', '.markdown', '.mdx']
+    extensions = [".md", ".markdown", ".mdx"],
   ): Promise<ParsedMarkdownFile[]> {
     const files = await this.findMarkdownFiles(dirPath, extensions);
-    const results = await Promise.allSettled(files.map((file: string) => this.parseFile(file)));
+    const results = await Promise.allSettled(
+      files.map((file: string) => this.parseFile(file)),
+    );
 
     return results
       .filter(
         (result): result is PromiseFulfilledResult<ParsedMarkdownFile> =>
-          result.status === 'fulfilled'
+          result.status === "fulfilled",
       )
       .map((result) => result.value);
   }
 
-  private async findMarkdownFiles(dirPath: string, extensions: string[]): Promise<string[]> {
+  private async findMarkdownFiles(
+    dirPath: string,
+    extensions: string[],
+  ): Promise<string[]> {
     const files: string[] = [];
 
     const processDirectory = async (currentDir: string): Promise<void> => {

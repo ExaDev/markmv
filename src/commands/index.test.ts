@@ -1,66 +1,67 @@
 // import { join } from 'node:path'; // Not needed after Windows path fixes
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { FileUtils } from '../utils/file-utils.js';
-import { indexCommand } from './index.js';
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { FileUtils } from "../utils/file-utils.js";
+import { indexCommand } from "./index.js";
 
 type IndexCliOptions = Parameters<typeof indexCommand>[1];
 
 // Mock FileUtils
-vi.mock('../utils/file-utils');
+vi.mock("../utils/file-utils");
 const mockFileUtils = vi.mocked(FileUtils);
 
 // Mock glob
-vi.mock('glob', () => ({
+vi.mock("glob", () => ({
   glob: vi.fn(),
 }));
 
-import { glob } from 'glob';
+import { glob } from "glob";
 const mockGlob = vi.mocked(glob);
 
 // Mock fs functions
-vi.mock('fs', () => ({
+vi.mock("fs", () => ({
   existsSync: vi.fn(),
   statSync: vi.fn(),
 }));
 
-import { existsSync, statSync } from 'node:fs';
+import { existsSync, statSync } from "node:fs";
 const mockExistsSync = vi.mocked(existsSync);
 const mockStatSync = vi.mocked(statSync);
 
-describe('Index Command', () => {
+describe("Index Command", () => {
   // Use platform-appropriate test directory path
-  const testDir = process.platform === 'win32' ? 'D:\\test\\directory' : '/test/directory';
+  const testDir =
+    process.platform === "win32" ? "D:\\test\\directory" : "/test/directory";
   const mockStats = { isDirectory: () => true };
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockExistsSync.mockReturnValue(true);
-    mockStatSync.mockReturnValue(mockStats as import('fs').Stats);
+    mockStatSync.mockReturnValue(mockStats as import("fs").Stats);
   });
 
-  describe('CLI Options Processing', () => {
-    it('should process default CLI options correctly', async () => {
+  describe("CLI Options Processing", () => {
+    it("should process default CLI options correctly", async () => {
       mockGlob.mockResolvedValue([]);
       mockFileUtils.writeTextFile = vi.fn().mockResolvedValue(undefined);
 
       const cliOptions: IndexCliOptions = {
-        type: 'links',
-        strategy: 'directory',
-        location: 'root',
-        name: 'index.md',
+        type: "links",
+        strategy: "directory",
+        location: "root",
+        name: "index.md",
         dryRun: true,
       };
 
       await expect(indexCommand(testDir, cliOptions)).resolves.not.toThrow();
     });
 
-    it('should handle embed style options', async () => {
+    it("should handle embed style options", async () => {
       mockGlob.mockResolvedValue([]);
       mockFileUtils.writeTextFile = vi.fn().mockResolvedValue(undefined);
 
       const cliOptions: IndexCliOptions = {
-        type: 'embed',
-        embedStyle: 'obsidian',
+        type: "embed",
+        embedStyle: "obsidian",
         dryRun: true,
       };
 
@@ -68,7 +69,7 @@ describe('Index Command', () => {
     });
   });
 
-  describe('Index Generation Types', () => {
+  describe("Index Generation Types", () => {
     const sampleFiles = [`${testDir}/file1.md`, `${testDir}/file2.md`];
 
     const sampleContent1 = `---
@@ -98,137 +99,149 @@ order: 2
       mockFileUtils.writeTextFile = vi.fn().mockResolvedValue(undefined);
     });
 
-    it('should generate links type index correctly', async () => {
+    it("should generate links type index correctly", async () => {
       const cliOptions: IndexCliOptions = {
-        type: 'links',
-        strategy: 'directory',
-        location: 'root',
+        type: "links",
+        strategy: "directory",
+        location: "root",
         dryRun: true,
         verbose: true,
       };
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const consoleSpy = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => undefined);
 
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentCall = logCalls.find((call) => call[0] === 'Content:');
+      const contentCall = logCalls.find((call) => call[0] === "Content:");
       expect(contentCall).toBeDefined();
 
       // Check the next call after "Content:" for the actual content
-      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === "Content:");
       const actualContent = logCalls[contentIndex + 1][0] as string;
 
-      expect(actualContent).toContain('- [First Document](file1.md) - This is the first document');
       expect(actualContent).toContain(
-        '- [Second Document](file2.md) - This is the second document'
+        "- [First Document](file1.md) - This is the first document",
+      );
+      expect(actualContent).toContain(
+        "- [Second Document](file2.md) - This is the second document",
       );
 
       consoleSpy.mockRestore();
     });
 
-    it('should generate import type index correctly', async () => {
+    it("should generate import type index correctly", async () => {
       const cliOptions: IndexCliOptions = {
-        type: 'import',
-        strategy: 'directory',
-        location: 'root',
+        type: "import",
+        strategy: "directory",
+        location: "root",
         dryRun: true,
         verbose: true,
       };
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const consoleSpy = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => undefined);
 
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === "Content:");
       const actualContent = logCalls[contentIndex + 1][0] as string;
 
-      expect(actualContent).toContain('@file1.md');
-      expect(actualContent).toContain('@file2.md');
-      expect(actualContent).toContain('### First Document');
-      expect(actualContent).toContain('### Second Document');
+      expect(actualContent).toContain("@file1.md");
+      expect(actualContent).toContain("@file2.md");
+      expect(actualContent).toContain("### First Document");
+      expect(actualContent).toContain("### Second Document");
 
       consoleSpy.mockRestore();
     });
 
-    it('should generate Obsidian embed type index correctly', async () => {
+    it("should generate Obsidian embed type index correctly", async () => {
       const cliOptions: IndexCliOptions = {
-        type: 'embed',
-        embedStyle: 'obsidian',
-        strategy: 'directory',
-        location: 'root',
+        type: "embed",
+        embedStyle: "obsidian",
+        strategy: "directory",
+        location: "root",
         dryRun: true,
         verbose: true,
       };
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const consoleSpy = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => undefined);
 
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === "Content:");
       const actualContent = logCalls[contentIndex + 1][0] as string;
 
-      expect(actualContent).toContain('![[file1.md]]');
-      expect(actualContent).toContain('![[file2.md]]');
-      expect(actualContent).toContain('### First Document');
-      expect(actualContent).toContain('### Second Document');
+      expect(actualContent).toContain("![[file1.md]]");
+      expect(actualContent).toContain("![[file2.md]]");
+      expect(actualContent).toContain("### First Document");
+      expect(actualContent).toContain("### Second Document");
 
       consoleSpy.mockRestore();
     });
 
-    it('should generate markdown embed type index correctly', async () => {
+    it("should generate markdown embed type index correctly", async () => {
       const cliOptions: IndexCliOptions = {
-        type: 'embed',
-        embedStyle: 'markdown',
-        strategy: 'directory',
-        location: 'root',
+        type: "embed",
+        embedStyle: "markdown",
+        strategy: "directory",
+        location: "root",
         dryRun: true,
         verbose: true,
       };
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const consoleSpy = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => undefined);
 
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === "Content:");
       const actualContent = logCalls[contentIndex + 1][0] as string;
 
-      expect(actualContent).toContain('![First Document](file1.md)');
-      expect(actualContent).toContain('![Second Document](file2.md)');
+      expect(actualContent).toContain("![First Document](file1.md)");
+      expect(actualContent).toContain("![Second Document](file2.md)");
 
       consoleSpy.mockRestore();
     });
 
-    it('should generate hybrid type index correctly', async () => {
+    it("should generate hybrid type index correctly", async () => {
       const cliOptions: IndexCliOptions = {
-        type: 'hybrid',
-        strategy: 'directory',
-        location: 'root',
+        type: "hybrid",
+        strategy: "directory",
+        location: "root",
         dryRun: true,
         verbose: true,
       };
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const consoleSpy = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => undefined);
 
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === "Content:");
       const actualContent = logCalls[contentIndex + 1][0] as string;
 
-      expect(actualContent).toContain('### [First Document](file1.md)');
-      expect(actualContent).toContain('> This is the first document');
-      expect(actualContent).toContain('### [Second Document](file2.md)');
-      expect(actualContent).toContain('> This is the second document');
+      expect(actualContent).toContain("### [First Document](file1.md)");
+      expect(actualContent).toContain("> This is the first document");
+      expect(actualContent).toContain("### [Second Document](file2.md)");
+      expect(actualContent).toContain("> This is the second document");
 
       consoleSpy.mockRestore();
     });
   });
 
-  describe('Organization Strategies', () => {
+  describe("Organization Strategies", () => {
     const sampleFiles = [
       `${testDir}/guides/setup.md`,
       `${testDir}/guides/usage.md`,
@@ -237,34 +250,36 @@ order: 2
 
     beforeEach(() => {
       mockGlob.mockResolvedValue(sampleFiles);
-      mockFileUtils.readTextFile = vi.fn().mockResolvedValue('# Test Content');
+      mockFileUtils.readTextFile = vi.fn().mockResolvedValue("# Test Content");
       mockFileUtils.writeTextFile = vi.fn().mockResolvedValue(undefined);
     });
 
-    it('should organize by directory structure', async () => {
+    it("should organize by directory structure", async () => {
       const cliOptions: IndexCliOptions = {
-        type: 'links',
-        strategy: 'directory',
-        location: 'root',
+        type: "links",
+        strategy: "directory",
+        location: "root",
         dryRun: true,
         verbose: true,
       };
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const consoleSpy = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => undefined);
 
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === "Content:");
       const actualContent = logCalls[contentIndex + 1][0] as string;
 
-      expect(actualContent).toContain('## Guides');
-      expect(actualContent).toContain('## Api');
+      expect(actualContent).toContain("## Guides");
+      expect(actualContent).toContain("## Api");
 
       consoleSpy.mockRestore();
     });
 
-    it('should organize by metadata category', async () => {
+    it("should organize by metadata category", async () => {
       const contentWithCategory = `---
 title: "API Guide"
 category: "API Documentation"
@@ -272,32 +287,36 @@ category: "API Documentation"
 
 # Content`;
 
-      mockFileUtils.readTextFile = vi.fn().mockResolvedValue(contentWithCategory);
+      mockFileUtils.readTextFile = vi
+        .fn()
+        .mockResolvedValue(contentWithCategory);
 
       const cliOptions: IndexCliOptions = {
-        type: 'links',
-        strategy: 'metadata',
-        location: 'root',
+        type: "links",
+        strategy: "metadata",
+        location: "root",
         dryRun: true,
         verbose: true,
       };
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const consoleSpy = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => undefined);
 
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === "Content:");
       const actualContent = logCalls[contentIndex + 1][0] as string;
 
-      expect(actualContent).toContain('## API Documentation');
+      expect(actualContent).toContain("## API Documentation");
 
       consoleSpy.mockRestore();
     });
   });
 
-  describe('Frontmatter Extraction', () => {
-    it('should extract metadata from frontmatter correctly', async () => {
+  describe("Frontmatter Extraction", () => {
+    it("should extract metadata from frontmatter correctly", async () => {
       const contentWithFullFrontmatter = `---
 title: "Complete Guide"
 description: "A comprehensive guide"
@@ -309,103 +328,123 @@ tags: [guide, documentation, help]
 # Guide Content`;
 
       mockGlob.mockResolvedValue([`${testDir}/guide.md`]);
-      mockFileUtils.readTextFile = vi.fn().mockResolvedValue(contentWithFullFrontmatter);
+      mockFileUtils.readTextFile = vi
+        .fn()
+        .mockResolvedValue(contentWithFullFrontmatter);
       mockFileUtils.writeTextFile = vi.fn().mockResolvedValue(undefined);
 
       const cliOptions: IndexCliOptions = {
-        type: 'links',
-        strategy: 'metadata',
-        location: 'root',
+        type: "links",
+        strategy: "metadata",
+        location: "root",
         dryRun: true,
         verbose: true,
       };
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const consoleSpy = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => undefined);
 
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === "Content:");
       const actualContent = logCalls[contentIndex + 1][0] as string;
 
-      expect(actualContent).toContain('- [Complete Guide](guide.md) - A comprehensive guide');
-      expect(actualContent).toContain('## Documentation');
+      expect(actualContent).toContain(
+        "- [Complete Guide](guide.md) - A comprehensive guide",
+      );
+      expect(actualContent).toContain("## Documentation");
 
       consoleSpy.mockRestore();
     });
 
-    it('should handle files without frontmatter', async () => {
+    it("should handle files without frontmatter", async () => {
       const contentWithoutFrontmatter = `# Simple Document
 
 Just plain content.`;
 
       mockGlob.mockResolvedValue([`${testDir}/simple.md`]);
-      mockFileUtils.readTextFile = vi.fn().mockResolvedValue(contentWithoutFrontmatter);
+      mockFileUtils.readTextFile = vi
+        .fn()
+        .mockResolvedValue(contentWithoutFrontmatter);
       mockFileUtils.writeTextFile = vi.fn().mockResolvedValue(undefined);
 
       const cliOptions: IndexCliOptions = {
-        type: 'links',
-        strategy: 'metadata',
-        location: 'root',
+        type: "links",
+        strategy: "metadata",
+        location: "root",
         dryRun: true,
         verbose: true,
       };
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const consoleSpy = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => undefined);
 
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === "Content:");
       const actualContent = logCalls[contentIndex + 1][0] as string;
 
-      expect(actualContent).toContain('## Uncategorized');
-      expect(actualContent).toContain('- [simple](simple.md)');
+      expect(actualContent).toContain("## Uncategorized");
+      expect(actualContent).toContain("- [simple](simple.md)");
 
       consoleSpy.mockRestore();
     });
   });
 
-  describe('Error Handling', () => {
-    it('should throw error for non-existent directory', async () => {
+  describe("Error Handling", () => {
+    it("should throw error for non-existent directory", async () => {
       mockExistsSync.mockReturnValue(false);
 
-      const cliOptions: IndexCliOptions = { type: 'links', dryRun: true };
+      const cliOptions: IndexCliOptions = { type: "links", dryRun: true };
 
-      await expect(indexCommand('/nonexistent', cliOptions)).rejects.toThrow('Directory not found');
-    });
-
-    it('should throw error for non-directory path', async () => {
-      mockExistsSync.mockReturnValue(true);
-      mockStatSync.mockReturnValue({ isDirectory: () => false } as import('fs').Stats);
-
-      const cliOptions: IndexCliOptions = { type: 'links', dryRun: true };
-
-      await expect(indexCommand('/test/file.md', cliOptions)).rejects.toThrow(
-        'Path is not a directory'
+      await expect(indexCommand("/nonexistent", cliOptions)).rejects.toThrow(
+        "Directory not found",
       );
     });
 
-    it('should handle file read errors gracefully', async () => {
+    it("should throw error for non-directory path", async () => {
+      mockExistsSync.mockReturnValue(true);
+      mockStatSync.mockReturnValue({
+        isDirectory: () => false,
+      } as import("fs").Stats);
+
+      const cliOptions: IndexCliOptions = { type: "links", dryRun: true };
+
+      await expect(indexCommand("/test/file.md", cliOptions)).rejects.toThrow(
+        "Path is not a directory",
+      );
+    });
+
+    it("should handle file read errors gracefully", async () => {
       mockGlob.mockResolvedValue([`${testDir}/error.md`]);
-      mockFileUtils.readTextFile = vi.fn().mockRejectedValue(new Error('Read failed'));
+      mockFileUtils.readTextFile = vi
+        .fn()
+        .mockRejectedValue(new Error("Read failed"));
       mockFileUtils.writeTextFile = vi.fn().mockResolvedValue(undefined);
 
       const cliOptions: IndexCliOptions = {
-        type: 'links',
-        location: 'root',
+        type: "links",
+        location: "root",
         dryRun: true,
         verbose: true,
       };
 
-      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const consoleWarnSpy = vi
+        .spyOn(console, "warn")
+        .mockImplementation(() => undefined);
+      const consoleSpy = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => undefined);
 
       await expect(indexCommand(testDir, cliOptions)).resolves.not.toThrow();
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Warning: Could not read file'),
-        expect.any(Error)
+        expect.stringContaining("Warning: Could not read file"),
+        expect.any(Error),
       );
 
       consoleWarnSpy.mockRestore();
@@ -413,16 +452,16 @@ Just plain content.`;
     });
   });
 
-  describe('File Writing', () => {
+  describe("File Writing", () => {
     beforeEach(() => {
       mockGlob.mockResolvedValue([]);
       mockFileUtils.writeTextFile = vi.fn().mockResolvedValue(undefined);
     });
 
-    it('should write index file when not in dry-run mode', async () => {
+    it("should write index file when not in dry-run mode", async () => {
       const cliOptions: IndexCliOptions = {
-        type: 'links',
-        location: 'root',
+        type: "links",
+        location: "root",
         dryRun: false,
       };
 
@@ -430,15 +469,15 @@ Just plain content.`;
 
       expect(mockFileUtils.writeTextFile).toHaveBeenCalledWith(
         expect.stringMatching(/.*index\.md$/),
-        expect.stringContaining('# Documentation Index'),
-        { createDirectories: true }
+        expect.stringContaining("# Documentation Index"),
+        { createDirectories: true },
       );
     });
 
-    it('should not write files in dry-run mode', async () => {
+    it("should not write files in dry-run mode", async () => {
       const cliOptions: IndexCliOptions = {
-        type: 'links',
-        location: 'root',
+        type: "links",
+        location: "root",
         dryRun: true,
       };
 
@@ -448,7 +487,7 @@ Just plain content.`;
     });
   });
 
-  describe('Table of Contents Generation', () => {
+  describe("Table of Contents Generation", () => {
     const contentWithHeadings = `---
 title: "Test Document"
 description: "A test document"
@@ -481,98 +520,118 @@ Very detailed content.
 
     beforeEach(() => {
       mockGlob.mockResolvedValue([`${testDir}/document.md`]);
-      mockFileUtils.readTextFile = vi.fn().mockResolvedValue(contentWithHeadings);
+      mockFileUtils.readTextFile = vi
+        .fn()
+        .mockResolvedValue(contentWithHeadings);
       mockFileUtils.writeTextFile = vi.fn().mockResolvedValue(undefined);
     });
 
-    it('should generate table of contents for links type when enabled', async () => {
+    it("should generate table of contents for links type when enabled", async () => {
       const cliOptions: IndexCliOptions = {
-        type: 'links',
-        strategy: 'directory',
-        location: 'root',
+        type: "links",
+        strategy: "directory",
+        location: "root",
         generateToc: true,
         dryRun: true,
         verbose: true,
       };
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const consoleSpy = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => undefined);
 
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === "Content:");
       const actualContent = logCalls[contentIndex + 1][0] as string;
 
-      expect(actualContent).toContain('- [Test Document](document.md) - A test document');
-      expect(actualContent).toContain('- Table of Contents:');
-      expect(actualContent).toContain('- [Main Title](#main-title)');
-      expect(actualContent).toContain('  - [Section 1](#section-1)');
-      expect(actualContent).toContain('    - [Subsection 1.1](#subsection-1-1)');
-      expect(actualContent).toContain('  - [Section 2](#section-2)');
-      expect(actualContent).toContain('    - [Subsection 2.1](#subsection-2-1)');
-      expect(actualContent).toContain('      - [Deep Subsection](#deep-subsection)');
+      expect(actualContent).toContain(
+        "- [Test Document](document.md) - A test document",
+      );
+      expect(actualContent).toContain("- Table of Contents:");
+      expect(actualContent).toContain("- [Main Title](#main-title)");
+      expect(actualContent).toContain("  - [Section 1](#section-1)");
+      expect(actualContent).toContain(
+        "    - [Subsection 1.1](#subsection-1-1)",
+      );
+      expect(actualContent).toContain("  - [Section 2](#section-2)");
+      expect(actualContent).toContain(
+        "    - [Subsection 2.1](#subsection-2-1)",
+      );
+      expect(actualContent).toContain(
+        "      - [Deep Subsection](#deep-subsection)",
+      );
 
       consoleSpy.mockRestore();
     });
 
-    it('should generate table of contents for hybrid type when enabled', async () => {
+    it("should generate table of contents for hybrid type when enabled", async () => {
       const cliOptions: IndexCliOptions = {
-        type: 'hybrid',
-        strategy: 'directory',
-        location: 'root',
+        type: "hybrid",
+        strategy: "directory",
+        location: "root",
         generateToc: true,
         dryRun: true,
         verbose: true,
       };
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const consoleSpy = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => undefined);
 
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === "Content:");
       const actualContent = logCalls[contentIndex + 1][0] as string;
 
-      expect(actualContent).toContain('### [Test Document](document.md)');
-      expect(actualContent).toContain('> A test document');
-      expect(actualContent).toContain('#### Table of Contents');
-      expect(actualContent).toContain('- [Main Title](#main-title)');
-      expect(actualContent).toContain('  - [Section 1](#section-1)');
-      expect(actualContent).toContain('    - [Subsection 1.1](#subsection-1-1)');
+      expect(actualContent).toContain("### [Test Document](document.md)");
+      expect(actualContent).toContain("> A test document");
+      expect(actualContent).toContain("#### Table of Contents");
+      expect(actualContent).toContain("- [Main Title](#main-title)");
+      expect(actualContent).toContain("  - [Section 1](#section-1)");
+      expect(actualContent).toContain(
+        "    - [Subsection 1.1](#subsection-1-1)",
+      );
 
       consoleSpy.mockRestore();
     });
 
-    it('should not generate table of contents when disabled', async () => {
+    it("should not generate table of contents when disabled", async () => {
       const cliOptions: IndexCliOptions = {
-        type: 'links',
-        strategy: 'directory',
-        location: 'root',
+        type: "links",
+        strategy: "directory",
+        location: "root",
         generateToc: false,
         dryRun: true,
         verbose: true,
       };
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const consoleSpy = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => undefined);
 
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === "Content:");
       const actualContent = logCalls[contentIndex + 1][0] as string;
 
-      expect(actualContent).toContain('- [Test Document](document.md) - A test document');
-      expect(actualContent).not.toContain('- Table of Contents:');
-      expect(actualContent).not.toContain('- [Main Title](#main-title)');
+      expect(actualContent).toContain(
+        "- [Test Document](document.md) - A test document",
+      );
+      expect(actualContent).not.toContain("- Table of Contents:");
+      expect(actualContent).not.toContain("- [Main Title](#main-title)");
 
       consoleSpy.mockRestore();
     });
 
-    it('should respect TOC depth options', async () => {
+    it("should respect TOC depth options", async () => {
       const cliOptions: IndexCliOptions = {
-        type: 'links',
-        strategy: 'directory',
-        location: 'root',
+        type: "links",
+        strategy: "directory",
+        location: "root",
         generateToc: true,
         tocMinDepth: 2,
         tocMaxDepth: 3,
@@ -580,51 +639,59 @@ Very detailed content.
         verbose: true,
       };
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const consoleSpy = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => undefined);
 
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === "Content:");
       const actualContent = logCalls[contentIndex + 1][0] as string;
 
-      expect(actualContent).toContain('- Table of Contents:');
-      expect(actualContent).not.toContain('- [Main Title](#main-title)'); // Level 1, excluded
-      expect(actualContent).toContain('- [Section 1](#section-1)'); // Level 2, included
-      expect(actualContent).toContain('  - [Subsection 1.1](#subsection-1-1)'); // Level 3, included
-      expect(actualContent).not.toContain('- [Deep Subsection](#deep-subsection)'); // Level 4, excluded
+      expect(actualContent).toContain("- Table of Contents:");
+      expect(actualContent).not.toContain("- [Main Title](#main-title)"); // Level 1, excluded
+      expect(actualContent).toContain("- [Section 1](#section-1)"); // Level 2, included
+      expect(actualContent).toContain("  - [Subsection 1.1](#subsection-1-1)"); // Level 3, included
+      expect(actualContent).not.toContain(
+        "- [Deep Subsection](#deep-subsection)",
+      ); // Level 4, excluded
 
       consoleSpy.mockRestore();
     });
 
-    it('should include line numbers in TOC when requested', async () => {
+    it("should include line numbers in TOC when requested", async () => {
       const cliOptions: IndexCliOptions = {
-        type: 'hybrid',
-        strategy: 'directory',
-        location: 'root',
+        type: "hybrid",
+        strategy: "directory",
+        location: "root",
         generateToc: true,
         tocIncludeLineNumbers: true,
         dryRun: true,
         verbose: true,
       };
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const consoleSpy = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => undefined);
 
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === "Content:");
       const actualContent = logCalls[contentIndex + 1][0] as string;
 
-      expect(actualContent).toContain('#### Table of Contents');
-      expect(actualContent).toContain('- [Main Title](#main-title) (line 6)');
-      expect(actualContent).toContain('  - [Section 1](#section-1) (line 10)');
-      expect(actualContent).toContain('    - [Subsection 1.1](#subsection-1-1) (line 14)');
+      expect(actualContent).toContain("#### Table of Contents");
+      expect(actualContent).toContain("- [Main Title](#main-title) (line 6)");
+      expect(actualContent).toContain("  - [Section 1](#section-1) (line 10)");
+      expect(actualContent).toContain(
+        "    - [Subsection 1.1](#subsection-1-1) (line 14)",
+      );
 
       consoleSpy.mockRestore();
     });
 
-    it('should handle files with no headings gracefully', async () => {
+    it("should handle files with no headings gracefully", async () => {
       const contentWithoutHeadings = `This is just plain content with no headings.
 
 Some more content here.
@@ -632,27 +699,31 @@ Some more content here.
 No headings at all in this content.
 `;
 
-      mockFileUtils.readTextFile = vi.fn().mockResolvedValue(contentWithoutHeadings);
+      mockFileUtils.readTextFile = vi
+        .fn()
+        .mockResolvedValue(contentWithoutHeadings);
 
       const cliOptions: IndexCliOptions = {
-        type: 'links',
-        strategy: 'directory',
-        location: 'root',
+        type: "links",
+        strategy: "directory",
+        location: "root",
         generateToc: true,
         dryRun: true,
         verbose: true,
       };
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const consoleSpy = vi
+        .spyOn(console, "log")
+        .mockImplementation(() => undefined);
 
       await indexCommand(testDir, cliOptions);
 
       const logCalls = consoleSpy.mock.calls;
-      const contentIndex = logCalls.findIndex((call) => call[0] === 'Content:');
+      const contentIndex = logCalls.findIndex((call) => call[0] === "Content:");
       const actualContent = logCalls[contentIndex + 1][0] as string;
 
-      expect(actualContent).toContain('- [document](document.md)');
-      expect(actualContent).not.toContain('- Table of Contents:');
+      expect(actualContent).toContain("- [document](document.md)");
+      expect(actualContent).not.toContain("- Table of Contents:");
 
       consoleSpy.mockRestore();
     });

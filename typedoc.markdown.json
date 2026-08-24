@@ -1,7 +1,11 @@
 {
   "$schema": "https://typedoc.org/schema.json",
   "plugin": ["typedoc-plugin-markdown"],
-  "entryPoints": ["src/index.ts", "src/commands/convert.ts", "src/commands/index.ts"],
+  "entryPoints": [
+    "src/index.ts",
+    "src/commands/convert.ts",
+    "src/commands/index.ts"
+  ],
   "out": "docs-markdown",
   "name": "markmv",
   "includeVersion": true,
@@ -15,7 +19,14 @@
   "sourceLinkTemplate": "https://github.com/ExaDev/markmv/blob/{gitRevision}/{path}#L{line}",
   "categorizeByGroup": true,
   "defaultCategory": "Other",
-  "categoryOrder": ["Core API", "Commands", "Strategies", "Types", "Utilities", "*"],
+  "categoryOrder": [
+    "Core API",
+    "Commands",
+    "Strategies",
+    "Types",
+    "Utilities",
+    "*"
+  ],
   "sort": ["source-order"],
   "validation": {
     "notExported": true,

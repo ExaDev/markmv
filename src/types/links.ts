@@ -7,14 +7,14 @@
  * @category Types
  */
 export type LinkType =
-  | 'internal' // Links to other files in the project
-  | 'external' // HTTP/HTTPS URLs
-  | 'anchor' // Same-file section links (#heading)
-  | 'image' // Image references
-  | 'reference' // Reference-style links [text][ref]
-  | 'claude-import' // Claude @import syntax
-  | 'wikilink' // Obsidian [[note]] link
-  | 'obsidian-transclusion'; // Obsidian ![[file]] embed
+  | "internal" // Links to other files in the project
+  | "external" // HTTP/HTTPS URLs
+  | "anchor" // Same-file section links (#heading)
+  | "image" // Image references
+  | "reference" // Reference-style links [text][ref]
+  | "claude-import" // Claude @import syntax
+  | "wikilink" // Obsidian [[note]] link
+  | "obsidian-transclusion"; // Obsidian ![[file]] embed
 
 /**
  * Link style formats supported for conversion operations.
@@ -25,10 +25,10 @@ export type LinkType =
  * @category Types
  */
 export type LinkStyle =
-  | 'markdown' // Standard markdown: [text](url)
-  | 'claude' // Claude import: @url
-  | 'combined' // Combined format: [@url](url)
-  | 'wikilink'; // Obsidian wikilink: [[url]]
+  | "markdown" // Standard markdown: [text](url)
+  | "claude" // Claude import: @url
+  | "combined" // Combined format: [@url](url)
+  | "wikilink"; // Obsidian wikilink: [[url]]
 
 /**
  * Represents a parsed markdown link with comprehensive metadata.

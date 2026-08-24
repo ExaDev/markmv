@@ -37,7 +37,7 @@ export interface AuthInfo {
   /** Whether authentication succeeded */
   authSucceeded?: boolean;
   /** Auth detection method used */
-  detectionMethod: 'domain' | 'redirect' | 'status-code' | 'content' | 'none';
+  detectionMethod: "domain" | "redirect" | "status-code" | "content" | "none";
   /** Warning message if auth-protected */
   warning?: string;
   /** Suggestion for handling auth requirement */
@@ -53,44 +53,44 @@ export class AuthDetector {
       enabled: config.enabled ?? true,
       credentials: config.credentials ?? {},
       authDomainPatterns: config.authDomainPatterns ?? [
-        'console.firebase.google.com',
-        'console.cloud.google.com',
-        'github.com/*/settings',
-        'github.com/orgs/*/settings',
-        'admin.microsoft.com',
-        'portal.azure.com',
-        'aws.amazon.com/console',
-        'console.aws.amazon.com',
-        'app.vercel.com',
-        'dashboard.heroku.com',
-        'app.netlify.com',
-        'app.supabase.com',
-        'app.planetscale.com',
-        '*.atlassian.net',
-        'trello.com/b/',
-        'notion.so/',
-        '*.sharepoint.com',
-        '*.onedrive.com',
-        'drive.google.com',
-        'docs.google.com/*/d/',
-        'sheets.google.com/*/d/',
-        'slides.google.com/*/d/',
+        "console.firebase.google.com",
+        "console.cloud.google.com",
+        "github.com/*/settings",
+        "github.com/orgs/*/settings",
+        "admin.microsoft.com",
+        "portal.azure.com",
+        "aws.amazon.com/console",
+        "console.aws.amazon.com",
+        "app.vercel.com",
+        "dashboard.heroku.com",
+        "app.netlify.com",
+        "app.supabase.com",
+        "app.planetscale.com",
+        "*.atlassian.net",
+        "trello.com/b/",
+        "notion.so/",
+        "*.sharepoint.com",
+        "*.onedrive.com",
+        "drive.google.com",
+        "docs.google.com/*/d/",
+        "sheets.google.com/*/d/",
+        "slides.google.com/*/d/",
       ],
       authRedirectPatterns: config.authRedirectPatterns ?? [
-        'accounts.google.com',
-        'login.microsoftonline.com',
-        'github.com/login',
-        'auth0.com',
-        'okta.com',
-        'login.salesforce.com',
-        'signin.aws.amazon.com',
-        'id.heroku.com',
-        'auth.netlify.com',
-        '/login',
-        '/signin',
-        '/auth',
-        '/oauth',
-        '/sso',
+        "accounts.google.com",
+        "login.microsoftonline.com",
+        "github.com/login",
+        "auth0.com",
+        "okta.com",
+        "login.salesforce.com",
+        "signin.aws.amazon.com",
+        "id.heroku.com",
+        "auth.netlify.com",
+        "/login",
+        "/signin",
+        "/auth",
+        "/oauth",
+        "/sso",
       ],
       maxRedirects: config.maxRedirects ?? 5,
       customHeaders: config.customHeaders ?? {},
@@ -103,14 +103,18 @@ export class AuthDetector {
   }
 
   /** Analyze authentication requirements for a URL. */
-  analyzeAuth(url: string, response?: Response, redirectHistory: string[] = []): AuthInfo {
+  analyzeAuth(
+    url: string,
+    response?: Response,
+    redirectHistory: string[] = [],
+  ): AuthInfo {
     if (!this.config.enabled) {
       return {
         url,
         requiresAuth: false,
         redirectCount: 0,
         authAttempted: false,
-        detectionMethod: 'none',
+        detectionMethod: "none",
       };
     }
 
@@ -119,7 +123,7 @@ export class AuthDetector {
       requiresAuth: false,
       redirectCount: redirectHistory.length,
       authAttempted: false,
-      detectionMethod: 'none',
+      detectionMethod: "none",
     };
 
     // Check domain-based auth detection first
@@ -128,7 +132,7 @@ export class AuthDetector {
       return {
         ...result,
         ...domainAuth,
-        detectionMethod: 'domain',
+        detectionMethod: "domain",
       };
     }
 
@@ -160,7 +164,8 @@ export class AuthDetector {
             requiresAuth: true,
             authProvider: provider,
             warning: `URL appears to be authentication-protected (${provider})`,
-            suggestion: 'This is likely working correctly but requires authentication to access',
+            suggestion:
+              "This is likely working correctly but requires authentication to access",
           };
         }
       }
@@ -175,18 +180,22 @@ export class AuthDetector {
   private analyzeResponse(
     url: string,
     response: Response,
-    redirectHistory: string[]
+    redirectHistory: string[],
   ): Partial<AuthInfo> {
     const finalUrl = response.url;
 
     // Check for auth redirects
     if (finalUrl !== url || redirectHistory.length > 0) {
-      const redirectAuth = this.analyzeRedirects(url, finalUrl, redirectHistory);
+      const redirectAuth = this.analyzeRedirects(
+        url,
+        finalUrl,
+        redirectHistory,
+      );
       if (redirectAuth.requiresAuth) {
         return {
           ...redirectAuth,
           finalUrl,
-          detectionMethod: 'redirect',
+          detectionMethod: "redirect",
         };
       }
     }
@@ -196,16 +205,17 @@ export class AuthDetector {
       return {
         requiresAuth: true,
         finalUrl,
-        detectionMethod: 'status-code',
+        detectionMethod: "status-code",
         warning: `HTTP ${String(response.status)}: Authentication required`,
-        suggestion: 'Provide appropriate credentials or API keys to validate this link',
+        suggestion:
+          "Provide appropriate credentials or API keys to validate this link",
       };
     }
 
     // Check response content for auth indicators (if available)
     try {
-      const contentType = response.headers.get('content-type') ?? '';
-      if (contentType.includes('text/html')) {
+      const contentType = response.headers.get("content-type") ?? "";
+      if (contentType.includes("text/html")) {
         // Don't actually read the content in production to avoid performance issues
         // This would be for future enhancement
         return { requiresAuth: false };
@@ -221,7 +231,7 @@ export class AuthDetector {
   private analyzeRedirects(
     originalUrl: string,
     finalUrl: string,
-    redirectHistory: string[]
+    redirectHistory: string[],
   ): Partial<AuthInfo> {
     const allUrls = [originalUrl, ...redirectHistory];
     if (finalUrl && finalUrl !== originalUrl) {
@@ -236,7 +246,8 @@ export class AuthDetector {
             requiresAuth: true,
             authProvider: provider,
             warning: `Redirected to authentication page (${provider})`,
-            suggestion: 'This link is working correctly but requires user authentication',
+            suggestion:
+              "This link is working correctly but requires user authentication",
           };
         }
       }
@@ -245,15 +256,17 @@ export class AuthDetector {
     // Check for common auth-related query parameters
     try {
       const finalUrlObj = new URL(finalUrl);
-      const hasAuthParams = ['login', 'auth', 'signin', 'oauth', 'sso'].some(
-        (param) => finalUrlObj.searchParams.has(param) || finalUrlObj.pathname.includes(`/${param}`)
+      const hasAuthParams = ["login", "auth", "signin", "oauth", "sso"].some(
+        (param) =>
+          finalUrlObj.searchParams.has(param) ||
+          finalUrlObj.pathname.includes(`/${param}`),
       );
 
       if (hasAuthParams) {
         return {
           requiresAuth: true,
-          warning: 'URL contains authentication-related parameters',
-          suggestion: 'This link likely requires user authentication to access',
+          warning: "URL contains authentication-related parameters",
+          suggestion: "This link likely requires user authentication to access",
         };
       }
     } catch {
@@ -264,85 +277,96 @@ export class AuthDetector {
   }
 
   /** Check if URL matches an auth domain pattern. */
-  private matchesPattern(fullUrl: string, hostname: string, pattern: string): boolean {
+  private matchesPattern(
+    fullUrl: string,
+    hostname: string,
+    pattern: string,
+  ): boolean {
     // Handle wildcard patterns
-    if (pattern.includes('*')) {
-      const regexPattern = pattern.replace(/\./g, '\\.').replace(/\*/g, '[^./]*');
-      const regex = new RegExp(regexPattern, 'i');
+    if (pattern.includes("*")) {
+      const regexPattern = pattern
+        .replace(/\./g, "\\.")
+        .replace(/\*/g, "[^./]*");
+      const regex = new RegExp(regexPattern, "i");
       return regex.test(hostname) || regex.test(fullUrl);
     }
 
     // Exact match or subdomain match
-    return hostname === pattern || hostname.endsWith(`.${pattern}`) || fullUrl.includes(pattern);
+    return (
+      hostname === pattern ||
+      hostname.endsWith(`.${pattern}`) ||
+      fullUrl.includes(pattern)
+    );
   }
 
   /** Detect authentication provider from domain pattern. */
   private detectAuthProvider(pattern: string, hostname: string): string {
-    if (pattern.includes('firebase') || hostname.includes('firebase')) {
-      return 'Firebase';
+    if (pattern.includes("firebase") || hostname.includes("firebase")) {
+      return "Firebase";
     }
-    if (pattern.includes('github') || hostname.includes('github')) {
-      return 'GitHub';
+    if (pattern.includes("github") || hostname.includes("github")) {
+      return "GitHub";
     }
     if (
-      pattern.includes('microsoft') ||
-      pattern.includes('azure') ||
-      hostname.includes('microsoft')
+      pattern.includes("microsoft") ||
+      pattern.includes("azure") ||
+      hostname.includes("microsoft")
     ) {
-      return 'Microsoft';
+      return "Microsoft";
     }
-    if (pattern.includes('aws') || pattern.includes('amazon')) {
-      return 'AWS';
+    if (pattern.includes("aws") || pattern.includes("amazon")) {
+      return "AWS";
     }
-    if (pattern.includes('google') || hostname.includes('google')) {
-      return 'Google';
+    if (pattern.includes("google") || hostname.includes("google")) {
+      return "Google";
     }
-    if (pattern.includes('vercel')) {
-      return 'Vercel';
+    if (pattern.includes("vercel")) {
+      return "Vercel";
     }
-    if (pattern.includes('netlify')) {
-      return 'Netlify';
+    if (pattern.includes("netlify")) {
+      return "Netlify";
     }
-    if (pattern.includes('heroku')) {
-      return 'Heroku';
+    if (pattern.includes("heroku")) {
+      return "Heroku";
     }
-    if (pattern.includes('supabase')) {
-      return 'Supabase';
+    if (pattern.includes("supabase")) {
+      return "Supabase";
     }
-    if (pattern.includes('planetscale')) {
-      return 'PlanetScale';
+    if (pattern.includes("planetscale")) {
+      return "PlanetScale";
     }
-    if (pattern.includes('atlassian')) {
-      return 'Atlassian';
+    if (pattern.includes("atlassian")) {
+      return "Atlassian";
     }
-    if (pattern.includes('trello')) {
-      return 'Trello';
+    if (pattern.includes("trello")) {
+      return "Trello";
     }
-    if (pattern.includes('notion')) {
-      return 'Notion';
+    if (pattern.includes("notion")) {
+      return "Notion";
     }
-    if (pattern.includes('sharepoint') || pattern.includes('onedrive')) {
-      return 'Microsoft 365';
+    if (pattern.includes("sharepoint") || pattern.includes("onedrive")) {
+      return "Microsoft 365";
     }
 
-    return 'Unknown Provider';
+    return "Unknown Provider";
   }
 
   /** Detect authentication provider from redirect URL. */
   private detectAuthProviderFromUrl(url: string): string {
     const lowerUrl = url.toLowerCase();
 
-    if (lowerUrl.includes('google')) return 'Google';
-    if (lowerUrl.includes('github')) return 'GitHub';
-    if (lowerUrl.includes('microsoft') || lowerUrl.includes('azure')) return 'Microsoft';
-    if (lowerUrl.includes('aws') || lowerUrl.includes('amazon')) return 'AWS';
-    if (lowerUrl.includes('auth0')) return 'Auth0';
-    if (lowerUrl.includes('okta')) return 'Okta';
-    if (lowerUrl.includes('salesforce')) return 'Salesforce';
-    if (lowerUrl.includes('heroku')) return 'Heroku';
-    if (lowerUrl.includes('netlify')) return 'Netlify';
+    if (lowerUrl.includes("google")) return "Google";
+    if (lowerUrl.includes("github")) return "GitHub";
+    if (lowerUrl.includes("microsoft") || lowerUrl.includes("azure"))
+      return "Microsoft";
+    if (lowerUrl.includes("aws") || lowerUrl.includes("amazon")) return "AWS";
+    if (lowerUrl.includes("auth0")) return "Auth0";
+    if (lowerUrl.includes("okta")) return "Okta";
+    if (lowerUrl.includes("salesforce")) return "Salesforce";
+    if (lowerUrl.includes("heroku")) return "Heroku";
+    if (lowerUrl.includes("netlify")) return "Netlify";
 
-    return 'Authentication Service';
+    return "Authentication Service";
   }
 
   /** Get headers for authenticated request to a specific domain. */
@@ -351,14 +375,17 @@ export class AuthDetector {
       const hostname = new URL(url).hostname;
 
       // Check for domain-specific headers
-      for (const [domain, headers] of Object.entries(this.config.customHeaders)) {
+      for (const [domain, headers] of Object.entries(
+        this.config.customHeaders,
+      )) {
         if (hostname === domain || hostname.endsWith(`.${domain}`)) {
           return headers;
         }
       }
 
       // Check for general credentials
-      const authHeader = this.config.credentials[hostname] || this.config.credentials['*'];
+      const authHeader =
+        this.config.credentials[hostname] || this.config.credentials["*"];
       if (authHeader) {
         return {
           Authorization: authHeader,
@@ -377,10 +404,11 @@ export class AuthDetector {
       const hostname = new URL(url).hostname;
       return (
         Object.keys(this.config.credentials).some(
-          (key) => key === hostname || key === '*' || hostname.endsWith(`.${key}`)
+          (key) =>
+            key === hostname || key === "*" || hostname.endsWith(`.${key}`),
         ) ||
         Object.keys(this.config.customHeaders).some(
-          (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
+          (domain) => hostname === domain || hostname.endsWith(`.${domain}`),
         )
       );
     } catch {
@@ -394,44 +422,44 @@ export const DEFAULT_AUTH_CONFIG: AuthConfig = {
   enabled: true,
   credentials: {},
   authDomainPatterns: [
-    'console.firebase.google.com',
-    'console.cloud.google.com',
-    'github.com/*/settings',
-    'github.com/orgs/*/settings',
-    'admin.microsoft.com',
-    'portal.azure.com',
-    'aws.amazon.com/console',
-    'console.aws.amazon.com',
-    'app.vercel.com',
-    'dashboard.heroku.com',
-    'app.netlify.com',
-    'app.supabase.com',
-    'app.planetscale.com',
-    '*.atlassian.net',
-    'trello.com/b/',
-    'notion.so/',
-    '*.sharepoint.com',
-    '*.onedrive.com',
-    'drive.google.com',
-    'docs.google.com/*/d/',
-    'sheets.google.com/*/d/',
-    'slides.google.com/*/d/',
+    "console.firebase.google.com",
+    "console.cloud.google.com",
+    "github.com/*/settings",
+    "github.com/orgs/*/settings",
+    "admin.microsoft.com",
+    "portal.azure.com",
+    "aws.amazon.com/console",
+    "console.aws.amazon.com",
+    "app.vercel.com",
+    "dashboard.heroku.com",
+    "app.netlify.com",
+    "app.supabase.com",
+    "app.planetscale.com",
+    "*.atlassian.net",
+    "trello.com/b/",
+    "notion.so/",
+    "*.sharepoint.com",
+    "*.onedrive.com",
+    "drive.google.com",
+    "docs.google.com/*/d/",
+    "sheets.google.com/*/d/",
+    "slides.google.com/*/d/",
   ],
   authRedirectPatterns: [
-    'accounts.google.com',
-    'login.microsoftonline.com',
-    'github.com/login',
-    'auth0.com',
-    'okta.com',
-    'login.salesforce.com',
-    'signin.aws.amazon.com',
-    'id.heroku.com',
-    'auth.netlify.com',
-    '/login',
-    '/signin',
-    '/auth',
-    '/oauth',
-    '/sso',
+    "accounts.google.com",
+    "login.microsoftonline.com",
+    "github.com/login",
+    "auth0.com",
+    "okta.com",
+    "login.salesforce.com",
+    "signin.aws.amazon.com",
+    "id.heroku.com",
+    "auth.netlify.com",
+    "/login",
+    "/signin",
+    "/auth",
+    "/oauth",
+    "/sso",
   ],
   maxRedirects: 5,
   customHeaders: {},

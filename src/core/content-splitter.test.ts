@@ -1,11 +1,11 @@
-import { mkdir, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { FileUtils } from '../utils/file-utils.js';
-import { ContentSplitter } from './content-splitter.js';
+import { mkdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { FileUtils } from "../utils/file-utils.js";
+import { ContentSplitter } from "./content-splitter.js";
 
-describe('ContentSplitter', () => {
+describe("ContentSplitter", () => {
   let splitter: ContentSplitter;
   let testDir: string;
 
@@ -19,9 +19,9 @@ describe('ContentSplitter', () => {
     await rm(testDir, { recursive: true, force: true });
   });
 
-  describe('splitFile', () => {
-    it('should split a markdown file by headers', async () => {
-      const sourceFile = join(testDir, 'source.md');
+  describe("splitFile", () => {
+    it("should split a markdown file by headers", async () => {
+      const sourceFile = join(testDir, "source.md");
       const content = `# Main Document
 
 Introduction content.
@@ -42,7 +42,7 @@ Final section.`;
       await writeFile(sourceFile, content);
 
       const result = await splitter.splitFile(sourceFile, {
-        strategy: 'headers',
+        strategy: "headers",
         headerLevel: 2,
         outputDir: testDir,
         splitLines: undefined,
@@ -50,9 +50,9 @@ Final section.`;
 
       expect(result.success).toBe(true);
       expect(result.createdFiles).toHaveLength(3);
-      expect(result.createdFiles[0]).toContain('section-a.md');
-      expect(result.createdFiles[1]).toContain('section-b.md');
-      expect(result.createdFiles[2]).toContain('section-c.md');
+      expect(result.createdFiles[0]).toContain("section-a.md");
+      expect(result.createdFiles[1]).toContain("section-b.md");
+      expect(result.createdFiles[2]).toContain("section-c.md");
 
       // Check that files were actually created
       for (const filePath of result.createdFiles) {
@@ -60,13 +60,15 @@ Final section.`;
       }
 
       // Check content of split files
-      const sectionAContent = await FileUtils.readTextFile(result.createdFiles[0]);
-      expect(sectionAContent).toContain('## Section A');
-      expect(sectionAContent).toContain('Content for section A');
+      const sectionAContent = await FileUtils.readTextFile(
+        result.createdFiles[0],
+      );
+      expect(sectionAContent).toContain("## Section A");
+      expect(sectionAContent).toContain("Content for section A");
     });
 
-    it('should handle dry-run mode', async () => {
-      const sourceFile = join(testDir, 'source.md');
+    it("should handle dry-run mode", async () => {
+      const sourceFile = join(testDir, "source.md");
       const content = `# Document
 
 ## Section 1
@@ -80,7 +82,7 @@ Content 2.`;
       await writeFile(sourceFile, content);
 
       const result = await splitter.splitFile(sourceFile, {
-        strategy: 'headers',
+        strategy: "headers",
         dryRun: true,
         outputDir: testDir,
         splitLines: undefined,
@@ -95,10 +97,10 @@ Content 2.`;
       }
     });
 
-    it('should update relative links in split sections', async () => {
-      await mkdir(join(testDir, 'docs'));
-      const sourceFile = join(testDir, 'docs', 'source.md');
-      const targetFile = join(testDir, 'target.md');
+    it("should update relative links in split sections", async () => {
+      await mkdir(join(testDir, "docs"));
+      const sourceFile = join(testDir, "docs", "source.md");
+      const targetFile = join(testDir, "target.md");
 
       const content = `## Section 1
 
@@ -110,37 +112,39 @@ Another [link](../target.md) here.
 @../config.md`;
 
       await writeFile(sourceFile, content);
-      await writeFile(targetFile, '# Target');
+      await writeFile(targetFile, "# Target");
 
       const result = await splitter.splitFile(sourceFile, {
-        strategy: 'headers',
-        outputDir: join(testDir, 'docs'),
+        strategy: "headers",
+        outputDir: join(testDir, "docs"),
         splitLines: undefined,
       });
 
       expect(result.success).toBe(true);
 
       // Check that links are still correct in split files
-      const sectionContent = await FileUtils.readTextFile(result.createdFiles[0]);
+      const sectionContent = await FileUtils.readTextFile(
+        result.createdFiles[0],
+      );
       // Normalize path separators for cross-platform compatibility
-      const normalizedContent = sectionContent.replace(/\\/g, '/');
-      expect(normalizedContent).toContain('../target.md');
+      const normalizedContent = sectionContent.replace(/\\/g, "/");
+      expect(normalizedContent).toContain("../target.md");
     });
 
-    it('should handle size-based splitting', async () => {
-      const sourceFile = join(testDir, 'large.md');
+    it("should handle size-based splitting", async () => {
+      const sourceFile = join(testDir, "large.md");
       const content = `# Large Document
 
-${'This is a line of content that will be repeated many times.\n'.repeat(50)}
+${"This is a line of content that will be repeated many times.\n".repeat(50)}
 
 ## Middle Section
 
-${'More content lines here for the middle section.\n'.repeat(50)}`;
+${"More content lines here for the middle section.\n".repeat(50)}`;
 
       await writeFile(sourceFile, content);
 
       const result = await splitter.splitFile(sourceFile, {
-        strategy: 'size',
+        strategy: "size",
         maxSize: 2, // 2KB
         outputDir: testDir,
         splitLines: undefined,
@@ -150,8 +154,8 @@ ${'More content lines here for the middle section.\n'.repeat(50)}`;
       expect(result.createdFiles.length).toBeGreaterThan(1);
     }, 10000);
 
-    it('should handle manual splitting with markers', async () => {
-      const sourceFile = join(testDir, 'manual.md');
+    it("should handle manual splitting with markers", async () => {
+      const sourceFile = join(testDir, "manual.md");
       const content = `# Document
 
 First section content.
@@ -171,7 +175,7 @@ Third section content.`;
       await writeFile(sourceFile, content);
 
       const result = await splitter.splitFile(sourceFile, {
-        strategy: 'manual',
+        strategy: "manual",
         outputDir: testDir,
         splitLines: undefined,
       });
@@ -180,12 +184,12 @@ Third section content.`;
       expect(result.createdFiles).toHaveLength(3);
 
       const firstSection = await FileUtils.readTextFile(result.createdFiles[0]);
-      expect(firstSection).toContain('First section content');
-      expect(firstSection).not.toContain('<!-- split -->');
+      expect(firstSection).toContain("First section content");
+      expect(firstSection).not.toContain("<!-- split -->");
     });
 
-    it('should preserve frontmatter in original file', async () => {
-      const sourceFile = join(testDir, 'with-frontmatter.md');
+    it("should preserve frontmatter in original file", async () => {
+      const sourceFile = join(testDir, "with-frontmatter.md");
       const content = `---
 title: Test Document
 author: Test Author
@@ -205,7 +209,7 @@ More content.`;
       await writeFile(sourceFile, content);
 
       const result = await splitter.splitFile(sourceFile, {
-        strategy: 'headers',
+        strategy: "headers",
         outputDir: testDir,
         splitLines: undefined,
       });
@@ -215,13 +219,13 @@ More content.`;
 
       // Check that original file now contains only frontmatter
       const remainingContent = await FileUtils.readTextFile(sourceFile);
-      expect(remainingContent).toContain('title: Test Document');
-      expect(remainingContent).not.toContain('## Section 1');
+      expect(remainingContent).toContain("title: Test Document");
+      expect(remainingContent).not.toContain("## Section 1");
     });
 
-    it('should handle files with external references', async () => {
-      const sourceFile = join(testDir, 'source.md');
-      const referenceFile = join(testDir, 'reference.md');
+    it("should handle files with external references", async () => {
+      const sourceFile = join(testDir, "source.md");
+      const referenceFile = join(testDir, "reference.md");
 
       await writeFile(
         sourceFile,
@@ -231,7 +235,7 @@ Content for A.
 
 ## Section B
 
-Content for B.`
+Content for B.`,
       );
 
       await writeFile(
@@ -239,11 +243,11 @@ Content for B.`
         `# Reference
 
 This links to [source](./source.md).
-@./source.md`
+@./source.md`,
       );
 
       const result = await splitter.splitFile(sourceFile, {
-        strategy: 'headers',
+        strategy: "headers",
         outputDir: testDir,
         splitLines: undefined,
       });
@@ -253,47 +257,50 @@ This links to [source](./source.md).
 
       // Check that external reference was updated
       const updatedReference = await FileUtils.readTextFile(referenceFile);
-      expect(updatedReference).toContain('./section-a.md'); // Points to first section
+      expect(updatedReference).toContain("./section-a.md"); // Points to first section
     });
 
-    it('should validate non-existent files', async () => {
-      const result = await splitter.splitFile('/nonexistent/file.md', {
-        strategy: 'headers',
+    it("should validate non-existent files", async () => {
+      const result = await splitter.splitFile("/nonexistent/file.md", {
+        strategy: "headers",
         outputDir: testDir,
         splitLines: undefined,
       });
 
       expect(result.success).toBe(false);
-      expect(result.errors[0]).toContain('Source file does not exist');
+      expect(result.errors[0]).toContain("Source file does not exist");
     });
 
-    it('should validate non-markdown files', async () => {
-      const textFile = join(testDir, 'document.txt');
-      await writeFile(textFile, 'Plain text content');
+    it("should validate non-markdown files", async () => {
+      const textFile = join(testDir, "document.txt");
+      await writeFile(textFile, "Plain text content");
 
       const result = await splitter.splitFile(textFile, {
-        strategy: 'headers',
+        strategy: "headers",
         outputDir: testDir,
         splitLines: undefined,
       });
 
       expect(result.success).toBe(false);
-      expect(result.errors[0]).toContain('Source file must be a markdown file');
+      expect(result.errors[0]).toContain("Source file must be a markdown file");
     });
 
-    it('should handle files with no splittable content', async () => {
-      const sourceFile = join(testDir, 'simple.md');
-      await writeFile(sourceFile, '# Just a title\n\nSome content without sections.');
+    it("should handle files with no splittable content", async () => {
+      const sourceFile = join(testDir, "simple.md");
+      await writeFile(
+        sourceFile,
+        "# Just a title\n\nSome content without sections.",
+      );
 
       const result = await splitter.splitFile(sourceFile, {
-        strategy: 'headers',
+        strategy: "headers",
         headerLevel: 2,
         outputDir: testDir,
         splitLines: undefined,
       });
 
       expect(result.success).toBe(false);
-      expect(result.errors[0]).toContain('No headers found at level 2');
+      expect(result.errors[0]).toContain("No headers found at level 2");
     });
   });
 });

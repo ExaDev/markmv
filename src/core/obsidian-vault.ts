@@ -1,6 +1,6 @@
-import { existsSync } from 'node:fs';
-import { basename, extname, join, posix } from 'node:path';
-import type { ParsedMarkdownFile } from '../types/links.js';
+import { existsSync } from "node:fs";
+import { basename, extname, join, posix } from "node:path";
+import type { ParsedMarkdownFile } from "../types/links.js";
 
 /**
  * A wikilink whose bare target matches multiple notes in the vault.
@@ -48,8 +48,8 @@ function buildNameIndex(filePaths: string[]): Map<string, string[]> {
     const candidates = index.get(lowerName) ?? [];
     candidates.push(filePath);
     index.set(lowerName, candidates);
-    if (extname(name) === '.md') {
-      const stem = basename(name, '.md').toLowerCase();
+    if (extname(name) === ".md") {
+      const stem = basename(name, ".md").toLowerCase();
       const stemCandidates = index.get(stem) ?? [];
       stemCandidates.push(filePath);
       index.set(stem, stemCandidates);
@@ -80,14 +80,15 @@ function buildNameIndex(filePaths: string[]): Map<string, string[]> {
  */
 export function resolveWikilinks(
   files: ParsedMarkdownFile[],
-  vaultRoot: string
+  vaultRoot: string,
 ): ObsidianAmbiguity[] {
   const nameIndex = buildNameIndex(files.map((file) => file.filePath));
   const ambiguities: ObsidianAmbiguity[] = [];
 
   for (const file of files) {
     for (const link of file.links) {
-      if (link.type !== 'wikilink' && link.type !== 'obsidian-transclusion') continue;
+      if (link.type !== "wikilink" && link.type !== "obsidian-transclusion")
+        continue;
 
       const resolution = resolveTarget(link.href, vaultRoot, nameIndex);
       if (resolution.ambiguous) {
@@ -130,7 +131,7 @@ export interface WikilinkResolution {
  */
 export function createWikilinkResolver(
   vaultRoot: string,
-  filePaths: string[]
+  filePaths: string[],
 ): (target: string) => WikilinkResolution {
   const nameIndex = buildNameIndex(filePaths);
   return (target: string) => resolveTarget(target, vaultRoot, nameIndex);
@@ -139,16 +140,16 @@ export function createWikilinkResolver(
 function resolveTarget(
   target: string,
   vaultRoot: string,
-  nameIndex: Map<string, string[]>
+  nameIndex: Map<string, string[]>,
 ): { resolvedPath?: string; ambiguous?: string[] } {
   // Path-qualified targets resolve against the vault root, like Obsidian itself
-  if (target.includes('/')) {
+  if (target.includes("/")) {
     const normalized = posixJoin(target);
     const exact = join(vaultRoot, normalized);
     if (existsSync(exact)) {
       return { resolvedPath: exact };
     }
-    if (extname(normalized) === '' && existsSync(`${exact}.md`)) {
+    if (extname(normalized) === "" && existsSync(`${exact}.md`)) {
       return { resolvedPath: `${exact}.md` };
     }
     return {};
@@ -165,11 +166,11 @@ function resolveTarget(
 
   // A bare target that is not a parsed note may still be an asset on disk (an embedded image, for example); only such exact filenames can be checked without the vault index
   const onDisk = join(vaultRoot, target);
-  if (target.includes('.') && existsSync(onDisk)) {
+  if (target.includes(".") && existsSync(onDisk)) {
     return { resolvedPath: onDisk };
   }
   // Case variation alone should not strand an otherwise-valid filename target
-  if (target.includes('.') && !existsSync(onDisk)) {
+  if (target.includes(".") && !existsSync(onDisk)) {
     const lowerTarget = target.toLowerCase();
     for (const candidateSuffix of [lowerTarget]) {
       const candidate = join(vaultRoot, candidateSuffix);
@@ -187,8 +188,8 @@ function rebuildDependencies(file: ParsedMarkdownFile): void {
     new Set(
       file.links
         .map((link) => link.resolvedPath)
-        .filter((path): path is string => path !== undefined)
-    )
+        .filter((path): path is string => path !== undefined),
+    ),
   );
 }
 
@@ -203,12 +204,14 @@ function rebuildDependencies(file: ParsedMarkdownFile): void {
  *
  * @returns Each stem that more than one markdown file carries
  */
-export function findDuplicateNoteStems(files: ParsedMarkdownFile[]): DuplicateNoteStem[] {
+export function findDuplicateNoteStems(
+  files: ParsedMarkdownFile[],
+): DuplicateNoteStem[] {
   const byStem = new Map<string, string[]>();
   for (const file of files) {
     const name = basename(file.filePath);
-    if (extname(name) !== '.md') continue;
-    const stem = basename(name, '.md');
+    if (extname(name) !== ".md") continue;
+    const stem = basename(name, ".md");
     const paths = byStem.get(stem) ?? [];
     paths.push(file.filePath);
     byStem.set(stem, paths);
@@ -229,12 +232,14 @@ export function findDuplicateNoteStems(files: ParsedMarkdownFile[]): DuplicateNo
  *
  * @returns Map from stem (basename without .md) to the number of markdown files carrying it
  */
-export function computeNoteStemCounts(files: ParsedMarkdownFile[]): Map<string, number> {
+export function computeNoteStemCounts(
+  files: ParsedMarkdownFile[],
+): Map<string, number> {
   const counts = new Map<string, number>();
   for (const file of files) {
     const name = basename(file.filePath);
-    if (extname(name) !== '.md') continue;
-    const stem = basename(name, '.md');
+    if (extname(name) !== ".md") continue;
+    const stem = basename(name, ".md");
     counts.set(stem, (counts.get(stem) ?? 0) + 1);
   }
   return counts;

@@ -7,10 +7,10 @@
  * @category Commands
  */
 
-import { writeFile, mkdir } from 'node:fs/promises';
-import { dirname, join, basename } from 'node:path';
-import { WebClipper, type WebClipperOptions } from '../core/web-clipper.js';
-import type { OperationResult } from '../types/operations.js';
+import { writeFile, mkdir } from "node:fs/promises";
+import { dirname, join, basename } from "node:path";
+import { WebClipper, type WebClipperOptions } from "../core/web-clipper.js";
+import type { OperationResult } from "../types/operations.js";
 
 /**
  * CLI-specific options for the clip command.
@@ -18,8 +18,9 @@ import type { OperationResult } from '../types/operations.js';
  * @category Commands
  */
 function isRecordOfStrings(value: unknown): value is Record<string, string> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
-  return Object.values(value).every((entry) => typeof entry === 'string');
+  if (typeof value !== "object" || value === null || Array.isArray(value))
+    return false;
+  return Object.values(value).every((entry) => typeof entry === "string");
 }
 
 export interface ClipCliOptions {
@@ -43,9 +44,9 @@ export interface ClipCliOptions {
   frontmatter?: boolean;
   // Inherit from WebClipperOptions but as individual properties
   /** Extraction strategy to use */
-  strategy?: WebClipperOptions['strategy'];
+  strategy?: WebClipperOptions["strategy"];
   /** How to handle images */
-  imageStrategy?: WebClipperOptions['imageStrategy'];
+  imageStrategy?: WebClipperOptions["imageStrategy"];
   /** Directory to save downloaded images */
   imageDir?: string;
   /** Request timeout in milliseconds */
@@ -114,11 +115,14 @@ interface ClipResult extends OperationResult {
  *
  * @returns Promise resolving to clipping results
  */
-export async function clipCommand(urls: string[], options: ClipCliOptions = {}): Promise<void> {
+export async function clipCommand(
+  urls: string[],
+  options: ClipCliOptions = {},
+): Promise<void> {
   try {
     // Validate input
     if (urls.length === 0) {
-      console.error('💥 Error: At least one URL must be specified');
+      console.error("💥 Error: At least one URL must be specified");
       process.exit(1);
       return;
     }
@@ -127,7 +131,8 @@ export async function clipCommand(urls: string[], options: ClipCliOptions = {}):
     const webClipperOptions: WebClipperOptions = {};
 
     if (options.strategy) webClipperOptions.strategy = options.strategy;
-    if (options.imageStrategy) webClipperOptions.imageStrategy = options.imageStrategy;
+    if (options.imageStrategy)
+      webClipperOptions.imageStrategy = options.imageStrategy;
     if (options.imageDir) webClipperOptions.imageDir = options.imageDir;
     if (options.frontmatter !== undefined)
       webClipperOptions.includeFrontmatter = options.frontmatter;
@@ -135,13 +140,16 @@ export async function clipCommand(urls: string[], options: ClipCliOptions = {}):
     if (options.userAgent) webClipperOptions.userAgent = options.userAgent;
     if (options.followRedirects !== undefined)
       webClipperOptions.followRedirects = options.followRedirects;
-    if (options.maxRedirects) webClipperOptions.maxRedirects = options.maxRedirects;
+    if (options.maxRedirects)
+      webClipperOptions.maxRedirects = options.maxRedirects;
     if (options.verbose) webClipperOptions.verbose = options.verbose;
     if (options.dryRun) webClipperOptions.dryRun = options.dryRun;
 
     // Parse selectors if provided
     if (options.selectors) {
-      webClipperOptions.selectors = options.selectors.split(',').map((s) => s.trim());
+      webClipperOptions.selectors = options.selectors
+        .split(",")
+        .map((s) => s.trim());
     }
 
     // Parse headers if provided
@@ -149,11 +157,11 @@ export async function clipCommand(urls: string[], options: ClipCliOptions = {}):
       try {
         const parsed: unknown = JSON.parse(options.headers);
         if (!isRecordOfStrings(parsed)) {
-          throw new Error('headers must be a JSON object of string values');
+          throw new Error("headers must be a JSON object of string values");
         }
         webClipperOptions.headers = parsed;
       } catch {
-        console.error('💥 Error: Invalid JSON format for headers');
+        console.error("💥 Error: Invalid JSON format for headers");
         process.exit(1);
         return;
       }
@@ -198,7 +206,7 @@ export async function clipCommand(urls: string[], options: ClipCliOptions = {}):
 async function processUrls(
   urls: string[],
   options: ClipCliOptions,
-  clipper: WebClipper
+  clipper: WebClipper,
 ): Promise<ClipResult> {
   const result: ClipResult = {
     success: true,
@@ -220,7 +228,7 @@ async function processUrls(
     : urls.filter((url) => isValidUrl(url));
 
   if (urlsToProcess.length === 0) {
-    throw new Error('No valid URLs found to process');
+    throw new Error("No valid URLs found to process");
   }
 
   // Create output directory if specified
@@ -246,7 +254,7 @@ async function processUrls(
 
       // Write markdown file
       if (!options.dryRun) {
-        await writeFile(outputPath, clipResult.markdown, 'utf-8');
+        await writeFile(outputPath, clipResult.markdown, "utf-8");
         result.createdFiles.push(outputPath);
       }
 
@@ -264,15 +272,19 @@ async function processUrls(
 
       if (clipResult.title) metadata.title = clipResult.title;
       if (clipResult.author) metadata.author = clipResult.author;
-      if (clipResult.publishedDate) metadata.publishedDate = clipResult.publishedDate;
+      if (clipResult.publishedDate)
+        metadata.publishedDate = clipResult.publishedDate;
 
       result.metadata.push(metadata);
 
       if (options.verbose) {
-        console.log(`✅ Clipped to: ${outputPath} (strategy: ${clipResult.strategy})`);
+        console.log(
+          `✅ Clipped to: ${outputPath} (strategy: ${clipResult.strategy})`,
+        );
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       result.failedUrls.push({
         url,
         error: errorMessage,
@@ -299,17 +311,17 @@ async function loadUrlsFromFiles(filePaths: string[]): Promise<string[]> {
 
   for (const filePath of filePaths) {
     try {
-      const { readFile } = await import('node:fs/promises');
-      const content = await readFile(filePath, 'utf-8');
+      const { readFile } = await import("node:fs/promises");
+      const content = await readFile(filePath, "utf-8");
       const fileUrls = content
-        .split('\n')
+        .split("\n")
         .map((line) => line.trim())
-        .filter((line) => line && !line.startsWith('#') && isValidUrl(line));
+        .filter((line) => line && !line.startsWith("#") && isValidUrl(line));
 
       urls.push(...fileUrls);
     } catch (error) {
       console.warn(
-        `⚠️ Could not read URL file ${filePath}: ${error instanceof Error ? error.message : String(error)}`
+        `⚠️ Could not read URL file ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
@@ -325,7 +337,7 @@ async function loadUrlsFromFiles(filePaths: string[]): Promise<string[]> {
 function isValidUrl(string: string): boolean {
   try {
     const url = new URL(string);
-    return url.protocol === 'http:' || url.protocol === 'https:';
+    return url.protocol === "http:" || url.protocol === "https:";
   } catch {
     return false;
   }
@@ -336,7 +348,11 @@ function isValidUrl(string: string): boolean {
  *
  * @private
  */
-function determineOutputPath(url: string, options: ClipCliOptions, title?: string): string {
+function determineOutputPath(
+  url: string,
+  options: ClipCliOptions,
+  title?: string,
+): string {
   // If specific output file specified
   if (options.output && !options.batch) {
     return options.output;
@@ -345,11 +361,12 @@ function determineOutputPath(url: string, options: ClipCliOptions, title?: strin
   // Generate filename from title or URL
   let filename: string;
   if (title) {
-    filename = sanitizeFilename(title) + '.md';
+    filename = sanitizeFilename(title) + ".md";
   } else {
     const urlObj = new URL(url);
-    const pathname = urlObj.pathname === '/' ? 'index' : basename(urlObj.pathname);
-    filename = sanitizeFilename(pathname) + '.md';
+    const pathname =
+      urlObj.pathname === "/" ? "index" : basename(urlObj.pathname);
+    filename = sanitizeFilename(pathname) + ".md";
   }
 
   // Use output directory if specified
@@ -367,10 +384,10 @@ function determineOutputPath(url: string, options: ClipCliOptions, title?: strin
  */
 function sanitizeFilename(name: string): string {
   return name
-    .replace(/[<>:"/\\|?*]/g, '-') // Replace invalid characters
-    .replace(/\s+/g, '-') // Replace spaces with hyphens
-    .replace(/-+/g, '-') // Collapse multiple hyphens
-    .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+    .replace(/[<>:"/\\|?*]/g, "-") // Replace invalid characters
+    .replace(/\s+/g, "-") // Replace spaces with hyphens
+    .replace(/-+/g, "-") // Collapse multiple hyphens
+    .replace(/^-|-$/g, "") // Remove leading/trailing hyphens
     .toLowerCase()
     .substring(0, 100); // Limit length
 }
@@ -380,12 +397,15 @@ function sanitizeFilename(name: string): string {
  *
  * @private
  */
-function formatClipResults(result: ClipResult, options: ClipCliOptions): string {
+function formatClipResults(
+  result: ClipResult,
+  options: ClipCliOptions,
+): string {
   const lines: string[] = [];
 
   // Header
-  lines.push('🕷️  Web Clipper Results');
-  lines.push(''.padEnd(40, '='));
+  lines.push("🕷️  Web Clipper Results");
+  lines.push("".padEnd(40, "="));
 
   // Summary
   lines.push(`\n📊 Summary:`);
@@ -394,13 +414,13 @@ function formatClipResults(result: ClipResult, options: ClipCliOptions): string 
   lines.push(`   Files generated: ${String(result.generatedFiles.length)}`);
 
   if (options.dryRun) {
-    lines.push('\n🔍 Dry run - no files were actually created');
+    lines.push("\n🔍 Dry run - no files were actually created");
   }
 
   // Successful clips
   if (result.clippedUrls.length > 0) {
-    lines.push('\n✅ Successfully Clipped:');
-    lines.push(''.padEnd(30, '-'));
+    lines.push("\n✅ Successfully Clipped:");
+    lines.push("".padEnd(30, "-"));
 
     result.metadata.forEach((meta) => {
       lines.push(`\n🌐 ${meta.url}`);
@@ -424,8 +444,8 @@ function formatClipResults(result: ClipResult, options: ClipCliOptions): string 
 
   // Failed clips
   if (result.failedUrls.length > 0) {
-    lines.push('\n❌ Failed to Clip:');
-    lines.push(''.padEnd(30, '-'));
+    lines.push("\n❌ Failed to Clip:");
+    lines.push("".padEnd(30, "-"));
 
     result.failedUrls.forEach((failed) => {
       lines.push(`\n🌐 ${failed.url}`);
@@ -435,12 +455,12 @@ function formatClipResults(result: ClipResult, options: ClipCliOptions): string 
 
   // Warnings
   if (result.warnings.length > 0) {
-    lines.push('\n⚠️  Warnings:');
-    lines.push(''.padEnd(30, '-'));
+    lines.push("\n⚠️  Warnings:");
+    lines.push("".padEnd(30, "-"));
     result.warnings.forEach((warning) => {
       lines.push(`   ⚠️  ${warning}`);
     });
   }
 
-  return lines.join('\n');
+  return lines.join("\n");
 }

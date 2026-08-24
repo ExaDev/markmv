@@ -21,7 +21,7 @@ export interface ApiResponse<T = unknown> {
 /** Health check response */
 export interface HealthResponse {
   /** Service status */
-  status: 'ok' | 'error';
+  status: "ok" | "error";
   /** Service version */
   version: string;
   /** Uptime in milliseconds */

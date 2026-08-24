@@ -1,16 +1,16 @@
-import { existsSync, statSync } from 'node:fs';
-import { readFile, unlink, writeFile } from 'node:fs/promises';
-import { dirname, extname, resolve } from 'node:path';
-import { glob } from 'glob';
-import { PathUtils } from '../utils/path-utils.js';
-import { FileUtils } from '../utils/file-utils.js';
+import { existsSync, statSync } from "node:fs";
+import { readFile, unlink, writeFile } from "node:fs/promises";
+import { dirname, extname, resolve } from "node:path";
+import { glob } from "glob";
+import { PathUtils } from "../utils/path-utils.js";
+import { FileUtils } from "../utils/file-utils.js";
 import {
   findLocalImages,
   imageMimeTypeForExtension,
   renderImageMarkdown,
   replaceSpans,
   type ImageLinkOccurrence,
-} from '../core/image-inline.js';
+} from "../core/image-inline.js";
 
 /**
  * Configuration options for embed command operations.
@@ -35,7 +35,7 @@ export interface EmbedOptions {
  */
 export interface EmbedSummary {
   /** Always "embed", so JSON consumers can identify the command */
-  command: 'embed';
+  command: "embed";
   /** Whether the run completed without errors */
   success: boolean;
   /** Whether this was a dry run, so no files were touched */
@@ -85,19 +85,25 @@ interface EmbedFileResult {
  *
  * @throws Will exit the process with code 1 if the operation fails
  */
-export async function embedCommand(patterns: string[], options: EmbedOptions): Promise<void> {
+export async function embedCommand(
+  patterns: string[],
+  options: EmbedOptions,
+): Promise<void> {
   if (patterns.length === 0) {
-    reportUsageError(options, 'At least one file pattern must be specified');
+    reportUsageError(options, "At least one file pattern must be specified");
   }
 
   const files = await expandMarkdownPatterns(patterns);
 
   if (files.length === 0) {
-    reportUsageError(options, `No markdown files found matching: ${patterns.join(', ')}`);
+    reportUsageError(
+      options,
+      `No markdown files found matching: ${patterns.join(", ")}`,
+    );
   }
 
   const summary: EmbedSummary = {
-    command: 'embed',
+    command: "embed",
     success: true,
     dryRun: options.dryRun === true,
     filesProcessed: files.length,
@@ -111,7 +117,7 @@ export async function embedCommand(patterns: string[], options: EmbedOptions): P
 
   const humanOutput = options.json !== true;
   if (options.dryRun && humanOutput) {
-    console.log('🔍 Dry run - no files will be modified');
+    console.log("🔍 Dry run - no files will be modified");
   }
 
   const embeddedImages: string[] = [];
@@ -139,14 +145,19 @@ export async function embedCommand(patterns: string[], options: EmbedOptions): P
     if (result.rewrites.length > 0 && options.dryRun !== true) {
       summary.filesModified.push(file);
       if (humanOutput) {
-        console.log(`✅ Embedded ${String(result.rewrites.length)} image(s) in ${file}`);
+        console.log(
+          `✅ Embedded ${String(result.rewrites.length)} image(s) in ${file}`,
+        );
       }
       embeddedImages.push(...result.embeddedImages);
     }
   }
 
   if (options.dryRun !== true) {
-    const deletions = await deleteUnreferencedImages([...new Set(embeddedImages)], files);
+    const deletions = await deleteUnreferencedImages(
+      [...new Set(embeddedImages)],
+      files,
+    );
     summary.imagesDeleted.push(...deletions.deleted);
     summary.imagesKept.push(...deletions.kept);
     if (humanOutput) {
@@ -166,10 +177,10 @@ export async function embedCommand(patterns: string[], options: EmbedOptions): P
     console.log(JSON.stringify(summary, null, 2));
   } else if (summary.success) {
     console.log(
-      `📊 Summary: embedded ${String(summary.imagesEmbedded)} image(s) across ${String(summary.filesModified.length)} file(s)`
+      `📊 Summary: embedded ${String(summary.imagesEmbedded)} image(s) across ${String(summary.filesModified.length)} file(s)`,
     );
     if (options.dryRun) {
-      console.log('(Dry run - no files were actually modified)');
+      console.log("(Dry run - no files were actually modified)");
     }
   }
 
@@ -182,7 +193,7 @@ export async function embedCommand(patterns: string[], options: EmbedOptions): P
 function reportUsageError(options: EmbedOptions, message: string): never {
   if (options.json) {
     const summary: EmbedSummary = {
-      command: 'embed',
+      command: "embed",
       success: false,
       dryRun: options.dryRun === true,
       filesProcessed: 0,
@@ -196,7 +207,7 @@ function reportUsageError(options: EmbedOptions, message: string): never {
     console.log(JSON.stringify(summary, null, 2));
   } else {
     console.error(`❌ Error: ${message}`);
-    console.error('Usage: markmv embed <files...>');
+    console.error("Usage: markmv embed <files...>");
   }
   process.exit(1);
 }
@@ -227,15 +238,20 @@ async function expandMarkdownPatterns(patterns: string[]): Promise<string[]> {
       continue;
     }
 
-    if (existsSync(absolutePattern) && statSync(absolutePattern).isDirectory()) {
+    if (
+      existsSync(absolutePattern) &&
+      statSync(absolutePattern).isDirectory()
+    ) {
       // Glob patterns use forward slashes on every platform; backslashes are pattern escapes
-      const files = await glob(`${absolutePattern.replace(/\\/g, '/')}/*.md`, { absolute: true });
+      const files = await glob(`${absolutePattern.replace(/\\/g, "/")}/*.md`, {
+        absolute: true,
+      });
       files.forEach((file) => resolvedFiles.add(file));
       continue;
     }
 
-    const globFiles = await glob(pattern.replace(/\\/g, '/'), {
-      ignore: ['node_modules/**', '.git/**', 'dist/**'],
+    const globFiles = await glob(pattern.replace(/\\/g, "/"), {
+      ignore: ["node_modules/**", ".git/**", "dist/**"],
       absolute: true,
       nodir: true,
     });
@@ -259,8 +275,11 @@ async function expandMarkdownPatterns(patterns: string[]): Promise<string[]> {
  * @returns The outcome, with an error message in place of a thrown exception so sibling files are
  *   still processed
  */
-async function embedFile(file: string, dryRun: boolean): Promise<EmbedFileResult> {
-  const content = await readFile(file, 'utf-8');
+async function embedFile(
+  file: string,
+  dryRun: boolean,
+): Promise<EmbedFileResult> {
+  const content = await readFile(file, "utf-8");
   const images = findLocalImages(content);
   if (images.length === 0) {
     return { error: undefined, embeddedImages: [], rewrites: [] };
@@ -270,7 +289,7 @@ async function embedFile(file: string, dryRun: boolean): Promise<EmbedFileResult
   const embeddedImages: string[] = [];
   for (const image of images) {
     const outcome = await encodeImage(image, file);
-    if (typeof outcome === 'string') {
+    if (typeof outcome === "string") {
       return { error: outcome, embeddedImages: [], rewrites: [] };
     }
     replacements.push({
@@ -283,7 +302,7 @@ async function embedFile(file: string, dryRun: boolean): Promise<EmbedFileResult
 
   if (!dryRun) {
     const rewritten = replaceSpans(content, replacements);
-    await writeFile(file, rewritten, 'utf-8');
+    await writeFile(file, rewritten, "utf-8");
   }
 
   return {
@@ -297,7 +316,10 @@ async function embedFile(file: string, dryRun: boolean): Promise<EmbedFileResult
 type EncodeOutcome = string | { imagePath: string; dataUri: string };
 
 /** Read one linked image and encode it as a base64 data URI. */
-async function encodeImage(image: ImageLinkOccurrence, file: string): Promise<EncodeOutcome> {
+async function encodeImage(
+  image: ImageLinkOccurrence,
+  file: string,
+): Promise<EncodeOutcome> {
   const imagePath = resolve(dirname(file), image.href);
 
   let bytes: Buffer;
@@ -314,7 +336,10 @@ async function encodeImage(image: ImageLinkOccurrence, file: string): Promise<En
     return `${file}: "${image.href}": ${errorMessage(error)}`;
   }
 
-  return { imagePath, dataUri: `data:${mimeType};base64,${bytes.toString('base64')}` };
+  return {
+    imagePath,
+    dataUri: `data:${mimeType};base64,${bytes.toString("base64")}`,
+  };
 }
 
 /** The deletions an embed run performed, split by outcome. */
@@ -341,7 +366,7 @@ interface ImageDeletions {
 /** Search the tree around the processed set for a markdown file outside it still linking the image */
 async function findOutsideReferencer(
   imagePath: string,
-  processedFiles: Set<string>
+  processedFiles: Set<string>,
 ): Promise<string | undefined> {
   const scanRoot = PathUtils.findCommonBase([imagePath, ...processedFiles]);
   if (!scanRoot) {
@@ -350,9 +375,11 @@ async function findOutsideReferencer(
   const treeFiles = await FileUtils.findMarkdownFiles(scanRoot, true);
   for (const file of treeFiles) {
     if (processedFiles.has(file)) continue;
-    const content = await readFile(file, 'utf-8');
+    const content = await readFile(file, "utf-8");
     if (
-      findLocalImages(content).some((image) => resolve(dirname(file), image.href) === imagePath)
+      findLocalImages(content).some(
+        (image) => resolve(dirname(file), image.href) === imagePath,
+      )
     ) {
       return file;
     }
@@ -362,14 +389,17 @@ async function findOutsideReferencer(
 
 async function deleteUnreferencedImages(
   imagePaths: string[],
-  files: string[]
+  files: string[],
 ): Promise<ImageDeletions> {
   if (imagePaths.length === 0) {
     return { deleted: [], kept: [], keptOutside: [] };
   }
 
   const currentContent = await Promise.all(
-    files.map(async (file) => ({ file, content: await readFile(file, 'utf-8') }))
+    files.map(async (file) => ({
+      file,
+      content: await readFile(file, "utf-8"),
+    })),
   );
 
   const deletions: ImageDeletions = { deleted: [], kept: [], keptOutside: [] };
@@ -378,7 +408,9 @@ async function deleteUnreferencedImages(
 
   for (const imagePath of imagePaths) {
     const stillReferenced = currentContent.some(({ file, content }) =>
-      findLocalImages(content).some((image) => resolve(dirname(file), image.href) === imagePath)
+      findLocalImages(content).some(
+        (image) => resolve(dirname(file), image.href) === imagePath,
+      ),
     );
 
     if (stillReferenced) {
@@ -388,9 +420,14 @@ async function deleteUnreferencedImages(
 
     // An image unreferenced in the processed set may still be linked from markdown outside it;
     // the surrounding tree is scanned before the file is destroyed
-    const outsideReferencer = await findOutsideReferencer(imagePath, processedFiles);
+    const outsideReferencer = await findOutsideReferencer(
+      imagePath,
+      processedFiles,
+    );
     if (outsideReferencer !== undefined) {
-      deletions.keptOutside.push(`${imagePath} (referenced by ${outsideReferencer})`);
+      deletions.keptOutside.push(
+        `${imagePath} (referenced by ${outsideReferencer})`,
+      );
     } else {
       await unlink(imagePath);
       deletions.deleted.push(imagePath);

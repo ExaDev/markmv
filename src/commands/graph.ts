@@ -1,15 +1,19 @@
-import { writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
-import { LinkGraphGenerator } from '../core/link-graph-generator.js';
-import type { GraphOutputFormat, LinkGraphOptions } from '../core/link-graph-generator.js';
-import type { OperationOptions } from '../types/operations.js';
+import { writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import { LinkGraphGenerator } from "../core/link-graph-generator.js";
+import type {
+  GraphOutputFormat,
+  LinkGraphOptions,
+} from "../core/link-graph-generator.js";
+import type { OperationOptions } from "../types/operations.js";
 
 /**
  * Configuration options for graph generation operations.
  *
  * @category Commands
  */
-export interface GraphOperationOptions extends OperationOptions, LinkGraphOptions {
+export interface GraphOperationOptions
+  extends OperationOptions, LinkGraphOptions {
   /** Output format for the graph */
   format: GraphOutputFormat;
   /** Output file path (optional) */
@@ -23,7 +27,7 @@ export interface GraphOperationOptions extends OperationOptions, LinkGraphOption
  *
  * @category Commands
  */
-export interface GraphCliOptions extends Omit<GraphOperationOptions, 'format'> {
+export interface GraphCliOptions extends Omit<GraphOperationOptions, "format"> {
   /** Output format as string */
   format?: string;
   /** Output results in JSON format */
@@ -103,12 +107,12 @@ export interface GraphResult {
  */
 export async function generateGraph(
   patterns: string[],
-  options: Partial<GraphOperationOptions> = {}
+  options: Partial<GraphOperationOptions> = {},
 ): Promise<GraphResult> {
   const startTime = Date.now();
 
   const opts = {
-    format: options.format ?? 'json',
+    format: options.format ?? "json",
     includeExternal: options.includeExternal ?? false,
     includeImages: options.includeImages ?? true,
     includeAnchors: options.includeAnchors ?? false,
@@ -126,7 +130,7 @@ export async function generateGraph(
     filesProcessed: 0,
     nodeCount: 0,
     edgeCount: 0,
-    content: '',
+    content: "",
     processingTime: 0,
     analysis: {
       hubCount: 0,
@@ -139,7 +143,12 @@ export async function generateGraph(
 
   try {
     if (opts.verbose) {
-      console.log('Generating ' + opts.format + ' graph for patterns: ' + patterns.join(', '));
+      console.log(
+        "Generating " +
+          opts.format +
+          " graph for patterns: " +
+          patterns.join(", "),
+      );
     }
 
     // Initialize graph generator
@@ -172,7 +181,7 @@ export async function generateGraph(
     // Write to file if output path specified
     if (opts.output && !opts.dryRun) {
       const outputPath = resolve(opts.output);
-      await writeFile(outputPath, content, 'utf-8');
+      await writeFile(outputPath, content, "utf-8");
       result.outputFile = outputPath;
 
       if (opts.verbose) {
@@ -183,28 +192,28 @@ export async function generateGraph(
     // Add warnings for analysis results
     if (result.analysis.circularReferenceCount > 0) {
       result.warnings.push(
-        `Found ${String(result.analysis.circularReferenceCount)} circular reference(s)`
+        `Found ${String(result.analysis.circularReferenceCount)} circular reference(s)`,
       );
     }
 
     if (result.analysis.orphanCount > 0) {
       result.warnings.push(
-        `Found ${String(result.analysis.orphanCount)} orphaned file(s) with no links`
+        `Found ${String(result.analysis.orphanCount)} orphaned file(s) with no links`,
       );
     }
 
     if (opts.verbose) {
       console.log(
-        `Graph generated: ${String(result.nodeCount)} nodes, ${String(result.edgeCount)} edges`
+        `Graph generated: ${String(result.nodeCount)} nodes, ${String(result.edgeCount)} edges`,
       );
       console.log(
-        `Hubs: ${String(result.analysis.hubCount)}, Orphans: ${String(result.analysis.orphanCount)}`
+        `Hubs: ${String(result.analysis.hubCount)}, Orphans: ${String(result.analysis.orphanCount)}`,
       );
     }
   } catch (error) {
     result.errors.push(error instanceof Error ? error.message : String(error));
     if (opts.verbose) {
-      console.error('Graph generation failed:', error);
+      console.error("Graph generation failed:", error);
     }
   }
 
@@ -237,17 +246,22 @@ export async function generateGraph(
  * @param cliOptions - CLI-specific options
  */
 function isGraphOutputFormat(value: string): value is GraphOutputFormat {
-  return ['json', 'mermaid', 'dot', 'html'].some((valid) => valid === value);
+  return ["json", "mermaid", "dot", "html"].some((valid) => valid === value);
 }
 
-export async function graphCommand(patterns: string[], cliOptions: GraphCliOptions): Promise<void> {
+export async function graphCommand(
+  patterns: string[],
+  cliOptions: GraphCliOptions,
+): Promise<void> {
   // Default to current directory if no patterns provided
-  const finalPatterns = patterns.length === 0 ? ['.'] : patterns;
+  const finalPatterns = patterns.length === 0 ? ["."] : patterns;
 
   // Validate the format before using it as a GraphOutputFormat
-  const format = cliOptions.format ?? 'json';
+  const format = cliOptions.format ?? "json";
   if (!isGraphOutputFormat(format)) {
-    console.error(`Invalid format: ${format}. Valid formats: json, mermaid, dot, html`);
+    console.error(
+      `Invalid format: ${format}. Valid formats: json, mermaid, dot, html`,
+    );
     process.exitCode = 1;
     return;
   }
@@ -266,7 +280,7 @@ export async function graphCommand(patterns: string[], cliOptions: GraphCliOptio
     }
 
     // Format output for human consumption
-    console.log('\n📊 Graph Generation Summary');
+    console.log("\n📊 Graph Generation Summary");
     console.log(`Files processed: ${String(result.filesProcessed)}`);
     console.log(`Nodes: ${String(result.nodeCount)}`);
     console.log(`Edges: ${String(result.edgeCount)}`);
@@ -278,10 +292,16 @@ export async function graphCommand(patterns: string[], cliOptions: GraphCliOptio
     }
 
     // Analysis summary
-    console.log('🔍 Graph Analysis:');
-    console.log(`  Hub nodes (high connectivity): ${String(result.analysis.hubCount)}`);
-    console.log(`  Orphaned nodes (no connections): ${String(result.analysis.orphanCount)}`);
-    console.log(`  Circular references: ${String(result.analysis.circularReferenceCount)}\n`);
+    console.log("🔍 Graph Analysis:");
+    console.log(
+      `  Hub nodes (high connectivity): ${String(result.analysis.hubCount)}`,
+    );
+    console.log(
+      `  Orphaned nodes (no connections): ${String(result.analysis.orphanCount)}`,
+    );
+    console.log(
+      `  Circular references: ${String(result.analysis.circularReferenceCount)}\n`,
+    );
 
     if (result.warnings.length > 0) {
       console.log(`⚠️  Warnings (${String(result.warnings.length)}):`);
@@ -302,7 +322,7 @@ export async function graphCommand(patterns: string[], cliOptions: GraphCliOptio
     }
 
     if (!result.success) {
-      console.log('❌ Graph generation failed');
+      console.log("❌ Graph generation failed");
       process.exitCode = 1;
       return;
     }
@@ -313,14 +333,14 @@ export async function graphCommand(patterns: string[], cliOptions: GraphCliOptio
       console.log(result.content);
     } else if (!result.outputFile) {
       console.log(
-        `📋 Generated ${format.toUpperCase()} (${String(result.content.length)} characters)`
+        `📋 Generated ${format.toUpperCase()} (${String(result.content.length)} characters)`,
       );
       console.log(`${result.content.substring(0, 500)}...`);
     }
 
-    console.log('✅ Graph generation completed successfully!');
+    console.log("✅ Graph generation completed successfully!");
   } catch (error) {
-    console.error('Graph generation failed:', error);
+    console.error("Graph generation failed:", error);
     process.exitCode = 1;
   }
 }

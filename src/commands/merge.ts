@@ -1,10 +1,10 @@
-import { promises as fs } from 'node:fs';
-import { dirname } from 'node:path';
+import { promises as fs } from "node:fs";
+import { dirname } from "node:path";
 import {
   AppendMergeStrategy,
   InteractiveMergeStrategy,
   PrependMergeStrategy,
-} from '../strategies/merge-strategies.js';
+} from "../strategies/merge-strategies.js";
 
 /**
  * Configuration options for merge command operations.
@@ -16,7 +16,7 @@ import {
  */
 export interface MergeOptions {
   /** Strategy for merging content into the target file */
-  strategy?: 'append' | 'prepend' | 'interactive';
+  strategy?: "append" | "prepend" | "interactive";
   /** Perform a dry run without making actual changes */
   dryRun?: boolean;
   /** Enable verbose output with detailed progress information */
@@ -80,17 +80,19 @@ export interface MergeOptions {
 export async function mergeCommand(
   source: string,
   target: string,
-  options: MergeOptions
+  options: MergeOptions,
 ): Promise<void> {
-  const strategy = options.strategy ?? 'interactive';
+  const strategy = options.strategy ?? "interactive";
 
   if (options.verbose) {
-    console.log(`🔀 Merging ${source} into ${target} using ${strategy} strategy`);
+    console.log(
+      `🔀 Merging ${source} into ${target} using ${strategy} strategy`,
+    );
     if (options.dryRun) {
-      console.log('🔍 Dry run mode - no changes will be made');
+      console.log("🔍 Dry run mode - no changes will be made");
     }
     if (options.createTransclusions) {
-      console.log('🔗 Creating Obsidian transclusions where possible');
+      console.log("🔗 Creating Obsidian transclusions where possible");
     }
   }
 
@@ -100,18 +102,19 @@ export async function mergeCommand(
     await fs.access(target);
 
     // Read file contents
-    const sourceContent = await fs.readFile(source, 'utf8');
-    const targetContent = await fs.readFile(target, 'utf8');
+    const sourceContent = await fs.readFile(source, "utf8");
+    const targetContent = await fs.readFile(target, "utf8");
 
     // Choose strategy
-    let mergeStrategy: AppendMergeStrategy | PrependMergeStrategy | InteractiveMergeStrategy;
+    let mergeStrategy:
+      AppendMergeStrategy | PrependMergeStrategy | InteractiveMergeStrategy;
     switch (strategy) {
-      case 'append':
+      case "append":
         mergeStrategy = new AppendMergeStrategy({
           createTransclusions: options.createTransclusions ?? false,
         });
         break;
-      case 'prepend':
+      case "prepend":
         mergeStrategy = new PrependMergeStrategy({
           createTransclusions: options.createTransclusions ?? false,
         });
@@ -124,10 +127,15 @@ export async function mergeCommand(
     }
 
     // Perform the merge
-    const result = await mergeStrategy.merge(targetContent, sourceContent, target, source);
+    const result = await mergeStrategy.merge(
+      targetContent,
+      sourceContent,
+      target,
+      source,
+    );
 
     if (!result.success) {
-      console.error('❌ Merge operation failed:');
+      console.error("❌ Merge operation failed:");
       for (const error of result.errors) {
         console.error(`  ${error}`);
       }
@@ -135,44 +143,46 @@ export async function mergeCommand(
     }
 
     // Build final content
-    let finalContent = '';
+    let finalContent = "";
     if (result.frontmatter) {
       finalContent += result.frontmatter;
-      if (!result.frontmatter.endsWith('\n')) {
-        finalContent += '\n';
+      if (!result.frontmatter.endsWith("\n")) {
+        finalContent += "\n";
       }
-      finalContent += '\n';
+      finalContent += "\n";
     }
     finalContent += result.content;
 
     // Display results
     if (options.dryRun) {
-      console.log('\\n📋 Changes that would be made:');
-      console.log('\\n📝 File that would be modified:');
+      console.log("\\n📋 Changes that would be made:");
+      console.log("\\n📝 File that would be modified:");
       console.log(`  ~ ${target}`);
 
       if (options.verbose) {
-        console.log('\\n📄 Preview of merged content:');
-        const previewLines = finalContent.split('\\n').slice(0, 10);
+        console.log("\\n📄 Preview of merged content:");
+        const previewLines = finalContent.split("\\n").slice(0, 10);
         for (const line of previewLines) {
           console.log(`  ${line}`);
         }
-        if (finalContent.split('\\n').length > 10) {
-          console.log('  ... (content truncated)');
+        if (finalContent.split("\\n").length > 10) {
+          console.log("  ... (content truncated)");
         }
       }
 
-      console.log('\\n📊 Summary: Would modify 1 file');
+      console.log("\\n📊 Summary: Would modify 1 file");
     } else {
       // Write the merged content
       await fs.mkdir(dirname(target), { recursive: true });
-      await fs.writeFile(target, finalContent, 'utf8');
+      await fs.writeFile(target, finalContent, "utf8");
 
-      console.log('✅ Merge operation completed successfully!');
+      console.log("✅ Merge operation completed successfully!");
       console.log(`📝 Modified: ${target}`);
 
       if (result.transclusions.length > 0) {
-        console.log(`\\n🔗 Created ${String(result.transclusions.length)} transclusion(s):`);
+        console.log(
+          `\\n🔗 Created ${String(result.transclusions.length)} transclusion(s):`,
+        );
         for (const transclusion of result.transclusions) {
           console.log(`  + ${transclusion}`);
         }
@@ -181,21 +191,21 @@ export async function mergeCommand(
 
     // Display conflicts
     if (result.conflicts.length > 0) {
-      console.log('\\n⚠️  Conflicts detected:');
+      console.log("\\n⚠️  Conflicts detected:");
       for (const conflict of result.conflicts) {
         console.log(`  • ${conflict.type}: ${conflict.description}`);
         if (conflict.resolution) {
           console.log(`    Resolution: ${conflict.resolution}`);
         }
         if (!conflict.autoResolved) {
-          console.log('    ⚠️  Manual resolution required');
+          console.log("    ⚠️  Manual resolution required");
         }
       }
     }
 
     // Display warnings
     if (result.warnings.length > 0) {
-      console.log('\\n⚠️  Warnings:');
+      console.log("\\n⚠️  Warnings:");
       for (const warning of result.warnings) {
         console.log(`  ${warning}`);
       }
@@ -203,23 +213,32 @@ export async function mergeCommand(
 
     // Show helpful tips
     if (!options.dryRun) {
-      console.log('\\n💡 Tips:');
-      console.log('  • Use --dry-run to preview changes before merging');
-      console.log('  • Use --verbose for detailed operation logs');
-      if (strategy === 'append') {
-        console.log('  • Content was appended to the end of the target file');
-      } else if (strategy === 'prepend') {
-        console.log('  • Content was prepended to the beginning of the target file');
+      console.log("\\n💡 Tips:");
+      console.log("  • Use --dry-run to preview changes before merging");
+      console.log("  • Use --verbose for detailed operation logs");
+      if (strategy === "append") {
+        console.log("  • Content was appended to the end of the target file");
+      } else if (strategy === "prepend") {
+        console.log(
+          "  • Content was prepended to the beginning of the target file",
+        );
       } else {
-        console.log('  • Review merge conflicts and resolve manually if needed');
+        console.log(
+          "  • Review merge conflicts and resolve manually if needed",
+        );
       }
       console.log(
-        '  • Use --create-transclusions to create Obsidian-style references instead of copying content'
+        "  • Use --create-transclusions to create Obsidian-style references instead of copying content",
       );
     }
   } catch (error) {
-    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
-      const pathValue = 'path' in error ? String(error.path) : 'unknown';
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "ENOENT"
+    ) {
+      const pathValue = "path" in error ? String(error.path) : "unknown";
       console.error(`❌ File not found: ${pathValue}`);
     } else {
       const message = error instanceof Error ? error.message : String(error);

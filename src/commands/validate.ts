@@ -1,25 +1,28 @@
-import { readFile, writeFile } from 'node:fs/promises';
-import { glob } from 'glob';
-import { statSync } from 'fs';
-import { dirname, posix, resolve, sep } from 'path';
-import { LinkValidator } from '../core/link-validator.js';
-import { LinkParser } from '../core/link-parser.js';
-import { createWikilinkResolver } from '../core/obsidian-vault.js';
-import { suggestLinkFixes, type LinkSuggestion } from '../core/link-suggester.js';
-import { FileUtils } from '../utils/file-utils.js';
-import { PathUtils } from '../utils/path-utils.js';
-import { GitUtils } from '../utils/git-utils.js';
+import { readFile, writeFile } from "node:fs/promises";
+import { glob } from "glob";
+import { statSync } from "fs";
+import { dirname, posix, resolve, sep } from "path";
+import { LinkValidator } from "../core/link-validator.js";
+import { LinkParser } from "../core/link-parser.js";
+import { createWikilinkResolver } from "../core/obsidian-vault.js";
+import {
+  suggestLinkFixes,
+  type LinkSuggestion,
+} from "../core/link-suggester.js";
+import { FileUtils } from "../utils/file-utils.js";
+import { PathUtils } from "../utils/path-utils.js";
+import { GitUtils } from "../utils/git-utils.js";
 import {
   ValidationCache,
   calculateFileHash,
   calculateConfigHash,
-} from '../utils/validation-cache.js';
-import type { LinkType } from '../types/links.js';
-import type { BrokenLink } from '../types/config.js';
-import type { OperationOptions } from '../types/operations.js';
+} from "../utils/validation-cache.js";
+import type { LinkType } from "../types/links.js";
+import type { BrokenLink } from "../types/config.js";
+import type { OperationOptions } from "../types/operations.js";
 
 /** Link types only validated in obsidian mode, where wikilinks resolve vault-wide */
-const OBSIDIAN_LINK_TYPES: LinkType[] = ['wikilink', 'obsidian-transclusion'];
+const OBSIDIAN_LINK_TYPES: LinkType[] = ["wikilink", "obsidian-transclusion"];
 
 /**
  * Configuration options for link validation operations.
@@ -46,7 +49,7 @@ export interface ValidateOperationOptions extends OperationOptions {
   /** Show only broken links, not all validation results */
   onlyBroken: boolean;
   /** Group results by file or by link type */
-  groupBy: 'file' | 'type';
+  groupBy: "file" | "type";
   /** Include line numbers and context in output */
   includeContext: boolean;
   /** Git diff range for incremental validation */
@@ -82,7 +85,7 @@ export interface ValidateOperationOptions extends OperationOptions {
   /** Frontmatter fields every validated file must define */
   requireFrontmatter?: string[];
   /** Internal-link href form to enforce: relative (no leading /), absolute (leading /), or none */
-  enforceLinkFormat?: 'relative' | 'absolute' | 'none';
+  enforceLinkFormat?: "relative" | "absolute" | "none";
 }
 
 /**
@@ -90,7 +93,10 @@ export interface ValidateOperationOptions extends OperationOptions {
  *
  * @category Commands
  */
-export interface ValidateCliOptions extends Omit<ValidateOperationOptions, 'linkTypes'> {
+export interface ValidateCliOptions extends Omit<
+  ValidateOperationOptions,
+  "linkTypes"
+> {
   /** Comma-separated list of link types to validate */
   linkTypes?: string;
   /** Output results in JSON format */
@@ -167,22 +173,27 @@ export interface ValidateResult {
   /** Files missing required frontmatter fields */
   frontmatterViolations: { file: string; missingFields: string[] }[];
   /** Internal links whose href form violates the enforced link format */
-  formatViolations: { file: string; href: string; line: number; expected: string }[];
+  formatViolations: {
+    file: string;
+    href: string;
+    line: number;
+    expected: string;
+  }[];
 }
 
 /** Extract the field names defined in a file's leading YAML frontmatter block, if any */
 function parseFrontmatterFields(content: string): Set<string> {
   // CRLF files must parse identically to LF files, so both delimiters are split on
   const lines = content.split(/\r?\n/);
-  if (lines[0] !== '---') {
+  if (lines[0] !== "---") {
     return new Set();
   }
   const fields = new Set<string>();
   for (const line of lines.slice(1)) {
-    if (line === '---') break;
+    if (line === "---") break;
     const match = /^([A-Za-z][\w-]*):/.exec(line);
     if (match) {
-      fields.add(match[1] || '');
+      fields.add(match[1] || "");
     }
   }
   return fields;
@@ -226,11 +237,17 @@ export type FixPrompter = (fix: PlannedLinkFix) => Promise<number | undefined>;
  *
  * @returns One planned fix per broken internal link that has suggestions
  */
-export function planLinkFixes(result: ValidateResult, knownFiles: string[]): PlannedLinkFix[] {
+export function planLinkFixes(
+  result: ValidateResult,
+  knownFiles: string[],
+): PlannedLinkFix[] {
   const fixes: PlannedLinkFix[] = [];
-  for (const [filePath, brokenLinks] of Object.entries(result.brokenLinksByFile)) {
+  for (const [filePath, brokenLinks] of Object.entries(
+    result.brokenLinksByFile,
+  )) {
     for (const broken of brokenLinks) {
-      if (broken.type !== 'internal' || broken.reason !== 'file-not-found') continue;
+      if (broken.type !== "internal" || broken.reason !== "file-not-found")
+        continue;
       const suggestions = suggestLinkFixes(broken.url, filePath, knownFiles);
       if (suggestions.length === 0) continue;
       fixes.push({
@@ -254,20 +271,24 @@ export function planLinkFixes(result: ValidateResult, knownFiles: string[]): Pla
  * @param fix - The planned fix being accepted
  * @param choiceIndex - Zero-based index into fix.suggestions
  */
-export async function applyLinkFix(fix: PlannedLinkFix, choiceIndex: number): Promise<void> {
+export async function applyLinkFix(
+  fix: PlannedLinkFix,
+  choiceIndex: number,
+): Promise<void> {
   if (choiceIndex < 0 || choiceIndex >= fix.suggestions.length) {
     throw new Error(
-      `No suggestion ${String(choiceIndex)} for ${fix.brokenHref} in ${fix.sourceFile}`
+      `No suggestion ${String(choiceIndex)} for ${fix.brokenHref} in ${fix.sourceFile}`,
     );
   }
   const suggestion = fix.suggestions[choiceIndex];
   // An anchored target keeps its anchor on the replacement; the anchor sits after the path
-  const [pathPart, ...fragmentParts] = fix.brokenHref.split('#');
-  const fragment = fragmentParts.length > 0 ? `#${fragmentParts.join('#')}` : '';
+  const [pathPart, ...fragmentParts] = fix.brokenHref.split("#");
+  const fragment =
+    fragmentParts.length > 0 ? `#${fragmentParts.join("#")}` : "";
   const brokenSpan = `](${pathPart}`;
 
-  const content = await readFile(fix.sourceFile, 'utf-8');
-  const lines = content.split('\n');
+  const content = await readFile(fix.sourceFile, "utf-8");
+  const lines = content.split("\n");
   const lineIndex = fix.line - 1;
   const target = lines.at(lineIndex);
   if (target === undefined) {
@@ -275,26 +296,38 @@ export async function applyLinkFix(fix: PlannedLinkFix, choiceIndex: number): Pr
   }
   if (!target.includes(brokenSpan)) {
     throw new Error(
-      `Link ${fix.brokenHref} not found on line ${String(fix.line)} of ${fix.sourceFile}`
+      `Link ${fix.brokenHref} not found on line ${String(fix.line)} of ${fix.sourceFile}`,
     );
   }
-  lines[lineIndex] = target.replace(brokenSpan, `](${suggestion.replacementHref}${fragment}`);
-  await writeFile(fix.sourceFile, lines.join('\n'));
+  lines[lineIndex] = target.replace(
+    brokenSpan,
+    `](${suggestion.replacementHref}${fragment}`,
+  );
+  await writeFile(fix.sourceFile, lines.join("\n"));
 }
 
 /** Prompt on the terminal for which suggestion to apply, returning a zero-based index or skip */
-async function promptFixChoice(fix: PlannedLinkFix): Promise<number | undefined> {
-  const { createInterface } = await import('node:readline/promises');
-  const readlineInterface = createInterface({ input: process.stdin, output: process.stdout });
+async function promptFixChoice(
+  fix: PlannedLinkFix,
+): Promise<number | undefined> {
+  const { createInterface } = await import("node:readline/promises");
+  const readlineInterface = createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
   try {
-    console.log(`\n🔧 ${fix.sourceFile}:${String(fix.line)} broken link ${fix.brokenHref}`);
+    console.log(
+      `\n🔧 ${fix.sourceFile}:${String(fix.line)} broken link ${fix.brokenHref}`,
+    );
     fix.suggestions.forEach((suggestion, index) => {
-      console.log(`  ${String(index + 1)}. ${suggestion.replacementHref} (${suggestion.reason})`);
+      console.log(
+        `  ${String(index + 1)}. ${suggestion.replacementHref} (${suggestion.reason})`,
+      );
     });
-    console.log('  s. skip');
-    const answer = await readlineInterface.question('Choice [1-s]: ');
+    console.log("  s. skip");
+    const answer = await readlineInterface.question("Choice [1-s]: ");
     const trimmed = answer.trim().toLowerCase();
-    if (trimmed === '' || trimmed === 's') {
+    if (trimmed === "" || trimmed === "s") {
       return undefined;
     }
     const index = Number.parseInt(trimmed, 10) - 1;
@@ -311,12 +344,12 @@ async function promptFixChoice(fix: PlannedLinkFix): Promise<number | undefined>
 async function scanKnownFiles(patterns: string[]): Promise<string[]> {
   const matched: string[] = [];
   for (const pattern of patterns) {
-    const normalizedPattern = pattern.replace(/\\/g, '/');
+    const normalizedPattern = pattern.replace(/\\/g, "/");
     const matches = await glob(normalizedPattern, {
       absolute: true,
-      ignore: ['**/node_modules/**', '**/dist/**', '**/coverage/**'],
+      ignore: ["**/node_modules/**", "**/dist/**", "**/coverage/**"],
     });
-    matched.push(...matches.filter((filePath) => filePath.endsWith('.md')));
+    matched.push(...matches.filter((filePath) => filePath.endsWith(".md")));
   }
   if (matched.length === 0) {
     return [];
@@ -324,7 +357,7 @@ async function scanKnownFiles(patterns: string[]): Promise<string[]> {
   let scanRoot = PathUtils.findCommonBase(matched);
   if (scanRoot === sep || /^[A-Za-z]:$/.test(scanRoot)) {
     // Disjoint matched trees would anchor the scan at a filesystem root and walk the disk
-    scanRoot = dirname(matched[0] || '');
+    scanRoot = dirname(matched[0] || "");
   }
   if (!scanRoot) {
     return matched;
@@ -367,24 +400,27 @@ async function scanKnownFiles(patterns: string[]): Promise<string[]> {
  */
 export async function validateLinks(
   patterns: string[],
-  options: Partial<ValidateOperationOptions> = {}
+  options: Partial<ValidateOperationOptions> = {},
 ): Promise<ValidateResult> {
   const startTime = Date.now();
 
   const opts: Required<
-    Omit<ValidateOperationOptions, 'maxDepth' | 'authCredentials' | 'authHeaders'>
+    Omit<
+      ValidateOperationOptions,
+      "maxDepth" | "authCredentials" | "authHeaders"
+    >
   > & {
     maxDepth?: number;
     authCredentials?: Record<string, string>;
     authHeaders?: Record<string, Record<string, string>>;
   } = {
     linkTypes: options.linkTypes ?? [
-      'internal',
-      'external',
-      'anchor',
-      'image',
-      'reference',
-      'claude-import',
+      "internal",
+      "external",
+      "anchor",
+      "image",
+      "reference",
+      "claude-import",
       ...(options.obsidian ? OBSIDIAN_LINK_TYPES : []),
     ],
     checkExternal: options.checkExternal ?? false,
@@ -393,7 +429,7 @@ export async function validateLinks(
     checkClaudeImports: options.checkClaudeImports ?? true,
     checkCircular: options.checkCircular ?? false,
     onlyBroken: options.onlyBroken ?? true,
-    groupBy: options.groupBy ?? 'file',
+    groupBy: options.groupBy ?? "file",
     includeContext: options.includeContext ?? false,
     checkContentFreshness: options.checkContentFreshness ?? false,
     freshnessThreshold: options.freshnessThreshold ?? 730, // 2 years in days
@@ -402,15 +438,15 @@ export async function validateLinks(
     dryRun: options.dryRun ?? false,
     verbose: options.verbose ?? false,
     force: options.force ?? false,
-    gitDiff: options.gitDiff ?? '',
+    gitDiff: options.gitDiff ?? "",
     gitStaged: options.gitStaged ?? false,
     obsidian: options.obsidian ?? false,
     skipDomains: options.skipDomains ?? [],
     externalRetries: options.externalRetries ?? 2,
     requireFrontmatter: options.requireFrontmatter ?? [],
-    enforceLinkFormat: options.enforceLinkFormat ?? 'none',
+    enforceLinkFormat: options.enforceLinkFormat ?? "none",
     cache: options.cache ?? false,
-    cacheDir: options.cacheDir ?? '.markmv-cache',
+    cacheDir: options.cacheDir ?? ".markmv-cache",
     failFast: options.failFast ?? false,
     includeDependencies: options.includeDependencies ?? true,
   };
@@ -427,17 +463,17 @@ export async function validateLinks(
   // Initialize git utils and cache if needed
   let gitUtils: GitUtils | undefined;
   let cache: ValidationCache | undefined;
-  let gitInfo: ValidateResult['gitInfo'] | undefined;
+  let gitInfo: ValidateResult["gitInfo"] | undefined;
 
   if (opts.gitDiff || opts.gitStaged || opts.cache) {
     gitUtils = new GitUtils();
 
     if (!gitUtils.isGitRepository()) {
       if (opts.gitDiff || opts.gitStaged) {
-        throw new Error('Git integration requires a git repository');
+        throw new Error("Git integration requires a git repository");
       }
       if (opts.verbose) {
-        console.warn('Not in a git repository, disabling git integration');
+        console.warn("Not in a git repository, disabling git integration");
       }
       gitUtils = undefined;
     }
@@ -447,7 +483,7 @@ export async function validateLinks(
     cache = new ValidationCache({ cacheDir: opts.cacheDir });
     if (!(await cache.isEnabled())) {
       if (opts.verbose) {
-        console.warn('Cache is not accessible, disabling caching');
+        console.warn("Cache is not accessible, disabling caching");
       }
       cache = undefined;
     }
@@ -475,9 +511,9 @@ export async function validateLinks(
 
     const changedFiles = gitUtils.getChangedFiles(baseRef);
     files = changedFiles
-      .filter((change) => change.status !== 'deleted')
+      .filter((change) => change.status !== "deleted")
       .map((change) => change.path)
-      .filter((path) => path.endsWith('.md'));
+      .filter((path) => path.endsWith(".md"));
 
     const status = gitUtils.getStatus();
     gitInfo = {
@@ -491,16 +527,16 @@ export async function validateLinks(
 
     if (opts.verbose) {
       console.log(
-        `🔍 Git Integration: Found ${String(files.length)} changed markdown files since ${baseRef}`
+        `🔍 Git Integration: Found ${String(files.length)} changed markdown files since ${baseRef}`,
       );
     }
   } else if (opts.gitStaged && gitUtils) {
     // Git staged mode - only validate staged files
     const stagedFiles = gitUtils.getStagedFiles();
     files = stagedFiles
-      .filter((change) => change.status !== 'deleted')
+      .filter((change) => change.status !== "deleted")
       .map((change) => change.path)
-      .filter((path) => path.endsWith('.md'));
+      .filter((path) => path.endsWith(".md"));
 
     const status = gitUtils.getStatus();
     gitInfo = {
@@ -512,7 +548,9 @@ export async function validateLinks(
     };
 
     if (opts.verbose) {
-      console.log(`🔍 Git Integration: Found ${String(files.length)} staged markdown files`);
+      console.log(
+        `🔍 Git Integration: Found ${String(files.length)} staged markdown files`,
+      );
     }
   } else {
     // Standard mode - resolve glob patterns. Glob patterns use forward slashes on every
@@ -520,17 +558,21 @@ export async function validateLinks(
     // host-native joined paths get them normalised exactly as the CLI already does.
     for (const pattern of patterns) {
       try {
-        const globOptions: { absolute: boolean; ignore: string[]; maxDepth?: number } = {
+        const globOptions: {
+          absolute: boolean;
+          ignore: string[];
+          maxDepth?: number;
+        } = {
           absolute: true,
-          ignore: ['**/node_modules/**', '**/dist/**', '**/coverage/**'],
+          ignore: ["**/node_modules/**", "**/dist/**", "**/coverage/**"],
         };
-        if (typeof opts.maxDepth === 'number') {
+        if (typeof opts.maxDepth === "number") {
           globOptions.maxDepth = opts.maxDepth;
         }
 
-        const normalizedPattern = pattern.replace(/\\/g, '/');
+        const normalizedPattern = pattern.replace(/\\/g, "/");
         const matches = await glob(normalizedPattern, globOptions);
-        files.push(...matches.filter((f) => f.endsWith('.md')));
+        files.push(...matches.filter((f) => f.endsWith(".md")));
       } catch (error) {
         if (opts.verbose) {
           console.error(`Error processing pattern "${pattern}":`, error);
@@ -545,16 +587,19 @@ export async function validateLinks(
 
   // In obsidian mode a wikilink resolves against the whole vault, so the resolver indexes every
   // markdown file under the scan root, not only the files the patterns matched
-  let wikilinkResolver: ReturnType<typeof createWikilinkResolver> | undefined = undefined;
+  let wikilinkResolver: ReturnType<typeof createWikilinkResolver> | undefined =
+    undefined;
   if (opts.obsidian && files.length > 0) {
     let vaultRoot = PathUtils.findCommonBase(files);
     if (vaultRoot === sep || /^[A-Za-z]:$/.test(vaultRoot)) {
-      vaultRoot = dirname(files[0] || '');
+      vaultRoot = dirname(files[0] || "");
     }
     if (vaultRoot) {
       // The index covers every vault file, not only notes -- embeds target images and PDFs by
       // bare filename too
-      const vaultFilePaths = await FileUtils.listFiles(vaultRoot, { recursive: true });
+      const vaultFilePaths = await FileUtils.listFiles(vaultRoot, {
+        recursive: true,
+      });
       wikilinkResolver = createWikilinkResolver(vaultRoot, vaultFilePaths);
     }
   }
@@ -629,33 +674,35 @@ export async function validateLinks(
       // Standards enforcement runs for every file up front, independent of caching and of whether
       // the file has any links at all
       if (opts.requireFrontmatter.length > 0) {
-        const content = await readFile(filePath, 'utf-8');
+        const content = await readFile(filePath, "utf-8");
         const present = parseFrontmatterFields(content);
-        const missingFields = opts.requireFrontmatter.filter((field) => !present.has(field));
+        const missingFields = opts.requireFrontmatter.filter(
+          (field) => !present.has(field),
+        );
         if (missingFields.length > 0) {
           result.frontmatterViolations.push({ file: filePath, missingFields });
         }
       }
-      if (opts.enforceLinkFormat !== 'none') {
+      if (opts.enforceLinkFormat !== "none") {
         const parsedForFormat = await parser.parseFile(filePath);
         for (const link of parsedForFormat.links) {
-          if (link.type !== 'internal' && link.type !== 'image') continue;
+          if (link.type !== "internal" && link.type !== "image") continue;
           // The parser records drive-absolute and UNC forms as absolute too, which a
           // leading-slash string test would miss on Windows
           const absoluteForm = link.absolute;
-          if (opts.enforceLinkFormat === 'relative' && absoluteForm) {
+          if (opts.enforceLinkFormat === "relative" && absoluteForm) {
             result.formatViolations.push({
               file: filePath,
               href: link.href,
               line: link.line,
-              expected: 'relative',
+              expected: "relative",
             });
-          } else if (opts.enforceLinkFormat === 'absolute' && !absoluteForm) {
+          } else if (opts.enforceLinkFormat === "absolute" && !absoluteForm) {
             result.formatViolations.push({
               file: filePath,
               href: link.href,
               line: link.line,
-              expected: 'absolute',
+              expected: "absolute",
             });
           }
         }
@@ -676,7 +723,10 @@ export async function validateLinks(
           cached = await cache.get(filePath, contentHash, configHash);
         } catch (error) {
           if (opts.verbose) {
-            console.warn(`  Cache read failed for ${filePath}, validating anyway:`, error);
+            console.warn(
+              `  Cache read failed for ${filePath}, validating anyway:`,
+              error,
+            );
           }
         }
 
@@ -696,9 +746,13 @@ export async function validateLinks(
       if (!validation) {
         // Parse links from file
         const parsedFile = await parser.parseFile(filePath);
-        const relevantLinks = parsedFile.links.filter((link) => opts.linkTypes.includes(link.type));
+        const relevantLinks = parsedFile.links.filter((link) =>
+          opts.linkTypes.includes(link.type),
+        );
         totalLinksForFile = relevantLinks.length;
-        externalLinkCount = relevantLinks.filter((link) => link.type === 'external').length;
+        externalLinkCount = relevantLinks.filter(
+          (link) => link.type === "external",
+        ).length;
 
         if (relevantLinks.length === 0) {
           // Store empty result in cache
@@ -711,7 +765,7 @@ export async function validateLinks(
                 contentHash,
                 { brokenLinks: [], totalLinks: 0, hasExternalLinks: false },
                 configHash,
-                gitCommit
+                gitCommit,
               );
             } catch (error) {
               if (opts.verbose) {
@@ -738,10 +792,12 @@ export async function validateLinks(
               {
                 brokenLinks: validation.brokenLinks,
                 totalLinks: totalLinksForFile,
-                hasExternalLinks: relevantLinks.some((link) => link.type === 'external'),
+                hasExternalLinks: relevantLinks.some(
+                  (link) => link.type === "external",
+                ),
               },
               configHash,
-              gitCommit
+              gitCommit,
             );
           } catch (error) {
             if (opts.verbose) {
@@ -758,7 +814,9 @@ export async function validateLinks(
 
       // Count freshness statistics
       if (opts.checkContentFreshness) {
-        const staleLinks = brokenLinks.filter((bl) => bl.reason === 'content-stale').length;
+        const staleLinks = brokenLinks.filter(
+          (bl) => bl.reason === "content-stale",
+        ).length;
         const freshExternalLinks = externalLinkCount - staleLinks;
 
         result.staleLinks = (result.staleLinks ?? 0) + staleLinks;
@@ -772,14 +830,16 @@ export async function validateLinks(
         if (brokenLinks.length > 0) {
           // Count auth-required links
           const authRequiredCount = brokenLinks.filter(
-            (bl) => bl.reason === 'auth-required'
+            (bl) => bl.reason === "auth-required",
           ).length;
           const authenticatedCount = brokenLinks.filter(
-            (bl) => bl.authInfo?.authAttempted && bl.authInfo.authSucceeded
+            (bl) => bl.authInfo?.authAttempted && bl.authInfo.authSucceeded,
           ).length;
 
-          result.authRequiredLinks = (result.authRequiredLinks ?? 0) + authRequiredCount;
-          result.authenticatedLinks = (result.authenticatedLinks ?? 0) + authenticatedCount;
+          result.authRequiredLinks =
+            (result.authRequiredLinks ?? 0) + authRequiredCount;
+          result.authenticatedLinks =
+            (result.authenticatedLinks ?? 0) + authenticatedCount;
         }
       }
 
@@ -787,13 +847,15 @@ export async function validateLinks(
         result.brokenLinks += brokenLinks.length;
 
         // Convert to extended broken links with additional context
-        const extendedBrokenLinks: ExtendedBrokenLink[] = brokenLinks.map((brokenLink) => ({
-          ...brokenLink,
-          type: brokenLink.link.type,
-          url: brokenLink.link.href,
-          line: brokenLink.link.line,
-          filePath: opts.includeContext ? filePath : undefined,
-        }));
+        const extendedBrokenLinks: ExtendedBrokenLink[] = brokenLinks.map(
+          (brokenLink) => ({
+            ...brokenLink,
+            type: brokenLink.link.type,
+            url: brokenLink.link.href,
+            line: brokenLink.link.line,
+            filePath: opts.includeContext ? filePath : undefined,
+          }),
+        );
 
         result.brokenLinksByFile[filePath] = extendedBrokenLinks;
 
@@ -847,7 +909,7 @@ export async function validateLinks(
       }
     } catch (error) {
       if (opts.verbose) {
-        console.error('Error checking circular references:', error);
+        console.error("Error checking circular references:", error);
       }
     }
   }
@@ -880,21 +942,21 @@ export async function validateLinks(
 export async function validateCommand(
   patterns: string[],
   cliOptions: ValidateCliOptions,
-  prompter?: FixPrompter
+  prompter?: FixPrompter,
 ): Promise<void> {
   // Default to current directory if no patterns provided
-  let finalPatterns = patterns.length === 0 ? ['.'] : patterns;
+  let finalPatterns = patterns.length === 0 ? ["."] : patterns;
 
   // Convert directories to glob patterns
   finalPatterns = finalPatterns.map((pattern) => {
     // Always normalize paths for cross-platform compatibility
-    const normalizedPattern = pattern.replace(/\\/g, '/');
+    const normalizedPattern = pattern.replace(/\\/g, "/");
 
     try {
       const stat = statSync(pattern);
       if (stat.isDirectory()) {
         // Use posix-style paths for glob patterns to ensure cross-platform compatibility
-        return posix.join(normalizedPattern, '**/*.md');
+        return posix.join(normalizedPattern, "**/*.md");
       }
       return normalizedPattern;
     } catch {
@@ -908,27 +970,27 @@ export async function validateCommand(
     ...cliOptions,
     linkTypes: cliOptions.linkTypes
       ? cliOptions.linkTypes
-          .split(',')
+          .split(",")
           .map((t) => t.trim())
           .filter((t): t is LinkType =>
             [
-              'internal',
-              'external',
-              'anchor',
-              'image',
-              'reference',
-              'claude-import',
-              'wikilink',
-              'obsidian-transclusion',
-            ].includes(t)
+              "internal",
+              "external",
+              "anchor",
+              "image",
+              "reference",
+              "claude-import",
+              "wikilink",
+              "obsidian-transclusion",
+            ].includes(t),
           )
       : [
-          'internal',
-          'external',
-          'anchor',
-          'image',
-          'reference',
-          'claude-import',
+          "internal",
+          "external",
+          "anchor",
+          "image",
+          "reference",
+          "claude-import",
           ...(cliOptions.obsidian ? OBSIDIAN_LINK_TYPES : []),
         ],
   };
@@ -953,7 +1015,7 @@ export async function validateCommand(
         const knownFiles = await scanKnownFiles(finalPatterns);
         for (const fix of planLinkFixes(result, knownFiles)) {
           console.error(
-            `Did you mean one of: ${fix.suggestions.map((sg) => sg.replacementHref).join(', ')} for ${fix.brokenHref} (${fix.sourceFile}:${String(fix.line)})`
+            `Did you mean one of: ${fix.suggestions.map((sg) => sg.replacementHref).join(", ")} for ${fix.brokenHref} (${fix.sourceFile}:${String(fix.line)})`,
           );
         }
       }
@@ -965,14 +1027,16 @@ export async function validateCommand(
       console.log(`\n🔍 Git Integration`);
       if (result.gitInfo.baseRef) {
         console.log(
-          `Changed since ${result.gitInfo.baseRef}: ${String(result.gitInfo.changedFiles)} files`
+          `Changed since ${result.gitInfo.baseRef}: ${String(result.gitInfo.changedFiles)} files`,
         );
       } else {
-        console.log(`Staged files: ${String(result.gitInfo.changedFiles)} files`);
+        console.log(
+          `Staged files: ${String(result.gitInfo.changedFiles)} files`,
+        );
       }
       if (result.gitInfo.cachedFiles > 0) {
         console.log(
-          `Cache hits: ${String(result.gitInfo.cachedFiles)} files (${String(result.gitInfo.cacheHitRate)}% hit rate)`
+          `Cache hits: ${String(result.gitInfo.cachedFiles)} files (${String(result.gitInfo.cacheHitRate)}% hit rate)`,
         );
       }
       console.log();
@@ -988,9 +1052,9 @@ export async function validateCommand(
       const savedTime =
         result.gitInfo.cacheHitRate > 0
           ? ` (${String(Math.round(result.processingTime * (result.gitInfo.cacheHitRate / 100)))}ms saved by cache)`
-          : '';
+          : "";
       console.log(
-        `Cache performance: ${String(result.gitInfo.cacheHitRate)}% hit rate${savedTime}`
+        `Cache performance: ${String(result.gitInfo.cacheHitRate)}% hit rate${savedTime}`,
       );
     }
     console.log();
@@ -1014,10 +1078,14 @@ export async function validateCommand(
       const realBrokenCount = result.brokenLinks - authRequiredCount;
 
       if (authRequiredCount > 0) {
-        console.log(`🔒 Authentication-protected links: ${String(authRequiredCount)}`);
+        console.log(
+          `🔒 Authentication-protected links: ${String(authRequiredCount)}`,
+        );
       }
       if (authenticatedCount > 0) {
-        console.log(`✅ Successfully authenticated links: ${String(authenticatedCount)}`);
+        console.log(
+          `✅ Successfully authenticated links: ${String(authenticatedCount)}`,
+        );
       }
       if (realBrokenCount > 0) {
         console.log(`❌ Truly broken links: ${String(realBrokenCount)}`);
@@ -1026,25 +1094,34 @@ export async function validateCommand(
 
     console.log(`Processing time: ${String(result.processingTime)}ms\n`);
 
-    if (result.frontmatterViolations.length > 0 || result.formatViolations.length > 0) {
+    if (
+      result.frontmatterViolations.length > 0 ||
+      result.formatViolations.length > 0
+    ) {
       // Standards violations fail the run exactly like broken links, including when no links
       // are broken (the clean-links early return below would otherwise swallow this)
       process.exitCode = 1;
     }
 
     if (result.frontmatterViolations.length > 0) {
-      console.log(`📋 Frontmatter Violations (${String(result.frontmatterViolations.length)}):`);
+      console.log(
+        `📋 Frontmatter Violations (${String(result.frontmatterViolations.length)}):`,
+      );
       for (const violation of result.frontmatterViolations) {
-        console.log(`  ${violation.file}: missing ${violation.missingFields.join(', ')}`);
+        console.log(
+          `  ${violation.file}: missing ${violation.missingFields.join(", ")}`,
+        );
       }
       console.log();
     }
 
     if (result.formatViolations.length > 0) {
-      console.log(`📐 Link Format Violations (${String(result.formatViolations.length)}):`);
+      console.log(
+        `📐 Link Format Violations (${String(result.formatViolations.length)}):`,
+      );
       for (const violation of result.formatViolations) {
         console.log(
-          `  ${violation.file}:${String(violation.line)} ${violation.href} (expected ${violation.expected})`
+          `  ${violation.file}:${String(violation.line)} ${violation.href} (expected ${violation.expected})`,
         );
       }
       console.log();
@@ -1060,7 +1137,9 @@ export async function validateCommand(
 
       if (cliOptions.explain) {
         const explainTarget = resolve(cliOptions.explain);
-        const entry = result.fileErrors.find((fileError) => fileError.file === explainTarget);
+        const entry = result.fileErrors.find(
+          (fileError) => fileError.file === explainTarget,
+        );
         if (entry) {
           console.log(`\n🔍 Parse failure stack for ${entry.file}:`);
           console.log(entry.stack ?? `${entry.error} (no stack recorded)`);
@@ -1070,7 +1149,9 @@ export async function validateCommand(
       }
       console.log();
     } else if (cliOptions.explain) {
-      console.log(`No parse failure recorded for ${resolve(cliOptions.explain)}\n`);
+      console.log(
+        `No parse failure recorded for ${resolve(cliOptions.explain)}\n`,
+      );
     }
 
     if (result.hasCircularReferences) {
@@ -1090,24 +1171,36 @@ export async function validateCommand(
 
     console.log(`🔗 Broken Links Found:`);
 
-    if (options.groupBy === 'type') {
+    if (options.groupBy === "type") {
       // Group by link type
-      for (const [linkType, brokenLinks] of Object.entries(result.brokenLinksByType)) {
+      for (const [linkType, brokenLinks] of Object.entries(
+        result.brokenLinksByType,
+      )) {
         if (brokenLinks.length > 0) {
-          console.log(`\n  ${linkType.toUpperCase()} (${String(brokenLinks.length)}):`);
+          console.log(
+            `\n  ${linkType.toUpperCase()} (${String(brokenLinks.length)}):`,
+          );
           for (const brokenLink of brokenLinks) {
             const context =
-              options.includeContext && brokenLink.line ? ` (line ${String(brokenLink.line)})` : '';
-            const file = brokenLink.filePath ? ` in ${brokenLink.filePath}` : '';
-            const freshness = brokenLink.reason === 'content-stale' ? ' [STALE]' : '';
-            const authIndicator = brokenLink.reason === 'auth-required' ? ' 🔒' : '';
-            console.log(`    ❌ ${brokenLink.url}${context}${file}${freshness}${authIndicator}`);
+              options.includeContext && brokenLink.line
+                ? ` (line ${String(brokenLink.line)})`
+                : "";
+            const file = brokenLink.filePath
+              ? ` in ${brokenLink.filePath}`
+              : "";
+            const freshness =
+              brokenLink.reason === "content-stale" ? " [STALE]" : "";
+            const authIndicator =
+              brokenLink.reason === "auth-required" ? " 🔒" : "";
+            console.log(
+              `    ❌ ${brokenLink.url}${context}${file}${freshness}${authIndicator}`,
+            );
             if (options.verbose) {
               console.log(`       Reason: ${brokenLink.reason}`);
             }
             if (
               brokenLink.freshnessInfo &&
-              (options.verbose || brokenLink.reason === 'content-stale')
+              (options.verbose || brokenLink.reason === "content-stale")
             ) {
               const info = brokenLink.freshnessInfo;
               if (info.warning) {
@@ -1117,13 +1210,20 @@ export async function validateCommand(
                 console.log(`       Suggestion: ${info.suggestion}`);
               }
               if (info.lastModified && options.verbose) {
-                console.log(`       Last Modified: ${info.lastModified.toDateString()}`);
+                console.log(
+                  `       Last Modified: ${info.lastModified.toDateString()}`,
+                );
               }
               if (info.stalePatterns.length > 0 && options.verbose) {
-                console.log(`       Detected patterns: ${info.stalePatterns.join(', ')}`);
+                console.log(
+                  `       Detected patterns: ${info.stalePatterns.join(", ")}`,
+                );
               }
             }
-            if (brokenLink.authInfo && (options.verbose || brokenLink.reason === 'auth-required')) {
+            if (
+              brokenLink.authInfo &&
+              (options.verbose || brokenLink.reason === "auth-required")
+            ) {
               const info = brokenLink.authInfo;
               if (info.warning) {
                 console.log(`       Auth: ${info.warning}`);
@@ -1140,22 +1240,30 @@ export async function validateCommand(
       }
     } else {
       // Group by file
-      for (const [filePath, brokenLinks] of Object.entries(result.brokenLinksByFile)) {
-        console.log(`\n  📄 ${filePath} (${String(brokenLinks.length)} broken):`);
+      for (const [filePath, brokenLinks] of Object.entries(
+        result.brokenLinksByFile,
+      )) {
+        console.log(
+          `\n  📄 ${filePath} (${String(brokenLinks.length)} broken):`,
+        );
         for (const brokenLink of brokenLinks) {
           const context =
-            options.includeContext && brokenLink.line ? ` (line ${String(brokenLink.line)})` : '';
-          const freshness = brokenLink.reason === 'content-stale' ? ' [STALE]' : '';
-          const authIndicator = brokenLink.reason === 'auth-required' ? ' 🔒' : '';
+            options.includeContext && brokenLink.line
+              ? ` (line ${String(brokenLink.line)})`
+              : "";
+          const freshness =
+            brokenLink.reason === "content-stale" ? " [STALE]" : "";
+          const authIndicator =
+            brokenLink.reason === "auth-required" ? " 🔒" : "";
           console.log(
-            `    ❌ [${brokenLink.type}] ${brokenLink.url}${context}${freshness}${authIndicator}`
+            `    ❌ [${brokenLink.type}] ${brokenLink.url}${context}${freshness}${authIndicator}`,
           );
           if (options.verbose) {
             console.log(`       Reason: ${brokenLink.reason}`);
           }
           if (
             brokenLink.freshnessInfo &&
-            (options.verbose || brokenLink.reason === 'content-stale')
+            (options.verbose || brokenLink.reason === "content-stale")
           ) {
             const info = brokenLink.freshnessInfo;
             if (info.warning) {
@@ -1165,13 +1273,20 @@ export async function validateCommand(
               console.log(`       Suggestion: ${info.suggestion}`);
             }
             if (info.lastModified && options.verbose) {
-              console.log(`       Last Modified: ${info.lastModified.toDateString()}`);
+              console.log(
+                `       Last Modified: ${info.lastModified.toDateString()}`,
+              );
             }
             if (info.stalePatterns.length > 0 && options.verbose) {
-              console.log(`       Detected patterns: ${info.stalePatterns.join(', ')}`);
+              console.log(
+                `       Detected patterns: ${info.stalePatterns.join(", ")}`,
+              );
             }
           }
-          if (brokenLink.authInfo && (options.verbose || brokenLink.reason === 'auth-required')) {
+          if (
+            brokenLink.authInfo &&
+            (options.verbose || brokenLink.reason === "auth-required")
+          ) {
             const info = brokenLink.authInfo;
             if (info.warning) {
               console.log(`       Auth: ${info.warning}`);
@@ -1193,11 +1308,15 @@ export async function validateCommand(
       const knownFiles = await scanKnownFiles(finalPatterns);
       const fixes = planLinkFixes(result, knownFiles);
       if (fixes.length === 0) {
-        console.log('\n🔧 No fix suggestions available for the broken links found');
+        console.log(
+          "\n🔧 No fix suggestions available for the broken links found",
+        );
       } else if (prompter || process.stdout.isTTY) {
         let applied = 0;
         for (const fix of fixes) {
-          const choice = prompter ? await prompter(fix) : await promptFixChoice(fix);
+          const choice = prompter
+            ? await prompter(fix)
+            : await promptFixChoice(fix);
           if (choice === undefined) {
             continue;
           }
@@ -1206,11 +1325,17 @@ export async function validateCommand(
         }
         console.log(`\n🔧 Applied ${String(applied)} fix(es)`);
       } else {
-        console.log('\n🔧 Suggested fixes (rerun on a terminal, or use the API, to apply):');
+        console.log(
+          "\n🔧 Suggested fixes (rerun on a terminal, or use the API, to apply):",
+        );
         for (const fix of fixes) {
-          console.log(`  ${fix.sourceFile}:${String(fix.line)} ${fix.brokenHref}`);
+          console.log(
+            `  ${fix.sourceFile}:${String(fix.line)} ${fix.brokenHref}`,
+          );
           for (const suggestion of fix.suggestions) {
-            console.log(`    Did you mean ${suggestion.replacementHref} (${suggestion.reason})`);
+            console.log(
+              `    Did you mean ${suggestion.replacementHref} (${suggestion.reason})`,
+            );
           }
         }
       }
@@ -1221,7 +1346,7 @@ export async function validateCommand(
       process.exitCode = 1;
     }
   } catch (error) {
-    console.error('Validation failed:', error);
+    console.error("Validation failed:", error);
     process.exitCode = 1;
   }
 }

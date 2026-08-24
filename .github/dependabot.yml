@@ -1,66 +1,66 @@
 version: 2
 updates:
   # Enable version updates for npm dependencies
-  - package-ecosystem: 'npm'
-    directory: '/'
+  - package-ecosystem: "npm"
+    directory: "/"
     schedule:
-      interval: 'weekly'
-      day: 'monday'
-      time: '09:00'
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
     open-pull-requests-limit: 10
     reviewers:
-      - 'ExaDev'
+      - "ExaDev"
     assignees:
-      - 'ExaDev'
+      - "ExaDev"
     commit-message:
       # "deps"/"deps-dev" are not conventional-commit types; commitlint's type-enum (derived from .releaserc.json) would reject every Dependabot commit otherwise.
-      prefix: 'chore'
-      prefix-development: 'chore'
-      include: 'scope'
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
     groups:
       # Group patch updates together
       patch-updates:
         patterns:
-          - '*'
+          - "*"
         update-types:
-          - 'patch'
+          - "patch"
       # Group minor TypeScript ecosystem updates
       typescript-ecosystem:
         patterns:
-          - 'typescript*'
-          - '@typescript-eslint/*'
-          - '@types/*'
+          - "typescript*"
+          - "@typescript-eslint/*"
+          - "@types/*"
         update-types:
-          - 'minor'
-          - 'patch'
+          - "minor"
+          - "patch"
       # Group testing dependencies
       testing-dependencies:
         patterns:
-          - 'vitest*'
-          - '@vitest/*'
-          - 'eslint*'
-          - 'prettier*'
+          - "vitest*"
+          - "@vitest/*"
+          - "eslint*"
+          - "prettier*"
         update-types:
-          - 'minor'
-          - 'patch'
+          - "minor"
+          - "patch"
 
   # Enable version updates for GitHub Actions
-  - package-ecosystem: 'github-actions'
-    directory: '/'
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
-      interval: 'weekly'
-      day: 'monday'
-      time: '09:00'
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
     open-pull-requests-limit: 5
     reviewers:
-      - 'ExaDev'
+      - "ExaDev"
     assignees:
-      - 'ExaDev'
+      - "ExaDev"
     commit-message:
-      prefix: 'ci'
-      include: 'scope'
+      prefix: "ci"
+      include: "scope"
     groups:
       # Group all GitHub Actions updates together
       github-actions:
         patterns:
-          - '*'
+          - "*"

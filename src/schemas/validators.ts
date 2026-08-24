@@ -5,7 +5,7 @@
  * input/output validation with structured error reporting.
  */
 
-import { methodSchemas, type MethodName } from './index.js';
+import { methodSchemas, type MethodName } from "./index.js";
 
 export interface ValidationResult {
   valid: boolean;
@@ -19,7 +19,10 @@ function isMethodName(name: string): name is MethodName {
 }
 
 /** Validate input for a specific method */
-export function validateInput(methodName: string, data: unknown): ValidationResult {
+export function validateInput(
+  methodName: string,
+  data: unknown,
+): ValidationResult {
   if (!isMethodName(methodName)) {
     return { valid: false, errors: [`Unknown method: ${methodName}`] };
   }
@@ -31,12 +34,17 @@ export function validateInput(methodName: string, data: unknown): ValidationResu
 
   return {
     valid: false,
-    errors: result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`),
+    errors: result.error.issues.map(
+      (issue) => `${issue.path.join(".")}: ${issue.message}`,
+    ),
   };
 }
 
 /** Validate output for a specific method */
-export function validateOutput(methodName: string, data: unknown): ValidationResult {
+export function validateOutput(
+  methodName: string,
+  data: unknown,
+): ValidationResult {
   if (!isMethodName(methodName)) {
     return { valid: false, errors: [`Unknown method: ${methodName}`] };
   }
@@ -48,6 +56,8 @@ export function validateOutput(methodName: string, data: unknown): ValidationRes
 
   return {
     valid: false,
-    errors: result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`),
+    errors: result.error.issues.map(
+      (issue) => `${issue.path.join(".")}: ${issue.message}`,
+    ),
   };
 }

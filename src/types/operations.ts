@@ -44,7 +44,7 @@ export interface MoveOperationOptions extends OperationOptions {
  */
 export interface SplitOperationOptions extends OperationOptions {
   /** Strategy for splitting the file */
-  strategy: 'headers' | 'size' | 'manual' | 'lines';
+  strategy: "headers" | "size" | "manual" | "lines";
   /** Output directory for split files */
   outputDir: string;
   /** Maximum file size in KB (for size strategy) */
@@ -67,7 +67,7 @@ export interface JoinOperationOptions extends OperationOptions {
   /** Output file path */
   output: string | undefined;
   /** Strategy for ordering joined content */
-  orderStrategy?: 'alphabetical' | 'manual' | 'dependency' | 'chronological';
+  orderStrategy?: "alphabetical" | "manual" | "dependency" | "chronological";
 }
 
 /**
@@ -80,7 +80,7 @@ export interface JoinOperationOptions extends OperationOptions {
  */
 export interface MergeOperationOptions extends OperationOptions {
   /** Strategy for merging content */
-  strategy: 'append' | 'prepend' | 'interactive';
+  strategy: "append" | "prepend" | "interactive";
   /** Separator between merged sections */
   separator?: string;
 }
@@ -95,11 +95,11 @@ export interface MergeOperationOptions extends OperationOptions {
  */
 export interface ConvertOperationOptions extends OperationOptions {
   /** Target path resolution type */
-  pathResolution?: 'absolute' | 'relative';
+  pathResolution?: "absolute" | "relative";
   /** Base path for relative path calculations */
   basePath?: string;
   /** Target link style format */
-  linkStyle?: 'markdown' | 'claude' | 'combined' | 'wikilink';
+  linkStyle?: "markdown" | "claude" | "combined" | "wikilink";
   /** Whether to process files recursively */
   recursive?: boolean;
 }
@@ -124,7 +124,7 @@ export interface BarrelOperationOptions extends OperationOptions {
   /** Metadata filtering criteria */
   filter?: Record<string, string>;
   /** Grouping strategy for results */
-  groupBy?: 'directory' | 'metadata' | 'type' | 'none';
+  groupBy?: "directory" | "metadata" | "type" | "none";
   /** Path to custom template file */
   template?: string;
   /** Maximum depth to traverse subdirectories */
@@ -204,7 +204,12 @@ export interface OperationResult {
  */
 export interface OperationChange {
   /** Type of change */
-  type: 'file-moved' | 'file-created' | 'file-deleted' | 'link-updated' | 'content-modified';
+  type:
+    | "file-moved"
+    | "file-created"
+    | "file-deleted"
+    | "link-updated"
+    | "content-modified";
   /** File path affected */
   filePath: string;
   /** Old value (for updates) */

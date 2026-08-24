@@ -1,10 +1,10 @@
-import { readFile, readdir, stat } from 'node:fs/promises';
-import { dirname, relative, resolve } from 'node:path';
-import { LinkParser } from '../core/link-parser.js';
-import { resolveWikilinks } from '../core/obsidian-vault.js';
-import { LinkValidator } from '../core/link-validator.js';
-import type { ParsedMarkdownFile } from '../types/links.js';
-import { PathUtils } from '../utils/path-utils.js';
+import { readFile, readdir, stat } from "node:fs/promises";
+import { dirname, relative, resolve } from "node:path";
+import { LinkParser } from "../core/link-parser.js";
+import { resolveWikilinks } from "../core/obsidian-vault.js";
+import { LinkValidator } from "../core/link-validator.js";
+import type { ParsedMarkdownFile } from "../types/links.js";
+import { PathUtils } from "../utils/path-utils.js";
 
 /**
  * Counts words in markdown content, excluding fenced code blocks and inline code spans.
@@ -24,10 +24,12 @@ import { PathUtils } from '../utils/path-utils.js';
 export function countWords(content: string): number {
   const withoutFences = content.replace(
     /(^[ \t]{0,3})(`{3,}|~{3,})[^\n]*\n[\s\S]*?\n[ \t]*\2[ \t]*$/gm,
-    ''
+    "",
   );
-  const withoutCodeSpans = withoutFences.replace(/(`+)[\s\S]*?\1/g, ' ');
-  const tokens = withoutCodeSpans.split(/\s+/).filter((token) => token.length > 0);
+  const withoutCodeSpans = withoutFences.replace(/(`+)[\s\S]*?\1/g, " ");
+  const tokens = withoutCodeSpans
+    .split(/\s+/)
+    .filter((token) => token.length > 0);
   return tokens.length;
 }
 
@@ -93,13 +95,24 @@ export interface TreeStatistics {
  *
  * @returns Aggregate statistics with a stable field order
  */
-export function computeTreeStatistics(files: ScannedMarkdownFile[]): TreeStatistics {
+export function computeTreeStatistics(
+  files: ScannedMarkdownFile[],
+): TreeStatistics {
   return {
     totalFiles: files.length,
     totalWords: files.reduce((sum, file) => sum + file.wordCount, 0),
-    totalInternalLinks: files.reduce((sum, file) => sum + file.internalLinkCount, 0),
-    totalExternalLinks: files.reduce((sum, file) => sum + file.externalLinkCount, 0),
-    brokenInternalLinks: files.reduce((sum, file) => sum + file.brokenInternalLinkCount, 0),
+    totalInternalLinks: files.reduce(
+      (sum, file) => sum + file.internalLinkCount,
+      0,
+    ),
+    totalExternalLinks: files.reduce(
+      (sum, file) => sum + file.externalLinkCount,
+      0,
+    ),
+    brokenInternalLinks: files.reduce(
+      (sum, file) => sum + file.brokenInternalLinkCount,
+      0,
+    ),
     orphanedFiles: files.filter((file) => file.inboundLinkCount === 0).length,
   };
 }
@@ -148,7 +161,11 @@ export interface TreeDirectoryNode {
 }
 
 /** Directory names never included in a markdown tree scan */
-const SKIPPED_DIRECTORIES: ReadonlySet<string> = new Set(['node_modules', '.git', 'dist']);
+const SKIPPED_DIRECTORIES: ReadonlySet<string> = new Set([
+  "node_modules",
+  ".git",
+  "dist",
+]);
 
 /** Intermediate mutable directory used while grouping scanned files by path */
 interface MutableDirectory {
@@ -169,7 +186,7 @@ function toDirectoryNode(
   directory: MutableDirectory,
   path: string,
   depth: number,
-  maxDepth: number | undefined
+  maxDepth: number | undefined,
 ): TreeDirectoryNode {
   const childDepth = depth + 1;
   const childrenAllowed = maxDepth === undefined || childDepth <= maxDepth;
@@ -192,10 +209,10 @@ function toDirectoryNode(
       .map((child) =>
         toDirectoryNode(
           child,
-          path === '' ? child.name : `${path}/${child.name}`,
+          path === "" ? child.name : `${path}/${child.name}`,
           childDepth,
-          maxDepth
-        )
+          maxDepth,
+        ),
       ),
     files: Array.from(directory.files.entries())
       .sort(([nameA], [nameB]) => compareNames(nameA, nameB))
@@ -228,14 +245,21 @@ function toDirectoryNode(
  *
  * @throws Error if a scanned file carries an empty relative path
  */
-export function buildFileTree(files: ScannedMarkdownFile[], maxDepth?: number): TreeDirectoryNode {
-  const root: MutableDirectory = { name: '', directories: new Map(), files: new Map() };
+export function buildFileTree(
+  files: ScannedMarkdownFile[],
+  maxDepth?: number,
+): TreeDirectoryNode {
+  const root: MutableDirectory = {
+    name: "",
+    directories: new Map(),
+    files: new Map(),
+  };
 
   for (const file of files) {
-    const segments = file.relativePath.split('/');
+    const segments = file.relativePath.split("/");
     const fileName = segments.pop();
 
-    if (fileName === undefined || fileName === '') {
+    if (fileName === undefined || fileName === "") {
       throw new Error(`Scanned file has an empty relative path: ${file.path}`);
     }
 
@@ -256,13 +280,13 @@ export function buildFileTree(files: ScannedMarkdownFile[], maxDepth?: number): 
     current.files.set(fileName, file);
   }
 
-  return toDirectoryNode(root, '', 0, maxDepth);
+  return toDirectoryNode(root, "", 0, maxDepth);
 }
 
 /** Render a file annotation in the form "(8 words, 2 links)" with singular forms for counts of one */
 function formatAnnotation(file: TreeFileNode): string {
-  const words = `${String(file.wordCount)} ${file.wordCount === 1 ? 'word' : 'words'}`;
-  const links = `${String(file.linkCount)} ${file.linkCount === 1 ? 'link' : 'links'}`;
+  const words = `${String(file.wordCount)} ${file.wordCount === 1 ? "word" : "words"}`;
+  const links = `${String(file.linkCount)} ${file.linkCount === 1 ? "link" : "links"}`;
   return ` (${words}, ${links})`;
 }
 
@@ -271,21 +295,25 @@ function formatAnnotation(file: TreeFileNode): string {
  * unlinked
  */
 function formatWarningMarkers(file: TreeFileNode): string {
-  let markers = '';
+  let markers = "";
   if (file.brokenInternalLinkCount > 0) {
     markers += ` [${String(file.brokenInternalLinkCount)} broken]`;
   }
   if (file.orphaned) {
-    markers += ' [orphan]';
+    markers += " [orphan]";
   }
   return markers;
 }
 
 /** Append one tree entry line and recurse into children, using classic tree-drawing prefixes */
-function appendDirectoryLines(directory: TreeDirectoryNode, lines: string[], prefix: string): void {
+function appendDirectoryLines(
+  directory: TreeDirectoryNode,
+  lines: string[],
+  prefix: string,
+): void {
   const entries: { label: string; child?: TreeDirectoryNode }[] = [
     ...directory.directories.map((child) => ({
-      label: `${child.name}/${child.truncated ? ' ...' : ''}`,
+      label: `${child.name}/${child.truncated ? " ..." : ""}`,
       child,
     })),
     ...directory.files.map((file) => ({
@@ -295,11 +323,15 @@ function appendDirectoryLines(directory: TreeDirectoryNode, lines: string[], pre
 
   entries.forEach((entry, index) => {
     const isLast = index === entries.length - 1;
-    const brancher = isLast ? '└── ' : '├── ';
+    const brancher = isLast ? "└── " : "├── ";
     lines.push(`${prefix}${brancher}${entry.label}`);
 
     if (entry.child !== undefined && !entry.child.truncated) {
-      appendDirectoryLines(entry.child, lines, `${prefix}${isLast ? '    ' : '│   '}`);
+      appendDirectoryLines(
+        entry.child,
+        lines,
+        `${prefix}${isLast ? "    " : "│   "}`,
+      );
     }
   });
 }
@@ -318,10 +350,13 @@ function appendDirectoryLines(directory: TreeDirectoryNode, lines: string[], pre
  *
  * @returns The full rendering, one entry per line, without a trailing newline
  */
-export function renderTreeAscii(root: TreeDirectoryNode, rootLabel: string): string {
+export function renderTreeAscii(
+  root: TreeDirectoryNode,
+  rootLabel: string,
+): string {
   const lines: string[] = [rootLabel];
-  appendDirectoryLines(root, lines, '');
-  return lines.join('\n');
+  appendDirectoryLines(root, lines, "");
+  return lines.join("\n");
 }
 
 /** Options controlling scanner progress output */
@@ -331,7 +366,10 @@ export interface ScanOptions {
 }
 
 /** Recursively collect markdown file paths under a directory, skipping the excluded directories */
-async function collectMarkdownFiles(dirPath: string, options: ScanOptions): Promise<string[]> {
+async function collectMarkdownFiles(
+  dirPath: string,
+  options: ScanOptions,
+): Promise<string[]> {
   const collected: string[] = [];
 
   if (options.verbose) {
@@ -378,16 +416,20 @@ async function collectMarkdownFiles(dirPath: string, options: ScanOptions): Prom
  */
 export async function scanMarkdownTree(
   targetPath: string,
-  options: ScanOptions = {}
+  options: ScanOptions = {},
 ): Promise<ScannedMarkdownFile[]> {
   const absoluteTarget = resolve(targetPath);
   const targetStat = await stat(absoluteTarget);
 
   if (!targetStat.isDirectory() && !targetStat.isFile()) {
-    throw new Error(`Target path is neither a directory nor a file: ${absoluteTarget}`);
+    throw new Error(
+      `Target path is neither a directory nor a file: ${absoluteTarget}`,
+    );
   }
 
-  const scanRoot = targetStat.isFile() ? dirname(absoluteTarget) : absoluteTarget;
+  const scanRoot = targetStat.isFile()
+    ? dirname(absoluteTarget)
+    : absoluteTarget;
   const filePaths = targetStat.isFile()
     ? [absoluteTarget]
     : await collectMarkdownFiles(absoluteTarget, options);
@@ -408,9 +450,11 @@ export async function scanMarkdownTree(
 
   const scannedByPath = new Map<string, ScannedMarkdownFile>();
   for (const parsed of parsedFiles) {
-    const content = await readFile(parsed.filePath, 'utf-8');
+    const content = await readFile(parsed.filePath, "utf-8");
 
-    const internalLinks = parsed.links.filter((link) => link.type === 'internal');
+    const internalLinks = parsed.links.filter(
+      (link) => link.type === "internal",
+    );
     let brokenInternalLinkCount = 0;
     for (const link of internalLinks) {
       const broken = await validator.validateLink(link, parsed.filePath);
@@ -421,11 +465,12 @@ export async function scanMarkdownTree(
 
     scannedByPath.set(parsed.filePath, {
       path: parsed.filePath,
-      relativePath: relative(scanRoot, parsed.filePath).split('\\').join('/'),
+      relativePath: relative(scanRoot, parsed.filePath).split("\\").join("/"),
       wordCount: countWords(content),
       linkCount: parsed.links.length,
       internalLinkCount: internalLinks.length,
-      externalLinkCount: parsed.links.filter((link) => link.type === 'external').length,
+      externalLinkCount: parsed.links.filter((link) => link.type === "external")
+        .length,
       brokenInternalLinkCount,
       inboundLinkCount: 0,
     });
@@ -445,12 +490,16 @@ export async function scanMarkdownTree(
   }
 
   return Array.from(scannedByPath.values()).sort((a, b) =>
-    a.relativePath < b.relativePath ? -1 : a.relativePath > b.relativePath ? 1 : 0
+    a.relativePath < b.relativePath
+      ? -1
+      : a.relativePath > b.relativePath
+        ? 1
+        : 0,
   );
 }
 
 /** Output formats supported by the tree command */
-export type TreeFormat = 'ascii' | 'json';
+export type TreeFormat = "ascii" | "json";
 
 /**
  * CLI-specific options for the tree command.
@@ -470,7 +519,7 @@ export interface TreeCliOptions {
 
 /** Narrow an unvalidated CLI format string to a TreeFormat */
 function isTreeFormat(value: string): value is TreeFormat {
-  return value === 'ascii' || value === 'json';
+  return value === "ascii" || value === "json";
 }
 
 /**
@@ -493,10 +542,10 @@ function isTreeFormat(value: string): value is TreeFormat {
  */
 export async function treeCommand(
   targetPath: string | undefined,
-  options: TreeCliOptions
+  options: TreeCliOptions,
 ): Promise<void> {
-  const target = targetPath ?? '.';
-  const format = options.json ? 'json' : (options.format ?? 'ascii');
+  const target = targetPath ?? ".";
+  const format = options.json ? "json" : (options.format ?? "ascii");
 
   try {
     if (!isTreeFormat(format)) {
@@ -507,14 +556,16 @@ export async function treeCommand(
       options.maxDepth !== undefined &&
       (!Number.isInteger(options.maxDepth) || options.maxDepth < 1)
     ) {
-      throw new Error(`Invalid max depth: ${String(options.maxDepth)}. Must be a positive integer`);
+      throw new Error(
+        `Invalid max depth: ${String(options.maxDepth)}. Must be a positive integer`,
+      );
     }
 
     if (options.verbose) {
       console.log(`Analysing markdown tree: ${target}`);
       if (options.maxDepth !== undefined) {
         console.log(
-          `Rendering depth limit: ${String(options.maxDepth)} (statistics cover the full scan)`
+          `Rendering depth limit: ${String(options.maxDepth)} (statistics cover the full scan)`,
         );
       }
     }
@@ -525,27 +576,34 @@ export async function treeCommand(
     const tree = buildFileTree(files, options.maxDepth);
     const statistics = computeTreeStatistics(files);
 
-    if (format === 'json') {
-      console.log(JSON.stringify({ root: rootPath, tree, statistics }, null, 2));
+    if (format === "json") {
+      console.log(
+        JSON.stringify({ root: rootPath, tree, statistics }, null, 2),
+      );
       return;
     }
 
-    for (const line of renderTreeAscii(tree, rootPath).split('\n')) {
+    for (const line of renderTreeAscii(tree, rootPath).split("\n")) {
       console.log(line);
     }
 
-    console.log('');
-    console.log('📊 Markdown Tree Statistics');
+    console.log("");
+    console.log("📊 Markdown Tree Statistics");
     console.log(`📁 Markdown files: ${String(statistics.totalFiles)}`);
     console.log(`📝 Total words: ${String(statistics.totalWords)}`);
     console.log(`🔗 Internal links: ${String(statistics.totalInternalLinks)}`);
     console.log(`🌐 External links: ${String(statistics.totalExternalLinks)}`);
-    console.log(`❌ Broken internal links: ${String(statistics.brokenInternalLinks)}`);
+    console.log(
+      `❌ Broken internal links: ${String(statistics.brokenInternalLinks)}`,
+    );
     console.log(`🔍 Orphaned files: ${String(statistics.orphanedFiles)}`);
-    console.log('');
-    console.log('✅ Tree analysis completed successfully');
+    console.log("");
+    console.log("✅ Tree analysis completed successfully");
   } catch (error) {
-    console.error('Tree analysis failed:', error instanceof Error ? error.message : String(error));
+    console.error(
+      "Tree analysis failed:",
+      error instanceof Error ? error.message : String(error),
+    );
     process.exit(1);
   }
 }

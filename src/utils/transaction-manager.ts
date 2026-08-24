@@ -1,5 +1,5 @@
-import type { OperationChange } from '../types/operations.js';
-import { FileUtils } from './file-utils.js';
+import type { OperationChange } from "../types/operations.js";
+import { FileUtils } from "./file-utils.js";
 
 /** Format an unknown caught value as a human-readable error message. */
 function errorMessage(error: unknown): string {
@@ -16,7 +16,12 @@ function errorMessage(error: unknown): string {
  */
 export interface TransactionStep {
   id: string;
-  type: 'file-move' | 'file-copy' | 'file-delete' | 'file-create' | 'content-update';
+  type:
+    | "file-move"
+    | "file-copy"
+    | "file-delete"
+    | "file-create"
+    | "content-update";
   description: string;
   execute: () => Promise<void>;
   rollback: () => Promise<void>;
@@ -88,18 +93,25 @@ export class TransactionManager {
   }
 
   /** Add a file move operation to the transaction */
-  addFileMove(sourcePath: string, destinationPath: string, description?: string): void {
+  addFileMove(
+    sourcePath: string,
+    destinationPath: string,
+    description?: string,
+  ): void {
     const stepId = `move-${String(this.steps.length)}`;
 
     this.steps.push({
       id: stepId,
-      type: 'file-move',
+      type: "file-move",
       description: description ?? `Move ${sourcePath} to ${destinationPath}`,
       completed: false,
 
       execute: async () => {
         // Create backup if enabled
-        if (this.options.createBackups && (await FileUtils.exists(sourcePath))) {
+        if (
+          this.options.createBackups &&
+          (await FileUtils.exists(sourcePath))
+        ) {
           const backupPath = await FileUtils.createBackup(sourcePath);
           this.backups.set(stepId, backupPath);
         }
@@ -131,13 +143,17 @@ export class TransactionManager {
   }
 
   /** Add a content update operation to the transaction */
-  addContentUpdate(filePath: string, newContent: string, description?: string): void {
+  addContentUpdate(
+    filePath: string,
+    newContent: string,
+    description?: string,
+  ): void {
     const stepId = `update-${String(this.steps.length)}`;
     let originalContent: string | null = null;
 
     this.steps.push({
       id: stepId,
-      type: 'content-update',
+      type: "content-update",
       description: description ?? `Update content of ${filePath}`,
       completed: false,
 
@@ -161,7 +177,9 @@ export class TransactionManager {
             await FileUtils.deleteFile(filePath);
           }
         } catch (error) {
-          console.warn(`Failed to rollback content update: ${errorMessage(error)}`);
+          console.warn(
+            `Failed to rollback content update: ${errorMessage(error)}`,
+          );
         }
       },
     });
@@ -173,7 +191,7 @@ export class TransactionManager {
 
     this.steps.push({
       id: stepId,
-      type: 'file-create',
+      type: "file-create",
       description: description ?? `Create file ${filePath}`,
       completed: false,
 
@@ -191,7 +209,9 @@ export class TransactionManager {
         try {
           await FileUtils.deleteFile(filePath);
         } catch (error) {
-          console.warn(`Failed to rollback file creation: ${errorMessage(error)}`);
+          console.warn(
+            `Failed to rollback file creation: ${errorMessage(error)}`,
+          );
         }
       },
     });
@@ -204,7 +224,7 @@ export class TransactionManager {
 
     this.steps.push({
       id: stepId,
-      type: 'file-delete',
+      type: "file-delete",
       description: description ?? `Delete file ${filePath}`,
       completed: false,
 
@@ -224,7 +244,9 @@ export class TransactionManager {
             });
           }
         } catch (error) {
-          console.warn(`Failed to rollback file deletion: ${errorMessage(error)}`);
+          console.warn(
+            `Failed to rollback file deletion: ${errorMessage(error)}`,
+          );
         }
       },
     });
@@ -278,7 +300,9 @@ export class TransactionManager {
               }
             } else {
               // Wait before retry (exponential backoff)
-              await new Promise((resolve) => setTimeout(resolve, 2 ** (retries - 1) * 1000));
+              await new Promise((resolve) =>
+                setTimeout(resolve, 2 ** (retries - 1) * 1000),
+              );
             }
           }
         }
@@ -318,7 +342,7 @@ export class TransactionManager {
         step.completed = false;
       } catch (error) {
         rollbackErrors.push(
-          `Failed to rollback step "${step.description}": ${errorMessage(error)}`
+          `Failed to rollback step "${step.description}": ${errorMessage(error)}`,
         );
       }
     }
@@ -326,7 +350,7 @@ export class TransactionManager {
     this.executedSteps = [];
 
     if (rollbackErrors.length > 0) {
-      console.warn('Rollback completed with warnings:', rollbackErrors);
+      console.warn("Rollback completed with warnings:", rollbackErrors);
     }
   }
 
@@ -355,30 +379,35 @@ export class TransactionManager {
       try {
         await FileUtils.deleteFile(backupPath);
       } catch (error) {
-        console.warn(`Failed to cleanup backup ${backupPath}: ${errorMessage(error)}`);
+        console.warn(
+          `Failed to cleanup backup ${backupPath}: ${errorMessage(error)}`,
+        );
       }
     }
     this.backups.clear();
   }
 
-  private mapStepTypeToChangeType(stepType: string): OperationChange['type'] {
+  private mapStepTypeToChangeType(stepType: string): OperationChange["type"] {
     switch (stepType) {
-      case 'file-move':
-        return 'file-moved';
-      case 'file-create':
-        return 'file-created';
-      case 'file-delete':
-        return 'file-deleted';
-      case 'content-update':
-        return 'content-modified';
+      case "file-move":
+        return "file-moved";
+      case "file-create":
+        return "file-created";
+      case "file-delete":
+        return "file-deleted";
+      case "content-update":
+        return "content-modified";
       default:
-        return 'content-modified';
+        return "content-modified";
     }
   }
 
   private extractFilePathFromDescription(description: string): string {
     // Simple extraction - could be enhanced with more sophisticated parsing
-    const match = /(?:Move|Update|Create|Delete)\s+(?:content of\s+)?([^\s]+)/.exec(description);
-    return match?.[1] ?? '';
+    const match =
+      /(?:Move|Update|Create|Delete)\s+(?:content of\s+)?([^\s]+)/.exec(
+        description,
+      );
+    return match?.[1] ?? "";
   }
 }

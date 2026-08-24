@@ -1,5 +1,5 @@
-import { promises as fs } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { promises as fs } from "node:fs";
+import { dirname, resolve } from "node:path";
 import {
   AlphabeticalJoinStrategy,
   ChronologicalJoinStrategy,
@@ -8,9 +8,12 @@ import {
   type JoinSection,
   type JoinStrategyOptions,
   ManualOrderJoinStrategy,
-} from '../strategies/join-strategies.js';
-import type { JoinOperationOptions, OperationResult } from '../types/operations.js';
-import { LinkParser } from './link-parser.js';
+} from "../strategies/join-strategies.js";
+import type {
+  JoinOperationOptions,
+  OperationResult,
+} from "../types/operations.js";
+import { LinkParser } from "./link-parser.js";
 
 /**
  * Combines multiple markdown files into a single file using configurable strategies.
@@ -87,7 +90,10 @@ export class ContentJoiner {
    *
    * @returns Promise resolving to operation result with success status and file changes
    */
-  async joinFiles(filePaths: string[], options: JoinOperationOptions): Promise<OperationResult> {
+  async joinFiles(
+    filePaths: string[],
+    options: JoinOperationOptions,
+  ): Promise<OperationResult> {
     const result: OperationResult = {
       success: false,
       modifiedFiles: [],
@@ -103,7 +109,7 @@ export class ContentJoiner {
       const sections = await this.prepareSections(filePaths, result);
 
       if (sections.length === 0) {
-        result.errors.push('No valid files to join');
+        result.errors.push("No valid files to join");
         return result;
       }
 
@@ -132,11 +138,11 @@ export class ContentJoiner {
         await fs.mkdir(dirname(outputPath), { recursive: true });
 
         // Write the joined file
-        await fs.writeFile(outputPath, finalContent, 'utf8');
+        await fs.writeFile(outputPath, finalContent, "utf8");
         result.createdFiles.push(outputPath);
 
         result.changes.push({
-          type: 'file-created',
+          type: "file-created",
           filePath: outputPath,
           newValue: finalContent,
         });
@@ -144,7 +150,7 @@ export class ContentJoiner {
         // In dry run, just record what would be created
         result.createdFiles.push(outputPath);
         result.changes.push({
-          type: 'file-created',
+          type: "file-created",
           filePath: outputPath,
           newValue: finalContent,
         });
@@ -159,7 +165,7 @@ export class ContentJoiner {
       return result;
     } catch (error) {
       result.errors.push(
-        `Failed to join files: ${error instanceof Error ? error.message : String(error)}`
+        `Failed to join files: ${error instanceof Error ? error.message : String(error)}`,
       );
       return result;
     }
@@ -167,7 +173,7 @@ export class ContentJoiner {
 
   private async prepareSections(
     filePaths: string[],
-    result: OperationResult
+    result: OperationResult,
   ): Promise<JoinSection[]> {
     const sections: JoinSection[] = [];
 
@@ -179,14 +185,15 @@ export class ContentJoiner {
         await fs.access(filePath);
 
         // Read file content
-        const content = await fs.readFile(filePath, 'utf8');
+        const content = await fs.readFile(filePath, "utf8");
 
         // Parse links to find dependencies
         const parsedFile = await this.linkParser.parseFile(filePath);
         const dependencies = parsedFile.dependencies;
 
         // Extract frontmatter
-        const { frontmatter, content: mainContent } = this.extractFrontmatter(content);
+        const { frontmatter, content: mainContent } =
+          this.extractFrontmatter(content);
 
         // Extract title
         const title = this.extractTitle(mainContent, frontmatter);
@@ -201,7 +208,7 @@ export class ContentJoiner {
         });
       } catch (error) {
         result.warnings.push(
-          `Failed to read file ${filePath}: ${error instanceof Error ? error.message : String(error)}`
+          `Failed to read file ${filePath}: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     }
@@ -209,7 +216,10 @@ export class ContentJoiner {
     return sections;
   }
 
-  private extractFrontmatter(content: string): { frontmatter?: string; content: string } {
+  private extractFrontmatter(content: string): {
+    frontmatter?: string;
+    content: string;
+  } {
     const frontmatterMatch = /^---\n(.*?)\n---\n/s.exec(content);
 
     if (frontmatterMatch) {
@@ -222,17 +232,20 @@ export class ContentJoiner {
     return { content };
   }
 
-  private extractTitle(content: string, frontmatter?: string): string | undefined {
+  private extractTitle(
+    content: string,
+    frontmatter?: string,
+  ): string | undefined {
     // Try frontmatter first
     if (frontmatter) {
       const titleMatch = /^title:\s*(.+)$/m.exec(frontmatter);
       if (titleMatch) {
-        return titleMatch[1].trim().replace(/['"]/g, '');
+        return titleMatch[1].trim().replace(/['"]/g, "");
       }
     }
 
     // Try first header
-    const lines = content.split('\n');
+    const lines = content.split("\n");
     for (const line of lines) {
       const headerMatch = /^#+\s+(.+)$/.exec(line);
       if (headerMatch) {
@@ -245,45 +258,48 @@ export class ContentJoiner {
 
   private createJoinStrategy(options: JoinOperationOptions) {
     const strategyOptions: JoinStrategyOptions = {
-      orderStrategy: options.orderStrategy ?? 'dependency',
+      orderStrategy: options.orderStrategy ?? "dependency",
       mergeFrontmatter: true,
       deduplicateLinks: true,
       resolveHeaderConflicts: false,
     };
 
     switch (options.orderStrategy) {
-      case 'alphabetical':
+      case "alphabetical":
         return new AlphabeticalJoinStrategy(strategyOptions);
-      case 'manual':
+      case "manual":
         return new ManualOrderJoinStrategy(strategyOptions);
-      case 'chronological':
+      case "chronological":
         return new ChronologicalJoinStrategy(strategyOptions);
       default:
         return new DependencyOrderJoinStrategy(strategyOptions);
     }
   }
 
-  private generateOutputPath(filePaths: string[], options: JoinOperationOptions): string {
+  private generateOutputPath(
+    filePaths: string[],
+    options: JoinOperationOptions,
+  ): string {
     if (options.output) {
       return resolve(options.output);
     }
 
     // Generate default output path based on input files
     const firstFile = filePaths[0];
-    const baseName = firstFile.replace(/\.[^.]+$/, '');
+    const baseName = firstFile.replace(/\.[^.]+$/, "");
     return `${baseName}-joined.md`;
   }
 
   private buildFinalContent(joinResult: JoinResult): string {
-    let content = '';
+    let content = "";
 
     // Add frontmatter if present
     if (joinResult.frontmatter) {
       content += joinResult.frontmatter;
-      if (!joinResult.frontmatter.endsWith('\n')) {
-        content += '\n';
+      if (!joinResult.frontmatter.endsWith("\n")) {
+        content += "\n";
       }
-      content += '\n';
+      content += "\n";
     }
 
     // Add main content

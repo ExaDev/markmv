@@ -1,9 +1,9 @@
-import { existsSync, statSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { glob } from 'glob';
-import { LinkConverter } from '../core/link-converter.js';
-import type { ConvertOperationOptions } from '../types/operations.js';
-import { PathUtils } from '../utils/path-utils.js';
+import { existsSync, statSync } from "node:fs";
+import { resolve } from "node:path";
+import { glob } from "glob";
+import { LinkConverter } from "../core/link-converter.js";
+import type { ConvertOperationOptions } from "../types/operations.js";
+import { PathUtils } from "../utils/path-utils.js";
 
 /**
  * Configuration options for convert command operations.
@@ -14,11 +14,11 @@ import { PathUtils } from '../utils/path-utils.js';
  */
 export interface ConvertOptions {
   /** Target path resolution type */
-  pathResolution?: 'absolute' | 'relative';
+  pathResolution?: "absolute" | "relative";
   /** Base path for relative path calculations */
   basePath?: string;
   /** Target link style format */
-  linkStyle?: 'markdown' | 'claude' | 'combined' | 'wikilink';
+  linkStyle?: "markdown" | "claude" | "combined" | "wikilink";
   /** Perform a dry run without making actual changes */
   dryRun?: boolean;
   /** Enable verbose output with detailed progress information */
@@ -61,7 +61,7 @@ export interface ConvertOptions {
  */
 async function expandSourcePatterns(
   patterns: string[],
-  options: ConvertOptions
+  options: ConvertOptions,
 ): Promise<string[]> {
   const resolvedFiles = new Set<string>();
 
@@ -82,20 +82,27 @@ async function expandSourcePatterns(
     }
 
     // Check if it's a directory
-    if (existsSync(absolutePattern) && statSync(absolutePattern).isDirectory()) {
+    if (
+      existsSync(absolutePattern) &&
+      statSync(absolutePattern).isDirectory()
+    ) {
       if (options.recursive) {
         const globPattern = `${absolutePattern}/**/*.md`;
         const files = await glob(globPattern, { absolute: true });
         files.forEach((file) => resolvedFiles.add(file));
         if (options.verbose) {
-          console.log(`Added ${String(files.length)} files from directory: ${absolutePattern}`);
+          console.log(
+            `Added ${String(files.length)} files from directory: ${absolutePattern}`,
+          );
         }
       } else {
         const globPattern = `${absolutePattern}/*.md`;
         const files = await glob(globPattern, { absolute: true });
         files.forEach((file) => resolvedFiles.add(file));
         if (options.verbose) {
-          console.log(`Added ${String(files.length)} files from directory: ${absolutePattern}`);
+          console.log(
+            `Added ${String(files.length)} files from directory: ${absolutePattern}`,
+          );
         }
       }
       continue;
@@ -104,7 +111,9 @@ async function expandSourcePatterns(
     // Treat as glob pattern
     try {
       const files = await glob(pattern, { absolute: true });
-      const markdownFiles = files.filter((file) => PathUtils.isMarkdownFile(file));
+      const markdownFiles = files.filter((file) =>
+        PathUtils.isMarkdownFile(file),
+      );
 
       if (markdownFiles.length === 0 && options.verbose) {
         console.warn(`No markdown files found for pattern: ${pattern}`);
@@ -113,12 +122,14 @@ async function expandSourcePatterns(
       markdownFiles.forEach((file) => resolvedFiles.add(file));
 
       if (options.verbose) {
-        console.log(`Pattern "${pattern}" matched ${String(markdownFiles.length)} markdown files`);
+        console.log(
+          `Pattern "${pattern}" matched ${String(markdownFiles.length)} markdown files`,
+        );
       }
     } catch (error) {
       throw new Error(
         `Invalid glob pattern "${pattern}": ${error instanceof Error ? error.message : String(error)}`,
-        { cause: error }
+        { cause: error },
       );
     }
   }
@@ -127,7 +138,7 @@ async function expandSourcePatterns(
 
   if (finalFiles.length === 0) {
     throw new Error(
-      `No markdown files found matching the provided patterns: ${patterns.join(', ')}`
+      `No markdown files found matching the provided patterns: ${patterns.join(", ")}`,
     );
   }
 
@@ -147,26 +158,31 @@ function validateConvertOptions(options: ConvertOptions): ConvertOptions {
   const validated = { ...options };
 
   // Validate path resolution
-  if (validated.pathResolution && !['absolute', 'relative'].includes(validated.pathResolution)) {
+  if (
+    validated.pathResolution &&
+    !["absolute", "relative"].includes(validated.pathResolution)
+  ) {
     throw new Error(
-      `Invalid path resolution type: ${validated.pathResolution}. Must be 'absolute' or 'relative'`
+      `Invalid path resolution type: ${validated.pathResolution}. Must be 'absolute' or 'relative'`,
     );
   }
 
   // Validate link style
   if (
     validated.linkStyle &&
-    !['markdown', 'claude', 'combined', 'wikilink'].includes(validated.linkStyle)
+    !["markdown", "claude", "combined", "wikilink"].includes(
+      validated.linkStyle,
+    )
   ) {
     throw new Error(
-      `Invalid link style: ${validated.linkStyle}. Must be 'markdown', 'claude', 'combined', or 'wikilink'`
+      `Invalid link style: ${validated.linkStyle}. Must be 'markdown', 'claude', 'combined', or 'wikilink'`,
     );
   }
 
   // Require at least one conversion operation
   if (!validated.pathResolution && !validated.linkStyle) {
     throw new Error(
-      'At least one conversion option must be specified (--path-resolution or --link-style)'
+      "At least one conversion option must be specified (--path-resolution or --link-style)",
     );
   }
 
@@ -187,10 +203,10 @@ function validateConvertOptions(options: ConvertOptions): ConvertOptions {
  */
 function printConvertSummary(
   files: string[],
-  result: import('../types/operations.js').OperationResult,
-  options: ConvertOptions
+  result: import("../types/operations.js").OperationResult,
+  options: ConvertOptions,
 ): void {
-  console.log('\n=== Conversion Summary ===');
+  console.log("\n=== Conversion Summary ===");
   console.log(`Files processed: ${String(files.length)}`);
   console.log(`Files modified: ${String(result.modifiedFiles.length)}`);
   console.log(`Total changes: ${String(result.changes.length)}`);
@@ -219,7 +235,7 @@ function printConvertSummary(
   }
 
   if (options.dryRun) {
-    console.log('\n(Dry run - no files were actually modified)');
+    console.log("\n(Dry run - no files were actually modified)");
   }
 }
 
@@ -246,19 +262,22 @@ function printConvertSummary(
  *
  * @group Commands
  */
-export async function convertCommand(patterns: string[], options: ConvertOptions): Promise<void> {
+export async function convertCommand(
+  patterns: string[],
+  options: ConvertOptions,
+): Promise<void> {
   try {
     // Validate input patterns
     if (patterns.length === 0) {
-      throw new Error('At least one file pattern must be specified');
+      throw new Error("At least one file pattern must be specified");
     }
 
     // Validate and normalize options
     const validatedOptions = validateConvertOptions(options);
 
     if (validatedOptions.verbose) {
-      console.log('Starting link conversion...');
-      console.log(`Patterns: ${patterns.join(', ')}`);
+      console.log("Starting link conversion...");
+      console.log(`Patterns: ${patterns.join(", ")}`);
       if (validatedOptions.pathResolution) {
         console.log(`Path resolution: ${validatedOptions.pathResolution}`);
       }
@@ -266,7 +285,7 @@ export async function convertCommand(patterns: string[], options: ConvertOptions
         console.log(`Link style: ${validatedOptions.linkStyle}`);
       }
       if (validatedOptions.dryRun) {
-        console.log('Dry run mode: no files will be modified');
+        console.log("Dry run mode: no files will be modified");
       }
     }
 
@@ -280,10 +299,16 @@ export async function convertCommand(patterns: string[], options: ConvertOptions
     // Create converter and process files
     const converter = new LinkConverter();
     const operationOptions: ConvertOperationOptions = {
-      ...(validatedOptions.pathResolution && { pathResolution: validatedOptions.pathResolution }),
+      ...(validatedOptions.pathResolution && {
+        pathResolution: validatedOptions.pathResolution,
+      }),
       ...(validatedOptions.basePath && { basePath: validatedOptions.basePath }),
-      ...(validatedOptions.linkStyle && { linkStyle: validatedOptions.linkStyle }),
-      ...(validatedOptions.recursive && { recursive: validatedOptions.recursive }),
+      ...(validatedOptions.linkStyle && {
+        linkStyle: validatedOptions.linkStyle,
+      }),
+      ...(validatedOptions.recursive && {
+        recursive: validatedOptions.recursive,
+      }),
       ...(validatedOptions.dryRun && { dryRun: validatedOptions.dryRun }),
       ...(validatedOptions.verbose && { verbose: validatedOptions.verbose }),
     };
@@ -297,15 +322,18 @@ export async function convertCommand(patterns: string[], options: ConvertOptions
 
     // Exit with appropriate code
     if (!result.success) {
-      console.error('\nConversion completed with errors');
+      console.error("\nConversion completed with errors");
       process.exit(1);
     } else if (result.changes.length === 0) {
-      console.log('No changes were needed');
+      console.log("No changes were needed");
     } else {
-      console.log('\nConversion completed successfully');
+      console.log("\nConversion completed successfully");
     }
   } catch (error) {
-    console.error('Conversion failed:', error instanceof Error ? error.message : String(error));
+    console.error(
+      "Conversion failed:",
+      error instanceof Error ? error.message : String(error),
+    );
     process.exit(1);
   }
 }

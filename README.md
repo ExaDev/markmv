@@ -79,8 +79,8 @@ npx --package=markmv markmv-mcp  # Model Context Protocol server
 ### Programmatic API
 
 ```typescript
-import { moveFile } from 'markmv';
-const result = await moveFile('old.md', 'new.md');
+import { moveFile } from "markmv";
+const result = await moveFile("old.md", "new.md");
 ```
 
 ## 🤖 MCP Setup (AI Integration)
@@ -137,7 +137,10 @@ Restart Claude Desktop and look for the 🔧 MCP icon in the chat. If configured
 ### convertCommand()
 
 ```typescript
-function convertCommand(patterns: string[], options: ConvertOptions): Promise<void>;
+function convertCommand(
+  patterns: string[],
+  options: ConvertOptions,
+): Promise<void>;
 ```
 
 Defined in: [commands/convert.ts:245](https://github.com/ExaDev/markmv/blob/main/src/commands/convert.ts#L245)
@@ -163,7 +166,10 @@ options. Supports dry run mode, verbose output, and various conversion strategie
 ### indexCommand()
 
 ```typescript
-function indexCommand(directory: string | undefined, cliOptions: IndexCliOptions): Promise<void>;
+function indexCommand(
+  directory: string | undefined,
+  cliOptions: IndexCliOptions,
+): Promise<void>;
 ```
 
 Defined in: [commands/index.ts:140](https://github.com/ExaDev/markmv/blob/main/src/commands/index.ts#L140)
@@ -350,9 +356,9 @@ Promise resolving to validation result
 #### Example
 
 ```typescript
-import { moveFile, validateOperation } from 'markmv';
+import { moveFile, validateOperation } from "markmv";
 
-const result = await moveFile('old.md', 'new.md');
+const result = await moveFile("old.md", "new.md");
 const validation = await validateOperation(result);
 
 if (!validation.valid) {

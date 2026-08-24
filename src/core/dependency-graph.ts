@@ -1,4 +1,4 @@
-import type { ParsedMarkdownFile } from '../types/links.js';
+import type { ParsedMarkdownFile } from "../types/links.js";
 
 /**
  * Represents a node in the markdown file dependency graph.

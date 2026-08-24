@@ -1,14 +1,17 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 import {
   AlphabeticalJoinStrategy,
   ChronologicalJoinStrategy,
   DependencyOrderJoinStrategy,
   ManualOrderJoinStrategy,
-} from './join-strategies.js';
-import type { JoinConflict, JoinSection } from './join-strategies.js';
+} from "./join-strategies.js";
+import type { JoinConflict, JoinSection } from "./join-strategies.js";
 
 class TestableDependencyOrderJoinStrategy extends DependencyOrderJoinStrategy {
-  public testExtractTitle(content: string, frontmatter?: string): string | undefined {
+  public testExtractTitle(
+    content: string,
+    frontmatter?: string,
+  ): string | undefined {
     return this.extractTitle(content, frontmatter);
   }
 
@@ -21,102 +24,114 @@ class TestableDependencyOrderJoinStrategy extends DependencyOrderJoinStrategy {
   }
 }
 
-describe('Join Strategies', () => {
+describe("Join Strategies", () => {
   const mockSections: JoinSection[] = [
     {
-      filePath: 'intro.md',
-      content: '# Introduction\n\nThis is the introduction section.\n\n[Link to basics](basics.md)',
+      filePath: "intro.md",
+      content:
+        "# Introduction\n\nThis is the introduction section.\n\n[Link to basics](basics.md)",
       frontmatter: '---\ntitle: "Introduction"\norder: 1\n---\n',
-      title: 'Introduction',
-      dependencies: ['basics.md'],
+      title: "Introduction",
+      dependencies: ["basics.md"],
       order: 1,
     },
     {
-      filePath: 'basics.md',
-      content: '# Basics\n\nThis covers the basics.\n\n[Link to advanced](advanced.md)',
+      filePath: "basics.md",
+      content:
+        "# Basics\n\nThis covers the basics.\n\n[Link to advanced](advanced.md)",
       frontmatter: '---\ntitle: "Basics"\norder: 2\n---\n',
-      title: 'Basics',
-      dependencies: ['advanced.md'],
+      title: "Basics",
+      dependencies: ["advanced.md"],
       order: 2,
     },
     {
-      filePath: 'advanced.md',
-      content: '# Advanced Topics\n\nAdvanced concepts are covered here.',
+      filePath: "advanced.md",
+      content: "# Advanced Topics\n\nAdvanced concepts are covered here.",
       frontmatter: '---\ntitle: "Advanced Topics"\norder: 3\n---\n',
-      title: 'Advanced Topics',
+      title: "Advanced Topics",
       dependencies: [],
       order: 3,
     },
   ];
 
-  describe('DependencyOrderJoinStrategy', () => {
-    it('should join sections in dependency order', async () => {
+  describe("DependencyOrderJoinStrategy", () => {
+    it("should join sections in dependency order", async () => {
       const strategy = new DependencyOrderJoinStrategy();
       const result = await strategy.join(mockSections);
 
       expect(result.success).toBe(true);
-      expect(result.sourceFiles).toEqual(['advanced.md', 'basics.md', 'intro.md']);
-      expect(result.content).toContain('# Advanced Topics');
-      expect(result.content).toContain('# Basics');
-      expect(result.content).toContain('# Introduction');
+      expect(result.sourceFiles).toEqual([
+        "advanced.md",
+        "basics.md",
+        "intro.md",
+      ]);
+      expect(result.content).toContain("# Advanced Topics");
+      expect(result.content).toContain("# Basics");
+      expect(result.content).toContain("# Introduction");
 
       // Should be ordered so dependencies come first
-      const advancedIndex = result.content.indexOf('# Advanced Topics');
-      const basicsIndex = result.content.indexOf('# Basics');
-      const introIndex = result.content.indexOf('# Introduction');
+      const advancedIndex = result.content.indexOf("# Advanced Topics");
+      const basicsIndex = result.content.indexOf("# Basics");
+      const introIndex = result.content.indexOf("# Introduction");
 
       expect(advancedIndex).toBeLessThan(basicsIndex);
       expect(basicsIndex).toBeLessThan(introIndex);
     });
 
-    it('should merge frontmatter correctly', async () => {
-      const strategy = new DependencyOrderJoinStrategy({ mergeFrontmatter: true });
+    it("should merge frontmatter correctly", async () => {
+      const strategy = new DependencyOrderJoinStrategy({
+        mergeFrontmatter: true,
+      });
       const result = await strategy.join(mockSections);
 
-      expect(result.frontmatter).toContain('title: "Advanced Topics & Basics & Introduction"');
-      expect(result.frontmatter).toContain('order: 3'); // Should use first found
+      expect(result.frontmatter).toContain(
+        'title: "Advanced Topics & Basics & Introduction"',
+      );
+      expect(result.frontmatter).toContain("order: 3"); // Should use first found
     });
 
-    it('should deduplicate links', async () => {
+    it("should deduplicate links", async () => {
       const sectionsWithDuplicateLinks: JoinSection[] = [
         {
-          filePath: 'file1.md',
-          content: '# File 1\n\n[Common link](shared.md)\n\nContent 1',
+          filePath: "file1.md",
+          content: "# File 1\n\n[Common link](shared.md)\n\nContent 1",
           frontmatter: undefined,
           title: undefined,
-          dependencies: ['shared.md'],
+          dependencies: ["shared.md"],
           order: 1,
         },
         {
-          filePath: 'file2.md',
-          content: '# File 2\n\n[Common link](shared.md)\n\nContent 2',
+          filePath: "file2.md",
+          content: "# File 2\n\n[Common link](shared.md)\n\nContent 2",
           frontmatter: undefined,
           title: undefined,
-          dependencies: ['shared.md'],
+          dependencies: ["shared.md"],
           order: 2,
         },
       ];
 
-      const strategy = new DependencyOrderJoinStrategy({ deduplicateLinks: true });
+      const strategy = new DependencyOrderJoinStrategy({
+        deduplicateLinks: true,
+      });
       const result = await strategy.join(sectionsWithDuplicateLinks);
 
       expect(result.deduplicatedLinks.length).toBeGreaterThan(0);
-      expect(result.deduplicatedLinks[0]).toBe('[Common link](shared.md)');
+      expect(result.deduplicatedLinks[0]).toBe("[Common link](shared.md)");
     });
 
-    it('should detect header conflicts', async () => {
+    it("should detect header conflicts", async () => {
       const sectionsWithConflicts: JoinSection[] = [
         {
-          filePath: 'file1.md',
-          content: '# Introduction\n\nFirst intro',
+          filePath: "file1.md",
+          content: "# Introduction\n\nFirst intro",
           frontmatter: undefined,
           title: undefined,
           dependencies: [],
           order: 1,
         },
         {
-          filePath: 'file2.md',
-          content: '# Introduction\n\nSecond intro',
+          filePath: "file2.md",
+          content: "# Introduction\n\nSecond intro",
           frontmatter: undefined,
           title: undefined,
           dependencies: [],
@@ -128,26 +143,26 @@ describe('Join Strategies', () => {
       const result = await strategy.join(sectionsWithConflicts);
 
       expect(result.conflicts.length).toBeGreaterThan(0);
-      expect(result.conflicts[0].type).toBe('duplicate-headers');
-      expect(result.conflicts[0].files).toEqual(['file1.md', 'file2.md']);
+      expect(result.conflicts[0].type).toBe("duplicate-headers");
+      expect(result.conflicts[0].files).toEqual(["file1.md", "file2.md"]);
     });
 
-    it('should handle circular dependencies', async () => {
+    it("should handle circular dependencies", async () => {
       const circularSections: JoinSection[] = [
         {
-          filePath: 'a.md',
-          content: '# A\n\n[Link to B](b.md)',
+          filePath: "a.md",
+          content: "# A\n\n[Link to B](b.md)",
           frontmatter: undefined,
           title: undefined,
-          dependencies: ['b.md'],
+          dependencies: ["b.md"],
           order: 1,
         },
         {
-          filePath: 'b.md',
-          content: '# B\n\n[Link to A](a.md)',
+          filePath: "b.md",
+          content: "# B\n\n[Link to A](a.md)",
           frontmatter: undefined,
           title: undefined,
-          dependencies: ['a.md'],
+          dependencies: ["a.md"],
           order: 2,
         },
       ];
@@ -157,39 +172,43 @@ describe('Join Strategies', () => {
 
       expect(result.success).toBe(true);
       expect(result.warnings).toContain(
-        'Circular dependency detected, falling back to manual order'
+        "Circular dependency detected, falling back to manual order",
       );
     });
   });
 
-  describe('AlphabeticalJoinStrategy', () => {
-    it('should join sections in alphabetical order', async () => {
+  describe("AlphabeticalJoinStrategy", () => {
+    it("should join sections in alphabetical order", async () => {
       const strategy = new AlphabeticalJoinStrategy();
       const result = await strategy.join(mockSections);
 
-      expect(result.sourceFiles).toEqual(['advanced.md', 'basics.md', 'intro.md']);
+      expect(result.sourceFiles).toEqual([
+        "advanced.md",
+        "basics.md",
+        "intro.md",
+      ]);
 
-      const advancedIndex = result.content.indexOf('# Advanced Topics');
-      const basicsIndex = result.content.indexOf('# Basics');
-      const introIndex = result.content.indexOf('# Introduction');
+      const advancedIndex = result.content.indexOf("# Advanced Topics");
+      const basicsIndex = result.content.indexOf("# Basics");
+      const introIndex = result.content.indexOf("# Introduction");
 
       expect(advancedIndex).toBeLessThan(basicsIndex);
       expect(basicsIndex).toBeLessThan(introIndex);
     });
 
-    it('should handle files without titles', async () => {
+    it("should handle files without titles", async () => {
       const sectionsWithoutTitles: JoinSection[] = [
         {
-          filePath: 'zebra.md',
-          content: 'Content without header',
+          filePath: "zebra.md",
+          content: "Content without header",
           frontmatter: undefined,
           title: undefined,
           dependencies: [],
           order: 1,
         },
         {
-          filePath: 'alpha.md',
-          content: 'Another file without header',
+          filePath: "alpha.md",
+          content: "Another file without header",
           frontmatter: undefined,
           title: undefined,
           dependencies: [],
@@ -200,73 +219,81 @@ describe('Join Strategies', () => {
       const strategy = new AlphabeticalJoinStrategy();
       const result = await strategy.join(sectionsWithoutTitles);
 
-      expect(result.sourceFiles).toEqual(['alpha.md', 'zebra.md']);
+      expect(result.sourceFiles).toEqual(["alpha.md", "zebra.md"]);
     });
   });
 
-  describe('ManualOrderJoinStrategy', () => {
-    it('should join sections in specified manual order', async () => {
+  describe("ManualOrderJoinStrategy", () => {
+    it("should join sections in specified manual order", async () => {
       const strategy = new ManualOrderJoinStrategy({
-        customOrder: ['basics.md', 'advanced.md', 'intro.md'],
+        customOrder: ["basics.md", "advanced.md", "intro.md"],
       });
       const result = await strategy.join(mockSections);
 
-      expect(result.sourceFiles).toEqual(['basics.md', 'advanced.md', 'intro.md']);
+      expect(result.sourceFiles).toEqual([
+        "basics.md",
+        "advanced.md",
+        "intro.md",
+      ]);
 
-      const basicsIndex = result.content.indexOf('# Basics');
-      const advancedIndex = result.content.indexOf('# Advanced Topics');
-      const introIndex = result.content.indexOf('# Introduction');
+      const basicsIndex = result.content.indexOf("# Basics");
+      const advancedIndex = result.content.indexOf("# Advanced Topics");
+      const introIndex = result.content.indexOf("# Introduction");
 
       expect(basicsIndex).toBeLessThan(advancedIndex);
       expect(advancedIndex).toBeLessThan(introIndex);
     });
 
-    it('should handle missing files in custom order', async () => {
+    it("should handle missing files in custom order", async () => {
       const strategy = new ManualOrderJoinStrategy({
-        customOrder: ['missing.md', 'basics.md', 'intro.md'],
+        customOrder: ["missing.md", "basics.md", "intro.md"],
       });
       const result = await strategy.join(mockSections);
 
       expect(result.warnings).toContain(
-        'File missing.md specified in custom order but not found in sections'
+        "File missing.md specified in custom order but not found in sections",
       );
-      expect(result.sourceFiles).toEqual(['basics.md', 'intro.md', 'advanced.md']);
+      expect(result.sourceFiles).toEqual([
+        "basics.md",
+        "intro.md",
+        "advanced.md",
+      ]);
     });
 
-    it('should fall back to alphabetical for unspecified files', async () => {
+    it("should fall back to alphabetical for unspecified files", async () => {
       const strategy = new ManualOrderJoinStrategy({
-        customOrder: ['intro.md'],
+        customOrder: ["intro.md"],
       });
       const result = await strategy.join(mockSections);
 
-      expect(result.sourceFiles[0]).toBe('intro.md');
+      expect(result.sourceFiles[0]).toBe("intro.md");
       // Remaining files should be in alphabetical order
-      expect(result.sourceFiles.slice(1)).toEqual(['advanced.md', 'basics.md']);
+      expect(result.sourceFiles.slice(1)).toEqual(["advanced.md", "basics.md"]);
     });
   });
 
-  describe('ChronologicalJoinStrategy', () => {
-    it('should join sections in chronological order', async () => {
+  describe("ChronologicalJoinStrategy", () => {
+    it("should join sections in chronological order", async () => {
       const sectionsWithDates: JoinSection[] = [
         {
-          filePath: '2023-01-15-post.md',
-          content: '# Post from January\n\nOlder post',
-          frontmatter: '---\ndate: 2023-01-15\n---\n',
+          filePath: "2023-01-15-post.md",
+          content: "# Post from January\n\nOlder post",
+          frontmatter: "---\ndate: 2023-01-15\n---\n",
           title: undefined,
           dependencies: [],
           order: 1,
         },
         {
-          filePath: '2023-03-10-post.md',
-          content: '# Post from March\n\nNewer post',
-          frontmatter: '---\ndate: 2023-03-10\n---\n',
+          filePath: "2023-03-10-post.md",
+          content: "# Post from March\n\nNewer post",
+          frontmatter: "---\ndate: 2023-03-10\n---\n",
           title: undefined,
           dependencies: [],
           order: 2,
         },
         {
-          filePath: 'undated-post.md',
-          content: '# Undated Post\n\nNo date specified',
+          filePath: "undated-post.md",
+          content: "# Undated Post\n\nNo date specified",
           frontmatter: undefined,
           title: undefined,
           dependencies: [],
@@ -277,24 +304,24 @@ describe('Join Strategies', () => {
       const strategy = new ChronologicalJoinStrategy();
       const result = await strategy.join(sectionsWithDates);
 
-      expect(result.sourceFiles[0]).toBe('2023-01-15-post.md');
-      expect(result.sourceFiles[1]).toBe('2023-03-10-post.md');
-      expect(result.sourceFiles[2]).toBe('undated-post.md'); // Should be last
+      expect(result.sourceFiles[0]).toBe("2023-01-15-post.md");
+      expect(result.sourceFiles[1]).toBe("2023-03-10-post.md");
+      expect(result.sourceFiles[2]).toBe("undated-post.md"); // Should be last
     });
 
-    it('should extract dates from filenames when frontmatter missing', async () => {
+    it("should extract dates from filenames when frontmatter missing", async () => {
       const sectionsWithFilenameDates: JoinSection[] = [
         {
-          filePath: '2023-12-01-newer.md',
-          content: '# Newer Post',
+          filePath: "2023-12-01-newer.md",
+          content: "# Newer Post",
           frontmatter: undefined,
           title: undefined,
           dependencies: [],
           order: 1,
         },
         {
-          filePath: '2023-01-01-older.md',
-          content: '# Older Post',
+          filePath: "2023-01-01-older.md",
+          content: "# Older Post",
           frontmatter: undefined,
           title: undefined,
           dependencies: [],
@@ -305,36 +332,44 @@ describe('Join Strategies', () => {
       const strategy = new ChronologicalJoinStrategy();
       const result = await strategy.join(sectionsWithFilenameDates);
 
-      expect(result.sourceFiles[0]).toBe('2023-01-01-older.md');
-      expect(result.sourceFiles[1]).toBe('2023-12-01-newer.md');
+      expect(result.sourceFiles[0]).toBe("2023-01-01-older.md");
+      expect(result.sourceFiles[1]).toBe("2023-12-01-newer.md");
     });
   });
 
-  describe('BaseJoinStrategy utilities', () => {
+  describe("BaseJoinStrategy utilities", () => {
     const strategy = new TestableDependencyOrderJoinStrategy();
 
-    it('should extract titles correctly', () => {
-      expect(strategy.testExtractTitle('# Main Title\n\nContent', '')).toBe('Main Title');
+    it("should extract titles correctly", () => {
+      expect(strategy.testExtractTitle("# Main Title\n\nContent", "")).toBe(
+        "Main Title",
+      );
       expect(
-        strategy.testExtractTitle('Content without header', '---\ntitle: "From Frontmatter"\n---\n')
-      ).toBe('From Frontmatter');
-      expect(strategy.testExtractTitle('## Second Level\n\nContent', '')).toBe('Second Level');
+        strategy.testExtractTitle(
+          "Content without header",
+          '---\ntitle: "From Frontmatter"\n---\n',
+        ),
+      ).toBe("From Frontmatter");
+      expect(strategy.testExtractTitle("## Second Level\n\nContent", "")).toBe(
+        "Second Level",
+      );
     });
 
-    it('should merge frontmatter correctly', () => {
+    it("should merge frontmatter correctly", () => {
       const sections: JoinSection[] = [
         {
           frontmatter: '---\ntitle: "First"\ntags: ["tag1", "tag2"]\n---\n',
-          filePath: 'first.md',
-          content: '',
+          filePath: "first.md",
+          content: "",
           title: undefined,
           dependencies: [],
           order: 1,
         },
         {
-          frontmatter: '---\ntitle: "Second"\ntags: ["tag2", "tag3"]\nauthor: "Test"\n---\n',
-          filePath: 'second.md',
-          content: '',
+          frontmatter:
+            '---\ntitle: "Second"\ntags: ["tag2", "tag3"]\nauthor: "Test"\n---\n',
+          filePath: "second.md",
+          content: "",
           title: undefined,
           dependencies: [],
           order: 2,
@@ -348,19 +383,19 @@ describe('Join Strategies', () => {
       expect(result).toContain('author: "Test"');
     });
 
-    it('should detect header conflicts', () => {
+    it("should detect header conflicts", () => {
       const sections: JoinSection[] = [
         {
-          filePath: 'file1.md',
-          content: '# Same Header\n\nContent 1',
+          filePath: "file1.md",
+          content: "# Same Header\n\nContent 1",
           frontmatter: undefined,
           title: undefined,
           dependencies: [],
           order: 1,
         },
         {
-          filePath: 'file2.md',
-          content: '# Same Header\n\nContent 2',
+          filePath: "file2.md",
+          content: "# Same Header\n\nContent 2",
           frontmatter: undefined,
           title: undefined,
           dependencies: [],
@@ -371,8 +406,8 @@ describe('Join Strategies', () => {
       const conflicts = strategy.testDetectConflicts(sections);
 
       expect(conflicts.length).toBe(1);
-      expect(conflicts[0].type).toBe('duplicate-headers');
-      expect(conflicts[0].files).toEqual(['file1.md', 'file2.md']);
+      expect(conflicts[0].type).toBe("duplicate-headers");
+      expect(conflicts[0].files).toEqual(["file1.md", "file2.md"]);
     });
   });
 });

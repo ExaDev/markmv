@@ -1,38 +1,45 @@
 #!/usr/bin/env node
 
-import { readFileSync } from 'node:fs';
-import { Command } from 'commander';
-import { clipCommand } from './commands/clip.js';
-import { convertCommand } from './commands/convert.js';
-import { graphCommand } from './commands/graph.js';
-import { indexCommand } from './commands/index.js';
-import { joinCommand } from './commands/join.js';
-import { mergeCommand } from './commands/merge.js';
-import { moveCommand } from './commands/move.js';
-import { splitCommand } from './commands/split.js';
-import { tocCommand } from './commands/toc.js';
-import { validateCommand, type ValidateCliOptions } from './commands/validate.js';
-import { refactorHeadingsCommand } from './commands/refactor-headings.js';
-import { checkLinksCommand } from './commands/check-links.js';
-import { embedCommand } from './commands/embed.js';
-import { extractCommand } from './commands/extract.js';
-import { waybackCommand, type WaybackOptions } from './commands/wayback.js';
-import { refactorIndexCommand } from './commands/refactor-index.js';
-import { treeCommand } from './commands/tree.js';
+import { readFileSync } from "node:fs";
+import { Command } from "commander";
+import { clipCommand } from "./commands/clip.js";
+import { convertCommand } from "./commands/convert.js";
+import { graphCommand } from "./commands/graph.js";
+import { indexCommand } from "./commands/index.js";
+import { joinCommand } from "./commands/join.js";
+import { mergeCommand } from "./commands/merge.js";
+import { moveCommand } from "./commands/move.js";
+import { splitCommand } from "./commands/split.js";
+import { tocCommand } from "./commands/toc.js";
+import {
+  validateCommand,
+  type ValidateCliOptions,
+} from "./commands/validate.js";
+import { refactorHeadingsCommand } from "./commands/refactor-headings.js";
+import { checkLinksCommand } from "./commands/check-links.js";
+import { embedCommand } from "./commands/embed.js";
+import { extractCommand } from "./commands/extract.js";
+import { waybackCommand, type WaybackOptions } from "./commands/wayback.js";
+import { refactorIndexCommand } from "./commands/refactor-index.js";
+import { treeCommand } from "./commands/tree.js";
 
 function isPackageJson(value: unknown): value is { version: string } {
-  if (typeof value !== 'object' || value === null) return false;
-  if (!('version' in value)) return false;
-  return typeof value.version === 'string';
+  if (typeof value !== "object" || value === null) return false;
+  if (!("version" in value)) return false;
+  return typeof value.version === "string";
 }
 
 function isRecordOfStrings(value: unknown): value is Record<string, string> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
-  return Object.values(value).every((entry) => typeof entry === 'string');
+  if (typeof value !== "object" || value === null || Array.isArray(value))
+    return false;
+  return Object.values(value).every((entry) => typeof entry === "string");
 }
 
-function isRecordOfStringRecords(value: unknown): value is Record<string, Record<string, string>> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+function isRecordOfStringRecords(
+  value: unknown,
+): value is Record<string, Record<string, string>> {
+  if (typeof value !== "object" || value === null || Array.isArray(value))
+    return false;
   return Object.values(value).every((entry) => isRecordOfStrings(entry));
 }
 
@@ -42,10 +49,10 @@ function isRecordOfStringRecords(value: unknown): value is Record<string, Record
  */
 function getPackageVersion(): string {
   const raw: unknown = JSON.parse(
-    readFileSync(new URL('../package.json', import.meta.url), 'utf-8')
+    readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
   );
   if (!isPackageJson(raw)) {
-    throw new Error('package.json is missing a string version field');
+    throw new Error("package.json is missing a string version field");
   }
   return raw.version;
 }
@@ -53,41 +60,49 @@ function getPackageVersion(): string {
 const program = new Command();
 
 program
-  .name('markmv')
-  .description('CLI for markdown file operations with intelligent link refactoring')
+  .name("markmv")
+  .description(
+    "CLI for markdown file operations with intelligent link refactoring",
+  )
   .version(getPackageVersion());
 
 program
-  .command('clip')
-  .description('Convert web pages to markdown (web clipper)')
-  .argument('<urls...>', 'URLs to clip or paths to files containing URLs (use --batch)')
-  .option('-o, --output <file>', 'Output file name (single URL only)')
-  .option('--output-dir <dir>', 'Output directory for clipped files')
-  .option('--batch', 'Process multiple URLs from input files')
+  .command("clip")
+  .description("Convert web pages to markdown (web clipper)")
+  .argument(
+    "<urls...>",
+    "URLs to clip or paths to files containing URLs (use --batch)",
+  )
+  .option("-o, --output <file>", "Output file name (single URL only)")
+  .option("--output-dir <dir>", "Output directory for clipped files")
+  .option("--batch", "Process multiple URLs from input files")
   .option(
-    '--strategy <strategy>',
-    'Extraction strategy: auto|readability|manual|full|structured',
-    'auto'
+    "--strategy <strategy>",
+    "Extraction strategy: auto|readability|manual|full|structured",
+    "auto",
   )
   .option(
-    '--image-strategy <strategy>',
-    'Image handling: skip|link-only|download|base64',
-    'link-only'
+    "--image-strategy <strategy>",
+    "Image handling: skip|link-only|download|base64",
+    "link-only",
   )
-  .option('--image-dir <dir>', 'Directory for downloaded images', './images')
-  .option('--selectors <selectors>', 'CSS selectors for manual extraction (comma-separated)')
-  .option('--no-frontmatter', 'Skip frontmatter generation')
-  .option('--timeout <ms>', 'Request timeout in milliseconds', parseInt, 30000)
-  .option('--user-agent <agent>', 'Custom User-Agent string')
-  .option('--headers <headers>', 'Custom HTTP headers (JSON format)')
-  .option('--cookies <file>', 'Path to cookies file')
-  .option('--no-follow-redirects', "Don't follow HTTP redirects")
-  .option('--max-redirects <count>', 'Maximum redirects to follow', parseInt, 5)
-  .option('-d, --dry-run', 'Show what would be clipped without creating files')
-  .option('-v, --verbose', 'Show detailed output with processing information')
-  .option('--json', 'Output results in JSON format')
+  .option("--image-dir <dir>", "Directory for downloaded images", "./images")
+  .option(
+    "--selectors <selectors>",
+    "CSS selectors for manual extraction (comma-separated)",
+  )
+  .option("--no-frontmatter", "Skip frontmatter generation")
+  .option("--timeout <ms>", "Request timeout in milliseconds", parseInt, 30000)
+  .option("--user-agent <agent>", "Custom User-Agent string")
+  .option("--headers <headers>", "Custom HTTP headers (JSON format)")
+  .option("--cookies <file>", "Path to cookies file")
+  .option("--no-follow-redirects", "Don't follow HTTP redirects")
+  .option("--max-redirects <count>", "Maximum redirects to follow", parseInt, 5)
+  .option("-d, --dry-run", "Show what would be clipped without creating files")
+  .option("-v, --verbose", "Show detailed output with processing information")
+  .option("--json", "Output results in JSON format")
   .addHelpText(
-    'after',
+    "after",
     `
 Examples:
   $ markmv clip https://example.com/article
@@ -115,26 +130,35 @@ Advanced Features:
   --cookies cookies.txt                            Use cookies for protected content
   --selectors "article,.post-content,main"        Custom content selectors
   --timeout 60000                                  Extended timeout for slow sites
-  --user-agent "Custom Bot 1.0"                   Custom user agent string`
+  --user-agent "Custom Bot 1.0"                   Custom user agent string`,
   )
   .action(clipCommand);
 
 program
-  .command('convert')
-  .description('Convert markdown link formats and path resolution')
-  .argument('<files...>', 'Markdown files to convert (supports globs like *.md, **/*.md)')
-  .option('--path-resolution <type>', 'Convert path resolution: absolute|relative')
-  .option(
-    '--base-path <path>',
-    'Base path for relative path calculations (defaults to current directory)'
+  .command("convert")
+  .description("Convert markdown link formats and path resolution")
+  .argument(
+    "<files...>",
+    "Markdown files to convert (supports globs like *.md, **/*.md)",
   )
-  .option('--link-style <style>', 'Convert link style: markdown|claude|combined|wikilink')
-  .option('-r, --recursive', 'Process directories recursively')
-  .option('-d, --dry-run', 'Show what would be changed without making changes')
-  .option('-v, --verbose', 'Show detailed output with processing information')
-  .option('--json', 'Output results in JSON format')
+  .option(
+    "--path-resolution <type>",
+    "Convert path resolution: absolute|relative",
+  )
+  .option(
+    "--base-path <path>",
+    "Base path for relative path calculations (defaults to current directory)",
+  )
+  .option(
+    "--link-style <style>",
+    "Convert link style: markdown|claude|combined|wikilink",
+  )
+  .option("-r, --recursive", "Process directories recursively")
+  .option("-d, --dry-run", "Show what would be changed without making changes")
+  .option("-v, --verbose", "Show detailed output with processing information")
+  .option("--json", "Output results in JSON format")
   .addHelpText(
-    'after',
+    "after",
     `
 Examples:
   $ markmv convert docs/*.md --link-style wikilink --path-resolution relative
@@ -150,90 +174,138 @@ Link Styles:
 
 Path Resolution:
   absolute  Convert to absolute file paths
-  relative  Convert to relative file paths from base-path`
+  relative  Convert to relative file paths from base-path`,
   )
   .action(convertCommand);
 
 program
-  .command('move')
-  .description('Move markdown files while updating cross-references')
+  .command("move")
+  .description("Move markdown files while updating cross-references")
   .argument(
-    '<sources...>',
-    'Source markdown files, directories, or globs, and destination (last argument)'
+    "<sources...>",
+    "Source markdown files, directories, or globs, and destination (last argument)",
   )
-  .option('-d, --dry-run', 'Show what would be changed without making changes')
-  .option('-v, --verbose', 'Show detailed output')
-  .option('--obsidian', 'Treat [[wikilinks]] as Obsidian vault links resolved by note basename')
-  .option('--json', 'Output results in JSON format')
+  .option("-d, --dry-run", "Show what would be changed without making changes")
+  .option("-v, --verbose", "Show detailed output")
+  .option(
+    "--obsidian",
+    "Treat [[wikilinks]] as Obsidian vault links resolved by note basename",
+  )
+  .option("--json", "Output results in JSON format")
   .action(moveCommand);
 
 program
-  .command('split')
-  .description('Split large markdown files maintaining link integrity')
-  .argument('<source>', 'Source markdown file to split')
-  .option('-s, --strategy <strategy>', 'Split strategy: headers|size|manual|lines', 'headers')
-  .option('-o, --output <dir>', 'Output directory for split files')
-  .option('-l, --header-level <level>', 'Header level to split on (1-6)', '2')
-  .option('-m, --max-size <kb>', 'Maximum size per section in KB', '100')
-  .option('--split-lines <lines>', 'Comma-separated line numbers to split on (for lines strategy)')
-  .option('-d, --dry-run', 'Show what would be changed without making changes')
-  .option('-v, --verbose', 'Show detailed output')
-  .option('--json', 'Output results in JSON format')
+  .command("split")
+  .description("Split large markdown files maintaining link integrity")
+  .argument("<source>", "Source markdown file to split")
+  .option(
+    "-s, --strategy <strategy>",
+    "Split strategy: headers|size|manual|lines",
+    "headers",
+  )
+  .option("-o, --output <dir>", "Output directory for split files")
+  .option("-l, --header-level <level>", "Header level to split on (1-6)", "2")
+  .option("-m, --max-size <kb>", "Maximum size per section in KB", "100")
+  .option(
+    "--split-lines <lines>",
+    "Comma-separated line numbers to split on (for lines strategy)",
+  )
+  .option("-d, --dry-run", "Show what would be changed without making changes")
+  .option("-v, --verbose", "Show detailed output")
+  .option("--json", "Output results in JSON format")
   .action(splitCommand);
 
 program
-  .command('join')
-  .description('Join multiple markdown files resolving conflicts')
-  .argument('<files...>', 'Markdown files to join')
-  .option('-o, --output <file>', 'Output file name')
+  .command("join")
+  .description("Join multiple markdown files resolving conflicts")
+  .argument("<files...>", "Markdown files to join")
+  .option("-o, --output <file>", "Output file name")
   .option(
-    '--order-strategy <strategy>',
-    'Order strategy: alphabetical|manual|dependency|chronological',
-    'dependency'
+    "--order-strategy <strategy>",
+    "Order strategy: alphabetical|manual|dependency|chronological",
+    "dependency",
   )
-  .option('-d, --dry-run', 'Show what would be changed without making changes')
-  .option('-v, --verbose', 'Show detailed output')
-  .option('--json', 'Output results in JSON format')
+  .option("-d, --dry-run", "Show what would be changed without making changes")
+  .option("-v, --verbose", "Show detailed output")
+  .option("--json", "Output results in JSON format")
   .action(joinCommand);
 
 program
-  .command('merge')
-  .description('Merge markdown content with link reconciliation')
-  .argument('<source>', 'Source markdown file')
-  .argument('<target>', 'Target markdown file to merge into')
-  .option('-s, --strategy <strategy>', 'Merge strategy: append|prepend|interactive', 'interactive')
-  .option('--create-transclusions', 'Create Obsidian transclusions instead of copying content')
-  .option('-d, --dry-run', 'Show what would be changed without making changes')
-  .option('-v, --verbose', 'Show detailed output')
-  .option('--json', 'Output results in JSON format')
+  .command("merge")
+  .description("Merge markdown content with link reconciliation")
+  .argument("<source>", "Source markdown file")
+  .argument("<target>", "Target markdown file to merge into")
+  .option(
+    "-s, --strategy <strategy>",
+    "Merge strategy: append|prepend|interactive",
+    "interactive",
+  )
+  .option(
+    "--create-transclusions",
+    "Create Obsidian transclusions instead of copying content",
+  )
+  .option("-d, --dry-run", "Show what would be changed without making changes")
+  .option("-v, --verbose", "Show detailed output")
+  .option("--json", "Output results in JSON format")
   .action(mergeCommand);
 
 program
-  .command('index')
-  .description('Generate index files for markdown documentation')
-  .argument('[directory]', 'Directory to generate indexes for', '.')
-  .option('-t, --type <type>', 'Index type: links|import|embed|hybrid', 'links')
+  .command("index")
+  .description("Generate index files for markdown documentation")
+  .argument("[directory]", "Directory to generate indexes for", ".")
+  .option("-t, --type <type>", "Index type: links|import|embed|hybrid", "links")
   .option(
-    '-s, --strategy <strategy>',
-    'Organization strategy: directory|metadata|manual',
-    'directory'
+    "-s, --strategy <strategy>",
+    "Organization strategy: directory|metadata|manual",
+    "directory",
   )
-  .option('-l, --location <location>', 'Index placement: all|root|branch|existing', 'root')
-  .option('-n, --name <name>', 'Index filename', 'index.md')
-  .option('--embed-style <style>', 'Embed style for embed type: obsidian|markdown', 'obsidian')
-  .option('--template <file>', 'Custom template file')
-  .option('--max-depth <number>', 'Maximum depth to traverse subdirectories', parseInt)
-  .option('--no-traverse-up', 'Prevent traversing above the specified directory')
-  .option('--boundary <path>', 'Explicit boundary path to limit scanning scope')
-  .option('--generate-toc', 'Generate table of contents for each indexed file')
-  .option('--toc-min-depth <number>', 'Minimum heading level for TOC (1-6)', parseInt, 1)
-  .option('--toc-max-depth <number>', 'Maximum heading level for TOC (1-6)', parseInt, 6)
-  .option('--toc-include-line-numbers', 'Include line numbers in table of contents')
-  .option('-d, --dry-run', 'Show what would be generated without creating files')
-  .option('-v, --verbose', 'Show detailed output')
-  .option('--json', 'Output results in JSON format')
+  .option(
+    "-l, --location <location>",
+    "Index placement: all|root|branch|existing",
+    "root",
+  )
+  .option("-n, --name <name>", "Index filename", "index.md")
+  .option(
+    "--embed-style <style>",
+    "Embed style for embed type: obsidian|markdown",
+    "obsidian",
+  )
+  .option("--template <file>", "Custom template file")
+  .option(
+    "--max-depth <number>",
+    "Maximum depth to traverse subdirectories",
+    parseInt,
+  )
+  .option(
+    "--no-traverse-up",
+    "Prevent traversing above the specified directory",
+  )
+  .option("--boundary <path>", "Explicit boundary path to limit scanning scope")
+  .option("--generate-toc", "Generate table of contents for each indexed file")
+  .option(
+    "--toc-min-depth <number>",
+    "Minimum heading level for TOC (1-6)",
+    parseInt,
+    1,
+  )
+  .option(
+    "--toc-max-depth <number>",
+    "Maximum heading level for TOC (1-6)",
+    parseInt,
+    6,
+  )
+  .option(
+    "--toc-include-line-numbers",
+    "Include line numbers in table of contents",
+  )
+  .option(
+    "-d, --dry-run",
+    "Show what would be generated without creating files",
+  )
+  .option("-v, --verbose", "Show detailed output")
+  .option("--json", "Output results in JSON format")
   .addHelpText(
-    'after',
+    "after",
     `
 Examples:
   $ markmv index --type links --strategy directory --generate-toc
@@ -262,36 +334,73 @@ Index Placement:
   all       Create index in every directory
   root      Create index only in root directory
   branch    Create index in directories with subdirectories
-  existing  Update only existing index files`
+  existing  Update only existing index files`,
   )
   .action(indexCommand);
 
 program
-  .command('barrel')
-  .description('Generate barrel files for themed content aggregation (alias for index)')
-  .argument('[directory]', 'Directory to generate barrel files for', '.')
-  .option('-t, --type <type>', 'Barrel type: links|import|embed|hybrid', 'links')
-  .option(
-    '-s, --strategy <strategy>',
-    'Organization strategy: directory|metadata|manual',
-    'directory'
+  .command("barrel")
+  .description(
+    "Generate barrel files for themed content aggregation (alias for index)",
   )
-  .option('-l, --location <location>', 'Barrel placement: all|root|branch|existing', 'root')
-  .option('-n, --name <name>', 'Barrel filename', 'index.md')
-  .option('--embed-style <style>', 'Embed style for embed type: obsidian|markdown', 'obsidian')
-  .option('--template <file>', 'Custom template file')
-  .option('--max-depth <number>', 'Maximum depth to traverse subdirectories', parseInt)
-  .option('--no-traverse-up', 'Prevent traversing above the specified directory')
-  .option('--boundary <path>', 'Explicit boundary path to limit scanning scope')
-  .option('--generate-toc', 'Generate table of contents for each indexed file')
-  .option('--toc-min-depth <number>', 'Minimum heading level for TOC (1-6)', parseInt, 1)
-  .option('--toc-max-depth <number>', 'Maximum heading level for TOC (1-6)', parseInt, 6)
-  .option('--toc-include-line-numbers', 'Include line numbers in table of contents')
-  .option('-d, --dry-run', 'Show what would be generated without creating files')
-  .option('-v, --verbose', 'Show detailed output')
-  .option('--json', 'Output results in JSON format')
+  .argument("[directory]", "Directory to generate barrel files for", ".")
+  .option(
+    "-t, --type <type>",
+    "Barrel type: links|import|embed|hybrid",
+    "links",
+  )
+  .option(
+    "-s, --strategy <strategy>",
+    "Organization strategy: directory|metadata|manual",
+    "directory",
+  )
+  .option(
+    "-l, --location <location>",
+    "Barrel placement: all|root|branch|existing",
+    "root",
+  )
+  .option("-n, --name <name>", "Barrel filename", "index.md")
+  .option(
+    "--embed-style <style>",
+    "Embed style for embed type: obsidian|markdown",
+    "obsidian",
+  )
+  .option("--template <file>", "Custom template file")
+  .option(
+    "--max-depth <number>",
+    "Maximum depth to traverse subdirectories",
+    parseInt,
+  )
+  .option(
+    "--no-traverse-up",
+    "Prevent traversing above the specified directory",
+  )
+  .option("--boundary <path>", "Explicit boundary path to limit scanning scope")
+  .option("--generate-toc", "Generate table of contents for each indexed file")
+  .option(
+    "--toc-min-depth <number>",
+    "Minimum heading level for TOC (1-6)",
+    parseInt,
+    1,
+  )
+  .option(
+    "--toc-max-depth <number>",
+    "Maximum heading level for TOC (1-6)",
+    parseInt,
+    6,
+  )
+  .option(
+    "--toc-include-line-numbers",
+    "Include line numbers in table of contents",
+  )
+  .option(
+    "-d, --dry-run",
+    "Show what would be generated without creating files",
+  )
+  .option("-v, --verbose", "Show detailed output")
+  .option("--json", "Output results in JSON format")
   .addHelpText(
-    'after',
+    "after",
     `
 Examples:
   $ markmv barrel --type links --strategy directory --generate-toc
@@ -316,31 +425,47 @@ Barrel Placement:
   branch    Create barrel in directories with subdirectories
   existing  Update only existing barrel files
 
-Note: This is an alias for the 'index' command with barrel-focused terminology.`
+Note: This is an alias for the 'index' command with barrel-focused terminology.`,
   )
   .action(indexCommand);
 
 program
-  .command('toc')
-  .description('Generate and insert table of contents into markdown files')
-  .argument('<files...>', 'Markdown files to process (supports globs like *.md, **/*.md)')
-  .option('--min-depth <number>', 'Minimum heading level to include (1-6)', parseInt, 1)
-  .option('--max-depth <number>', 'Maximum heading level to include (1-6)', parseInt, 6)
-  .option('--include-line-numbers', 'Include line numbers in TOC entries')
-  .option(
-    '--position <position>',
-    'TOC position: top|after-title|before-content|replace',
-    'after-title'
+  .command("toc")
+  .description("Generate and insert table of contents into markdown files")
+  .argument(
+    "<files...>",
+    "Markdown files to process (supports globs like *.md, **/*.md)",
   )
-  .option('--title <title>', 'TOC title', 'Table of Contents')
-  .option('--heading-level <level>', 'TOC heading level (1-6)', parseInt, 2)
-  .option('--marker <marker>', 'Custom marker for TOC replacement (requires --position replace)')
-  .option('--skip-empty', "Skip files that don't have any headings", true)
-  .option('-d, --dry-run', 'Show what would be changed without making changes')
-  .option('-v, --verbose', 'Show detailed output')
-  .option('--json', 'Output results in JSON format')
+  .option(
+    "--min-depth <number>",
+    "Minimum heading level to include (1-6)",
+    parseInt,
+    1,
+  )
+  .option(
+    "--max-depth <number>",
+    "Maximum heading level to include (1-6)",
+    parseInt,
+    6,
+  )
+  .option("--include-line-numbers", "Include line numbers in TOC entries")
+  .option(
+    "--position <position>",
+    "TOC position: top|after-title|before-content|replace",
+    "after-title",
+  )
+  .option("--title <title>", "TOC title", "Table of Contents")
+  .option("--heading-level <level>", "TOC heading level (1-6)", parseInt, 2)
+  .option(
+    "--marker <marker>",
+    "Custom marker for TOC replacement (requires --position replace)",
+  )
+  .option("--skip-empty", "Skip files that don't have any headings", true)
+  .option("-d, --dry-run", "Show what would be changed without making changes")
+  .option("-v, --verbose", "Show detailed output")
+  .option("--json", "Output results in JSON format")
   .addHelpText(
-    'after',
+    "after",
     `
 Examples:
   $ markmv toc README.md
@@ -360,68 +485,128 @@ TOC Customization:
   --marker <marker>        Custom marker for replacement (e.g., "<!-- TOC -->")
   --min-depth <number>     Minimum heading level to include (1-6, default: 1)
   --max-depth <number>     Maximum heading level to include (1-6, default: 6)
-  --include-line-numbers   Include line numbers in TOC entries`
+  --include-line-numbers   Include line numbers in TOC entries`,
   )
   .action(tocCommand);
 
 program
-  .command('validate')
-  .description('Find broken links in markdown files')
+  .command("validate")
+  .description("Find broken links in markdown files")
   .argument(
-    '[files...]',
-    'Markdown files to validate (supports globs like *.md, **/*.md, defaults to current directory)'
+    "[files...]",
+    "Markdown files to validate (supports globs like *.md, **/*.md, defaults to current directory)",
   )
   .option(
-    '--link-types <types>',
-    'Comma-separated link types to check: internal,external,anchor,image,reference,claude-import'
-  )
-  .option('--check-external', 'Enable external HTTP/HTTPS link validation', false)
-  .option('--external-timeout <ms>', 'Timeout for external link validation (ms)', parseInt, 5000)
-  .option('--strict-internal', 'Treat missing internal files as errors', true)
-  .option('--check-claude-imports', 'Validate Claude import paths', true)
-  .option('--check-circular', 'Check for circular references in file dependencies', false)
-  .option(
-    '--check-content-freshness',
-    'Enable content freshness detection for external links',
-    false
-  )
-  .option('--freshness-threshold <days>', 'Content staleness threshold in days', parseInt, 730)
-  .option('--max-depth <number>', 'Maximum depth to traverse subdirectories', parseInt)
-  .option('--only-broken', 'Show only broken links, not all validation results', true)
-  .option('--group-by <method>', 'Group results by: file|type', 'file')
-  .option('--include-context', 'Include line numbers and context in output', false)
-  .option('--git-diff <ref>', 'Only validate files changed since the specified git reference')
-  .option('--git-staged', 'Only validate files currently staged in git')
-  .option('--cache', 'Enable validation result caching for faster subsequent runs')
-  .option('--cache-dir <dir>', 'Cache directory path', '.markmv-cache')
-  .option('--fail-fast', 'Exit immediately on first broken link found')
-  .option('--include-dependencies', 'Include files that depend on changed files', true)
-  .option('--enable-auth-detection', 'Enable authentication-aware link validation', false)
-  .option('--disallow-auth-required', 'Treat auth-required links as broken instead of valid', false)
-  .option(
-    '--auth-credentials <json>',
-    'JSON object with domain:credential mapping for authentication'
-  )
-  .option('--auth-headers <json>', 'JSON object with domain-specific headers for authentication')
-  .option('-v, --verbose', 'Show detailed output with processing information')
-  .option('--json', 'Output results in JSON format')
-  .option('--obsidian', 'Validate [[wikilinks]] by resolving them against the whole vault')
-  .option(
-    '--fix',
-    'Suggest fixes for broken internal links and apply them interactively on a terminal'
+    "--link-types <types>",
+    "Comma-separated link types to check: internal,external,anchor,image,reference,claude-import",
   )
   .option(
-    '--skip-domains <domains>',
-    'Comma-separated hostnames never contacted for external checks'
+    "--check-external",
+    "Enable external HTTP/HTTPS link validation",
+    false,
   )
   .option(
-    '--require-frontmatter <fields>',
-    'Comma-separated frontmatter fields every file must define'
+    "--external-timeout <ms>",
+    "Timeout for external link validation (ms)",
+    parseInt,
+    5000,
   )
-  .option('--enforce-link-format <format>', 'Enforce internal link href form: relative|absolute')
-  .option('--explain <file>', 'Print the recorded stack for a file that failed to parse')
+  .option("--strict-internal", "Treat missing internal files as errors", true)
+  .option("--check-claude-imports", "Validate Claude import paths", true)
+  .option(
+    "--check-circular",
+    "Check for circular references in file dependencies",
+    false,
+  )
+  .option(
+    "--check-content-freshness",
+    "Enable content freshness detection for external links",
+    false,
+  )
+  .option(
+    "--freshness-threshold <days>",
+    "Content staleness threshold in days",
+    parseInt,
+    730,
+  )
+  .option(
+    "--max-depth <number>",
+    "Maximum depth to traverse subdirectories",
+    parseInt,
+  )
+  .option(
+    "--only-broken",
+    "Show only broken links, not all validation results",
+    true,
+  )
+  .option("--group-by <method>", "Group results by: file|type", "file")
+  .option(
+    "--include-context",
+    "Include line numbers and context in output",
+    false,
+  )
+  .option(
+    "--git-diff <ref>",
+    "Only validate files changed since the specified git reference",
+  )
+  .option("--git-staged", "Only validate files currently staged in git")
+  .option(
+    "--cache",
+    "Enable validation result caching for faster subsequent runs",
+  )
+  .option("--cache-dir <dir>", "Cache directory path", ".markmv-cache")
+  .option("--fail-fast", "Exit immediately on first broken link found")
+  .option(
+    "--include-dependencies",
+    "Include files that depend on changed files",
+    true,
+  )
+  .option(
+    "--enable-auth-detection",
+    "Enable authentication-aware link validation",
+    false,
+  )
+  .option(
+    "--disallow-auth-required",
+    "Treat auth-required links as broken instead of valid",
+    false,
+  )
+  .option(
+    "--auth-credentials <json>",
+    "JSON object with domain:credential mapping for authentication",
+  )
+  .option(
+    "--auth-headers <json>",
+    "JSON object with domain-specific headers for authentication",
+  )
+  .option("-v, --verbose", "Show detailed output with processing information")
+  .option("--json", "Output results in JSON format")
+  .option(
+    "--obsidian",
+    "Validate [[wikilinks]] by resolving them against the whole vault",
+  )
+  .option(
+    "--fix",
+    "Suggest fixes for broken internal links and apply them interactively on a terminal",
+  )
+  .option(
+    "--skip-domains <domains>",
+    "Comma-separated hostnames never contacted for external checks",
+  )
+  .option(
+    "--require-frontmatter <fields>",
+    "Comma-separated frontmatter fields every file must define",
+  )
+  .option(
+    "--enforce-link-format <format>",
+    "Enforce internal link href form: relative|absolute",
+  )
+  .option(
+    "--explain <file>",
+    "Print the recorded stack for a file that failed to parse",
+  )
   .addHelpText(
-    'after',
+    "after",
     `
 Examples:
   $ markmv validate                                         # Validate current directory
@@ -475,7 +660,7 @@ Content Freshness Options:
 
 Output Options:
   --group-by file    Group broken links by file (default)
-  --group-by type    Group broken links by link type`
+  --group-by type    Group broken links by link type`,
   )
   .action(
     (
@@ -506,29 +691,29 @@ Output Options:
         requireFrontmatter?: string;
         enforceLinkFormat?: string;
         explain?: string;
-      }
+      },
     ) => {
       // Parse comma-separated standards-enforcement options before they enter the typed options
       const skipDomains = options.skipDomains
         ? options.skipDomains
-            .split(',')
+            .split(",")
             .map((d) => d.trim())
-            .filter((d) => d !== '')
+            .filter((d) => d !== "")
         : undefined;
       const requireFrontmatter = options.requireFrontmatter
         ? options.requireFrontmatter
-            .split(',')
+            .split(",")
             .map((f) => f.trim())
-            .filter((f) => f !== '')
+            .filter((f) => f !== "")
         : undefined;
       // An invalid format must fail loudly -- silently disabling enforcement hides the typo
       if (
         options.enforceLinkFormat !== undefined &&
-        options.enforceLinkFormat !== 'relative' &&
-        options.enforceLinkFormat !== 'absolute'
+        options.enforceLinkFormat !== "relative" &&
+        options.enforceLinkFormat !== "absolute"
       ) {
         console.error(
-          `Invalid link format: ${options.enforceLinkFormat}. Valid formats: relative, absolute`
+          `Invalid link format: ${options.enforceLinkFormat}. Valid formats: relative, absolute`,
         );
         process.exitCode = 1;
         return;
@@ -536,9 +721,11 @@ Output Options:
       const enforceLinkFormat = options.enforceLinkFormat;
 
       // Validate the group-by option before it enters the typed options
-      const groupBy = options.groupBy ?? 'file';
-      if (groupBy !== 'file' && groupBy !== 'type') {
-        console.error(`Invalid grouping: ${groupBy}. Valid groupings: file, type`);
+      const groupBy = options.groupBy ?? "file";
+      if (groupBy !== "file" && groupBy !== "type") {
+        console.error(
+          `Invalid grouping: ${groupBy}. Valid groupings: file, type`,
+        );
         process.exitCode = 1;
         return;
       }
@@ -551,14 +738,16 @@ Output Options:
         if (options.authCredentials) {
           const parsed: unknown = JSON.parse(options.authCredentials);
           if (!isRecordOfStrings(parsed)) {
-            throw new Error('auth-credentials must be a JSON object of string values');
+            throw new Error(
+              "auth-credentials must be a JSON object of string values",
+            );
           }
           authCredentials = parsed;
         }
       } catch (error) {
         console.error(
-          'Error parsing auth-credentials JSON:',
-          error instanceof Error ? error.message : String(error)
+          "Error parsing auth-credentials JSON:",
+          error instanceof Error ? error.message : String(error),
         );
         process.exit(1);
       }
@@ -567,14 +756,16 @@ Output Options:
         if (options.authHeaders) {
           const parsed: unknown = JSON.parse(options.authHeaders);
           if (!isRecordOfStringRecords(parsed)) {
-            throw new Error('auth-headers must be a JSON object of objects of string values');
+            throw new Error(
+              "auth-headers must be a JSON object of objects of string values",
+            );
           }
           authHeaders = parsed;
         }
       } catch (error) {
         console.error(
-          'Error parsing auth-headers JSON:',
-          error instanceof Error ? error.message : String(error)
+          "Error parsing auth-headers JSON:",
+          error instanceof Error ? error.message : String(error),
         );
         process.exit(1);
       }
@@ -608,7 +799,10 @@ Output Options:
       if (skipDomains !== undefined) {
         validationOptions.skipDomains = skipDomains;
       }
-      if (options.externalRetries !== undefined && Number.isFinite(options.externalRetries)) {
+      if (
+        options.externalRetries !== undefined &&
+        Number.isFinite(options.externalRetries)
+      ) {
         validationOptions.externalRetries = options.externalRetries;
       }
       if (requireFrontmatter !== undefined) {
@@ -628,26 +822,30 @@ Output Options:
       }
 
       return validateCommand(files, validationOptions);
-    }
+    },
   );
 
 program
-  .command('refactor-headings')
-  .description('Refactor markdown headings and update all affected links')
+  .command("refactor-headings")
+  .description("Refactor markdown headings and update all affected links")
   .argument(
-    '[files...]',
-    'Markdown files to process (supports globs, defaults to current directory)'
+    "[files...]",
+    "Markdown files to process (supports globs, defaults to current directory)",
   )
-  .option('--old-heading <text>', 'Original heading text to find and replace')
-  .option('--new-heading <text>', 'New heading text to replace with')
-  .option('-r, --recursive', 'Process directories recursively')
-  .option('--max-depth <number>', 'Maximum depth to traverse subdirectories', parseInt)
-  .option('--no-update-cross-references', 'Skip updating cross-file references')
-  .option('-d, --dry-run', 'Show what would be changed without making changes')
-  .option('-v, --verbose', 'Show detailed output with processing information')
-  .option('--json', 'Output results in JSON format')
+  .option("--old-heading <text>", "Original heading text to find and replace")
+  .option("--new-heading <text>", "New heading text to replace with")
+  .option("-r, --recursive", "Process directories recursively")
+  .option(
+    "--max-depth <number>",
+    "Maximum depth to traverse subdirectories",
+    parseInt,
+  )
+  .option("--no-update-cross-references", "Skip updating cross-file references")
+  .option("-d, --dry-run", "Show what would be changed without making changes")
+  .option("-v, --verbose", "Show detailed output with processing information")
+  .option("--json", "Output results in JSON format")
   .addHelpText(
-    'after',
+    "after",
     `
   Examples:
   $ markmv refactor-headings docs/ --old-heading "API Reference" --new-heading "API Documentation" --recursive
@@ -676,28 +874,39 @@ The command will:
 Slug Generation:
 Headings are converted to URL-friendly anchor slugs using the same algorithm
 as the toc command: lowercase, special characters become hyphens, spaces
-become hyphens, multiple hyphens collapsed to single hyphens.`
+become hyphens, multiple hyphens collapsed to single hyphens.`,
   )
   .action(refactorHeadingsCommand);
 
 program
-  .command('graph')
-  .description('Generate interactive link graphs from markdown file relationships')
-  .argument(
-    '[files...]',
-    'Markdown files to analyze (supports globs like *.md, **/*.md, defaults to current directory)'
+  .command("graph")
+  .description(
+    "Generate interactive link graphs from markdown file relationships",
   )
-  .option('-f, --format <format>', 'Output format: json|mermaid|dot|html', 'json')
-  .option('-o, --output <file>', 'Output file path')
-  .option('--include-external', 'Include external links in the graph', false)
-  .option('--include-images', 'Include image links in the graph', true)
-  .option('--include-anchors', 'Include anchor links in the graph', false)
-  .option('--max-depth <number>', 'Maximum depth for dependency traversal', parseInt, 10)
-  .option('--base-dir <path>', 'Base directory for relative path calculations')
-  .option('-v, --verbose', 'Show detailed output with processing information')
-  .option('--json', 'Output results in JSON format')
+  .argument(
+    "[files...]",
+    "Markdown files to analyze (supports globs like *.md, **/*.md, defaults to current directory)",
+  )
+  .option(
+    "-f, --format <format>",
+    "Output format: json|mermaid|dot|html",
+    "json",
+  )
+  .option("-o, --output <file>", "Output file path")
+  .option("--include-external", "Include external links in the graph", false)
+  .option("--include-images", "Include image links in the graph", true)
+  .option("--include-anchors", "Include anchor links in the graph", false)
+  .option(
+    "--max-depth <number>",
+    "Maximum depth for dependency traversal",
+    parseInt,
+    10,
+  )
+  .option("--base-dir <path>", "Base directory for relative path calculations")
+  .option("-v, --verbose", "Show detailed output with processing information")
+  .option("--json", "Output results in JSON format")
   .addHelpText(
-    'after',
+    "after",
     `
   Examples:
   $ markmv graph                                    # Generate JSON graph for current directory
@@ -721,36 +930,70 @@ Analysis Features:
   • Hub detection (highly connected files)
   • Orphan detection (unconnected files)
   • Circular reference detection
-  • Strongly connected components`
+  • Strongly connected components`,
   )
   .action(graphCommand);
 
 program
-  .command('check-links')
-  .description('Check external HTTP/HTTPS links in markdown files')
-  .argument('[files...]', 'Markdown files to check (supports globs, defaults to current directory)')
-  .option('--timeout <ms>', 'Timeout for external link validation (ms)', parseInt, 10000)
-  .option('--retry <count>', 'Number of retry attempts for failed requests', parseInt, 3)
-  .option('--retry-delay <ms>', 'Delay between retry attempts (ms)', parseInt, 1000)
-  .option('--concurrency <count>', 'Maximum concurrent requests', parseInt, 10)
-  .option('--method <method>', 'HTTP method to use (HEAD|GET)', 'HEAD')
-  .option('--no-follow-redirects', 'Do not follow HTTP redirects')
-  .option('--ignore-status <codes>', 'Comma-separated HTTP status codes to ignore', '403,999')
-  .option('--ignore-patterns <patterns>', 'Comma-separated regex patterns to ignore')
-  .option('--no-cache', 'Disable result caching')
-  .option('--cache-duration <minutes>', 'Cache duration in minutes', parseInt, 60)
-  .option('--no-progress', 'Hide progress indicator')
-  .option('--format <format>', 'Output format: text|json|markdown|csv', 'text')
-  .option('--include-response-times', 'Include response times in output')
-  .option('--include-headers', 'Include HTTP headers in detailed output')
-  .option('--max-depth <number>', 'Maximum depth to traverse subdirectories', parseInt)
-  .option('--group-by <method>', 'Group results by: file|status|domain', 'file')
-  .option('--output <file>', 'Output file path for results')
-  .option('--config <file>', 'Configuration file path')
-  .option('-v, --verbose', 'Show detailed output with processing information')
-  .option('-d, --dry-run', 'Show what would be checked without making requests')
+  .command("check-links")
+  .description("Check external HTTP/HTTPS links in markdown files")
+  .argument(
+    "[files...]",
+    "Markdown files to check (supports globs, defaults to current directory)",
+  )
+  .option(
+    "--timeout <ms>",
+    "Timeout for external link validation (ms)",
+    parseInt,
+    10000,
+  )
+  .option(
+    "--retry <count>",
+    "Number of retry attempts for failed requests",
+    parseInt,
+    3,
+  )
+  .option(
+    "--retry-delay <ms>",
+    "Delay between retry attempts (ms)",
+    parseInt,
+    1000,
+  )
+  .option("--concurrency <count>", "Maximum concurrent requests", parseInt, 10)
+  .option("--method <method>", "HTTP method to use (HEAD|GET)", "HEAD")
+  .option("--no-follow-redirects", "Do not follow HTTP redirects")
+  .option(
+    "--ignore-status <codes>",
+    "Comma-separated HTTP status codes to ignore",
+    "403,999",
+  )
+  .option(
+    "--ignore-patterns <patterns>",
+    "Comma-separated regex patterns to ignore",
+  )
+  .option("--no-cache", "Disable result caching")
+  .option(
+    "--cache-duration <minutes>",
+    "Cache duration in minutes",
+    parseInt,
+    60,
+  )
+  .option("--no-progress", "Hide progress indicator")
+  .option("--format <format>", "Output format: text|json|markdown|csv", "text")
+  .option("--include-response-times", "Include response times in output")
+  .option("--include-headers", "Include HTTP headers in detailed output")
+  .option(
+    "--max-depth <number>",
+    "Maximum depth to traverse subdirectories",
+    parseInt,
+  )
+  .option("--group-by <method>", "Group results by: file|status|domain", "file")
+  .option("--output <file>", "Output file path for results")
+  .option("--config <file>", "Configuration file path")
+  .option("-v, --verbose", "Show detailed output with processing information")
+  .option("-d, --dry-run", "Show what would be checked without making requests")
   .addHelpText(
-    'after',
+    "after",
     `
 Examples:
   $ markmv check-links                                    # Check current directory
@@ -782,19 +1025,22 @@ Output Formats:
 Grouping Options:
   file      Group results by file (default)
   status    Group results by HTTP status code
-  domain    Group results by domain name`
+  domain    Group results by domain name`,
   )
   .action(checkLinksCommand);
 
 program
-  .command('embed')
-  .description('Convert linked local images to inline base64 data URIs')
-  .argument('<files...>', 'Markdown files to process (supports globs like *.md, **/*.md)')
-  .option('-d, --dry-run', 'Show what would be changed without making changes')
-  .option('-v, --verbose', 'Show detailed output with processing information')
-  .option('--json', 'Output results in JSON format')
+  .command("embed")
+  .description("Convert linked local images to inline base64 data URIs")
+  .argument(
+    "<files...>",
+    "Markdown files to process (supports globs like *.md, **/*.md)",
+  )
+  .option("-d, --dry-run", "Show what would be changed without making changes")
+  .option("-v, --verbose", "Show detailed output with processing information")
+  .option("--json", "Output results in JSON format")
   .addHelpText(
-    'after',
+    "after",
     `
 Examples:
   $ markmv embed doc.md
@@ -806,23 +1052,26 @@ Behaviour:
   markdown link to a data:image/...;base64 URI. An image file is deleted
   only when no file in the processed set still references it. Missing
   images and unsupported extensions are errors (exit 1); remote URLs and
-  existing data URIs are left untouched.`
+  existing data URIs are left untouched.`,
   )
   .action(embedCommand);
 
 program
-  .command('extract')
-  .description('Write inline base64 images out to image files and link to them')
-  .argument('<files...>', 'Markdown files to process (supports globs like *.md, **/*.md)')
-  .option(
-    '--output-dir <dir>',
-    'Directory for extracted image files (default: alongside each markdown file)'
+  .command("extract")
+  .description("Write inline base64 images out to image files and link to them")
+  .argument(
+    "<files...>",
+    "Markdown files to process (supports globs like *.md, **/*.md)",
   )
-  .option('-d, --dry-run', 'Show what would be changed without making changes')
-  .option('-v, --verbose', 'Show detailed output with processing information')
-  .option('--json', 'Output results in JSON format')
+  .option(
+    "--output-dir <dir>",
+    "Directory for extracted image files (default: alongside each markdown file)",
+  )
+  .option("-d, --dry-run", "Show what would be changed without making changes")
+  .option("-v, --verbose", "Show detailed output with processing information")
+  .option("--json", "Output results in JSON format")
   .addHelpText(
-    'after',
+    "after",
     `
 Examples:
   $ markmv extract doc.md
@@ -834,20 +1083,23 @@ Behaviour:
   from the alt text when usable, else img-1.png, img-2.png, ...; extension
   from the mime type) and the markdown is rewritten to link to it. Existing
   files are never overwritten (-2, -3 suffixes are used). Non-image or
-  non-base64 data URIs are errors (exit 1).`
+  non-base64 data URIs are errors (exit 1).`,
   )
   .action(extractCommand);
 
 program
-  .command('wayback')
-  .description('Convert HTTP(S) links to Wayback Machine archive URLs')
-  .argument('<files...>', 'Markdown files to process (supports globs like *.md, **/*.md)')
-  .option('-r, --recursive', 'Process directories recursively')
-  .option('-d, --dry-run', 'Show what would be changed without making changes')
-  .option('-v, --verbose', 'Show detailed output with processing information')
-  .option('--json', 'Output results in JSON format')
+  .command("wayback")
+  .description("Convert HTTP(S) links to Wayback Machine archive URLs")
+  .argument(
+    "<files...>",
+    "Markdown files to process (supports globs like *.md, **/*.md)",
+  )
+  .option("-r, --recursive", "Process directories recursively")
+  .option("-d, --dry-run", "Show what would be changed without making changes")
+  .option("-v, --verbose", "Show detailed output with processing information")
+  .option("--json", "Output results in JSON format")
   .addHelpText(
-    'after',
+    "after",
     `
 Examples:
   $ markmv wayback docs/*.md --dry-run
@@ -856,24 +1108,27 @@ Examples:
   $ markmv wayback docs/ --json
 
 Links already pointing at web.archive.org are preserved; mailto, ftp, and
-internal links are left untouched. No network calls are made.`
+internal links are left untouched. No network calls are made.`,
   )
   .action(async (files: string[], options: WaybackOptions) => {
     await waybackCommand(files, options);
   });
 
 program
-  .command('refactor-index')
+  .command("refactor-index")
   .description(
-    'Refactor between index file naming conventions (README.md <-> index.md) with automatic link updates'
+    "Refactor between index file naming conventions (README.md <-> index.md) with automatic link updates",
   )
-  .argument('<file>', 'Path to the README.md or index.md file to convert in place')
-  .option('--to <convention>', 'Target naming convention: readme|index')
-  .option('-d, --dry-run', 'Show what would be changed without making changes')
-  .option('-v, --verbose', 'Show detailed output with processing information')
-  .option('--json', 'Output results in JSON format')
+  .argument(
+    "<file>",
+    "Path to the README.md or index.md file to convert in place",
+  )
+  .option("--to <convention>", "Target naming convention: readme|index")
+  .option("-d, --dry-run", "Show what would be changed without making changes")
+  .option("-v, --verbose", "Show detailed output with processing information")
+  .option("--json", "Output results in JSON format")
   .addHelpText(
-    'after',
+    "after",
     `
 Examples:
   $ markmv refactor-index docs/README.md                  # Convert README.md to index.md
@@ -883,24 +1138,29 @@ Examples:
 Notes:
   The target convention defaults to the opposite of the file's current name.
   Only exact README.md and index.md basenames are accepted; the conversion is
-  refused when the target name already exists in the same directory.`
+  refused when the target name already exists in the same directory.`,
   )
   .action(refactorIndexCommand);
 
 program
-  .command('tree')
-  .description('Visualise the markdown file tree with per-file statistics and warnings')
-  .argument('[path]', 'Directory or markdown file to scan (defaults to current directory)')
-  .option('-f, --format <format>', 'Output format: ascii|json', 'ascii')
-  .option(
-    '--max-depth <number>',
-    'Limit tree rendering depth (statistics always cover the full scan)',
-    parseInt
+  .command("tree")
+  .description(
+    "Visualise the markdown file tree with per-file statistics and warnings",
   )
-  .option('-v, --verbose', 'Show detailed output with processing information')
-  .option('--json', 'Output results in JSON format (alias for --format json)')
+  .argument(
+    "[path]",
+    "Directory or markdown file to scan (defaults to current directory)",
+  )
+  .option("-f, --format <format>", "Output format: ascii|json", "ascii")
+  .option(
+    "--max-depth <number>",
+    "Limit tree rendering depth (statistics always cover the full scan)",
+    parseInt,
+  )
+  .option("-v, --verbose", "Show detailed output with processing information")
+  .option("--json", "Output results in JSON format (alias for --format json)")
   .addHelpText(
-    'after',
+    "after",
     `
 Examples:
   $ markmv tree                                      # Render the tree for the current directory
@@ -920,7 +1180,7 @@ Notes:
   Directories render before files, each group alphabetically
   Internal links are checked for file existence only (no network)
   Statistics always cover the full scan, regardless of --max-depth
-  Read-only command: no files are modified, so there is no --dry-run`
+  Read-only command: no files are modified, so there is no --dry-run`,
   )
   .action(treeCommand);
 
