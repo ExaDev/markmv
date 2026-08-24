@@ -215,8 +215,7 @@ export const PLATFORM_TEST_PATHS = {
 
 /** Get platform-appropriate test paths */
 export function getTestPaths():
-  | typeof PLATFORM_TEST_PATHS.windows
-  | typeof PLATFORM_TEST_PATHS.unix {
+  typeof PLATFORM_TEST_PATHS.windows | typeof PLATFORM_TEST_PATHS.unix {
   const platformInfo = getPlatformInfo();
 
   if (platformInfo.isWindows) {
