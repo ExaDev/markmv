@@ -43,7 +43,10 @@ updates:
 
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
-    directory: "/"
+    # Dependabot's file fetcher only looks for action.yml/action.yaml inside a configured directory itself, it does not walk into subdirectories of "/" looking for composite actions -- the pins inside .github/actions/setup/action.yml (pnpm/action-setup, actions/setup-node, actions/cache) need their own directory entry or Dependabot never proposes a bump for them at all.
+    directories:
+      - "/"
+      - "/.github/actions/*"
     schedule:
       interval: "weekly"
       day: "monday"
