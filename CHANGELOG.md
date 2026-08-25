@@ -1,3 +1,9 @@
+## [1.39.2](https://github.com/ExaDev/markmv/compare/v1.39.1...v1.39.2) (2026-08-25)
+
+### Continuous Integration
+
+- have Dependabot also scan the composite action's own directory ([5512b6d](https://github.com/ExaDev/markmv/commit/5512b6d2c3920f9175168922ad1cd7c9572765f8)), closes [#98](https://github.com/ExaDev/markmv/issues/98)
+
 ## [1.39.1](https://github.com/ExaDev/markmv/compare/v1.39.0...v1.39.1) (2026-08-24)
 
 ### Documentation

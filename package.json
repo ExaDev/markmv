@@ -1,6 +1,6 @@
 {
   "name": "markmv",
-  "version": "1.39.1",
+  "version": "1.39.2",
   "description": "TypeScript CLI for markdown file operations with intelligent link refactoring",
   "type": "module",
   "packageManager": "pnpm@11.22.0",
