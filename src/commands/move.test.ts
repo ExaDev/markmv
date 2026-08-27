@@ -7,8 +7,9 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { moveCommand } from "./move.js";
+import { join, resolve } from "node:path";
+import { PassThrough } from "node:stream";
+import { moveCommand, parsePairsInput } from "./move.js";
 
 // Mock console methods to capture output
 const mockConsoleLog = vi
@@ -620,6 +621,347 @@ describe("Move Command", () => {
 
       expect(existsSync(join(destDir, "InDir.md"))).toBe(true);
       expect(existsSync(join(destDir, "Loose.md"))).toBe(true);
+    });
+  });
+
+  describe("parsePairsInput", () => {
+    it("should parse multiple pairs, preserving spaces inside paths", () => {
+      const pairs = parsePairsInput(
+        "a/one.md\ta/Alpha.md\nmy notes/two.md\tmy notes/Beta.md\n",
+      );
+
+      expect(pairs).toEqual([
+        { source: "a/one.md", destination: "a/Alpha.md" },
+        { source: "my notes/two.md", destination: "my notes/Beta.md" },
+      ]);
+    });
+
+    it("should skip blank and whitespace-only lines", () => {
+      const pairs = parsePairsInput("\n   \na.md\tb.md\n\t\n");
+
+      expect(pairs).toEqual([{ source: "a.md", destination: "b.md" }]);
+    });
+
+    it("should tolerate CRLF line endings through trimming", () => {
+      const pairs = parsePairsInput("a.md\tb.md\r\nc.md\td.md\r\n");
+
+      expect(pairs).toEqual([
+        { source: "a.md", destination: "b.md" },
+        { source: "c.md", destination: "d.md" },
+      ]);
+    });
+
+    it("should trim padding around both fields", () => {
+      const pairs = parsePairsInput("  a.md \t  b.md  \n");
+
+      expect(pairs).toEqual([{ source: "a.md", destination: "b.md" }]);
+    });
+
+    it("should throw with the 1-based line number for a line without a tab", () => {
+      expect(() => parsePairsInput("a.md\tb.md\njust-one-field\n")).toThrow(
+        "pairs file line 2 must contain a source and destination separated by a tab",
+      );
+    });
+
+    it("should throw for a line whose destination field is missing", () => {
+      // The trailing tab is whitespace, so trimming removes it and the line parses as tab-less
+      expect(() => parsePairsInput("a.md\t\n")).toThrow(
+        "pairs file line 1 must contain a source and destination separated by a tab",
+      );
+    });
+  });
+
+  describe("Pair Mode (--pairs)", () => {
+    it("should move two files in one operation, rewriting cross-links and bystander links", async () => {
+      const dirA = join(testDir, "a");
+      const dirB = join(testDir, "b");
+      mkdirSync(dirA, { recursive: true });
+      mkdirSync(dirB, { recursive: true });
+      const one = join(dirA, "one.md");
+      const two = join(dirB, "two.md");
+      const bystander = join(testDir, "bystander.md");
+      writeFileSync(one, "# One\n\n[Two](../b/two.md)\n");
+      writeFileSync(two, "# Two\n\n[One](../a/one.md)\n");
+      writeFileSync(
+        bystander,
+        "# Bystander\n\n[One](./a/one.md) and [Two](./b/two.md)\n",
+      );
+
+      const alpha = join(dirA, "Alpha.md");
+      const beta = join(dirB, "Beta.md");
+      await moveCommand([one, alpha, two, beta], { pairs: true });
+
+      expect(existsSync(alpha)).toBe(true);
+      expect(existsSync(beta)).toBe(true);
+      expect(existsSync(one)).toBe(false);
+      expect(existsSync(two)).toBe(false);
+      // Links between the co-moved files point at their new sibling locations
+      expect(readFileSync(alpha, "utf-8")).toContain("[Two](../b/Beta.md)");
+      expect(readFileSync(beta, "utf-8")).toContain("[One](../a/Alpha.md)");
+      // Inbound links from the bystander are rewritten too
+      expect(readFileSync(bystander, "utf-8")).toContain("[One](./a/Alpha.md)");
+      expect(readFileSync(bystander, "utf-8")).toContain("[Two](./b/Beta.md)");
+    });
+
+    it("should print the planned rewrites and change nothing in dry run", async () => {
+      const dirA = join(testDir, "a");
+      const dirB = join(testDir, "b");
+      mkdirSync(dirA, { recursive: true });
+      mkdirSync(dirB, { recursive: true });
+      const one = join(dirA, "one.md");
+      const two = join(dirB, "two.md");
+      const bystander = join(testDir, "bystander.md");
+      writeFileSync(one, "# One\n\n[Two](../b/two.md)\n");
+      writeFileSync(two, "# Two\n\n[One](../a/one.md)\n");
+      writeFileSync(bystander, "# Bystander\n\n[One](./a/one.md)\n");
+
+      const alpha = join(dirA, "Alpha.md");
+      const beta = join(dirB, "Beta.md");
+      await moveCommand([one, alpha, two, beta], { pairs: true, dryRun: true });
+
+      const output = mockConsoleLog.mock.calls
+        .map((args) => args.join(" "))
+        .join("\n");
+      expect(output).toContain("Changes that would be made:");
+      expect(output).toContain("../b/two.md → ../b/Beta.md");
+      expect(output).toContain("./a/one.md → ./a/Alpha.md");
+      expect(existsSync(one)).toBe(true);
+      expect(existsSync(two)).toBe(true);
+      expect(existsSync(alpha)).toBe(false);
+      expect(existsSync(beta)).toBe(false);
+    });
+
+    it("should exit when given no arguments", async () => {
+      await expect(moveCommand([], { pairs: true })).rejects.toThrow(
+        "Process exit called with code 1",
+      );
+
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        "❌ Error: --pairs requires at least one source and destination pair (an even number of arguments)",
+      );
+      expect(mockProcessExit).toHaveBeenCalledWith(1);
+    });
+
+    it("should exit when given an odd number of arguments", async () => {
+      await expect(
+        moveCommand(["a.md", "b.md", "c.md"], { pairs: true }),
+      ).rejects.toThrow("Process exit called with code 1");
+
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        "❌ Error: --pairs expects an even number of arguments (alternating source and destination), got 3",
+      );
+      expect(mockProcessExit).toHaveBeenCalledWith(1);
+    });
+
+    it("should exit listing a source that appears in more than one pair", async () => {
+      const a = join(testDir, "a.md");
+      const b = join(testDir, "b.md");
+      const c = join(testDir, "c.md");
+      writeFileSync(a, "# A\n");
+      writeFileSync(b, "# B\n");
+      writeFileSync(c, "# C\n");
+
+      await expect(moveCommand([a, b, a, c], { pairs: true })).rejects.toThrow(
+        "Process exit called with code 1",
+      );
+
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        "❌ Error: each source may appear in only one pair; duplicated sources:",
+      );
+      expect(mockConsoleError).toHaveBeenCalledWith(`   ${resolve(a)}`);
+    });
+
+    it("should exit listing every source that does not exist", async () => {
+      const existing = join(testDir, "existing.md");
+      writeFileSync(existing, "# Existing\n");
+      const missingOne = join(testDir, "missing-one.md");
+      const missingTwo = join(testDir, "missing-two.md");
+
+      await expect(
+        moveCommand(
+          [
+            existing,
+            join(testDir, "renamed.md"),
+            missingOne,
+            join(testDir, "renamed-one.md"),
+            missingTwo,
+            join(testDir, "renamed-two.md"),
+          ],
+          { pairs: true },
+        ),
+      ).rejects.toThrow("Process exit called with code 1");
+
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        "❌ Error: pair sources must be existing files:",
+      );
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        `   ${resolve(missingOne)}`,
+      );
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        `   ${resolve(missingTwo)}`,
+      );
+    });
+
+    it("should exit listing a directory source", async () => {
+      const dir = join(testDir, "folder");
+      mkdirSync(dir, { recursive: true });
+      const file = join(testDir, "file.md");
+      writeFileSync(file, "# File\n");
+
+      await expect(
+        moveCommand([dir, join(testDir, "x.md"), file, join(testDir, "y.md")], {
+          pairs: true,
+        }),
+      ).rejects.toThrow("Process exit called with code 1");
+
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        "❌ Error: pair sources must be existing files:",
+      );
+      expect(mockConsoleError).toHaveBeenCalledWith(`   ${resolve(dir)}`);
+    });
+  });
+
+  describe("Pair Mode (--pairs-file)", () => {
+    it("should move pairs from a file, including a path containing a space", async () => {
+      const sourceWithSpace = join(testDir, "my note.md");
+      const dest = join(testDir, "my-note.md");
+      const other = join(testDir, "other.md");
+      writeFileSync(sourceWithSpace, "# My note\n\n[Other](./other.md)\n");
+      writeFileSync(other, "# Other\n");
+      const pairsFile = join(testDir, "pairs.txt");
+      writeFileSync(
+        pairsFile,
+        `${sourceWithSpace}\t${dest}\n${other}\t${join(testDir, "nested", "other.md")}\n`,
+      );
+
+      await moveCommand([], { pairsFile });
+
+      expect(existsSync(dest)).toBe(true);
+      expect(existsSync(sourceWithSpace)).toBe(false);
+      expect(existsSync(join(testDir, "nested", "other.md"))).toBe(true);
+      // The link to the co-moved other.md is rewritten to its new sibling location
+      expect(readFileSync(dest, "utf-8")).toContain(
+        "[Other](./nested/other.md)",
+      );
+    });
+
+    it("should exit naming the line when the file has a malformed line", async () => {
+      const pairsFile = join(testDir, "pairs.txt");
+      writeFileSync(
+        pairsFile,
+        `${join(testDir, "a.md")}\t${join(testDir, "b.md")}\nno tab here\n`,
+      );
+
+      await expect(moveCommand([], { pairsFile })).rejects.toThrow(
+        "Process exit called with code 1",
+      );
+
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        "❌ Error: pairs file line 2 must contain a source and destination separated by a tab",
+      );
+      expect(mockProcessExit).toHaveBeenCalledWith(1);
+    });
+
+    it("should read pairs from stdin when the path is '-'", async () => {
+      const a = join(testDir, "a.md");
+      const b = join(testDir, "b.md");
+      writeFileSync(a, "# A\n");
+
+      const stdin = new PassThrough();
+      const stdinSpy = vi
+        .spyOn(process, "stdin", "get")
+        .mockReturnValue(stdin as unknown as typeof process.stdin);
+      try {
+        stdin.write(`${a}\t${b}\n`);
+        stdin.end();
+        await moveCommand([], { pairsFile: "-" });
+      } finally {
+        stdinSpy.mockRestore();
+      }
+
+      expect(existsSync(b)).toBe(true);
+      expect(existsSync(a)).toBe(false);
+    });
+
+    it("should exit when '-' is given but stdin is a TTY", async () => {
+      const ttyStdin = Object.assign(new PassThrough(), { isTTY: true });
+      const stdinSpy = vi
+        .spyOn(process, "stdin", "get")
+        .mockReturnValue(ttyStdin as unknown as typeof process.stdin);
+      try {
+        await expect(moveCommand([], { pairsFile: "-" })).rejects.toThrow(
+          "Process exit called with code 1",
+        );
+
+        expect(mockConsoleError).toHaveBeenCalledWith(
+          "❌ Error: --pairs-file - expects piped input",
+        );
+        expect(mockProcessExit).toHaveBeenCalledWith(1);
+      } finally {
+        stdinSpy.mockRestore();
+        ttyStdin.destroy();
+      }
+    });
+
+    it("should exit when the input contains no pairs", async () => {
+      const pairsFile = join(testDir, "pairs.txt");
+      writeFileSync(pairsFile, "\n   \n");
+
+      await expect(moveCommand([], { pairsFile })).rejects.toThrow(
+        "Process exit called with code 1",
+      );
+
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        `❌ Error: no source and destination pairs found in ${pairsFile}`,
+      );
+      expect(mockProcessExit).toHaveBeenCalledWith(1);
+    });
+  });
+
+  describe("Pair Mode Mutual Exclusion", () => {
+    it("should exit when --pairs and --pairs-file are combined", async () => {
+      await expect(
+        moveCommand(["a.md", "b.md"], { pairs: true, pairsFile: "pairs.txt" }),
+      ).rejects.toThrow("Process exit called with code 1");
+
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        "❌ Error: --pairs and --pairs-file are mutually exclusive",
+      );
+      expect(mockProcessExit).toHaveBeenCalledWith(1);
+    });
+
+    it("should exit when --pairs-file is given positional arguments", async () => {
+      await expect(
+        moveCommand(["a.md"], { pairsFile: "pairs.txt" }),
+      ).rejects.toThrow("Process exit called with code 1");
+
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        "❌ Error: --pairs-file reads pairs from a file, so positional arguments are not allowed",
+      );
+      expect(mockProcessExit).toHaveBeenCalledWith(1);
+    });
+  });
+
+  describe("Pair Mode Obsidian", () => {
+    it("should rewrite a basename-resolved wikilink when a paired move renames the note", async () => {
+      // The motivating scenario: one folder per entity with an index named after the folder, renamed to README.md
+      const orgDir = join(testDir, "organisations", "acme");
+      mkdirSync(orgDir, { recursive: true });
+      const acmeIndex = join(orgDir, "acme.md");
+      writeFileSync(acmeIndex, "# Acme\n");
+      const notes = join(orgDir, "notes.md");
+      writeFileSync(notes, "See [[acme]].\n");
+
+      await moveCommand([acmeIndex, join(orgDir, "README.md")], {
+        pairs: true,
+        obsidian: true,
+      });
+
+      expect(existsSync(join(orgDir, "README.md"))).toBe(true);
+      expect(existsSync(acmeIndex)).toBe(false);
+      const updatedNotes = readFileSync(notes, "utf-8");
+      expect(updatedNotes).toContain("[[README]]");
+      expect(updatedNotes).not.toContain("[[acme]]");
     });
   });
 });

@@ -136,8 +136,8 @@ describe("CLI Entry Point", () => {
         "Markdown files to convert (supports globs like *.md, **/*.md)",
       );
       expect(mockArgument).toHaveBeenCalledWith(
-        "<sources...>",
-        "Source markdown files, directories, or globs, and destination (last argument)",
+        "[sources...]",
+        "Source markdown files, directories, or globs, and destination (last argument); with --pairs, alternating source/destination pairs; omitted with --pairs-file",
       );
       expect(mockArgument).toHaveBeenCalledWith(
         "<source>",
@@ -243,6 +243,14 @@ describe("CLI Entry Point", () => {
       expect(mockOption).toHaveBeenCalledWith(
         "--enforce-link-format <format>",
         "Enforce internal link href form: relative|absolute",
+      );
+      expect(mockOption).toHaveBeenCalledWith(
+        "--pairs",
+        "Treat the arguments as alternating source/destination pairs moved in one operation (literal paths, no glob expansion)",
+      );
+      expect(mockOption).toHaveBeenCalledWith(
+        "--pairs-file <path>",
+        "Read source->destination pairs from a file, one pair per line separated by a tab ('-' reads stdin)",
       );
     });
   });
