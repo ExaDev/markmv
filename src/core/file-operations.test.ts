@@ -228,12 +228,10 @@ describe("FileOperations", () => {
       expect(result.deletedFiles).toEqual([file1, file2]);
 
       const content1 = await FileUtils.readTextFile(dest1);
-      await FileUtils.readTextFile(dest2);
+      const content2 = await FileUtils.readTextFile(dest2);
 
-      // Check that at least one direction of the link update worked
-      // TODO: Fix mutual dependency handling in bulk moves
       expect(content1).toContain("./moved2.md");
-      // expect(content2).toContain('./moved1.md');  // Temporarily disabled due to circular dependency edge case
+      expect(content2).toContain("./moved1.md");
     });
 
     it("should handle dry-run for multiple files", async () => {
@@ -293,6 +291,59 @@ describe("FileOperations", () => {
       );
       expect(updatedReadme).toContain("./assets/image1.png");
       expect(updatedReadme).toContain("./assets/image2.png");
+    });
+
+    it("should reject a source moved twice in one batch", async () => {
+      const file = join(testDir, "file.md");
+      const dest1 = join(testDir, "dest1.md");
+      const dest2 = join(testDir, "dest2.md");
+
+      await writeFile(file, "# File");
+
+      const result = await fileOps.moveFiles([
+        { source: file, destination: dest1 },
+        { source: file, destination: dest2 },
+      ]);
+
+      expect(result.success).toBe(false);
+      expect(result.errors.join("\n")).toContain(
+        "Multiple moves depart the same source",
+      );
+      expect(await FileUtils.exists(file)).toBe(true);
+      expect(await FileUtils.exists(dest1)).toBe(false);
+      expect(await FileUtils.exists(dest2)).toBe(false);
+    });
+
+    it("should resolve relative move paths and order chained renames", async () => {
+      // Library and MCP callers may spell paths relative to the cwd; the batch's validation and ordering must compare them against resolved destinations as like forms
+      const originalCwd = process.cwd();
+      process.chdir(testDir);
+      try {
+        await writeFile("chain-a.md", "# A\n\n[B](./chain-b.md)\n");
+        await writeFile("chain-b.md", "# B\n\n[A](./chain-a.md)\n");
+
+        // The first pair's destination is the second pair's source, listed consumer-first: the batch must vacate chain-b before chain-a claims it
+        const result = await fileOps.moveFiles([
+          { source: "chain-a.md", destination: "chain-b.md" },
+          { source: "chain-b.md", destination: "chain-c.md" },
+        ]);
+
+        expect(result.success).toBe(true);
+        const contentAtB = await FileUtils.readTextFile(
+          join(testDir, "chain-b.md"),
+        );
+        const contentAtC = await FileUtils.readTextFile(
+          join(testDir, "chain-c.md"),
+        );
+        // A now lives at chain-b and must link to B's final location; B lives at chain-c and must link to A's final location
+        expect(contentAtB).toContain("# A");
+        expect(contentAtB).toContain("./chain-c.md");
+        expect(contentAtC).toContain("# B");
+        expect(contentAtC).toContain("./chain-b.md");
+        expect(await FileUtils.exists(join(testDir, "chain-a.md"))).toBe(false);
+      } finally {
+        process.chdir(originalCwd);
+      }
     });
   });
 

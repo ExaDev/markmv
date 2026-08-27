@@ -38,20 +38,41 @@ function orderRelocations(moves: { source: string; destination: string }[]): {
   ordered: { source: string; destination: string }[];
   cyclic: { source: string; destination: string }[];
 } {
-  const ordered: { source: string; destination: string }[] = [];
-  let pending = moves.map((move) => ({ ...move }));
-  while (pending.length > 0) {
-    const ready = pending.filter(
-      (move) => !pending.some((other) => other.source === move.destination),
-    );
-    if (ready.length === 0) {
-      return { ordered, cyclic: pending };
+  // Sources and destinations are unique by contract, so each path is vacated by at most one relocation and claimed by at most one: blocking is a plain set membership, not a count
+  const departingPaths = new Set(moves.map((move) => move.source));
+  // Relocations waiting on each departing path, keyed by the path they will claim once it is vacated
+  const waitersByPath = new Map<
+    string,
+    { source: string; destination: string }[]
+  >();
+  for (const move of moves) {
+    if (!departingPaths.has(move.destination)) continue;
+    const waiters = waitersByPath.get(move.destination);
+    if (waiters === undefined) {
+      waitersByPath.set(move.destination, [move]);
+    } else {
+      waiters.push(move);
     }
-    const move = ready[0];
-    ordered.push({ source: move.source, destination: move.destination });
-    pending = pending.filter((entry) => entry !== move);
   }
-  return { ordered, cyclic: [] };
+  const blocked = new Set(
+    moves.filter((move) => departingPaths.has(move.destination)),
+  );
+  const queue = moves.filter((move) => !blocked.has(move));
+  const ordered: { source: string; destination: string }[] = [];
+  // for-of walks the queue as it grows: iteration reads the array live, so relocations unblocked by earlier entries join the tail and are still visited
+  for (const move of queue) {
+    ordered.push(move);
+    for (const waiter of waitersByPath.get(move.source) ?? []) {
+      // A waiter's unique destination pins it to exactly one blocker, so the first vacate frees it and later visits find nothing to delete
+      if (blocked.delete(waiter)) {
+        queue.push(waiter);
+      }
+    }
+  }
+  return {
+    ordered,
+    cyclic: [...blocked],
+  };
 }
 
 /**
@@ -399,9 +420,9 @@ export class FileOperations {
         };
       }
 
-      // Resolve destinations and validate all moves first
+      // Resolve both sides of every move first: sources to absolute paths and destinations through the directory-aware resolution, so every later comparison in the batch (collision validation, execution ordering, content bookkeeping) sees like forms regardless of how the caller spelled the paths
       const resolvedMoves = moves.map(({ source, destination }) => ({
-        source,
+        source: PathUtils.resolvePath(source),
         destination: PathUtils.resolveDestination(source, destination),
       }));
 
@@ -422,9 +443,16 @@ export class FileOperations {
         }
       }
 
-      // Validate the batch's destinations as a whole before anything moves, so both dry runs and real runs reject identically. Two relocations cannot land at the same path, and a destination already holding a file the batch does not itself vacate would be an overwrite, which move operations never perform. A destination occupied by another relocation's source is exempt: the execution order moves that source first.
+      // Validate the batch's sources and destinations as a whole before anything moves, so both dry runs and real runs reject identically. A file relocates at most once, two relocations cannot land at the same path, and a destination already holding a file the batch does not itself vacate would be an overwrite, which move operations never perform. A destination occupied by another relocation's source is exempt: the execution order moves that source first.
+      const destinationsBySource = new Map<string, string[]>();
       const sourcesByDestination = new Map<string, string[]>();
       for (const { source, destination } of resolvedMoves) {
+        const destinations = destinationsBySource.get(source);
+        if (destinations === undefined) {
+          destinationsBySource.set(source, [destination]);
+        } else {
+          destinations.push(destination);
+        }
         const sources = sourcesByDestination.get(destination);
         if (sources === undefined) {
           sourcesByDestination.set(destination, [source]);
@@ -433,27 +461,34 @@ export class FileOperations {
         }
       }
       const batchSources = new Set(resolvedMoves.map((move) => move.source));
-      const destinationErrors: string[] = [];
+      const batchErrors: string[] = [];
+      for (const [source, destinations] of destinationsBySource) {
+        if (destinations.length > 1) {
+          batchErrors.push(
+            `Multiple moves depart the same source: ${source} (to ${destinations.join(", ")})`,
+          );
+        }
+      }
       for (const [destination, sources] of sourcesByDestination) {
         if (sources.length > 1) {
-          destinationErrors.push(
+          batchErrors.push(
             `Multiple moves target the same destination: ${destination} (from ${sources.join(", ")})`,
           );
           continue;
         }
         if (existsSync(destination) && !batchSources.has(destination)) {
-          destinationErrors.push(
+          batchErrors.push(
             `Destination file already exists: ${destination} (while moving ${sources[0]})`,
           );
         }
       }
-      if (destinationErrors.length > 0) {
+      if (batchErrors.length > 0) {
         return {
           success: false,
           modifiedFiles: [],
           createdFiles: [],
           deletedFiles: [],
-          errors: destinationErrors,
+          errors: batchErrors,
           warnings: [],
           changes: [],
         };
