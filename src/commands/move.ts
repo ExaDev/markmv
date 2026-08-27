@@ -229,12 +229,7 @@ async function executePairMoves(
     }
 
     const fileOps = new FileOperations();
-    const moveOptions: MoveOperationOptions = {
-      dryRun: options.dryRun ?? false,
-      verbose: options.verbose ?? false,
-      createDirectories: true,
-      obsidian: options.obsidian ?? false,
-    };
+    const moveOptions = toMoveOperationOptions(options);
 
     // Destinations stay as given: moveFiles applies PathUtils.resolveDestination, which joins the source basename for existing-directory and trailing-slash destinations
     const result = await fileOps.moveFiles(moves, moveOptions);
@@ -401,6 +396,24 @@ async function pruneEmptyDirectories(directoryRoot: string): Promise<void> {
 }
 
 /**
+ * Map the command's move options onto the operation options both modes hand to FileOperations, so the pair and classic paths cannot drift apart.
+ *
+ * @param options - Move options from the command layer
+ *
+ * @returns Operation options for FileOperations
+ *
+ * @internal
+ */
+function toMoveOperationOptions(options: MoveOptions): MoveOperationOptions {
+  return {
+    dryRun: options.dryRun ?? false,
+    verbose: options.verbose ?? false,
+    createDirectories: true,
+    obsidian: options.obsidian ?? false,
+  };
+}
+
+/**
  * Report a completed (or failed) move operation: failure errors, the dry-run preview, the success summary, parse failures, warnings, and the verbose post-move link validation. Shared by the classic and pair modes so both report identically.
  *
  * @param result - The operation result to report
@@ -523,6 +536,38 @@ async function reportMoveResult(
   }
 }
 
+/** Usage line for the --pairs form of the move command */
+const PAIRS_USAGE =
+  "Usage: markmv move --pairs <source> <destination> [<source> <destination> ...]";
+
+/** Usage line for the --pairs-file form of the move command */
+const PAIRS_FILE_USAGE = "Usage: markmv move --pairs-file <path>";
+
+/**
+ * Report a pair-mode usage error and exit: the error line, the given usage lines, and an Examples block, mirroring the classic path's error output.
+ *
+ * @param error - One-line description of the rejected input
+ * @param usageLines - Usage lines naming the valid invocation forms
+ * @param examples - Example invocations, printed indented under an Examples header
+ *
+ * @internal
+ */
+function failPairUsage(
+  error: string,
+  usageLines: string[],
+  examples: string[],
+): never {
+  console.error(`❌ Error: ${error}`);
+  for (const line of usageLines) {
+    console.error(line);
+  }
+  console.error("Examples:");
+  for (const example of examples) {
+    console.error(`  ${example}`);
+  }
+  process.exit(1);
+}
+
 /**
  * Execute the move command to relocate markdown files (or files they link to) with intelligent link
  * refactoring.
@@ -569,27 +614,26 @@ export async function moveCommand(
   options: MoveOptions,
 ): Promise<void> {
   if (options.pairs === true && options.pairsFile !== undefined) {
-    console.error("❌ Error: --pairs and --pairs-file are mutually exclusive");
-    console.error(
-      "Usage: markmv move --pairs <source> <destination> [<source> <destination> ...]",
+    failPairUsage(
+      "--pairs and --pairs-file are mutually exclusive",
+      [PAIRS_USAGE, PAIRS_FILE_USAGE],
+      [
+        "markmv move --pairs acme/acme.md acme/README.md",
+        "markmv move --pairs-file pairs.txt --dry-run",
+      ],
     );
-    console.error("       markmv move --pairs-file <path>");
-    console.error("Examples:");
-    console.error("  markmv move --pairs acme/acme.md acme/README.md");
-    console.error("  markmv move --pairs-file pairs.txt --dry-run");
-    process.exit(1);
   }
 
   if (options.pairsFile !== undefined) {
     if (sources.length > 0) {
-      console.error(
-        "❌ Error: --pairs-file reads pairs from a file, so positional arguments are not allowed",
+      failPairUsage(
+        "--pairs-file reads pairs from a file, so positional arguments are not allowed",
+        [PAIRS_FILE_USAGE],
+        [
+          "markmv move --pairs-file pairs.txt --dry-run",
+          "find ... | markmv move --pairs-file - --dry-run",
+        ],
       );
-      console.error("Usage: markmv move --pairs-file <path>");
-      console.error("Examples:");
-      console.error("  markmv move --pairs-file pairs.txt --dry-run");
-      console.error("  find ... | markmv move --pairs-file - --dry-run");
-      process.exit(1);
     }
     const pairs = await loadPairsFile(options.pairsFile);
     // An empty input would otherwise succeed as a silent no-op, and a sweep that moved nothing is a mistake worth surfacing
@@ -605,28 +649,20 @@ export async function moveCommand(
 
   if (options.pairs === true) {
     if (sources.length === 0) {
-      console.error(
-        "❌ Error: --pairs requires at least one source and destination pair (an even number of arguments)",
+      failPairUsage(
+        "--pairs requires at least one source and destination pair (an even number of arguments)",
+        [PAIRS_USAGE],
+        ["markmv move --pairs acme/acme.md acme/README.md"],
       );
-      console.error(
-        "Usage: markmv move --pairs <source> <destination> [<source> <destination> ...]",
-      );
-      console.error("Examples:");
-      console.error("  markmv move --pairs acme/acme.md acme/README.md");
-      process.exit(1);
     }
     if (sources.length % 2 === 1) {
-      console.error(
-        `❌ Error: --pairs expects an even number of arguments (alternating source and destination), got ${String(sources.length)}`,
+      failPairUsage(
+        `--pairs expects an even number of arguments (alternating source and destination), got ${String(sources.length)}`,
+        [PAIRS_USAGE],
+        [
+          "markmv move --pairs acme/acme.md acme/README.md globex/globex.md globex/README.md",
+        ],
       );
-      console.error(
-        "Usage: markmv move --pairs <source> <destination> [<source> <destination> ...]",
-      );
-      console.error("Examples:");
-      console.error(
-        "  markmv move --pairs acme/acme.md acme/README.md globex/globex.md globex/README.md",
-      );
-      process.exit(1);
     }
     await executePairMoves(pairUpArguments(sources), options);
     return;
@@ -729,12 +765,7 @@ export async function moveCommand(
     }
 
     const fileOps = new FileOperations();
-    const moveOptions: MoveOperationOptions = {
-      dryRun: options.dryRun ?? false,
-      verbose: options.verbose ?? false,
-      createDirectories: true,
-      obsidian: options.obsidian ?? false,
-    };
+    const moveOptions = toMoveOperationOptions(options);
 
     let result: OperationResult;
 
