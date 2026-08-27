@@ -291,6 +291,8 @@ export class TransactionManager {
               if (!this.options.continueOnError) {
                 // Rollback all executed steps
                 await this.rollback();
+                // The failed step never completed, so no rollback consumes the backup its attempt created; deleting it here keeps a stray copy from failing every later run on the same source
+                await this.cleanupBackups();
                 return {
                   success: false,
                   completedSteps,
@@ -320,6 +322,7 @@ export class TransactionManager {
     } catch (error) {
       errors.push(`Transaction execution failed: ${errorMessage(error)}`);
       await this.rollback();
+      await this.cleanupBackups();
 
       return {
         success: false,
