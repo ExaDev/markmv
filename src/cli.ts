@@ -219,6 +219,10 @@ Bulk Pair Moves:
                       one pair: source, a tab, destination. The tab separator keeps spaces in
                       paths unambiguous, which arbitrary whitespace cannot.
 
+  Destinations must not collide: no two pairs share one, and none names a file that already
+  exists. A destination another pair's source vacates is fine (chained renames are ordered
+  automatically); swaps and rotations are rejected, since no order can complete them.
+
   Rename every folder-named index file (acme/acme.md) to README.md in one sweep:
   $ find . -type d | while read d; do f="$d/$(basename "$d").md"; [ -f "$f" ] && printf '%s\\t%s/README.md\\n' "$f" "$d"; done | markmv move --pairs-file - --dry-run`,
   )
