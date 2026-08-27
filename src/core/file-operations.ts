@@ -151,6 +151,19 @@ export class FileOperations {
         };
       }
 
+      // A move never overwrites, so an occupied destination is rejected here — naming the colliding path itself — rather than mid-transaction after retries. Checking before the planning work also makes a dry run report the collision instead of previewing a move that cannot succeed. (On a case-insensitive filesystem this also rejects a case-only rename, whose destination always appears to exist.)
+      if (existsSync(resolvedDestination)) {
+        return {
+          success: false,
+          modifiedFiles: [],
+          createdFiles: [],
+          deletedFiles: [],
+          errors: [`Destination file already exists: ${resolvedDestination}`],
+          warnings: [],
+          changes: [],
+        };
+      }
+
       // Parse the source file (only meaningful for markdown, which may itself contain links to update) and build a dependency graph from the surrounding project's markdown files.
       const sourceIsMarkdown = PathUtils.isMarkdownFile(sourcePath);
       const sourceFile = sourceIsMarkdown
@@ -378,6 +391,43 @@ export class FileOperations {
             changes: [],
           };
         }
+      }
+
+      // Validate the batch's destinations as a whole before anything moves, so both dry runs and real runs reject identically. Two relocations cannot land at the same path, and a destination already holding a file the batch does not itself vacate would be an overwrite, which move operations never perform.
+      const sourcesByDestination = new Map<string, string[]>();
+      for (const { source, destination } of resolvedMoves) {
+        const sources = sourcesByDestination.get(destination);
+        if (sources === undefined) {
+          sourcesByDestination.set(destination, [source]);
+        } else {
+          sources.push(source);
+        }
+      }
+      const batchSources = new Set(resolvedMoves.map((move) => move.source));
+      const destinationErrors: string[] = [];
+      for (const [destination, sources] of sourcesByDestination) {
+        if (sources.length > 1) {
+          destinationErrors.push(
+            `Multiple moves target the same destination: ${destination} (from ${sources.join(", ")})`,
+          );
+          continue;
+        }
+        if (existsSync(destination) && !batchSources.has(destination)) {
+          destinationErrors.push(
+            `Destination file already exists: ${destination} (while moving ${sources[0]})`,
+          );
+        }
+      }
+      if (destinationErrors.length > 0) {
+        return {
+          success: false,
+          modifiedFiles: [],
+          createdFiles: [],
+          deletedFiles: [],
+          errors: destinationErrors,
+          warnings: [],
+          changes: [],
+        };
       }
 
       // Parse markdown sources and build a comprehensive dependency graph. Non-markdown assets (e.g. images) have no links of their own to parse or refactor, so they are moved as raw bytes and never added to the dependency graph as nodes; they can still be discovered as dependencies of the markdown files that link to them.
