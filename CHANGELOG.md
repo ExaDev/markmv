@@ -1,3 +1,30 @@
+## [1.40.0](https://github.com/ExaDev/markmv/compare/v1.39.2...v1.40.0) (2026-08-27)
+
+### Features
+
+- **cli:** add --pairs and --pairs-file multi-pair move mode ([c29b2b0](https://github.com/ExaDev/markmv/commit/c29b2b0aec633427f8e18a27aa0f8931088784bc))
+
+### Bug Fixes
+
+- **cli:** resolve and validate pair destinations before executing a pair batch ([efd4ad0](https://github.com/ExaDev/markmv/commit/efd4ad0091455368c78fe23fa8d765b1e95ba093))
+- **core:** order batch moves and their link rewrites so chained renames run in any order ([95a9356](https://github.com/ExaDev/markmv/commit/95a9356fafe5dd4dc90ec7b57e5adcce8a306700))
+- **core:** reject colliding move destinations before any file moves or previews ([5d2f028](https://github.com/ExaDev/markmv/commit/5d2f0287f3b2a2b525dcb924ddbe6b4cc1e8c2fb))
+- **core:** resolve batch sources and order relocations for arbitrary callers ([b981493](https://github.com/ExaDev/markmv/commit/b981493582db29478d38c2e50343e5421c883ce3))
+- **utils:** delete a failed step's backup when a transaction aborts ([2f4356f](https://github.com/ExaDev/markmv/commit/2f4356ffbc061b884e64f4dce10a2c2b33121434))
+
+### Documentation
+
+- document multi-pair move mode ([b39c641](https://github.com/ExaDev/markmv/commit/b39c641bfe3e1a6c661ed95aa3e1db6a68c9fc02))
+- document pair-mode destination rules in the README and move help ([afef11e](https://github.com/ExaDev/markmv/commit/afef11e6594ea0ff28e6c14b12ca6e4ec4f6266f))
+
+### Code Refactoring
+
+- **cli:** share the move options mapping and pair-mode usage text ([2f2a544](https://github.com/ExaDev/markmv/commit/2f2a544a3495bed3e96557fbf90fde110c218bd8))
+
+### Tests
+
+- **cli:** pin pair-mode destination validation, chained renames, and dry-run immutability ([e6818b3](https://github.com/ExaDev/markmv/commit/e6818b34174a74a484a4e03f90e022eda3004109))
+
 ## [1.39.2](https://github.com/ExaDev/markmv/compare/v1.39.1...v1.39.2) (2026-08-25)
 
 ### Continuous Integration

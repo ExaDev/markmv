@@ -54,25 +54,6 @@ npx markmv join intro.md setup.md usage.md --output complete-guide.md
 npx markmv index --type links --strategy directory
 ```
 
-### Bulk Pair Moves
-
-Rename many files in one sweep with `move --pairs` or `move --pairs-file`. `--pairs` takes an alternating list of literal source and destination paths; `--pairs-file` reads the same shape from a file, one pair per line. Every pair is executed as a single operation, so links between the moved files are rewritten to their new sibling locations alongside inbound links from bystander files. Sources are literal paths: no glob expansion and no directory moves, so any matching happens in your shell.
-
-```bash
-# Rename two files in one operation
-npx markmv move --pairs acme/acme.md acme/README.md globex/globex.md globex/README.md
-
-# Read tab-separated pairs from a file ('-' reads stdin)
-npx markmv move --pairs-file pairs.txt --dry-run
-
-# Rename every folder-named index file (acme/acme.md) to README.md in one sweep
-find . -type d | while read d; do f="$d/$(basename "$d").md"; [ -f "$f" ] && printf '%s\t%s/README.md\n' "$f" "$d"; done | npx markmv move --pairs-file - --dry-run
-```
-
-Each non-blank line of a pairs file is one pair: a source path, a tab, and a destination path. The tab separator is what keeps spaces in paths unambiguous, which splitting on arbitrary whitespace cannot. A TTY stdin is rejected rather than read, so a missing pipe fails fast instead of hanging. Drop `--dry-run` once the preview looks right.
-
-Destinations are validated before anything moves, for dry runs and real runs alike: two pairs may not share a destination, and a destination may not name a file that already exists. A destination that another pair's source sits on is fine — chained renames (`a.md b.md b.md c.md`) are ordered so each name is vacated before the move that claims it, whatever order you list the pairs in. Swaps and rotations (`a.md b.md b.md a.md`) are rejected up front with the pairs listed: every move in a cycle waits on another, so no order can complete them. One caveat on case-insensitive filesystems (the macOS and Windows defaults): a case-only rename such as `Readme.md` to `README.md` is treated as a destination that already exists, because the destination path resolves to the source file itself.
-
 ## 🌐 Access Methods
 
 markmv provides multiple interfaces for different use cases:
