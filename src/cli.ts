@@ -182,8 +182,8 @@ program
   .command("move")
   .description("Move markdown files while updating cross-references")
   .argument(
-    "<sources...>",
-    "Source markdown files, directories, or globs, and destination (last argument)",
+    "[sources...]",
+    "Source markdown files, directories, or globs, and destination (last argument); with --pairs, alternating source/destination pairs; omitted with --pairs-file",
   )
   .option("-d, --dry-run", "Show what would be changed without making changes")
   .option("-v, --verbose", "Show detailed output")
@@ -191,7 +191,37 @@ program
     "--obsidian",
     "Treat [[wikilinks]] as Obsidian vault links resolved by note basename",
   )
+  .option(
+    "--pairs",
+    "Treat the arguments as alternating source/destination pairs moved in one operation (literal paths, no glob expansion)",
+  )
+  .option(
+    "--pairs-file <path>",
+    "Read source->destination pairs from a file, one pair per line separated by a tab ('-' reads stdin)",
+  )
   .option("--json", "Output results in JSON format")
+  .addHelpText(
+    "after",
+    `
+Examples:
+  $ markmv move docs/old.md docs/new.md
+  $ markmv move file1.md file2.md ./archive/
+  $ markmv move docs/ ./published/
+  $ markmv move --pairs organisations/acme/acme.md organisations/acme/README.md organisations/globex/globex.md organisations/globex/README.md
+  $ markmv move --pairs-file pairs.txt --dry-run
+
+Bulk Pair Moves:
+  --pairs             Arguments are alternating source/destination pairs, moved together in one
+                      operation so links between the moved files are rewritten to their new
+                      sibling locations. Sources are literal paths: no glob expansion, no
+                      directory moves.
+  --pairs-file <path> Pairs are read from the named file ('-' reads stdin). Each non-blank line is
+                      one pair: source, a tab, destination. The tab separator keeps spaces in
+                      paths unambiguous, which arbitrary whitespace cannot.
+
+  Rename every folder-named index file (acme/acme.md) to README.md in one sweep:
+  $ find . -type d | while read d; do f="$d/$(basename "$d").md"; [ -f "$f" ] && printf '%s\\t%s/README.md\\n' "$f" "$d"; done | markmv move --pairs-file - --dry-run`,
+  )
   .action(moveCommand);
 
 program
