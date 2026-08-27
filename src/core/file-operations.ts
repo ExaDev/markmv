@@ -26,6 +26,35 @@ function errorMessage(error: unknown): string {
 }
 
 /**
+ * Order a batch of relocations so that a move whose destination is another relocation's source runs after that source has vacated it, making the batch's outcome independent of argument order. The order also governs the per-move link rewriting, which must see each move's source path free of any earlier move's output: a link rewritten to a vacated path would be rewritten again by the move that later claims that path.
+ *
+ * Relocations that cannot be ordered form rename cycles (a swap or rotation, where every remaining move's destination is freed only by another cyclic move). These are returned separately for rejection: no execution order completes them, and per-move link rewriting cannot express a permutation of paths.
+ *
+ * @param moves - Relocations to order; sources and destinations must already be resolved and unique
+ *
+ * @returns The relocations in execution order, plus any that form cycles and could not be ordered
+ */
+function orderRelocations(moves: { source: string; destination: string }[]): {
+  ordered: { source: string; destination: string }[];
+  cyclic: { source: string; destination: string }[];
+} {
+  const ordered: { source: string; destination: string }[] = [];
+  let pending = moves.map((move) => ({ ...move }));
+  while (pending.length > 0) {
+    const ready = pending.filter(
+      (move) => !pending.some((other) => other.source === move.destination),
+    );
+    if (ready.length === 0) {
+      return { ordered, cyclic: pending };
+    }
+    const move = ready[0];
+    ordered.push({ source: move.source, destination: move.destination });
+    pending = pending.filter((entry) => entry !== move);
+  }
+  return { ordered, cyclic: [] };
+}
+
+/**
  * Core class for performing markdown file operations with intelligent link refactoring.
  *
  * This class provides the main functionality for moving, splitting, joining, and merging markdown
@@ -393,7 +422,7 @@ export class FileOperations {
         }
       }
 
-      // Validate the batch's destinations as a whole before anything moves, so both dry runs and real runs reject identically. Two relocations cannot land at the same path, and a destination already holding a file the batch does not itself vacate would be an overwrite, which move operations never perform.
+      // Validate the batch's destinations as a whole before anything moves, so both dry runs and real runs reject identically. Two relocations cannot land at the same path, and a destination already holding a file the batch does not itself vacate would be an overwrite, which move operations never perform. A destination occupied by another relocation's source is exempt: the execution order moves that source first.
       const sourcesByDestination = new Map<string, string[]>();
       for (const { source, destination } of resolvedMoves) {
         const sources = sourcesByDestination.get(destination);
@@ -425,6 +454,23 @@ export class FileOperations {
           createdFiles: [],
           deletedFiles: [],
           errors: destinationErrors,
+          warnings: [],
+          changes: [],
+        };
+      }
+
+      // Order the moves so chained renames (a→b while b→c) vacate their destinations before the moves that claim them, whatever order the caller listed them in; a rename cycle (a swap or rotation) has no such order and is rejected here rather than failing mid-transaction
+      const { ordered: orderedMoves, cyclic } = orderRelocations(resolvedMoves);
+      if (cyclic.length > 0) {
+        return {
+          success: false,
+          modifiedFiles: [],
+          createdFiles: [],
+          deletedFiles: [],
+          errors: [
+            "These moves form a rename cycle, so no execution order can free every destination:",
+            ...cyclic.map((move) => `  ${move.source} → ${move.destination}`),
+          ],
           warnings: [],
           changes: [],
         };
@@ -488,16 +534,14 @@ export class FileOperations {
       const modifiedFiles = new Set<string>();
       const warnings: string[] = [...obsidianWarnings];
 
-      // First pass: Add all file moves to the transaction
-      for (const { source, destination } of resolvedMoves) {
-        if (!dryRun) {
+      // First pass: add the file moves to the transaction in vacate-first order. The dependency graph is left keyed on pre-move paths throughout: it is an index of the original link structure, and every second-pass lookup names files by where they were when the batch started. (Re-keying it to destinations instead would collide whenever one move's destination is another move's source, silently merging their graph nodes.)
+      if (!dryRun) {
+        for (const { source, destination } of orderedMoves) {
           transaction.addFileMove(source, destination);
         }
-        // Update dependency graph immediately
-        dependencyGraph.updateFilePath(source, destination);
       }
 
-      // Second pass: Process content updates for dependent files and moved files A moved file's own links must be recomputed against the final location of every target: links between co-moved files keep pointing at their new sibling locations, not the vacated ones
+      // Second pass: process content updates for dependent files and moved files, in the same vacate-first order — a bystander link rewritten to a vacated path would be rewritten again by the move that later claims that path. A moved file's own links must be recomputed against the final location of every target: links between co-moved files keep pointing at their new sibling locations, not the vacated ones
       const movedPathMap = new Map(
         resolvedMoves.map((move) => [
           PathUtils.resolvePath(move.source),
@@ -505,10 +549,9 @@ export class FileOperations {
         ]),
       );
 
-      for (const { source, destination } of resolvedMoves) {
+      for (const { source, destination } of orderedMoves) {
         // Find dependent files (files that depend on the source file being moved)
-        // Note: use destination since we've already updated the dependency graph
-        const dependentFiles = dependencyGraph.getDependents(destination);
+        const dependentFiles = dependencyGraph.getDependents(source);
 
         // Process dependent files
         for (const dependentFilePath of dependentFiles) {
@@ -516,23 +559,14 @@ export class FileOperations {
             dependencyGraph.getNode(dependentFilePath)?.data;
           if (!dependentFile) continue;
 
-          // For files being moved in this batch, use stored content and update the destination
-          const moveInfo = resolvedMoves.find(
-            (move) => move.destination === dependentFilePath,
-          );
-          const actualDependentFile = dependentFile;
-          let actualDependentPath = dependentFilePath;
-          let contentToUse = fileContents.get(dependentFile.filePath);
-
-          if (moveInfo) {
-            // This dependent file is also being moved: build on the content accumulated under
-            // its destination by earlier passes in this batch, not on the original bytes, or
-            // this pass's full-content write reverts their rewrites
-            actualDependentPath = moveInfo.destination;
-            contentToUse =
-              fileContents.get(actualDependentPath) ??
-              fileContents.get(moveInfo.source);
+          // A dependent that is itself being moved in this batch is skipped here: its own self pass rewrites its links against every move in the batch through movedPathMap, so handling it here as well would record the same rewrite twice and stage a redundant partial content write
+          if (batchSources.has(dependentFilePath)) {
+            continue;
           }
+
+          const actualDependentFile = dependentFile;
+          const actualDependentPath = dependentFilePath;
+          const contentToUse = fileContents.get(dependentFile.filePath);
 
           if (!contentToUse) {
             // Fallback to reading from file system
@@ -619,9 +653,7 @@ export class FileOperations {
               }
             }
 
-            // Publish the accumulated content under the destination key so later bystander passes for co-moved files build on this pass's rewrites
-            fileContents.set(destination, selfRefactorResult.updatedContent);
-
+            // The original content is deliberately not published under the destination key: in a chained rename one move's destination is another move's source, and overwriting that source's stored original would make the later self pass refactor the wrong file's content
             warnings.push(...selfRefactorResult.errors);
           } else {
             // Fallback to the original method if content not found
