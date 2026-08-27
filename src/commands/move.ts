@@ -147,19 +147,36 @@ function pairUpArguments(args: string[]): MovePair[] {
 }
 
 /**
- * Resolve every pair source to an absolute path and validate it: each source must be an existing file, and each may appear in only one pair. Globs and directory-as-unit sources are classic-mode concepts, so a source that fails these checks means pair mode was handed the wrong shape of input; every offender is collected and listed rather than stopping at the first.
+ * Resolve every pair to absolute paths and validate both of its paths: each source must be an existing file and may appear in only one pair, and each destination must be a non-empty path. Destinations resolve through PathUtils.resolveDestination, so a destination naming an existing directory (or ending in a slash) receives the source's basename. Globs and directory-as-unit sources are classic-mode concepts, so a source that fails these checks means pair mode was handed the wrong shape of input; every offender is collected and listed rather than stopping at the first.
  *
- * @param pairs - Pairs whose sources to resolve and validate
+ * @param pairs - Pairs to resolve and validate
  *
- * @returns Pairs with sources resolved, destinations unchanged
+ * @returns Pairs with sources and destinations resolved to absolute paths
  *
  * @internal
  */
-function resolvePairSources(pairs: MovePair[]): MovePair[] {
-  const resolved = pairs.map((pair) => ({
-    source: resolve(pair.source),
-    destination: pair.destination,
-  }));
+function resolvePairs(pairs: MovePair[]): MovePair[] {
+  // An empty destination string resolves to the current directory, silently relocating the file to the cwd root, so it is rejected as wrongly-shaped input before any resolution
+  const emptyDestinations = pairs
+    .filter((pair) => pair.destination.trim() === "")
+    .map((pair) => resolve(pair.source));
+  if (emptyDestinations.length > 0) {
+    console.error(
+      "❌ Error: pair destinations must be non-empty paths; empty destination for:",
+    );
+    for (const source of emptyDestinations) {
+      console.error(`   ${source}`);
+    }
+    process.exit(1);
+  }
+
+  const resolved = pairs.map((pair) => {
+    const source = resolve(pair.source);
+    return {
+      source,
+      destination: PathUtils.resolveDestination(source, pair.destination),
+    };
+  });
 
   const notFiles: string[] = [];
   for (const pair of resolved) {
@@ -212,7 +229,7 @@ async function executePairMoves(
   pairs: MovePair[],
   options: MoveOptions,
 ): Promise<void> {
-  const moves = resolvePairSources(pairs);
+  const moves = resolvePairs(pairs);
 
   try {
     if (options.verbose) {
@@ -229,10 +246,10 @@ async function executePairMoves(
     }
 
     const fileOps = new FileOperations();
-    const moveOptions = toMoveOperationOptions(options);
-
-    // Destinations stay as given: moveFiles applies PathUtils.resolveDestination, which joins the source basename for existing-directory and trailing-slash destinations
-    const result = await fileOps.moveFiles(moves, moveOptions);
+    const result = await fileOps.moveFiles(
+      moves,
+      toMoveOperationOptions(options),
+    );
     await reportMoveResult(result, options, fileOps);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
