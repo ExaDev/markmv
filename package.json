@@ -90,7 +90,7 @@
     "@types/unist": "^3.0.3",
     "@vitest/coverage-v8": "^3.2.3",
     "commitizen": "^4.3.1",
-    "conventional-changelog-conventionalcommits": "^9.3.1",
+    "conventional-changelog-conventionalcommits": "^10.4.0",
     "cz-conventional-changelog": "^3.3.0",
     "eslint": "^10.2.1",
     "eslint-config-prettier": "^10.1.8",
