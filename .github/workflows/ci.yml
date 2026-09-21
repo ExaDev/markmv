@@ -196,7 +196,7 @@ jobs:
           cache: "pnpm"
 
       # turbo's local cache for the build step only -- keyed by OS, not Node version, which is correct here since compiled output doesn't vary by Node runtime.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: .turbo
           key: turbo-build-${{ runner.os }}-${{ github.sha }}
@@ -271,7 +271,7 @@ jobs:
         shell: bash
 
       # Node-version-aware, unlike the Build cache above: a test result cached under one Node version must never be replayed as if it verified another.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: .turbo
           key: turbo-test-${{ runner.os }}-${{ matrix.node-version }}-${{ github.sha }}
@@ -394,7 +394,7 @@ jobs:
           node dist/cli.js --version || echo "CLI not yet ready"
 
       - name: Generate SBOM for NPM attestations
-        uses: anchore/sbom-action@v0.24.0
+        uses: anchore/sbom-action@v0.24.2
         with:
           path: ./
           format: spdx-json
