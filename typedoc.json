@@ -1,46 +1,60 @@
 {
   "$schema": "https://typedoc.org/schema.json",
   "entryPoints": ["src/index.ts"],
+  "tsconfig": "tsconfig.build.json",
   "out": "docs",
   "name": "markmv",
-  "includeVersion": true,
-  "excludePrivate": true,
-  "excludeProtected": false,
-  "excludeInternal": false,
   "readme": "README.md",
-  "cacheBust": true,
-  "sort": ["source-order"],
-  "categorizeByGroup": true,
+  "includeVersion": true,
+  "hostedBaseUrl": "https://exadev.github.io/markmv/",
+  "useHostedBaseUrlForAbsoluteLinks": true,
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "excludeExternals": true,
+  "sort": ["kind", "instance-first", "alphabetical"],
+  "categorizeByGroup": false,
   "defaultCategory": "Other",
   "categoryOrder": [
-    "Core",
     "Commands",
+    "Core",
     "Strategies",
     "Types",
     "Utilities",
     "*"
   ],
-  "gitRevision": "main",
-  "gitRemote": "origin",
-  "sourceLinkTemplate": "https://github.com/ExaDev/markmv/blob/{gitRevision}/{path}#L{line}",
+  "searchCategoryBoosts": {
+    "Commands": 1.5,
+    "Core": 1.25
+  },
+  "searchGroupBoosts": {
+    "Classes": 1.5,
+    "Functions": 1.25
+  },
   "navigation": {
     "includeCategories": true,
-    "includeGroups": true
+    "includeGroups": false,
+    "includeFolders": false
   },
-  "searchInComments": true,
-  "searchInDocuments": true,
+  "navigationLinks": {
+    "GitHub": "https://github.com/ExaDev/markmv",
+    "npm": "https://www.npmjs.com/package/markmv",
+    "Changelog": "https://github.com/ExaDev/markmv/blob/main/CHANGELOG.md"
+  },
   "validation": {
     "notExported": true,
     "invalidLink": true,
+    "invalidPath": true,
     "notDocumented": true
   },
-  "treatWarningsAsErrors": false,
-  "logLevel": "Info",
-  "exclude": ["**/*.test.ts", "**/*.spec.ts", "**/cli.ts", "node_modules/**/*"],
-  "externalPattern": ["**/node_modules/**"],
-  "plugin": [
-    "typedoc-plugin-missing-exports",
-    "typedoc-plugin-coverage",
-    "typedoc-material-theme"
-  ]
+  "requiredToBeDocumented": [
+    "Class",
+    "Constructor",
+    "Function",
+    "Interface",
+    "Method",
+    "Property",
+    "TypeAlias",
+    "Variable"
+  ],
+  "treatValidationWarningsAsErrors": true
 }
