@@ -178,7 +178,14 @@ export interface OperationResult {
   /** Detailed changes made */
   changes: OperationChange[];
   /** Files that failed to parse during the operation; their links could not be checked or rewritten */
-  parseFailures?: { file: string; error: string; stack?: string | undefined }[];
+  parseFailures?: {
+    /** Path of the file that failed to parse */
+    file: string;
+    /** Message describing the parse error */
+    error: string;
+    /** Stack trace of the error, when one was available */
+    stack?: string | undefined;
+  }[];
 }
 
 /**

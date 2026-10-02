@@ -317,6 +317,14 @@ export class LinkParser {
       .filter((path, index, arr) => arr.indexOf(path) === index); // Remove duplicates
   }
 
+  /**
+   * Parses every markdown file found by recursively walking a directory. Files that fail to parse are skipped silently, so the result may hold fewer entries than there are matching files.
+   *
+   * @param dirPath - Directory to search.
+   * @param extensions - File extensions to treat as markdown, including the leading dot.
+   *
+   * @returns The parsed files that were read successfully.
+   */
   async parseDirectory(
     dirPath: string,
     extensions = [".md", ".markdown", ".mdx"],

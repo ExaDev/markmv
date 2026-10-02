@@ -64,12 +64,22 @@ export class DependencyGraph {
   private nodes = new Map<string, FileNode>();
   private edges = new Map<string, Set<string>>();
 
+  /**
+   * Creates a graph, optionally populated from parsed files.
+   *
+   * @param files - Parsed markdown files to build the graph from; when empty, the graph starts with no nodes.
+   */
   constructor(files: ParsedMarkdownFile[] = []) {
     if (files.length > 0) {
       this.build(files);
     }
   }
 
+  /**
+   * Rebuilds the graph from scratch: clears existing state, creates a node for every file, records each file's dependencies and then derives the reverse (dependents) relationships. Each file's `dependents` field is updated to match.
+   *
+   * @param files - Parsed markdown files that make up the graph.
+   */
   build(files: ParsedMarkdownFile[]): void {
     this.clear();
 
@@ -87,6 +97,11 @@ export class DependencyGraph {
     this.updateDependents();
   }
 
+  /**
+   * Adds or replaces the node for a file, seeded with the file's own dependency list. Dependents are not recomputed; call {@link DependencyGraph.build} to refresh them.
+   *
+   * @param file - Parsed markdown file to add, keyed by its `filePath`.
+   */
   addNode(file: ParsedMarkdownFile): void {
     const node: FileNode = {
       path: file.filePath,
@@ -99,6 +114,11 @@ export class DependencyGraph {
     this.edges.set(file.filePath, new Set(file.dependencies));
   }
 
+  /**
+   * Replaces the recorded dependency set for a file with the one on the parsed file. The node's own dependency set is updated too when the file already has a node.
+   *
+   * @param file - Parsed markdown file whose dependencies should be recorded.
+   */
   addDependencies(file: ParsedMarkdownFile): void {
     const dependencies = new Set(file.dependencies);
     this.edges.set(file.filePath, dependencies);
@@ -131,15 +151,36 @@ export class DependencyGraph {
     }
   }
 
+  /**
+   * Looks up the node for a file.
+   *
+   * @param filePath - Path the file was added under.
+   *
+   * @returns The node, or `undefined` when the path has no node (for example a linked asset that was never parsed as markdown).
+   */
   getNode(filePath: string): FileNode | undefined {
     return this.nodes.get(filePath);
   }
 
+  /**
+   * Lists the files a file directly depends on.
+   *
+   * @param filePath - Path of the file to inspect.
+   *
+   * @returns The direct dependency paths, or an empty array when the path has no recorded dependencies.
+   */
   getDependencies(filePath: string): string[] {
     const dependencies = this.edges.get(filePath);
     return dependencies ? Array.from(dependencies) : [];
   }
 
+  /**
+   * Lists the files that directly depend on a file. Paths without a node of their own, such as linked images, are resolved by scanning the recorded dependencies of every file.
+   *
+   * @param filePath - Path of the file to inspect.
+   *
+   * @returns The paths of the files that link to it.
+   */
   getDependents(filePath: string): string[] {
     const node = this.nodes.get(filePath);
     if (node) {
@@ -156,6 +197,13 @@ export class DependencyGraph {
     return dependents;
   }
 
+  /**
+   * Collects every file reachable by following dependencies from a file, directly or indirectly. Cycles are tolerated and each path appears once.
+   *
+   * @param filePath - Path of the file to start from.
+   *
+   * @returns The distinct dependency paths, excluding the starting file unless a cycle leads back to it.
+   */
   getTransitiveDependencies(filePath: string): string[] {
     const visited = new Set<string>();
     const result: string[] = [];
@@ -175,6 +223,13 @@ export class DependencyGraph {
     return [...new Set(result)]; // Remove duplicates
   }
 
+  /**
+   * Collects every file that depends on a file, directly or through a chain of other files. Cycles are tolerated and each path appears once.
+   *
+   * @param filePath - Path of the file to start from.
+   *
+   * @returns The distinct paths of all files affected by a change to the starting file.
+   */
   getTransitiveDependents(filePath: string): string[] {
     const visited = new Set<string>();
     const result: string[] = [];
@@ -194,6 +249,11 @@ export class DependencyGraph {
     return [...new Set(result)]; // Remove duplicates
   }
 
+  /**
+   * Finds dependency cycles using a depth-first search over every node.
+   *
+   * @returns One path per cycle found, listed in traversal order with the first file repeated at the end; empty when the graph is acyclic.
+   */
   detectCircularDependencies(): string[][] {
     const visited = new Set<string>();
     const recursionStack = new Set<string>();
@@ -230,6 +290,11 @@ export class DependencyGraph {
     return cycles;
   }
 
+  /**
+   * Orders the files so that each file appears after everything it depends on. In a graph with cycles, each cycle is broken at the point where the search first revisits a file.
+   *
+   * @returns File paths in dependency-first order.
+   */
   topologicalSort(): string[] {
     const visited = new Set<string>();
     const result: string[] = [];
@@ -255,6 +320,12 @@ export class DependencyGraph {
     return result;
   }
 
+  /**
+   * Renames a file throughout the graph: its node and edges are moved to the new path, and every other node's dependency and dependent sets that mention the old path are rewritten. Paths without a node of their own, such as linked assets, still have references to them rewritten.
+   *
+   * @param oldPath - Path the file is currently known by.
+   * @param newPath - Path to replace it with.
+   */
   updateFilePath(oldPath: string, newPath: string): void {
     const node = this.nodes.get(oldPath);
 
@@ -296,6 +367,11 @@ export class DependencyGraph {
     }
   }
 
+  /**
+   * Removes a file from the graph along with every reference to it in other nodes' dependency and dependent sets. Does nothing when the path has no node.
+   *
+   * @param filePath - Path of the file to remove.
+   */
   removeNode(filePath: string): void {
     const node = this.nodes.get(filePath);
     if (!node) return;
@@ -316,19 +392,37 @@ export class DependencyGraph {
     this.edges.delete(filePath);
   }
 
+  /**
+   * Removes every node and edge from the graph.
+   */
   clear(): void {
     this.nodes.clear();
     this.edges.clear();
   }
 
+  /**
+   * Lists the paths of every node in the graph.
+   *
+   * @returns The node paths in insertion order.
+   */
   getAllFiles(): string[] {
     return Array.from(this.nodes.keys());
   }
 
+  /**
+   * Reports how many nodes the graph holds.
+   *
+   * @returns The number of nodes.
+   */
   size(): number {
     return this.nodes.size;
   }
 
+  /**
+   * Serialises the dependency edges for `JSON.stringify`.
+   *
+   * @returns A map from each file path to the paths it depends on.
+   */
   toJSON(): Record<string, string[]> {
     const result: Record<string, string[]> = {};
     for (const [filePath, dependencies] of this.edges) {

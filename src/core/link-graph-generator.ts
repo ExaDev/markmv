@@ -161,6 +161,11 @@ export class LinkGraphGenerator {
   private options: Required<LinkGraphOptions>;
   private parser: LinkParser;
 
+  /**
+   * Creates a generator, filling any option left unset with its default: external links excluded, images included, anchors excluded, a maximum depth of 10 and the current working directory as base.
+   *
+   * @param options - Graph generation options.
+   */
   constructor(options: LinkGraphOptions = {}) {
     this.options = {
       includeExternal: options.includeExternal ?? false,

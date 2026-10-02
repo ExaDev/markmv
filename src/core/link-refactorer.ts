@@ -101,6 +101,11 @@ export class LinkRefactorer {
     obsidianVault?: ObsidianVaultContext;
   };
 
+  /**
+   * Creates a refactorer, filling any option left unset with its default: relative paths preferred, Claude imports updated and formatting preserved.
+   *
+   * @param options - Refactoring options, including an optional Obsidian vault context for wikilink-aware rewriting.
+   */
   constructor(options: RefactorOptions = {}) {
     this.options = {
       preferRelativePaths: options.preferRelativePaths ?? true,
@@ -209,7 +214,15 @@ export class LinkRefactorer {
     };
   }
 
-  /** Update links when the current file is being moved */
+  /**
+   * Updates the links inside a file that is itself being moved, so they still reach their targets from the new location. Reads the file from disk, does not write it, and records per-link failures in the result instead of throwing.
+   *
+   * @param file - Parsed file that is being moved.
+   * @param newFilePath - Path the file will be moved to.
+   * @param movedPaths - Map of old to new paths for other files moved in the same operation, so links to them are rewritten to their new locations.
+   *
+   * @returns The rewritten content, the changes made and any per-link errors.
+   */
   async refactorLinksForCurrentFileMove(
     file: ParsedMarkdownFile,
     newFilePath: string,
