@@ -2,7 +2,6 @@ import { basename, dirname, relative, resolve } from "node:path";
 
 /**
  * A candidate replacement for a broken link target.
- *
  * @category Core
  */
 export interface LinkSuggestion {
@@ -38,8 +37,12 @@ function editDistance(a: string, b: string): number {
       carry = temp;
     }
   }
+
   return previous[b.length];
 }
+
+/** Added to the edit distance of a near miss so that it always ranks behind exact stem and name-variation matches. */
+const NEAR_MISS_SCORE_OFFSET = 10;
 
 /**
  * Suggest likely-intended targets for a broken link.
@@ -49,24 +52,25 @@ function editDistance(a: string, b: string): number {
  * relative to the target's length so unrelated names are never suggested. The replacement href is
  * computed relative to the linking file, ./-prefixed like markmv's own rewrites, with posix
  * separators for markdown portability.
- *
  * @example
- *   ```typescript const suggestions = suggestLinkFixes('./Getting-Started.md', sourceFile, knownFiles);
+ * ```typescript
+ * const suggestions = suggestLinkFixes('./Getting-Started.md', sourceFile, knownFiles);
  *
- *   if (suggestions.length > 0) { console.log(`Did you mean ${suggestions[0]?.replacementHref}?`); } ```
- *
+ * if (suggestions.length > 0) {
+ *   console.log(`Did you mean ${suggestions[0]?.replacementHref}?`);
+ * }
+ * ```
  * @param brokenHref - The broken link target as written
  * @param sourceFilePath - Absolute path of the file containing the broken link
  * @param knownFiles - Absolute paths of every candidate file in the project
  * @param limit - Maximum number of suggestions to return (default 3)
- *
  * @returns Ranked suggestions, best first; empty when nothing is reasonably similar
  * @category Core
  */
 export function suggestLinkFixes(
   brokenHref: string,
   sourceFilePath: string,
-  knownFiles: string[],
+  knownFiles: readonly string[],
   limit = 3,
 ): LinkSuggestion[] {
   const target = normalise(basename(brokenHref));
@@ -97,9 +101,10 @@ export function suggestLinkFixes(
             score: Number.MAX_SAFE_INTEGER,
           };
         }
-        score = 10 + distance;
+        score = NEAR_MISS_SCORE_OFFSET + distance;
         reason = "near miss";
       }
+
       return {
         suggestion: {
           candidatePath,
@@ -126,5 +131,6 @@ function toMarkdownRelative(
 ): string {
   const fromDir = dirname(resolve(sourceFilePath));
   const rel = relative(fromDir, candidatePath).replace(/\\/g, "/");
+
   return rel.startsWith(".") ? rel : `./${rel}`;
 }

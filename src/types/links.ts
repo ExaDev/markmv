@@ -3,44 +3,52 @@
  *
  * Covers all common link formats including standard markdown links, images, Claude imports, and
  * Obsidian-style transclusions.
- *
  * @category Types
  */
 export type LinkType =
-  | "internal" // Links to other files in the project
-  | "external" // HTTP/HTTPS URLs
-  | "anchor" // Same-file section links (#heading)
-  | "image" // Image references
-  | "reference" // Reference-style links [text][ref]
-  | "claude-import" // Claude @import syntax
-  | "wikilink" // Obsidian [[note]] link
-  | "obsidian-transclusion"; // Obsidian ![[file]] embed
+  // Links to other files in the project
+  | "internal"
+  // HTTP/HTTPS URLs
+  | "external"
+  // Same-file section links (#heading)
+  | "anchor"
+  // Image references
+  | "image"
+  // Reference-style links [text][ref]
+  | "reference"
+  // Claude @import syntax
+  | "claude-import"
+  // Obsidian [[note]] link
+  | "wikilink"
+  // Obsidian ![[file]] embed
+  | "obsidian-transclusion";
 
 /**
  * Link style formats supported for conversion operations.
  *
  * Defines the different syntactic formats that links can be converted between while maintaining
  * their semantic meaning and target paths.
- *
  * @category Types
  */
 export type LinkStyle =
-  | "markdown" // Standard markdown: [text](url)
-  | "claude" // Claude import: @url
-  | "combined" // Combined format: [@url](url)
-  | "wikilink"; // Obsidian wikilink: [[url]]
+  // Standard markdown: [text](url)
+  | "markdown"
+  // Claude import: @url
+  | "claude"
+  // Combined format: [@url](url)
+  | "combined"
+  // Obsidian wikilink: [[url]]
+  | "wikilink";
 
 /**
  * Represents a parsed markdown link with comprehensive metadata.
  *
  * Contains all information needed for link validation, path resolution, and cross-reference
  * tracking. Used throughout the system for link analysis and manipulation.
- *
  * @category Types
- *
  * @example
  *   Accessing link information
- *   ```typescript
+ * ```typescript
  *   const links: MarkdownLink[] = parsedFile.links;
  *
  *   links.forEach(link => {
@@ -50,7 +58,7 @@ export type LinkStyle =
  *       }
  *       console.log(`  Location: line ${link.line}, column ${link.column}`);
  *   });
- *   ```
+ * ```
  */
 export interface MarkdownLink {
   /** Type of link */
@@ -80,12 +88,10 @@ export interface MarkdownLink {
  *
  * Reference links are defined separately from their usage (e.g., [1]: https://example.com) and can
  * be referenced multiple times throughout the document.
- *
  * @category Types
- *
  * @example
  *   Working with reference links
- *   ```typescript
+ * ```typescript
  *   const references: LinkReference[] = parsedFile.references;
  *
  *   references.forEach(ref => {
@@ -94,7 +100,7 @@ export interface MarkdownLink {
  *         console.log(`  Title: ${ref.title}`);
  *       }
  *   });
- *   ```
+ * ```
  */
 export interface LinkReference {
   /** Reference ID */
@@ -112,19 +118,17 @@ export interface LinkReference {
  *
  * Contains all links, references, and dependency information needed for intelligent file operations
  * and cross-reference management.
- *
  * @category Types
- *
  * @example
  *   Using parsed file data
- *   ```typescript
+ * ```typescript
  *   const parsedFile: ParsedMarkdownFile = await parser.parseFile('document.md');
  *
  *   console.log(`File: ${parsedFile.filePath}`);
  *   console.log(`Links: ${parsedFile.links.length}`);
  *   console.log(`Dependencies: ${parsedFile.dependencies.length}`);
  *   console.log(`Dependents: ${parsedFile.dependents.length}`);
- *   ```
+ * ```
  */
 export interface ParsedMarkdownFile {
   /** Absolute file path */

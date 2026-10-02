@@ -91,9 +91,9 @@ function runTests() {
   const capabilities = detectFilesystemCapabilities();
 
   console.log("📊 Filesystem capabilities:");
-  console.log(`  Case sensitive: ${capabilities.caseSensitive}`);
-  console.log(`  Symbolic links: ${capabilities.supportsSymlinks}`);
-  console.log(`  Spaces in filenames: ${capabilities.supportsSpaces}`);
+  console.log(`  Case sensitive: ${String(capabilities.caseSensitive)}`);
+  console.log(`  Symbolic links: ${String(capabilities.supportsSymlinks)}`);
+  console.log(`  Spaces in filenames: ${String(capabilities.supportsSpaces)}`);
 
   // Update environment with detected capabilities
   testEnv.MARKMV_TEST_CASE_SENSITIVE = capabilities.caseSensitive.toString();
@@ -140,7 +140,9 @@ function createTestData() {
     try {
       writeFileSync(join(testDataDir, filename), content);
     } catch (error) {
-      console.warn(`⚠️  Could not create ${filename}: ${error.message}`);
+      console.warn(
+        `⚠️  Could not create ${filename}: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -159,6 +161,7 @@ function testCLI() {
 
   if (!existsSync(testDataDir)) {
     console.warn("⚠️  Test data directory not found, skipping CLI tests");
+
     return;
   }
 
@@ -213,16 +216,19 @@ Examples:
   node scripts/test-cross-platform.js --test-data-only
   node scripts/test-cross-platform.js --cli-only
 `);
+
     return;
   }
 
   if (args.includes("--test-data-only")) {
     createTestData();
+
     return;
   }
 
   if (args.includes("--cli-only")) {
     testCLI();
+
     return;
   }
 

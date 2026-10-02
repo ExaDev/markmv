@@ -16,7 +16,6 @@ import {
  *
  * Controls the behaviour of the extract command, which writes inline base64 image data URIs out to
  * real image files.
- *
  * @category Commands
  */
 export interface ExtractOptions {
@@ -32,7 +31,6 @@ export interface ExtractOptions {
 
 /**
  * Summary of an extract run, in the shape emitted by `--json`.
- *
  * @category Commands
  */
 export interface ExtractSummary {
@@ -67,28 +65,48 @@ interface ExtractFileResult {
 }
 
 /**
+ * Names claimed by earlier files in the same run, so numbered collisions are consistent between
+ * dry-run planning and the real writes
+ */
+class ExtractNamingState {
+  /** Output file names already claimed in this run */
+  readonly usedNames = new Set<string>();
+
+  /** Counter behind the img-N fallback names */
+  private unnamedCounter = 0;
+
+  /** Returns the next unused `img-N` base name for an image whose alt text yields no slug. */
+  nextUnnamedBase(): string {
+    this.unnamedCounter += 1;
+
+    return `img-${String(this.unnamedCounter)}`;
+  }
+}
+
+/** Longest prefix of a data URI href quoted in an error message. */
+const MAX_REPORTED_HREF_LENGTH = 60;
+
+/**
  * CLI command handler for extract operations.
  *
  * Writes each inline base64 image data URI in the given markdown files out to a real image file and
  * rewrites the markdown to link to it. The image filename derives from the alt text when it yields
  * a usable slug, otherwise a per-file `img-1`, `img-2`, ... counter is used; the extension comes
  * from the data URI's mime type.
- *
  * @category Commands
- *
  * @example
- *   ```bash # Extract every inline image, writing files next to the markdown markmv extract doc.md
- *
- *   # Write images to a shared asset directory markmv extract docs/*.md --output-dir assets/ ```;
- *
+ *   Extract every inline image, writing files next to the markdown, or into a shared asset directory
+ * ```bash
+ *   markmv extract doc.md
+ *   markmv extract docs/*.md --output-dir assets/
+ * ```
  * @param patterns - File patterns to process (supports globs)
  * @param options - Command options
- *
  * @throws Will exit the process with code 1 if the operation fails
  */
 export async function extractCommand(
-  patterns: string[],
-  options: ExtractOptions,
+  patterns: readonly string[],
+  options: Readonly<ExtractOptions>,
 ): Promise<void> {
   if (patterns.length === 0) {
     reportUsageError(options, "At least one file pattern must be specified");
@@ -116,16 +134,13 @@ export async function extractCommand(
   };
 
   const humanOutput = options.json !== true;
-  if (options.dryRun && humanOutput) {
+  if (options.dryRun === true && humanOutput) {
     console.log("🔍 Dry run - no files will be modified");
   }
 
-  const naming: ExtractNamingState = {
-    usedNames: new Set<string>(),
-    unnamedCounter: 0,
-  };
+  const naming = new ExtractNamingState();
   for (const file of files) {
-    if (options.verbose && humanOutput) {
+    if (options.verbose === true && humanOutput) {
       console.log(`📄 Processing ${file}`);
     }
     const result = await extractFile(file, options, naming);
@@ -139,7 +154,7 @@ export async function extractCommand(
     }
 
     summary.imagesExtracted += result.extractedCount;
-    if (humanOutput && options.dryRun) {
+    if (humanOutput && options.dryRun === true) {
       for (const created of result.createdImages) {
         console.log(`🔍 Would extract ${created}`);
       }
@@ -158,13 +173,13 @@ export async function extractCommand(
     }
   }
 
-  if (options.json) {
+  if (options.json === true) {
     console.log(JSON.stringify(summary, null, 2));
   } else if (summary.success) {
     console.log(
       `📊 Summary: extracted ${String(summary.imagesExtracted)} image(s) across ${String(summary.filesModified.length)} file(s)`,
     );
-    if (options.dryRun) {
+    if (options.dryRun === true) {
       console.log("(Dry run - no files were actually modified)");
     }
   }
@@ -175,8 +190,11 @@ export async function extractCommand(
 }
 
 /** Report a usage-stopping error in the mode-appropriate format and exit. */
-function reportUsageError(options: ExtractOptions, message: string): never {
-  if (options.json) {
+function reportUsageError(
+  options: Readonly<ExtractOptions>,
+  message: string,
+): never {
+  if (options.json === true) {
     const summary: ExtractSummary = {
       command: "extract",
       success: false,
@@ -201,49 +219,48 @@ function reportUsageError(options: ExtractOptions, message: string): never {
  *
  * A pattern may be a direct file path, a directory (expanded to the markdown files directly inside
  * it), or a glob pattern. Non-markdown results are skipped.
- *
  * @param patterns - File patterns, paths, or directories to expand
- *
  * @returns Promise resolving to sorted, de-duplicated absolute markdown file paths
  */
-async function expandMarkdownPatterns(patterns: string[]): Promise<string[]> {
-  const resolvedFiles = new Set<string>();
+async function expandMarkdownPatterns(
+  patterns: readonly string[],
+): Promise<string[]> {
+  const expansions = await Promise.all(patterns.map(expandSinglePattern));
 
-  for (const pattern of patterns) {
-    const absolutePattern = resolve(pattern);
+  return [...new Set(expansions.flat())].sort();
+}
 
-    if (existsSync(absolutePattern) && statSync(absolutePattern).isFile()) {
-      if (PathUtils.isMarkdownFile(absolutePattern)) {
-        resolvedFiles.add(absolutePattern);
-      } else {
-        console.warn(`⚠️  Skipping non-markdown file: ${absolutePattern}`);
-      }
-      continue;
+/**
+ * Expand one file pattern to the markdown file paths it names.
+ * @param pattern - A file path, directory, or glob pattern
+ * @returns Absolute markdown file paths, possibly with duplicates across patterns
+ */
+async function expandSinglePattern(pattern: string): Promise<string[]> {
+  const absolutePattern = resolve(pattern);
+
+  if (existsSync(absolutePattern) && statSync(absolutePattern).isFile()) {
+    if (PathUtils.isMarkdownFile(absolutePattern)) {
+      return [absolutePattern];
     }
+    console.warn(`⚠️  Skipping non-markdown file: ${absolutePattern}`);
 
-    if (
-      existsSync(absolutePattern) &&
-      statSync(absolutePattern).isDirectory()
-    ) {
-      // Glob patterns use forward slashes on every platform; backslashes are pattern escapes
-      const files = await glob(`${absolutePattern.replace(/\\/g, "/")}/*.md`, {
-        absolute: true,
-      });
-      files.forEach((file) => resolvedFiles.add(file));
-      continue;
-    }
-
-    const globFiles = await glob(pattern.replace(/\\/g, "/"), {
-      ignore: ["node_modules/**", ".git/**", "dist/**"],
-      absolute: true,
-      nodir: true,
-    });
-    globFiles
-      .filter((file) => PathUtils.isMarkdownFile(file))
-      .forEach((file) => resolvedFiles.add(file));
+    return [];
   }
 
-  return [...resolvedFiles].sort();
+  if (existsSync(absolutePattern) && statSync(absolutePattern).isDirectory()) {
+    // Glob patterns use forward slashes on every platform; backslashes are pattern escapes
+    return glob(`${absolutePattern.replace(/\\/g, "/")}/*.md`, {
+      absolute: true,
+    });
+  }
+
+  const globFiles = await glob(pattern.replace(/\\/g, "/"), {
+    ignore: ["node_modules/**", ".git/**", "dist/**"],
+    absolute: true,
+    nodir: true,
+  });
+
+  return globFiles.filter((file) => PathUtils.isMarkdownFile(file));
 }
 
 /**
@@ -251,27 +268,14 @@ async function expandMarkdownPatterns(patterns: string[]): Promise<string[]> {
  *
  * Every extraction is planned before anything is written, so one invalid data URI leaves both the
  * markdown and the output directory untouched.
- *
  * @param file - Absolute path of the markdown file
  * @param options - Command options
- *
  * @returns The outcome, with an error message in place of a thrown exception so sibling files are
  *   still processed
  */
-/**
- * Names claimed by earlier files in the same run, so numbered collisions are consistent between
- * dry-run planning and the real writes
- */
-interface ExtractNamingState {
-  /** Output file names already claimed in this run */
-  usedNames: Set<string>;
-  /** Counter behind the img-N fallback names */
-  unnamedCounter: number;
-}
-
 async function extractFile(
   file: string,
-  options: ExtractOptions,
+  options: Readonly<ExtractOptions>,
   naming: ExtractNamingState,
 ): Promise<ExtractFileResult> {
   const content = await readFile(file, "utf-8");
@@ -280,9 +284,10 @@ async function extractFile(
     return { error: undefined, createdImages: [], extractedCount: 0 };
   }
 
-  const outputDir = options.outputDir
-    ? resolve(options.outputDir)
-    : dirname(file);
+  const outputDir =
+    options.outputDir !== undefined && options.outputDir !== ""
+      ? resolve(options.outputDir)
+      : dirname(file);
 
   const replacements = [];
   const writes: { path: string; bytes: Buffer }[] = [];
@@ -292,7 +297,7 @@ async function extractFile(
       const parsed = parseImageDataUri(image.href);
       const extension = imageExtensionForMimeType(parsed.mimeType);
       const slug = slugifyFileName(image.alt);
-      const baseName = slug ?? `img-${String(++naming.unnamedCounter)}`;
+      const baseName = slug ?? naming.nextUnnamedBase();
       let fileName = `${baseName}.${extension}`;
       let suffix = 2;
       while (
@@ -318,14 +323,14 @@ async function extractFile(
       });
     } catch (error) {
       return {
-        error: `${file}: "${image.href.slice(0, 60)}": ${errorMessage(error)}`,
+        error: `${file}: "${image.href.slice(0, MAX_REPORTED_HREF_LENGTH)}": ${errorMessage(error)}`,
         createdImages: [],
         extractedCount: 0,
       };
     }
   }
 
-  if (options.dryRun) {
+  if (options.dryRun === true) {
     return {
       error: undefined,
       createdImages: writes.map((w) => w.path),
@@ -334,12 +339,11 @@ async function extractFile(
   }
 
   await mkdir(outputDir, { recursive: true });
-  for (const write of writes) {
-    await writeFile(write.path, write.bytes);
-  }
+  await Promise.all(writes.map(async (w) => writeFile(w.path, w.bytes)));
 
   const rewritten = replaceSpans(content, replacements);
   await writeFile(file, rewritten, "utf-8");
+
   return {
     error: undefined,
     createdImages: writes.map((w) => w.path),
@@ -359,6 +363,7 @@ function slugifyFileName(alt: string | undefined): string | undefined {
     .toLowerCase()
     .replaceAll(/[^a-z0-9_-]+/g, "-")
     .replace(/^-+|-+$/g, "");
+
   return slug === "" ? undefined : slug;
 }
 

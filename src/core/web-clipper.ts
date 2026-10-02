@@ -1,12 +1,10 @@
 /**
- * Core web clipper for converting web pages to markdown.
- *
- * @file Implements multiple extraction strategies for different types of web content
- *
+ * Core web clipper for converting web pages to markdown, implementing multiple extraction strategies for different types of web content.
  * @category Core
  */
 
-import { parse, HTMLElement } from "node-html-parser";
+import type { HTMLElement } from "node-html-parser";
+import { parse } from "node-html-parser";
 import TurndownService from "turndown";
 import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
@@ -16,43 +14,58 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** Returns the first truthy string among the given values, or an empty string. */
-function firstTruthyString(...values: (string | undefined | null)[]): string {
+/** Whether the value is a string with at least one character. */
+function isNonEmpty(value: string | undefined | null): value is string {
+  return value !== undefined && value !== null && value !== "";
+}
+
+/** Returns the first non-empty string among the given values, or an empty string. */
+function firstTruthyString(
+  ...values: readonly (string | undefined | null)[]
+): string {
   for (const value of values) {
-    if (value) {
+    if (isNonEmpty(value)) {
       return value;
     }
   }
+
   return "";
 }
 
 /**
  * Extraction strategies for different types of content.
- *
  * @category Core
  */
 export type ExtractionStrategy =
-  | "auto" // Automatically choose best strategy
-  | "readability" // Mozilla Readability algorithm
-  | "manual" // Custom selectors
-  | "full" // Full page content
-  | "structured" // Schema.org and semantic extraction
-  | "headless"; // Browser automation (future)
+  // Automatically choose best strategy
+  | "auto"
+  // Mozilla Readability algorithm
+  | "readability"
+  // Custom selectors
+  | "manual"
+  // Full page content
+  | "full"
+  // Schema.org and semantic extraction
+  | "structured"
+  // Browser automation (future)
+  | "headless";
 
 /**
  * Image handling strategies.
- *
  * @category Core
  */
 type ImageStrategy =
-  | "skip" // Don't process images
-  | "link-only" // Keep as external links
-  | "download" // Download and save locally
-  | "base64"; // Embed as base64 (small images only)
+  // Don't process images
+  | "skip"
+  // Keep as external links
+  | "link-only"
+  // Download and save locally
+  | "download"
+  // Embed as base64 (small images only)
+  | "base64";
 
 /**
  * Options for web clipping operations.
- *
  * @category Core
  */
 export interface WebClipperOptions {
@@ -86,7 +99,6 @@ export interface WebClipperOptions {
 
 /**
  * Content extracted from a web page.
- *
  * @category Core
  */
 interface ExtractedContent {
@@ -118,7 +130,6 @@ interface ExtractedContent {
 
 /**
  * Result of a web clipping operation.
- *
  * @category Core
  */
 export interface ClipResult {
@@ -174,38 +185,34 @@ const DEFAULT_CLIPPER_OPTIONS: Required<
  *
  * Provides comprehensive web page to markdown conversion with support for different content types,
  * extraction strategies, and output formats.
- *
  * @category Core
- *
  * @example
- *   Basic usage
- *   ```typescript
- *   const clipper = new WebClipper({
- *       strategy: 'readability',
- *       imageStrategy: 'download'
- *   });
+ * ```typescript
+ * // Basic usage
+ * const clipper = new WebClipper({
+ *     strategy: 'readability',
+ *     imageStrategy: 'download'
+ * });
  *
- *   const result = await clipper.clip('https://example.com/article');
- *   console.log(result.markdown);
- *   ```
+ * const result = await clipper.clip('https://example.com/article');
+ * console.log(result.markdown);
  *
- * @example
- *   Custom extraction
- *   ```typescript
- *   const clipper = new WebClipper({
- *       strategy: 'manual',
- *       selectors: ['article', '.content', 'main']
- *   });
+ * // Custom extraction
+ * const customClipper = new WebClipper({
+ *     strategy: 'manual',
+ *     selectors: ['article', '.content', 'main']
+ * });
  *
- *   const result = await clipper.clip('https://docs.example.com');
- *   ```
+ * const customResult = await customClipper.clip('https://docs.example.com');
+ * ```
  */
 export class WebClipper {
-  private options: Required<
+  private readonly options: Required<
     Omit<WebClipperOptions, "selectors" | "cookiesFile" | "headers">
   > &
     Pick<WebClipperOptions, "selectors" | "cookiesFile" | "headers">;
-  private turndown: TurndownService;
+
+  private readonly turndown: TurndownService;
 
   constructor(options: WebClipperOptions = {}) {
     this.options = { ...DEFAULT_CLIPPER_OPTIONS, ...options };
@@ -214,9 +221,7 @@ export class WebClipper {
 
   /**
    * Clip a web page to markdown.
-   *
    * @param url - URL to clip
-   *
    * @returns Promise resolving to clip result
    */
   async clip(url: string): Promise<ClipResult> {
@@ -241,7 +246,7 @@ export class WebClipper {
     const extracted = this.extractContent(html, url, strategy);
 
     // Process images if needed
-    const processedImages = this.processImages(extracted.images, url);
+    const processedImages = this.processImages(extracted.images);
 
     // Generate markdown
     const markdown = this.generateMarkdown(extracted, processedImages, url);
@@ -254,10 +259,12 @@ export class WebClipper {
       links: extracted.links,
     };
 
-    if (extracted.title) result.title = extracted.title;
-    if (extracted.author) result.author = extracted.author;
-    if (extracted.publishedDate) result.publishedDate = extracted.publishedDate;
-    if (extracted.description) result.description = extracted.description;
+    if (isNonEmpty(extracted.title)) result.title = extracted.title;
+    if (isNonEmpty(extracted.author)) result.author = extracted.author;
+    if (isNonEmpty(extracted.publishedDate))
+      result.publishedDate = extracted.publishedDate;
+    if (isNonEmpty(extracted.description))
+      result.description = extracted.description;
     if (extracted.structuredData)
       result.structuredData = extracted.structuredData;
 
@@ -266,7 +273,6 @@ export class WebClipper {
 
   /**
    * Fetch HTML content from a URL.
-   *
    * @private
    */
   private async fetchHtml(url: string): Promise<string> {
@@ -307,7 +313,6 @@ export class WebClipper {
 
   /**
    * Determine the best extraction strategy for content.
-   *
    * @private
    */
   private determineStrategy(html: string, url: string): ExtractionStrategy {
@@ -353,7 +358,6 @@ export class WebClipper {
 
   /**
    * Extract content using the specified strategy.
-   *
    * @private
    */
   private extractContent(
@@ -361,23 +365,20 @@ export class WebClipper {
     url: string,
     strategy: ExtractionStrategy,
   ): ExtractedContent {
-    switch (strategy) {
-      case "readability":
-        return this.extractWithReadability(html, url);
-      case "manual":
-        return this.extractWithSelectors(html, url);
-      case "full":
-        return this.extractFullPage(html, url);
-      case "structured":
-        return this.extractStructured(html, url);
-      default:
-        return this.extractWithReadability(html, url);
-    }
+    const extractors: Record<ExtractionStrategy, () => ExtractedContent> = {
+      auto: () => this.extractWithReadability(html, url),
+      headless: () => this.extractWithReadability(html, url),
+      readability: () => this.extractWithReadability(html, url),
+      manual: () => this.extractWithSelectors(html, url),
+      full: () => this.extractFullPage(html, url),
+      structured: () => this.extractStructured(html, url),
+    };
+
+    return extractors[strategy]();
   }
 
   /**
    * Extract content using Mozilla Readability.
-   *
    * @private
    */
   private extractWithReadability(html: string, url: string): ExtractedContent {
@@ -385,7 +386,7 @@ export class WebClipper {
     const reader = new Readability(dom.window.document);
     const article = reader.parse();
 
-    if (!article?.content) {
+    if (!isNonEmpty(article?.content)) {
       throw new Error("Could not extract article content using Readability");
     }
 
@@ -397,19 +398,18 @@ export class WebClipper {
       links: this.extractLinks(root, url),
     };
 
-    if (article.title) result.title = article.title;
-    if (article.byline) result.author = article.byline;
-    if (article.excerpt) result.description = article.excerpt;
+    if (isNonEmpty(article.title)) result.title = article.title;
+    if (isNonEmpty(article.byline)) result.author = article.byline;
+    if (isNonEmpty(article.excerpt)) result.description = article.excerpt;
 
     const publishedDate = this.extractPublishedDate(html);
-    if (publishedDate) result.publishedDate = publishedDate;
+    if (isNonEmpty(publishedDate)) result.publishedDate = publishedDate;
 
     return result;
   }
 
   /**
    * Extract content using custom selectors.
-   *
    * @private
    */
   private extractWithSelectors(html: string, url: string): ExtractedContent {
@@ -446,23 +446,22 @@ export class WebClipper {
     };
 
     const title = this.extractTitle(root);
-    if (title) result.title = title;
+    if (isNonEmpty(title)) result.title = title;
 
     const author = this.extractAuthor(root);
-    if (author) result.author = author;
+    if (isNonEmpty(author)) result.author = author;
 
     const publishedDate = this.extractPublishedDate(html);
-    if (publishedDate) result.publishedDate = publishedDate;
+    if (isNonEmpty(publishedDate)) result.publishedDate = publishedDate;
 
     const description = this.extractDescription(root);
-    if (description) result.description = description;
+    if (isNonEmpty(description)) result.description = description;
 
     return result;
   }
 
   /**
    * Extract full page content.
-   *
    * @private
    */
   private extractFullPage(html: string, url: string): ExtractedContent {
@@ -480,23 +479,22 @@ export class WebClipper {
     };
 
     const title = this.extractTitle(root);
-    if (title) result.title = title;
+    if (isNonEmpty(title)) result.title = title;
 
     const author = this.extractAuthor(root);
-    if (author) result.author = author;
+    if (isNonEmpty(author)) result.author = author;
 
     const publishedDate = this.extractPublishedDate(html);
-    if (publishedDate) result.publishedDate = publishedDate;
+    if (isNonEmpty(publishedDate)) result.publishedDate = publishedDate;
 
     const description = this.extractDescription(root);
-    if (description) result.description = description;
+    if (isNonEmpty(description)) result.description = description;
 
     return result;
   }
 
   /**
    * Extract content using structured data.
-   *
    * @private
    */
   private extractStructured(html: string, url: string): ExtractedContent {
@@ -535,7 +533,6 @@ export class WebClipper {
 
   /**
    * Extract title from HTML.
-   *
    * @private
    */
   private extractTitle(root: HTMLElement): string | undefined {
@@ -565,7 +562,6 @@ export class WebClipper {
 
   /**
    * Extract author from HTML.
-   *
    * @private
    */
   private extractAuthor(root: HTMLElement): string | undefined {
@@ -593,7 +589,6 @@ export class WebClipper {
 
   /**
    * Extract published date from HTML.
-   *
    * @private
    */
   private extractPublishedDate(html: string): string | undefined {
@@ -615,7 +610,6 @@ export class WebClipper {
 
   /**
    * Extract description from HTML.
-   *
    * @private
    */
   private extractDescription(root: HTMLElement): string | undefined {
@@ -629,7 +623,7 @@ export class WebClipper {
       const element = root.querySelector(selector);
       if (element) {
         const description = element.getAttribute("content");
-        if (description) return description;
+        if (isNonEmpty(description)) return description;
       }
     }
 
@@ -638,7 +632,6 @@ export class WebClipper {
 
   /**
    * Extract images from content.
-   *
    * @private
    */
   private extractImages(root: HTMLElement, baseUrl: string) {
@@ -646,6 +639,7 @@ export class WebClipper {
 
     return images.map((img) => {
       const alt = img.getAttribute("alt");
+
       return {
         originalUrl: this.resolveUrl(img.getAttribute("src") ?? "", baseUrl),
         alt: alt ?? undefined,
@@ -656,7 +650,6 @@ export class WebClipper {
 
   /**
    * Extract links from content.
-   *
    * @private
    */
   private extractLinks(root: HTMLElement, baseUrl: string) {
@@ -673,16 +666,14 @@ export class WebClipper {
 
   /**
    * Process images according to the image strategy.
-   *
    * @private
    */
   private processImages(
-    images: {
+    images: readonly {
       originalUrl: string;
       alt: string | undefined;
       processed: boolean;
     }[],
-    _baseUrl: string,
   ) {
     // For now, just mark as processed without downloading
     // TODO: Implement actual image downloading and processing
@@ -695,7 +686,6 @@ export class WebClipper {
 
   /**
    * Generate final markdown content.
-   *
    * @private
    */
   private generateMarkdown(
@@ -724,7 +714,6 @@ export class WebClipper {
 
   /**
    * Generate frontmatter for the markdown file.
-   *
    * @private
    */
   private generateFrontmatter(
@@ -733,11 +722,12 @@ export class WebClipper {
   ): string {
     const frontmatter: Record<string, unknown> = {};
 
-    if (extracted.title) frontmatter.title = extracted.title;
-    if (extracted.author) frontmatter.author = extracted.author;
-    if (extracted.publishedDate)
+    if (isNonEmpty(extracted.title)) frontmatter.title = extracted.title;
+    if (isNonEmpty(extracted.author)) frontmatter.author = extracted.author;
+    if (isNonEmpty(extracted.publishedDate))
       frontmatter.published = extracted.publishedDate;
-    if (extracted.description) frontmatter.description = extracted.description;
+    if (isNonEmpty(extracted.description))
+      frontmatter.description = extracted.description;
 
     frontmatter.source = sourceUrl;
     frontmatter.clipped = new Date().toISOString();
@@ -751,7 +741,6 @@ export class WebClipper {
 
   /**
    * Configure Turndown service for HTML to Markdown conversion.
-   *
    * @private
    */
   private configureTurndown(): TurndownService {
@@ -781,7 +770,6 @@ export class WebClipper {
 
   /**
    * Resolve a URL relative to a base URL.
-   *
    * @private
    */
   private resolveUrl(url: string, baseUrl: string): string {
@@ -794,13 +782,13 @@ export class WebClipper {
 
   /**
    * Check if a URL is internal to the base domain.
-   *
    * @private
    */
   private isInternalLink(url: string, baseUrl: string): boolean {
     try {
       const urlObj = new URL(url);
       const baseObj = new URL(baseUrl);
+
       return urlObj.hostname === baseObj.hostname;
     } catch {
       return false;

@@ -7,9 +7,17 @@ import type {
 } from "../core/link-graph-generator.js";
 import type { OperationOptions } from "../types/operations.js";
 
+/** Link traversal depth used when the caller does not set one. */
+const DEFAULT_MAX_DEPTH = 10;
+
+/** Generated content shorter than this many characters is printed in full when no output file is written. */
+const PREVIEW_FULL_LIMIT = 5000;
+
+/** Number of leading characters printed for longer content when no output file is written. */
+const PREVIEW_TRUNCATED_LENGTH = 500;
+
 /**
  * Configuration options for graph generation operations.
- *
  * @category Commands
  */
 export interface GraphOperationOptions
@@ -24,7 +32,6 @@ export interface GraphOperationOptions
 
 /**
  * CLI-specific options for the graph command.
- *
  * @category Commands
  */
 export interface GraphCliOptions extends Omit<GraphOperationOptions, "format"> {
@@ -36,7 +43,6 @@ export interface GraphCliOptions extends Omit<GraphOperationOptions, "format"> {
 
 /**
  * Result of a graph generation operation.
- *
  * @category Commands
  */
 export interface GraphResult {
@@ -75,10 +81,9 @@ export interface GraphResult {
  * Creates visual representations of how markdown files link to each other, supporting multiple
  * output formats including JSON data, Mermaid diagrams, GraphViz DOT, and interactive HTML
  * visualizations.
- *
  * @example
  *   Basic graph generation
- *   ```typescript
+ * ```typescript
  *   const result = await generateGraph(['docs/**\/*.md'], {
  *       format: 'mermaid',
  *       includeExternal: false
@@ -86,11 +91,10 @@ export interface GraphResult {
  *
  *   console.log('Generated Mermaid diagram:');
  *   console.log(result.content);
- *   ```
- *
+ * ```
  * @example
  *   Generate interactive HTML visualization
- *   ```typescript
+ * ```typescript
  *   const result = await generateGraph(['**\/*.md'], {
  *       format: 'html',
  *       output: 'graph.html',
@@ -98,17 +102,15 @@ export interface GraphResult {
  *   });
  *
  *   console.log('Interactive graph saved to: ' + result.outputFile);
- *   ```
- *
+ * ```
  * @param patterns - File patterns to process (supports globs)
  * @param options - Graph generation options
- *
  * @returns Promise resolving to graph generation results
  * @category Commands
  */
 export async function generateGraph(
-  patterns: string[],
-  options: Partial<GraphOperationOptions> = {},
+  patterns: readonly string[],
+  options: Readonly<Partial<GraphOperationOptions>> = {},
 ): Promise<GraphResult> {
   const startTime = Date.now();
 
@@ -117,7 +119,7 @@ export async function generateGraph(
     includeExternal: options.includeExternal ?? false,
     includeImages: options.includeImages ?? true,
     includeAnchors: options.includeAnchors ?? false,
-    maxDepth: options.maxDepth ?? 10,
+    maxDepth: options.maxDepth ?? DEFAULT_MAX_DEPTH,
     baseDir: options.baseDir ?? process.cwd(),
     output: options.output,
     open: options.open ?? false,
@@ -162,7 +164,7 @@ export async function generateGraph(
     });
 
     // Generate the graph
-    const graph = await generator.generateGraph(patterns);
+    const graph = await generator.generateGraph([...patterns]);
 
     // Export to requested format
     const content = generator.exportGraph(graph, opts.format);
@@ -180,7 +182,7 @@ export async function generateGraph(
     };
 
     // Write to file if output path specified
-    if (opts.output && !opts.dryRun) {
+    if (opts.output !== undefined && opts.output !== "" && !opts.dryRun) {
       const outputPath = resolve(opts.output);
       await writeFile(outputPath, content, "utf-8");
       result.outputFile = outputPath;
@@ -219,6 +221,7 @@ export async function generateGraph(
   }
 
   result.processingTime = Date.now() - startTime;
+
   return result;
 }
 
@@ -232,9 +235,8 @@ function isGraphOutputFormat(value: string): value is GraphOutputFormat {
  *
  * Processes markdown files to generate interactive link graphs in various formats. Supports JSON
  * data export, Mermaid diagrams, GraphViz DOT format, and interactive HTML visualizations.
- *
  * @example
- *   ```bash
+ * ```bash
  *   # Generate Mermaid diagram for all markdown files
  *   markmv graph "**\/*.md" --format mermaid --output graph.mmd
  *
@@ -246,15 +248,14 @@ function isGraphOutputFormat(value: string): value is GraphOutputFormat {
  *
  *   # Generate GraphViz DOT file
  *   markmv graph "**\/*.md" --format dot --include-images --output graph.dot
- *   ```;
- *
+ * ```
  * @param patterns - File patterns to process
  * @param cliOptions - CLI-specific options
  * @category Commands
  */
 export async function graphCommand(
-  patterns: string[],
-  cliOptions: GraphCliOptions,
+  patterns: readonly string[],
+  cliOptions: Readonly<GraphCliOptions>,
 ): Promise<void> {
   // Default to current directory if no patterns provided
   const finalPatterns = patterns.length === 0 ? ["."] : patterns;
@@ -266,6 +267,7 @@ export async function graphCommand(
       `Invalid format: ${format}. Valid formats: json, mermaid, dot, html`,
     );
     process.exitCode = 1;
+
     return;
   }
 
@@ -277,8 +279,9 @@ export async function graphCommand(
   try {
     const result = await generateGraph(finalPatterns, options);
 
-    if (cliOptions.json) {
+    if (cliOptions.json === true) {
       console.log(JSON.stringify(result, null, 2));
+
       return;
     }
 
@@ -290,8 +293,11 @@ export async function graphCommand(
     console.log(`Format: ${format}`);
     console.log(`Processing time: ${String(result.processingTime)}ms\n`);
 
-    if (result.outputFile) {
-      console.log(`📁 Output written to: ${result.outputFile}\n`);
+    const outputFile = result.outputFile ?? "";
+    const hasOutputFile = outputFile !== "";
+
+    if (hasOutputFile) {
+      console.log(`📁 Output written to: ${outputFile}\n`);
     }
 
     // Analysis summary
@@ -321,24 +327,28 @@ export async function graphCommand(
       }
       console.log();
       process.exitCode = 1;
+
       return;
     }
 
     if (!result.success) {
       console.log("❌ Graph generation failed");
       process.exitCode = 1;
+
       return;
     }
 
     // Show content preview for small outputs or if no output file
-    if (!result.outputFile && result.content.length < 5000) {
+    if (!hasOutputFile && result.content.length < PREVIEW_FULL_LIMIT) {
       console.log(`📋 Generated ${format.toUpperCase()}:`);
       console.log(result.content);
-    } else if (!result.outputFile) {
+    } else if (!hasOutputFile) {
       console.log(
         `📋 Generated ${format.toUpperCase()} (${String(result.content.length)} characters)`,
       );
-      console.log(`${result.content.substring(0, 500)}...`);
+      console.log(
+        `${result.content.substring(0, PREVIEW_TRUNCATED_LENGTH)}...`,
+      );
     }
 
     console.log("✅ Graph generation completed successfully!");

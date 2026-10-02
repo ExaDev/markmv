@@ -5,7 +5,7 @@
  * input/output validation with structured error reporting.
  */
 
-import { methodSchemas, type MethodName } from "./index.js";
+import { methodSchemas, type MethodName } from "./method-schemas.js";
 
 export interface ValidationResult {
   valid: boolean;

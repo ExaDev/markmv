@@ -4,12 +4,14 @@ import type { OperationChange } from "../types/operations.js";
 import { FileUtils } from "../utils/file-utils.js";
 import { PathUtils } from "../utils/path-utils.js";
 
+/** How many lines either side of the reported line are searched for a Claude import the parser placed on the wrong line. */
+const CLAUDE_IMPORT_SEARCH_RADIUS = 2;
+
 /**
  * Result of a link refactoring operation.
  *
  * Contains the updated content with refactored links and detailed information about the changes
  * made during the refactoring process.
- *
  * @category Core
  */
 export interface LinkRefactorResult {
@@ -26,7 +28,6 @@ export interface LinkRefactorResult {
  *
  * Controls how links are processed during refactoring, including path conversion, formatting
  * preservation, and special handling for different link types.
- *
  * @category Core
  */
 export interface RefactorOptions {
@@ -46,7 +47,6 @@ export interface RefactorOptions {
  * Obsidian resolves [[Note]] by basename across the whole vault, so deciding what a rewritten
  * wikilink should say depends on stem uniqueness across every note, not on the two files joined by
  * the move.
- *
  * @category Core
  */
 export interface ObsidianVaultContext {
@@ -62,12 +62,10 @@ export interface ObsidianVaultContext {
  * The LinkRefactorer automatically updates link paths, maintains referential integrity, and handles
  * various link types including relative paths, absolute paths, and Claude import syntax. It ensures
  * that links remain valid after file operations.
- *
  * @category Core
- *
  * @example
  *   Basic link refactoring
- *   ```typescript
+ * ```typescript
  *   const refactorer = new LinkRefactorer({
  *       preferRelativePaths: true,
  *       updateClaudeImports: true
@@ -80,11 +78,10 @@ export interface ObsidianVaultContext {
  *   );
  *
  *   console.log(`Updated ${result.changes.length} links`);
- *   ```
- *
+ * ```
  * @example
  *   Bulk refactoring with path mapping
- *   ```typescript
+ * ```typescript
  *   const pathMap = new Map([
  *       ['docs/old.md', 'guides/new.md'],
  *       ['api/legacy.md', 'reference/current.md']
@@ -94,16 +91,15 @@ export interface ObsidianVaultContext {
  *     parsedFile,
  *     pathMap
  *   );
- *   ```
+ * ```
  */
 export class LinkRefactorer {
-  private options: Omit<Required<RefactorOptions>, "obsidianVault"> & {
+  private readonly options: Omit<Required<RefactorOptions>, "obsidianVault"> & {
     obsidianVault?: ObsidianVaultContext;
   };
 
   /**
    * Creates a refactorer, filling any option left unset with its default: relative paths preferred, Claude imports updated and formatting preserved.
-   *
    * @param options - Refactoring options, including an optional Obsidian vault context for wikilink-aware rewriting.
    */
   constructor(options: RefactorOptions = {}) {
@@ -124,6 +120,7 @@ export class LinkRefactorer {
     newFilePath: string,
   ): Promise<LinkRefactorResult> {
     const content = await FileUtils.readTextFile(file.filePath);
+
     return this.refactorLinksForFileMoveWithContent(
       file,
       movedFilePath,
@@ -147,6 +144,7 @@ export class LinkRefactorer {
     // Sort links by line and column in reverse order to avoid offset issues
     const sortedLinks = [...file.links].sort((a, b) => {
       if (a.line !== b.line) return b.line - a.line;
+
       return b.column - a.column;
     });
 
@@ -160,28 +158,8 @@ export class LinkRefactorer {
         );
 
         if (newLink !== link.href) {
-          let lineIndex = link.line - 1;
-          let oldLine = lines[lineIndex];
-
-          // For Claude imports, if the import is not found on the expected line,
-          // search for it in nearby lines (this handles parsing edge cases)
-          if (link.type === "claude-import") {
-            const expectedImport = `@${link.href}`;
-            if (!oldLine.includes(expectedImport)) {
-              // Search in nearby lines
-              for (
-                let i = Math.max(0, lineIndex - 2);
-                i < Math.min(lines.length, lineIndex + 3);
-                i++
-              ) {
-                if (lines[i].includes(expectedImport)) {
-                  lineIndex = i;
-                  oldLine = lines[i];
-                  break;
-                }
-              }
-            }
-          }
+          const lineIndex = this.locateLinkLine(lines, link);
+          const oldLine = lines[lineIndex];
 
           const newLine = this.replaceLinkInLine(oldLine, link, newLink);
 
@@ -216,11 +194,9 @@ export class LinkRefactorer {
 
   /**
    * Updates the links inside a file that is itself being moved, so they still reach their targets from the new location. Reads the file from disk, does not write it, and records per-link failures in the result instead of throwing.
-   *
    * @param file - Parsed file that is being moved.
    * @param newFilePath - Path the file will be moved to.
    * @param movedPaths - Map of old to new paths for other files moved in the same operation, so links to them are rewritten to their new locations.
-   *
    * @returns The rewritten content, the changes made and any per-link errors.
    */
   async refactorLinksForCurrentFileMove(
@@ -229,86 +205,13 @@ export class LinkRefactorer {
     movedPaths?: Map<string, string>,
   ): Promise<LinkRefactorResult> {
     const content = await FileUtils.readTextFile(file.filePath);
-    const changes: OperationChange[] = [];
-    const errors: string[] = [];
 
-    const lines = content.split("\n");
-
-    // Sort links by line and column in reverse order
-    const sortedLinks = [...file.links].sort((a, b) => {
-      if (a.line !== b.line) return b.line - a.line;
-      return b.column - a.column;
-    });
-
-    for (const link of sortedLinks) {
-      if (
-        link.type === "internal" ||
-        link.type === "image" ||
-        (link.type === "claude-import" && this.options.updateClaudeImports)
-      ) {
-        try {
-          const newLink = this.updateLinkForSourceFileMove(
-            link,
-            file.filePath,
-            newFilePath,
-            movedPaths,
-          );
-
-          if (newLink !== link.href) {
-            let lineIndex = link.line - 1;
-            let oldLine = lines[lineIndex];
-
-            // For Claude imports, if the import is not found on the expected line,
-            // search for it in nearby lines (this handles parsing edge cases)
-            if (link.type === "claude-import") {
-              const expectedImport = `@${link.href}`;
-              if (!oldLine.includes(expectedImport)) {
-                // Search in nearby lines
-                for (
-                  let i = Math.max(0, lineIndex - 2);
-                  i < Math.min(lines.length, lineIndex + 3);
-                  i++
-                ) {
-                  if (lines[i].includes(expectedImport)) {
-                    lineIndex = i;
-                    oldLine = lines[i];
-                    break;
-                  }
-                }
-              }
-            }
-
-            const newLine = this.replaceLinkInLine(oldLine, link, newLink);
-
-            if (newLine !== oldLine) {
-              lines[lineIndex] = newLine;
-
-              changes.push({
-                type: "link-updated",
-                filePath: newFilePath, // Note: using new file path
-                oldValue: link.href,
-                newValue: newLink,
-                line: lineIndex + 1,
-              });
-            }
-          }
-        } catch (error) {
-          const message =
-            error instanceof Error ? error.message : String(error);
-          errors.push(
-            `Failed to update link at line ${String(link.line)}: ${message}`,
-          );
-        }
-      }
-    }
-
-    const updatedContent = lines.join("\n");
-
-    return {
-      updatedContent,
-      changes,
-      errors,
-    };
+    return this.refactorLinksForCurrentFileMoveWithContent(
+      file,
+      newFilePath,
+      content,
+      movedPaths,
+    );
   }
 
   /** Update links when the current file is being moved (with provided content) */
@@ -326,67 +229,50 @@ export class LinkRefactorer {
     // Sort links by line and column in reverse order
     const sortedLinks = [...file.links].sort((a, b) => {
       if (a.line !== b.line) return b.line - a.line;
+
       return b.column - a.column;
     });
 
     for (const link of sortedLinks) {
-      if (
+      const isRewritable =
         link.type === "internal" ||
         link.type === "image" ||
-        (link.type === "claude-import" && this.options.updateClaudeImports)
-      ) {
-        try {
-          const newLink = this.updateLinkForSourceFileMove(
-            link,
-            file.filePath,
-            newFilePath,
-            movedPaths,
-          );
+        (link.type === "claude-import" && this.options.updateClaudeImports);
+      if (!isRewritable) {
+        continue;
+      }
 
-          if (newLink !== link.href) {
-            let lineIndex = link.line - 1;
-            let oldLine = lines[lineIndex];
+      try {
+        const newLink = this.updateLinkForSourceFileMove(
+          link,
+          file.filePath,
+          newFilePath,
+          movedPaths,
+        );
 
-            // For Claude imports, if the import is not found on the expected line, search for it in nearby lines (this handles parsing edge cases)
-            if (link.type === "claude-import") {
-              const expectedImport = `@${link.href}`;
-              if (!oldLine.includes(expectedImport)) {
-                // Search in nearby lines
-                for (
-                  let i = Math.max(0, lineIndex - 2);
-                  i < Math.min(lines.length, lineIndex + 3);
-                  i++
-                ) {
-                  if (lines[i].includes(expectedImport)) {
-                    lineIndex = i;
-                    oldLine = lines[i];
-                    break;
-                  }
-                }
-              }
-            }
+        if (newLink !== link.href) {
+          const lineIndex = this.locateLinkLine(lines, link);
+          const oldLine = lines[lineIndex];
+          const newLine = this.replaceLinkInLine(oldLine, link, newLink);
 
-            const newLine = this.replaceLinkInLine(oldLine, link, newLink);
+          if (newLine !== oldLine) {
+            lines[lineIndex] = newLine;
 
-            if (newLine !== oldLine) {
-              lines[lineIndex] = newLine;
-
-              changes.push({
-                type: "link-updated",
-                filePath: newFilePath, // Note: using new file path
-                oldValue: link.href,
-                newValue: newLink,
-                line: lineIndex + 1,
-              });
-            }
+            changes.push({
+              type: "link-updated",
+              // Note: using new file path
+              filePath: newFilePath,
+              oldValue: link.href,
+              newValue: newLink,
+              line: lineIndex + 1,
+            });
           }
-        } catch (error) {
-          const message =
-            error instanceof Error ? error.message : String(error);
-          errors.push(
-            `Failed to update link at line ${String(link.line)}: ${message}`,
-          );
         }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        errors.push(
+          `Failed to update link at line ${String(link.line)}: ${message}`,
+        );
       }
     }
 
@@ -399,9 +285,46 @@ export class LinkRefactorer {
     };
   }
 
+  /**
+   * Finds the line a link actually sits on. A Claude import the parser reported on the wrong line is searched for in the lines either side of the expected one, which handles parsing edge cases; every other link, and an import not found nearby, keeps the reported line.
+   * @param lines - The file's lines.
+   * @param link - The link to locate.
+   * @returns The zero-based index of the line holding the link.
+   */
+  private locateLinkLine(
+    lines: readonly string[],
+    link: Readonly<MarkdownLink>,
+  ): number {
+    const expectedIndex = link.line - 1;
+    if (link.type !== "claude-import") {
+      return expectedIndex;
+    }
+
+    const expectedImport = `@${link.href}`;
+    if (lines[expectedIndex].includes(expectedImport)) {
+      return expectedIndex;
+    }
+
+    const searchStart = Math.max(
+      0,
+      expectedIndex - CLAUDE_IMPORT_SEARCH_RADIUS,
+    );
+    const searchEnd = Math.min(
+      lines.length,
+      expectedIndex + CLAUDE_IMPORT_SEARCH_RADIUS + 1,
+    );
+    for (let i = searchStart; i < searchEnd; i++) {
+      if (lines[i].includes(expectedImport)) {
+        return i;
+      }
+    }
+
+    return expectedIndex;
+  }
+
   /** Update a single link when a target file has been moved */
   private updateLinkForMovedFile(
-    link: MarkdownLink,
+    link: Readonly<MarkdownLink>,
     sourceFilePath: string,
     movedFilePath: string,
     newFilePath: string,
@@ -436,7 +359,7 @@ export class LinkRefactorer {
    * preserved as-is.
    */
   private updateWikilinkForMovedFile(
-    link: MarkdownLink,
+    link: Readonly<MarkdownLink>,
     movedFilePath: string,
     newFilePath: string,
   ): string {
@@ -447,14 +370,14 @@ export class LinkRefactorer {
 
     const oldStem = basename(movedFilePath, ".md");
     const newStem = basename(newFilePath, ".md");
-    // A bare-stem href still resolves wherever the note lands, so an unchanged stem needs no
-    // rewrite; a path-qualified href resolves by vault path and must be recomputed
+    /* A bare-stem href still resolves wherever the note lands, so an unchanged stem needs no
+       rewrite; a path-qualified href resolves by vault path and must be recomputed */
     if (oldStem === newStem && !link.href.includes("/")) {
       return link.href;
     }
 
-    // The bare stem stays unambiguous when no other note carries it -- which for an unchanged
-    // stem means the pre-move count of one (this very note), and for a rename means zero
+    /* The bare stem stays unambiguous when no other note carries it, which for an unchanged
+       stem means the pre-move count of one (this very note), and for a rename means zero */
     const stemCount = vault.noteStemCounts.get(newStem) ?? 0;
     if (stemCount === 0 || (oldStem === newStem && stemCount === 1)) {
       return newStem;
@@ -468,7 +391,7 @@ export class LinkRefactorer {
 
   /** Update a link when the source file (containing the link) is being moved */
   private updateLinkForSourceFileMove(
-    link: MarkdownLink,
+    link: Readonly<MarkdownLink>,
     oldSourceFilePath: string,
     newSourceFilePath: string,
     movedPaths?: Map<string, string>,
@@ -480,6 +403,7 @@ export class LinkRefactorer {
         newSourceFilePath,
         movedPaths,
       );
+
       return this.ensureRelativePrefix(PathUtils.toUnixPath(newPath));
     }
 
@@ -490,6 +414,7 @@ export class LinkRefactorer {
         newSourceFilePath,
         movedPaths,
       );
+
       return this.ensureRelativePrefix(PathUtils.toUnixPath(newPath));
     }
 
@@ -502,8 +427,8 @@ export class LinkRefactorer {
    * in unix form, as markdown links always use forward slashes.
    */
   private ensureRelativePrefix(path: string): string {
-    // Home-directory and drive-absolute forms are already absolute from the markdown point of
-    // view; prefixing them would corrupt the link (./~/notes/x.md, ./C:/docs/x.md)
+    /* Home-directory and drive-absolute forms are already absolute from the markdown point of
+       view; prefixing them would corrupt the link (./~/notes/x.md, ./C:/docs/x.md) */
     const alreadyAnchored =
       path.startsWith("./") ||
       path.startsWith("../") ||
@@ -513,11 +438,12 @@ export class LinkRefactorer {
     if (!alreadyAnchored) {
       return `./${path}`;
     }
+
     return path;
   }
 
   private updateClaudeImportPath(
-    link: MarkdownLink,
+    link: Readonly<MarkdownLink>,
     sourceFilePath: string,
     newTargetFilePath: string,
   ): string {
@@ -550,7 +476,7 @@ export class LinkRefactorer {
   }
 
   private updateInternalLinkPath(
-    link: MarkdownLink,
+    link: Readonly<MarkdownLink>,
     sourceFilePath: string,
     newTargetFilePath: string,
   ): string {
@@ -586,13 +512,14 @@ export class LinkRefactorer {
   /** Replace a link in a line of text while preserving formatting */
   private replaceLinkInLine(
     line: string,
-    link: MarkdownLink,
+    link: Readonly<MarkdownLink>,
     newHref: string,
   ): string {
     if (link.type === "claude-import") {
       // Replace Claude import: @old-path with @new-path
       const oldImport = `@${link.href}`;
       const newImport = `@${newHref}`;
+
       return line.replace(oldImport, newImport);
     }
 
@@ -603,6 +530,7 @@ export class LinkRefactorer {
       );
       // $-sequences in the new target are replacement-template metacharacters and must be escaped
       const escapedHref = newHref.replace(/\$/g, "$$$$");
+
       return line.replace(wikilinkRegex, `$1[[${escapedHref}$2]]`);
     }
 
@@ -613,12 +541,13 @@ export class LinkRefactorer {
         `!\\[([^\\]]*)\\]\\(\\s*${this.escapeRegex(link.href)}(\\s+"[^"]*")?\\s*\\)`,
         "g",
       );
+
       return line.replace(imageRegex, `![$1](${newHref}$2)`);
     }
 
     if (link.type === "reference") {
-      // Reference-style links are handled in the reference definitions
-      // For now, just return the line unchanged
+      /* Reference-style links are handled in the reference definitions
+         For now, just return the line unchanged */
       return line;
     }
 
@@ -655,54 +584,55 @@ export class LinkRefactorer {
         dirname(file.filePath),
       );
 
-      if (resolvedPath === movedFilePath) {
-        try {
-          const newUrl = this.updateInternalLinkPath(
-            {
-              ...reference,
-              href: reference.url,
-              type: "internal",
-              text: undefined,
-              referenceId: undefined,
+      if (resolvedPath !== movedFilePath) {
+        continue;
+      }
+
+      try {
+        const newUrl = this.updateInternalLinkPath(
+          {
+            ...reference,
+            href: reference.url,
+            type: "internal",
+            text: undefined,
+            referenceId: undefined,
+            line: reference.line,
+            column: 1,
+            absolute: false,
+          },
+          file.filePath,
+          newFilePath,
+        );
+
+        if (newUrl !== reference.url) {
+          const oldLine = lines[reference.line - 1];
+          const refRegex = new RegExp(
+            `\\[${this.escapeRegex(reference.id)}\\]:\\s*${this.escapeRegex(reference.url)}(\\s+"[^"]*")?`,
+            "g",
+          );
+
+          const newLine = oldLine.replace(
+            refRegex,
+            `[${reference.id}]: ${newUrl}${reference.title !== undefined && reference.title !== "" ? ` "${reference.title}"` : ""}`,
+          );
+
+          if (newLine !== oldLine) {
+            lines[reference.line - 1] = newLine;
+
+            changes.push({
+              type: "link-updated",
+              filePath: file.filePath,
+              oldValue: reference.url,
+              newValue: newUrl,
               line: reference.line,
-              column: 1,
-              absolute: false,
-            },
-            file.filePath,
-            newFilePath,
-          );
-
-          if (newUrl !== reference.url) {
-            const oldLine = lines[reference.line - 1];
-            const refRegex = new RegExp(
-              `\\[${this.escapeRegex(reference.id)}\\]:\\s*${this.escapeRegex(reference.url)}(\\s+"[^"]*")?`,
-              "g",
-            );
-
-            const newLine = oldLine.replace(
-              refRegex,
-              `[${reference.id}]: ${newUrl}${reference.title ? ` "${reference.title}"` : ""}`,
-            );
-
-            if (newLine !== oldLine) {
-              lines[reference.line - 1] = newLine;
-
-              changes.push({
-                type: "link-updated",
-                filePath: file.filePath,
-                oldValue: reference.url,
-                newValue: newUrl,
-                line: reference.line,
-              });
-            }
+            });
           }
-        } catch (error) {
-          const message =
-            error instanceof Error ? error.message : String(error);
-          errors.push(
-            `Failed to update reference ${reference.id} at line ${String(reference.line)}: ${message}`,
-          );
         }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        errors.push(
+          `Failed to update reference ${reference.id} at line ${String(reference.line)}: ${message}`,
+        );
       }
     }
 

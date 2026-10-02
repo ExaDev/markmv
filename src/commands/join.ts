@@ -1,12 +1,23 @@
 import { ContentJoiner } from "../core/content-joiner.js";
-import type { JoinOperationOptions } from "../types/operations.js";
+import type {
+  JoinOperationOptions,
+  OperationChange,
+} from "../types/operations.js";
+
+/** Prints one dry-run change line for the change kinds a join produces. */
+function logChange(change: Readonly<OperationChange>): void {
+  if (change.type === "file-created") {
+    console.log(`  + Created: ${change.filePath}`);
+  } else if (change.type === "link-updated") {
+    console.log(`  ~ Updated links in: ${change.filePath}`);
+  }
+}
 
 /**
  * Configuration options for join command operations.
  *
  * Controls how multiple markdown files are combined into a single file, including ordering
  * strategy, output location, and preview mode.
- *
  * @category Commands
  */
 export interface JoinOptions {
@@ -34,37 +45,32 @@ export interface JoinOptions {
  *
  * The join operation automatically updates all cross-references to reflect the new unified file
  * structure and maintains link integrity throughout the project.
- *
  * @category Commands
- *
  * @example
  *   Basic file joining
- *   ```typescript
+ * ```typescript
  *   await joinCommand(['intro.md', 'content.md', 'conclusion.md'], {
  *       output: 'complete-guide.md',
  *       orderStrategy: 'dependency'
  *   });
- *   ```
- *
+ * ```
  * @example
  *   Dry run with verbose output
- *   ```typescript
+ * ```typescript
  *   await joinCommand(['docs/*.md'], {
  *       output: 'handbook.md',
  *       dryRun: true,
  *       verbose: true,
  *       orderStrategy: 'alphabetical'
  *   });
- *   ```
- *
+ * ```
  * @param files - Array of markdown file paths to join together
  * @param options - Configuration options for the join operation
- *
  * @throws Will exit the process with code 1 if the operation fails
  */
 export async function joinCommand(
-  files: string[],
-  options: JoinOptions,
+  files: readonly string[],
+  options: Readonly<JoinOptions>,
 ): Promise<void> {
   const joiner = new ContentJoiner();
 
@@ -85,21 +91,21 @@ export async function joinCommand(
     orderStrategy: options.orderStrategy ?? "dependency",
   };
 
-  if (options.verbose) {
+  if (joinOptions.verbose === true) {
     console.log(
       `🔗 Joining ${String(files.length)} files using ${String(joinOptions.orderStrategy)} strategy`,
     );
     console.log(`📁 Input files: ${files.join(", ")}`);
-    if (options.output) {
+    if (options.output !== undefined && options.output !== "") {
       console.log(`📄 Output file: ${options.output}`);
     }
-    if (options.dryRun) {
+    if (joinOptions.dryRun === true) {
       console.log("🔍 Dry run mode - no changes will be made");
     }
   }
 
   try {
-    const result = await joiner.joinFiles(files, joinOptions);
+    const result = await joiner.joinFiles([...files], joinOptions);
 
     if (!result.success) {
       console.error("❌ Join operation failed:");
@@ -110,7 +116,7 @@ export async function joinCommand(
     }
 
     // Display results
-    if (options.dryRun) {
+    if (joinOptions.dryRun === true) {
       console.log("\\n📋 Changes that would be made:");
 
       if (result.createdFiles.length > 0) {
@@ -127,14 +133,10 @@ export async function joinCommand(
         }
       }
 
-      if (result.changes.length > 0 && options.verbose) {
+      if (result.changes.length > 0 && joinOptions.verbose === true) {
         console.log("\\n🔗 Changes:");
         for (const change of result.changes) {
-          if (change.type === "file-created") {
-            console.log(`  + Created: ${change.filePath}`);
-          } else if (change.type === "link-updated") {
-            console.log(`  ~ Updated links in: ${change.filePath}`);
-          }
+          logChange(change);
         }
       }
 
@@ -157,7 +159,7 @@ export async function joinCommand(
         }
       }
 
-      if (options.verbose && result.changes.length > 0) {
+      if (joinOptions.verbose === true && result.changes.length > 0) {
         const linkUpdates = result.changes.filter(
           (c) => c.type === "link-updated",
         ).length;
@@ -176,7 +178,7 @@ export async function joinCommand(
     }
 
     // Show helpful tips
-    if (!options.dryRun) {
+    if (joinOptions.dryRun !== true) {
       console.log("\\n💡 Tips:");
       console.log("  • Use --dry-run to preview changes before joining");
       console.log("  • Use --verbose for detailed operation logs");

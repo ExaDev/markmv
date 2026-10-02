@@ -22,8 +22,8 @@ export async function createMcpClient(): Promise<Client> {
 
   // Create transport and client
   const transport = new StdioClientTransport({
-    readable: serverProcess.stdout!,
-    writable: serverProcess.stdin!,
+    readable: serverProcess.stdout,
+    writable: serverProcess.stdin,
   });
 
   const client = new Client(
@@ -37,6 +37,7 @@ export async function createMcpClient(): Promise<Client> {
   );
 
   await client.connect(transport);
+
   return client;
 }
 
@@ -158,12 +159,15 @@ async function listToolsExample() {
 
     console.log("✅ Available tools:");
     result.tools.forEach((tool) => {
-      console.log(`  • ${tool.name}: ${tool.description}`);
+      console.log(`  • ${tool.name}: ${String(tool.description)}`);
     });
   } catch (error) {
     console.error("❌ Error:", error);
   }
 }
+
+/** Width of the divider printed between examples. */
+const SEPARATOR_WIDTH = 50;
 
 /** Run all examples */
 async function runExamples() {
@@ -171,16 +175,16 @@ async function runExamples() {
 
   try {
     await listToolsExample();
-    console.log("\n" + "=".repeat(50) + "\n");
+    console.log("\n" + "=".repeat(SEPARATOR_WIDTH) + "\n");
 
     await moveFileExample();
-    console.log("\n" + "=".repeat(50) + "\n");
+    console.log("\n" + "=".repeat(SEPARATOR_WIDTH) + "\n");
 
     await convertLinksExample();
-    console.log("\n" + "=".repeat(50) + "\n");
+    console.log("\n" + "=".repeat(SEPARATOR_WIDTH) + "\n");
 
     await splitFileExample();
-    console.log("\n" + "=".repeat(50) + "\n");
+    console.log("\n" + "=".repeat(SEPARATOR_WIDTH) + "\n");
 
     console.log("✅ All examples completed!");
   } catch (error) {
@@ -194,6 +198,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 }
 
 // Also support tsx execution
-if (process.argv[1] && process.argv[1].endsWith("mcp-usage.ts")) {
+if (process.argv[1]?.endsWith("mcp-usage.ts")) {
   runExamples().catch(console.error);
 }

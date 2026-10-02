@@ -1,12 +1,32 @@
 import { ContentSplitter } from "../core/content-splitter.js";
-import type { SplitOperationOptions } from "../types/operations.js";
+import type {
+  OperationChange,
+  SplitOperationOptions,
+} from "../types/operations.js";
+
+/** Maximum section size in KB for size-based splitting when the caller does not set one. */
+const DEFAULT_MAX_SIZE_KB = 100;
+
+/**
+ * Prints the file-level changes of a dry run.
+ * @param changes - Changes the splitter reported
+ */
+function printDryRunChanges(changes: readonly OperationChange[]): void {
+  console.log("\n🔗 Changes:");
+  for (const change of changes) {
+    if (change.type === "file-created") {
+      console.log(`  + Created: ${change.filePath}`);
+    } else if (change.type === "link-updated") {
+      console.log(`  ~ Updated links in: ${change.filePath}`);
+    }
+  }
+}
 
 /**
  * Configuration options for split command operations.
  *
  * Controls how a single markdown file is divided into multiple files, including strategy selection,
  * output location, and preview mode.
- *
  * @category Commands
  */
 export interface SplitOptions {
@@ -41,54 +61,48 @@ export interface SplitOptions {
  *
  * The split operation automatically updates all cross-references to reflect the new file structure
  * and maintains link integrity throughout the project.
- *
  * @category Commands
- *
  * @example
  *   Header-based splitting
- *   ```typescript
+ * ```typescript
  *   await splitCommand('large-document.md', {
  *       strategy: 'headers',
  *       headerLevel: 2,
  *       output: './sections/'
  *   });
- *   ```
- *
+ * ```
  * @example
  *   Size-based splitting with dry run
- *   ```typescript
+ * ```typescript
  *   await splitCommand('big-file.md', {
  *       strategy: 'size',
  *       maxSize: 50, // 50KB per file
  *       dryRun: true,
  *       verbose: true
  *   });
- *   ```
- *
+ * ```
  * @example
  *   Line-based splitting
- *   ```typescript
+ * ```typescript
  *   await splitCommand('content.md', {
  *       strategy: 'lines',
  *       splitLines: '100,250,400',
  *       output: './parts/'
  *   });
- *   ```
- *
+ * ```
  * @param source - Path to the markdown file to split
  * @param options - Configuration options for the split operation
- *
  * @throws Will exit the process with code 1 if the operation fails
  */
 export async function splitCommand(
   source: string,
-  options: SplitOptions,
+  options: Readonly<SplitOptions>,
 ): Promise<void> {
   const splitter = new ContentSplitter();
 
   // Parse split lines if provided
   let splitLines: number[] | undefined;
-  if (options.splitLines) {
+  if (options.splitLines !== undefined && options.splitLines !== "") {
     try {
       splitLines = options.splitLines
         .split(",")
@@ -113,15 +127,15 @@ export async function splitCommand(
     dryRun: options.dryRun ?? false,
     verbose: options.verbose ?? false,
     headerLevel: options.headerLevel ?? 2,
-    maxSize: options.maxSize ?? 100,
+    maxSize: options.maxSize ?? DEFAULT_MAX_SIZE_KB,
     splitLines,
   };
 
-  if (options.verbose) {
+  if (options.verbose === true) {
     console.log(
       `🔪 Splitting ${source} using ${splitOptions.strategy} strategy`,
     );
-    if (options.dryRun) {
+    if (options.dryRun === true) {
       console.log("🔍 Dry run mode - no changes will be made");
     }
     if (splitOptions.strategy === "headers") {
@@ -134,7 +148,10 @@ export async function splitCommand(
         `📏 Maximum size per section: ${String(splitOptions.maxSize)}KB`,
       );
     }
-    if (splitOptions.strategy === "lines" && splitOptions.splitLines) {
+    if (
+      splitOptions.strategy === "lines" &&
+      splitOptions.splitLines !== undefined
+    ) {
       console.log(`📍 Split at lines: ${splitOptions.splitLines.join(", ")}`);
     }
   }
@@ -151,7 +168,7 @@ export async function splitCommand(
     }
 
     // Display results
-    if (options.dryRun) {
+    if (options.dryRun === true) {
       console.log("\n📋 Changes that would be made:");
 
       if (result.createdFiles.length > 0) {
@@ -168,15 +185,8 @@ export async function splitCommand(
         }
       }
 
-      if (result.changes.length > 0 && options.verbose) {
-        console.log("\n🔗 Changes:");
-        for (const change of result.changes) {
-          if (change.type === "file-created") {
-            console.log(`  + Created: ${change.filePath}`);
-          } else if (change.type === "link-updated") {
-            console.log(`  ~ Updated links in: ${change.filePath}`);
-          }
-        }
+      if (result.changes.length > 0 && options.verbose === true) {
+        printDryRunChanges(result.changes);
       }
 
       console.log(
@@ -201,7 +211,7 @@ export async function splitCommand(
         }
       }
 
-      if (options.verbose && result.changes.length > 0) {
+      if (options.verbose === true && result.changes.length > 0) {
         const linkUpdates = result.changes.filter(
           (c) => c.type === "link-updated",
         ).length;
@@ -220,7 +230,7 @@ export async function splitCommand(
     }
 
     // Show helpful tips
-    if (!options.dryRun) {
+    if (options.dryRun !== true) {
       console.log("\n💡 Tips:");
       console.log("  • Use --dry-run to preview changes before splitting");
       console.log("  • Use --verbose for detailed operation logs");

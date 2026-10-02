@@ -4,7 +4,7 @@ import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkStringify from "remark-stringify";
 import { visit } from "unist-util-visit";
-import type { Node } from "unist";
+import type { Node, Parent } from "unist";
 import type {
   ConvertOperationOptions,
   OperationResult,
@@ -30,28 +30,41 @@ interface TextNode extends Node {
 }
 
 /**
+ * Replaces the child at `index` of `parent`.
+ * @throws Error when the node being replaced has no parent, which cannot happen for a link or text node.
+ */
+function replaceChild(
+  parent: Parent | undefined,
+  index: number | undefined,
+  replacement: Node,
+): void {
+  if (parent === undefined || index === undefined) {
+    throw new Error("Cannot replace a node that has no parent");
+  }
+  parent.children.splice(index, 1, replacement);
+}
+
+/**
  * Core class for converting markdown link formats and path resolution.
  *
  * Provides comprehensive link conversion functionality including path resolution changes
  * (absolute/relative) and link style transformations between different markdown syntaxes.
- *
  * @category Core
- *
  * @example
- *   Basic link conversion
- *   ```typescript
- *   const converter = new LinkConverter();
+ * Basic link conversion
+ * ```typescript
+ * const converter = new LinkConverter();
  *
- *   // Convert all links to relative paths and wikilink style
- *   const result = await converter.convertFile('document.md', {
- *       pathResolution: 'relative',
- *       linkStyle: 'wikilink',
- *       basePath: process.cwd()
- *   });
- *   ```
+ * // Convert all links to relative paths and wikilink style
+ * const result = await converter.convertFile('document.md', {
+ *     pathResolution: 'relative',
+ *     linkStyle: 'wikilink',
+ *     basePath: process.cwd()
+ * });
+ * ```
  */
 export class LinkConverter {
-  private parser: LinkParser;
+  private readonly parser: LinkParser;
 
   /**
    * Creates a converter with its own link parser.
@@ -62,15 +75,13 @@ export class LinkConverter {
 
   /**
    * Convert links in a single markdown file.
-   *
    * @param filePath - Path to the markdown file to convert
    * @param options - Conversion options specifying target format
-   *
    * @returns Promise resolving to operation result with conversion details
    */
   async convertFile(
     filePath: string,
-    options: ConvertOperationOptions,
+    options: Readonly<ConvertOperationOptions>,
   ): Promise<OperationResult> {
     const result: OperationResult = {
       success: false,
@@ -97,15 +108,16 @@ export class LinkConverter {
 
       // Check if content actually changed
       if (convertedContent === content) {
-        if (options.verbose) {
+        if (options.verbose === true) {
           console.log(`No changes needed in ${filePath}`);
         }
         result.success = true;
+
         return result;
       }
 
       // Write the converted content (unless dry run)
-      if (!options.dryRun) {
+      if (options.dryRun !== true) {
         await writeFile(filePath, convertedContent, "utf-8");
         result.modifiedFiles.push(filePath);
       }
@@ -114,7 +126,7 @@ export class LinkConverter {
       const changes = this.detectChanges(content, convertedContent, filePath);
       result.changes.push(...changes);
 
-      if (options.verbose) {
+      if (options.verbose === true) {
         console.log(`Converted ${String(changes.length)} links in ${filePath}`);
       }
 
@@ -130,15 +142,13 @@ export class LinkConverter {
 
   /**
    * Convert links in multiple markdown files.
-   *
    * @param filePaths - Array of file paths to convert
    * @param options - Conversion options specifying target format
-   *
    * @returns Promise resolving to combined operation result
    */
   async convertFiles(
-    filePaths: string[],
-    options: ConvertOperationOptions,
+    filePaths: readonly string[],
+    options: Readonly<ConvertOperationOptions>,
   ): Promise<OperationResult> {
     const combinedResult: OperationResult = {
       success: true,
@@ -171,21 +181,18 @@ export class LinkConverter {
 
   /**
    * Convert markdown content with specified link transformations.
-   *
    * @private
-   *
    * @param content - Original markdown content
-   * @param links - Parsed link information
+   * @param _links - Parsed link information
    * @param filePath - Path of the source file (for relative path calculations)
    * @param options - Conversion options
-   *
    * @returns Promise resolving to converted content
    */
   private convertContent(
     content: string,
-    _links: MarkdownLink[],
+    _links: readonly MarkdownLink[],
     filePath: string,
-    options: ConvertOperationOptions,
+    options: Readonly<ConvertOperationOptions>,
   ): string {
     // Parse markdown AST
     const processor = unified().use(remarkParse).use(remarkStringify, {
@@ -198,54 +205,61 @@ export class LinkConverter {
     // A plain boolean flag mutated only inside the visit() callback isn't tracked by TypeScript's control-flow analysis across the call boundary, which makes the later `if` look permanently false to it; a counter avoids that blind spot.
     let changeCount = 0;
 
-    // Transform links in the AST
-    visit(tree, (node: Node) => {
-      if (this.isLinkNode(node)) {
-        const transformed = this.transformLinkNode(node, filePath, options);
-        if (transformed) {
-          changeCount++;
-        }
-      } else if (node.type === "text" && options.linkStyle) {
-        // Handle Claude imports and other text-based link formats
-        if (this.isTextNode(node)) {
-          const transformed = this.transformTextLinks(node, filePath, options);
-          if (transformed) {
+    // Transform links in the AST, replacing each changed node in its parent
+    visit(
+      tree,
+      (node: Node, index: number | undefined, parent: Parent | undefined) => {
+        if (this.isLinkNode(node)) {
+          const transformed = this.transformLinkNode(node, filePath, options);
+          if (transformed !== undefined) {
+            replaceChild(parent, index, transformed);
             changeCount++;
           }
+        } else if (node.type === "text" && options.linkStyle !== undefined) {
+          // Handle Claude imports and other text-based link formats
+          if (this.isTextNode(node)) {
+            const transformed = this.transformTextLinks(
+              node,
+              filePath,
+              options,
+            );
+            if (transformed !== undefined) {
+              replaceChild(parent, index, transformed);
+              changeCount++;
+            }
+          }
         }
-      }
-    });
+      },
+    );
 
     if (changeCount === 0) {
       return content;
     }
 
     const result = processor.stringify(tree);
+
     return typeof result === "string" ? result : String(result);
   }
 
   /**
    * Transform a link node according to conversion options.
-   *
    * @private
-   *
    * @param node - The link/image node to transform
    * @param filePath - Source file path for relative calculations
    * @param options - Conversion options
-   *
-   * @returns Whether the node was modified
+   * @returns A modified copy of the node, or undefined when nothing changed
    */
   private transformLinkNode(
-    node: LinkNode,
+    node: Readonly<LinkNode>,
     filePath: string,
-    options: ConvertOperationOptions,
-  ): boolean {
-    if (!node.url) return false;
+    options: Readonly<ConvertOperationOptions>,
+  ): LinkNode | undefined {
+    if (node.url === undefined || node.url === "") return undefined;
 
-    let hasChanges = false;
+    let updated: LinkNode = node;
 
     // Transform path resolution
-    if (options.pathResolution && this.isInternalLink(node.url)) {
+    if (options.pathResolution !== undefined && this.isInternalLink(node.url)) {
       const newUrl = this.convertPathResolution(
         node.url,
         filePath,
@@ -253,74 +267,69 @@ export class LinkConverter {
         options.basePath,
       );
       if (newUrl !== node.url) {
-        node.url = newUrl;
-        hasChanges = true;
+        updated = { ...updated, url: newUrl };
       }
     }
 
     // Transform link style (this affects the overall syntax, handled at AST level)
-    if (options.linkStyle && this.isInternalLink(node.url)) {
-      hasChanges = this.convertLinkStyle(node, options.linkStyle) || hasChanges;
+    if (
+      options.linkStyle !== undefined &&
+      updated.url !== undefined &&
+      this.isInternalLink(updated.url)
+    ) {
+      updated = this.convertLinkStyle(updated, options.linkStyle) ?? updated;
     }
 
-    return hasChanges;
+    return updated === node ? undefined : updated;
   }
 
   /**
    * Transform text-based links (like Claude imports).
-   *
    * @private
-   *
    * @param node - Text node that might contain text-based links
    * @param filePath - Source file path for relative calculations
    * @param options - Conversion options
-   *
-   * @returns Whether the node was modified
+   * @returns A modified copy of the node, or undefined when nothing changed
    */
   private transformTextLinks(
-    node: TextNode,
+    node: Readonly<TextNode>,
     filePath: string,
-    options: ConvertOperationOptions,
-  ): boolean {
-    const originalValue = node.value;
-    let newValue = node.value;
-
+    options: Readonly<ConvertOperationOptions>,
+  ): TextNode | undefined {
     // Handle Claude imports (@./file.md, @~/file.md)
     const claudeImportRegex = /@(\.\/|~\/|[^@\s]+)/g;
-    newValue = newValue.replace(
+    const newValue = node.value.replace(
       claudeImportRegex,
       (match: string, path: string) => {
-        if (options.pathResolution) {
+        if (options.pathResolution !== undefined) {
           const convertedPath = this.convertPathResolution(
             path,
             filePath,
             options.pathResolution,
             options.basePath,
           );
+
           return `@${convertedPath}`;
         }
+
         return match;
       },
     );
 
-    if (newValue !== originalValue) {
-      node.value = newValue;
-      return true;
+    if (newValue !== node.value) {
+      return { ...node, value: newValue };
     }
 
-    return false;
+    return undefined;
   }
 
   /**
    * Convert path resolution between absolute and relative formats.
-   *
    * @private
-   *
    * @param linkPath - Original link path
    * @param sourceFile - Path of the file containing the link
    * @param targetResolution - Target path resolution type
    * @param basePath - Base path for absolute resolution calculations
-   *
    * @returns Converted path
    */
   private convertPathResolution(
@@ -345,6 +354,7 @@ export class LinkConverter {
 
       // Resolve relative to source file
       const resolvedPath = resolve(sourceDir, linkPath);
+
       return relative(base, resolvedPath);
     } else {
       // Convert to relative path
@@ -354,32 +364,35 @@ export class LinkConverter {
 
       // Convert absolute to relative from source file
       const absolutePath = resolve(base, linkPath);
+
       return relative(sourceDir, absolutePath);
     }
   }
 
   /**
    * Convert link style format.
-   *
    * @private
-   *
    * @param node - Link node to convert
    * @param targetStyle - Target link style
-   *
-   * @returns Whether the node was modified
+   * @returns A modified copy of the node, or undefined when nothing changed
    */
-  private convertLinkStyle(node: LinkNode, targetStyle: string): boolean {
-    if (!node.url || !node.children) return false;
+  private convertLinkStyle(
+    node: Readonly<LinkNode>,
+    targetStyle: string,
+  ): LinkNode | undefined {
+    if (node.url === undefined || node.url === "" || !node.children) {
+      return undefined;
+    }
 
     const url = node.url;
     const text = this.extractLinkText(node);
 
     // Determine current style
-    const currentStyle = this.detectCurrentLinkStyle(node, text, url);
+    const currentStyle = this.detectCurrentLinkStyle(text);
 
     // If already in target style, no changes needed
     if (currentStyle === targetStyle) {
-      return false;
+      return undefined;
     }
 
     // Convert based on target style
@@ -387,18 +400,18 @@ export class LinkConverter {
       case "combined":
         return this.convertToCombined(node, text, url);
       case "claude":
-        return this.convertToClaude(node, text, url);
+        return this.convertToClaude(url);
       case "wikilink":
-        return this.convertToWikilink(node, text, url);
+        return this.convertToWikilink(url);
       case "markdown":
-        return this.convertToMarkdown(node, text, url);
+        return this.convertToMarkdown(node, text);
       default:
-        return false;
+        return undefined;
     }
   }
 
   /** Extract text content from link node children. */
-  private extractLinkText(node: LinkNode): string {
+  private extractLinkText(node: Readonly<LinkNode>): string {
     if (!node.children) return "";
 
     return node.children
@@ -407,113 +420,101 @@ export class LinkConverter {
       .join("");
   }
 
-  /** Detect the current link style of a node. */
-  private detectCurrentLinkStyle(
-    _node: LinkNode,
-    text: string,
-    _url: string,
-  ): string {
+  /** Detect the current link style of a node from its text. */
+  private detectCurrentLinkStyle(text: string): string {
     // Check for combined format: text starting with @
     if (text.startsWith("@")) {
       return "combined";
     }
 
-    // For now, assume standard markdown if it's a regular link node
-    // More sophisticated detection could be added here
+    /* For now, assume standard markdown if it's a regular link node
+       More sophisticated detection could be added here */
     return "markdown";
+  }
+
+  /** Returns a copy of the link whose first child text node has the given value, or undefined when the first child is not text. */
+  private withFirstTextValue(
+    node: Readonly<LinkNode>,
+    value: string,
+  ): LinkNode | undefined {
+    if (node.children === undefined || node.children.length === 0) {
+      return undefined;
+    }
+
+    const [first, ...rest] = node.children;
+    if (first.type !== "text") {
+      return undefined;
+    }
+
+    return { ...node, children: [{ ...first, value }, ...rest] };
   }
 
   /** Convert link to combined format `[@url](url)`. */
   private convertToCombined(
-    node: LinkNode,
+    node: Readonly<LinkNode>,
     text: string,
     url: string,
-  ): boolean {
-    if (!node.children || !this.isInternalLink(url)) return false;
+  ): LinkNode | undefined {
+    if (!node.children || !this.isInternalLink(url)) return undefined;
 
     // Only convert if text doesn't already start with @
     if (text.startsWith("@")) {
-      return false;
+      return undefined;
     }
 
-    // Set text to @url format
-    const newText = `@${url}`;
-
-    // Update the text node
-    if (node.children.length > 0 && node.children[0].type === "text") {
-      node.children[0].value = newText;
-      return true;
-    }
-
-    return false;
+    // Set the text node to @url format
+    return this.withFirstTextValue(node, `@${url}`);
   }
 
   /**
-   * Convert link to Claude import format @url. Note: This requires AST restructuring which is
-   * complex. For now, this returns false to indicate no changes made.
+   * Convert link to Claude import format `@url`. Note: This requires AST restructuring which is
+   * complex. For now, this returns undefined to indicate no changes made.
    */
-  private convertToClaude(
-    _node: LinkNode,
-    _text: string,
-    url: string,
-  ): boolean {
-    if (!this.isInternalLink(url)) return false;
+  private convertToClaude(url: string): LinkNode | undefined {
+    if (!this.isInternalLink(url)) return undefined;
 
     // TODO: Implement proper AST restructuring for Claude imports
-    // This would require parent node access to replace the link node with a text node
-    // For now, we indicate no changes to maintain type safety
+    /* This would require parent node access to replace the link node with a text node
+       For now, we indicate no changes to maintain type safety */
 
-    return false;
+    return undefined;
   }
 
   /**
    * Convert link to wikilink format [[url]]. Note: This requires AST restructuring which is
-   * complex. For now, this returns false to indicate no changes made.
+   * complex. For now, this returns undefined to indicate no changes made.
    */
-  private convertToWikilink(
-    _node: LinkNode,
-    _text: string,
-    url: string,
-  ): boolean {
-    if (!this.isInternalLink(url)) return false;
+  private convertToWikilink(url: string): LinkNode | undefined {
+    if (!this.isInternalLink(url)) return undefined;
 
     // TODO: Implement proper AST restructuring for wikilinks
-    // This would require parent node access to replace the link node with a text node
-    // For now, we indicate no changes to maintain type safety
+    /* This would require parent node access to replace the link node with a text node
+       For now, we indicate no changes to maintain type safety */
 
-    return false;
+    return undefined;
   }
 
   /** Convert link to standard markdown format `[text](url)`. */
   private convertToMarkdown(
-    node: LinkNode,
+    node: Readonly<LinkNode>,
     text: string,
-    _url: string,
-  ): boolean {
-    if (!node.children) return false;
+  ): LinkNode | undefined {
+    if (!node.children) return undefined;
 
     // If text starts with @, remove it for standard markdown
     if (text.startsWith("@")) {
-      const newText = text.substring(1);
-
-      if (node.children.length > 0 && node.children[0].type === "text") {
-        node.children[0].value = newText;
-        return true;
-      }
+      return this.withFirstTextValue(node, text.substring(1));
     }
 
-    return false;
+    return undefined;
   }
 
   /**
    * Detect changes between original and converted content.
-   *
    * @private
-   *
    * @param original - Original content
    * @param converted - Converted content
    * @param filePath - File path for change tracking
-   *
    * @returns Array of detected changes
    */
   private detectChanges(
@@ -549,11 +550,8 @@ export class LinkConverter {
 
   /**
    * Check if a node is a link or image node.
-   *
    * @private
-   *
    * @param node - Node to check
-   *
    * @returns Whether the node is a link node
    */
   private isLinkNode(node: Node): node is LinkNode {
@@ -564,11 +562,8 @@ export class LinkConverter {
 
   /**
    * Check if a node is a text node.
-   *
    * @private
-   *
    * @param node - Node to check
-   *
    * @returns Whether the node is a text node
    */
   private isTextNode(node: Node): node is TextNode {
@@ -577,11 +572,8 @@ export class LinkConverter {
 
   /**
    * Check if a URL represents an internal link.
-   *
    * @private
-   *
    * @param url - URL to check
-   *
    * @returns Whether the URL is an internal link
    */
   private isInternalLink(url: string): boolean {

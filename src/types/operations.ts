@@ -3,7 +3,6 @@
  *
  * Provides essential flags for controlling operation behavior including dry run mode, verbosity,
  * and force execution.
- *
  * @category Types
  */
 export interface OperationOptions {
@@ -19,7 +18,6 @@ export interface OperationOptions {
  * Configuration options specific to move operations.
  *
  * Extends base operation options with move-specific settings such as directory creation behavior.
- *
  * @category Types
  */
 export interface MoveOperationOptions extends OperationOptions {
@@ -39,7 +37,6 @@ export interface MoveOperationOptions extends OperationOptions {
  *
  * Extends base operation options with split-specific settings including strategy selection and
  * output configuration.
- *
  * @category Types
  */
 export interface SplitOperationOptions extends OperationOptions {
@@ -60,7 +57,6 @@ export interface SplitOperationOptions extends OperationOptions {
  *
  * Extends base operation options with join-specific settings including output path and ordering
  * strategy.
- *
  * @category Types
  */
 export interface JoinOperationOptions extends OperationOptions {
@@ -75,7 +71,6 @@ export interface JoinOperationOptions extends OperationOptions {
  *
  * Extends base operation options with merge-specific settings including strategy selection and
  * content formatting.
- *
  * @category Types
  */
 export interface MergeOperationOptions extends OperationOptions {
@@ -90,7 +85,6 @@ export interface MergeOperationOptions extends OperationOptions {
  *
  * Extends base operation options with convert-specific settings for transforming link formats and
  * path resolution styles across markdown files.
- *
  * @category Types
  */
 export interface ConvertOperationOptions extends OperationOptions {
@@ -109,7 +103,6 @@ export interface ConvertOperationOptions extends OperationOptions {
  *
  * Extends base operation options with barrel-specific settings for generating themed content
  * aggregation files across multiple directories with pattern matching and metadata filtering.
- *
  * @category Types
  */
 export interface BarrelOperationOptions extends OperationOptions {
@@ -144,23 +137,21 @@ export interface BarrelOperationOptions extends OperationOptions {
  *
  * Provides detailed information about what was changed, created, or deleted during an operation,
  * along with any errors or warnings encountered.
- *
  * @category Types
- *
  * @example
- *   Handling operation results
- *   ```typescript
- *   const result: OperationResult = await fileOps.moveFile('old.md', 'new.md');
+ * Handling operation results
+ * ```typescript
+ * const result: OperationResult = await fileOps.moveFile('old.md', 'new.md');
  *
- *   if (result.success) {
- *     console.log(`Operation completed successfully`);
- *     console.log(`Modified ${result.modifiedFiles.length} files`);
- *     console.log(`Created ${result.createdFiles.length} files`);
- *   } else {
- *     console.error('Operation failed:');
- *     result.errors.forEach(error => console.error(`  ${error}`));
- *   }
- *   ```
+ * if (result.success) {
+ *   console.log(`Operation completed successfully`);
+ *   console.log(`Modified ${result.modifiedFiles.length} files`);
+ *   console.log(`Created ${result.createdFiles.length} files`);
+ * } else {
+ *   console.error('Operation failed:');
+ *   result.errors.forEach(error => console.error(`  ${error}`));
+ * }
+ * ```
  */
 export interface OperationResult {
   /** Whether the operation was successful */
@@ -193,21 +184,19 @@ export interface OperationResult {
  *
  * Provides detailed information about individual modifications including the type of change,
  * location, and before/after values.
- *
  * @category Types
- *
  * @example
- *   Analyzing operation changes
- *   ```typescript
- *   const changes: OperationChange[] = result.changes;
+ * Analyzing operation changes
+ * ```typescript
+ * const changes: OperationChange[] = result.changes;
  *
- *   changes.forEach(change => {
- *       console.log(`${change.type} in ${change.filePath}`);
- *       if (change.line) {
- *         console.log(`  Line ${change.line}: ${change.oldValue} → ${change.newValue}`);
- *       }
- *   });
- *   ```
+ * changes.forEach(change => {
+ *     console.log(`${change.type} in ${change.filePath}`);
+ *     if (change.line) {
+ *       console.log(`  Line ${change.line}: ${change.oldValue} → ${change.newValue}`);
+ *     }
+ * });
+ * ```
  */
 export interface OperationChange {
   /** Type of change */

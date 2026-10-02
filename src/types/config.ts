@@ -1,23 +1,25 @@
+import type { AuthInfo } from "../utils/auth-detection.js";
+import type { ContentFreshnessInfo } from "../utils/content-freshness.js";
+import type { MarkdownLink } from "./links.js";
+
 /**
  * Result of a link validation operation.
  *
  * Contains comprehensive information about the validation process including success status,
  * statistics, and any broken links found.
- *
  * @category Types
- *
  * @example
- *   Checking validation results
- *   ```typescript
- *   const result: ValidationResult = await validator.validateFiles(files);
+ * Checking validation results
+ * ```typescript
+ * const result: ValidationResult = await validator.validateFiles(files);
  *
- *   if (!result.valid) {
- *     console.log(`Found ${result.brokenLinks.length} broken links in ${result.filesChecked} files`);
- *     result.brokenLinks.forEach(link => {
- *         console.log(`- ${link.sourceFile}: ${link.reason}`);
- *     });
- *   }
- *   ```
+ * if (!result.valid) {
+ *   console.log(`Found ${result.brokenLinks.length} broken links in ${result.filesChecked} files`);
+ *   result.brokenLinks.forEach(link => {
+ *       console.log(`- ${link.sourceFile}: ${link.reason}`);
+ *   });
+ * }
+ * ```
  */
 export interface ValidationResult {
   /** Whether validation passed */
@@ -37,29 +39,27 @@ export interface ValidationResult {
  *
  * Contains detailed information about the link, where it was found, and why it's considered broken.
  * Used for reporting and debugging link integrity issues.
- *
  * @category Types
- *
  * @example
- *   Handling broken links
- *   ```typescript
- *   const brokenLinks: BrokenLink[] = validationResult.brokenLinks;
+ * Handling broken links
+ * ```typescript
+ * const brokenLinks: BrokenLink[] = validationResult.brokenLinks;
  *
- *   brokenLinks.forEach(broken => {
- *       console.log(`${broken.sourceFile}:`);
- *       console.log(`  Link: ${broken.link.href}`);
- *       console.log(`  Reason: ${broken.reason}`);
- *       if (broken.details) {
- *         console.log(`  Details: ${broken.details}`);
- *       }
- *   });
- *   ```
+ * brokenLinks.forEach(broken => {
+ *     console.log(`${broken.sourceFile}:`);
+ *     console.log(`  Link: ${broken.link.href}`);
+ *     console.log(`  Reason: ${broken.reason}`);
+ *     if (broken.details) {
+ *       console.log(`  Details: ${broken.details}`);
+ *     }
+ * });
+ * ```
  */
 export interface BrokenLink {
   /** File containing the broken link */
   sourceFile: string;
   /** The broken link */
-  link: import("./links.js").MarkdownLink;
+  link: MarkdownLink;
   /** Reason the link is broken */
   reason:
     | "file-not-found"
@@ -72,7 +72,7 @@ export interface BrokenLink {
   /** Additional error details */
   details?: string;
   /** Content freshness information for external links */
-  freshnessInfo?: import("../utils/content-freshness.js").ContentFreshnessInfo;
+  freshnessInfo?: ContentFreshnessInfo;
   /** Authentication information if applicable */
-  authInfo?: import("../utils/auth-detection.js").AuthInfo;
+  authInfo?: AuthInfo;
 }

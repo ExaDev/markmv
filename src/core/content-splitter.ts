@@ -26,7 +26,6 @@ import { LinkParser } from "./link-parser.js";
  *
  * When a markdown file is split into multiple files, links may need to be updated to maintain
  * proper references. This interface captures the results of that redistribution process.
- *
  * @category Core
  */
 export interface LinkRedistributionResult {
@@ -50,12 +49,10 @@ export interface LinkRedistributionResult {
  * size-based, manual marker-based, and line-based splitting strategies. It handles link
  * redistribution, maintains content integrity, and ensures proper cross-references between the
  * resulting files.
- *
  * @category Core
- *
  * @example
  *   Header-based splitting
- *   ```typescript
+ * ```typescript
  *   const splitter = new ContentSplitter();
  *   const result = await splitter.splitFile('large-guide.md', {
  *       strategy: 'headers',
@@ -65,11 +62,10 @@ export interface LinkRedistributionResult {
  *   });
  *
  *   console.log(`Created ${result.createdFiles.length} files`);
- *   ```
- *
+ * ```
  * @example
  *   Size-based splitting
- *   ```typescript
+ * ```typescript
  *   const splitter = new ContentSplitter();
  *   const result = await splitter.splitFile('large-document.md', {
  *       strategy: 'size',
@@ -77,10 +73,10 @@ export interface LinkRedistributionResult {
  *       outputDir: './chunks/',
  *       dryRun: true // Preview without creating files
  *   });
- *   ```
+ * ```
  */
 export class ContentSplitter {
-  private linkParser = new LinkParser();
+  private readonly linkParser = new LinkParser();
   // private linkRefactorer = new LinkRefactorer();
 
   /**
@@ -89,31 +85,27 @@ export class ContentSplitter {
    * This method analyzes the source file content and divides it into logical sections based on the
    * chosen strategy. It handles link redistribution, maintains proper cross-references, and ensures
    * content integrity across the split files.
-   *
    * @example
    *   Basic header splitting
-   *   ```typescript
+   * ```typescript
    *   const result = await splitter.splitFile('documentation.md', {
    *       strategy: 'headers',
    *       headerLevel: 1, // Split on H1 headers
    *       outputDir: './docs-sections/',
    *       preserveLinks: true
    *   });
-   *   ```
-   *
+   * ```
    * @example
    *   Manual marker splitting
-   *   ```typescript
+   * ```typescript
    *   const result = await splitter.splitFile('article.md', {
    *       strategy: 'manual',
    *       markers: ['<!-- split -->', '---split---'],
    *       outputDir: './article-parts/'
    *   });
-   *   ```
-   *
+   * ```
    * @param sourceFilePath - Path to the markdown file to split
    * @param options - Configuration options for the split operation
-   *
    * @returns Promise resolving to operation result with details of created files
    */
   async splitFile(
@@ -245,7 +237,10 @@ export class ContentSplitter {
       }
 
       // Plan original file update (if there's remaining content)
-      if (splitResult.remainingContent) {
+      if (
+        splitResult.remainingContent !== undefined &&
+        splitResult.remainingContent !== ""
+      ) {
         modifiedFiles.push(sourceFilePath);
         changes.push({
           type: "content-modified",
@@ -264,15 +259,24 @@ export class ContentSplitter {
 
       // Handle external file updates (files that link to the split file)
       const externalFiles = await this.findExternalReferences(sourceFilePath);
-      for (const externalFile of externalFiles) {
-        const updatedContent = await this.updateExternalFileLinks(
+      const externalUpdates = await Promise.all(
+        externalFiles.map(async (externalFile) => ({
           externalFile,
-          sourceFilePath,
-          redistributionResult.updatedSections,
-          outputDirectory,
-        );
-
-        if (updatedContent !== (await FileUtils.readTextFile(externalFile))) {
+          updatedContent: await this.updateExternalFileLinks(
+            externalFile,
+            sourceFilePath,
+            redistributionResult.updatedSections,
+            outputDirectory,
+          ),
+          currentContent: await FileUtils.readTextFile(externalFile),
+        })),
+      );
+      for (const {
+        externalFile,
+        updatedContent,
+        currentContent,
+      } of externalUpdates) {
+        if (updatedContent !== currentContent) {
           modifiedFiles.push(externalFile);
           changes.push({
             type: "link-updated",
@@ -377,50 +381,13 @@ export class ContentSplitter {
     // For each section, find which links belong to it and update them
     for (const section of splitResult.sections) {
       try {
-        const sectionFilePath = join(outputDirectory, section.filename);
-
-        // Find links that are within this section's line range
-        const sectionLinks = originalFile.links.filter(
-          (link) =>
-            link.line >= section.startLine + 1 &&
-            link.line <= section.endLine + 1,
+        const redistributed = this.redistributeSectionLinks(
+          section,
+          originalFile,
+          join(outputDirectory, section.filename),
         );
-
-        // Update internal links within the section to account for new file location
-        const updatedContent = section.content;
-        const lines = updatedContent.split("\n");
-
-        for (const link of sectionLinks) {
-          if (link.type === "internal" || link.type === "claude-import") {
-            try {
-              const newHref = this.updateLinkForNewLocation(
-                link,
-                originalFile.filePath,
-                sectionFilePath,
-              );
-
-              if (newHref !== link.href) {
-                const relativeLine = link.line - section.startLine - 1;
-                if (relativeLine >= 0 && relativeLine < lines.length) {
-                  lines[relativeLine] = this.replaceLinkInLine(
-                    lines[relativeLine],
-                    link,
-                    newHref,
-                  );
-                }
-              }
-            } catch (error) {
-              errors.push(
-                `Failed to update link in section ${section.title}: ${error instanceof Error ? error.message : String(error)}`,
-              );
-            }
-          }
-        }
-
-        updatedSections.push({
-          ...section,
-          content: lines.join("\n"),
-        });
+        updatedSections.push(redistributed.section);
+        errors.push(...redistributed.errors);
       } catch (error) {
         errors.push(
           `Failed to process section ${section.title}: ${error instanceof Error ? error.message : String(error)}`,
@@ -436,8 +403,67 @@ export class ContentSplitter {
     };
   }
 
+  /**
+   * Rewrites the internal links inside one section so they still resolve from the section's new file.
+   * @param section - The section whose content is rewritten.
+   * @param originalFile - The parsed file the section was split from.
+   * @param sectionFilePath - Where the section's file will be written.
+   * @returns A copy of the section with its rewritten content, and a message for each link that could not be rewritten.
+   */
+  private redistributeSectionLinks(
+    section: Readonly<SplitSection>,
+    originalFile: Readonly<ParsedMarkdownFile>,
+    sectionFilePath: string,
+  ): { section: SplitSection; errors: string[] } {
+    // Find links that are within this section's line range
+    const sectionLinks = originalFile.links.filter(
+      (link) =>
+        link.line >= section.startLine + 1 && link.line <= section.endLine + 1,
+    );
+
+    // Update internal links within the section to account for new file location
+    const lines = section.content.split("\n");
+    const errors: string[] = [];
+
+    for (const link of sectionLinks) {
+      if (link.type !== "internal" && link.type !== "claude-import") {
+        continue;
+      }
+
+      try {
+        const newHref = this.updateLinkForNewLocation(
+          link,
+          originalFile.filePath,
+          sectionFilePath,
+        );
+        const relativeLine = link.line - section.startLine - 1;
+
+        if (
+          newHref !== link.href &&
+          relativeLine >= 0 &&
+          relativeLine < lines.length
+        ) {
+          lines[relativeLine] = this.replaceLinkInLine(
+            lines[relativeLine],
+            link,
+            newHref,
+          );
+        }
+      } catch (error) {
+        errors.push(
+          `Failed to update link in section ${section.title}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+
+    return {
+      section: { ...section, content: lines.join("\n") },
+      errors,
+    };
+  }
+
   private updateLinkForNewLocation(
-    link: MarkdownLink,
+    link: Readonly<MarkdownLink>,
     originalFilePath: string,
     newFilePath: string,
   ): string {
@@ -462,12 +488,13 @@ export class ContentSplitter {
 
   private replaceLinkInLine(
     line: string,
-    link: MarkdownLink,
+    link: Readonly<MarkdownLink>,
     newHref: string,
   ): string {
     if (link.type === "claude-import") {
       const oldImport = `@${link.href}`;
       const newImport = `@${newHref}`;
+
       return line.replace(oldImport, newImport);
     }
 
@@ -491,28 +518,32 @@ export class ContentSplitter {
         projectRoot,
         true,
       );
-      const referencingFiles: string[] = [];
+      const referencing = await Promise.all(
+        markdownFiles
+          .filter((filePath) => filePath !== sourceFilePath)
+          .map(async (filePath) => {
+            try {
+              const parsedFile = await this.linkParser.parseFile(filePath);
 
-      for (const filePath of markdownFiles) {
-        if (filePath === sourceFilePath) continue;
-
-        try {
-          const parsedFile = await this.linkParser.parseFile(filePath);
-          const hasReference = parsedFile.dependencies.includes(sourceFilePath);
-
-          if (hasReference) {
-            referencingFiles.push(filePath);
-          }
-        } catch {
-          // Ignore files that can't be parsed
-        }
-      }
+              return parsedFile.dependencies.includes(sourceFilePath)
+                ? filePath
+                : undefined;
+            } catch {
+              // Ignore files that can't be parsed
+              return undefined;
+            }
+          }),
+      );
+      const referencingFiles = referencing.filter(
+        (filePath) => filePath !== undefined,
+      );
 
       return referencingFiles;
     } catch (error) {
       console.warn(
         `Failed to find external references: ${error instanceof Error ? error.message : String(error)}`,
       );
+
       return [];
     }
   }
@@ -521,7 +552,7 @@ export class ContentSplitter {
   private async updateExternalFileLinks(
     externalFilePath: string,
     originalFilePath: string,
-    sections: SplitSection[],
+    sections: readonly SplitSection[],
     outputDirectory: string,
   ): Promise<string> {
     try {
@@ -536,9 +567,9 @@ export class ContentSplitter {
         (link) => link.resolvedPath === originalFilePath,
       );
 
-      // For now, update all links to point to the first section
-      // In a more sophisticated implementation, we could analyze the link context
-      // to determine which section it should point to
+      /* For now, update all links to point to the first section
+         In a more sophisticated implementation, we could analyze the link context
+         to determine which section it should point to */
       if (sections.length > 0 && linksToUpdate.length > 0) {
         const firstSectionPath = join(outputDirectory, sections[0].filename);
 
@@ -558,15 +589,17 @@ export class ContentSplitter {
             newHref = `./${newHref}`;
           }
 
-          if (newHref !== link.href) {
-            const lineIndex = link.line - 1;
-            if (lineIndex >= 0 && lineIndex < lines.length) {
-              lines[lineIndex] = this.replaceLinkInLine(
-                lines[lineIndex],
-                link,
-                newHref,
-              );
-            }
+          const lineIndex = link.line - 1;
+          if (
+            newHref !== link.href &&
+            lineIndex >= 0 &&
+            lineIndex < lines.length
+          ) {
+            lines[lineIndex] = this.replaceLinkInLine(
+              lines[lineIndex],
+              link,
+              newHref,
+            );
           }
         }
 
@@ -578,6 +611,7 @@ export class ContentSplitter {
       console.warn(
         `Failed to update external file ${externalFilePath}: ${error instanceof Error ? error.message : String(error)}`,
       );
+
       return FileUtils.readTextFile(externalFilePath);
     }
   }

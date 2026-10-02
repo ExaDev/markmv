@@ -3,7 +3,6 @@
  *
  * Contains content information, positioning strategy, and metadata for intelligent merging
  * operations.
- *
  * @category Strategies
  */
 export interface MergeSection {
@@ -26,7 +25,6 @@ export interface MergeSection {
  *
  * Provides comprehensive information about the merging process including conflicts, transclusions,
  * and any issues encountered.
- *
  * @category Strategies
  */
 export interface MergeResult {
@@ -53,7 +51,6 @@ export interface MergeResult {
  *
  * Conflicts can arise from header collisions, content overlaps, or transclusion loops that require
  * resolution.
- *
  * @category Strategies
  */
 export interface MergeConflict {
@@ -80,7 +77,6 @@ export interface MergeConflict {
  *
  * Controls various aspects of the merging process including conflict resolution, transclusion
  * handling, and content formatting.
- *
  * @category Strategies
  */
 export interface MergeStrategyOptions {
@@ -106,12 +102,10 @@ export interface MergeStrategyOptions {
  * Provides common functionality for merging markdown files including transclusion handling,
  * conflict detection, and frontmatter management. Concrete strategies implement specific merging
  * approaches.
- *
  * @category Strategies
- *
  * @example
  *   Implementing a custom merge strategy
- *   ```typescript
+ * ```typescript
  *   class CustomMergeStrategy extends BaseMergeStrategy {
  *     async merge(targetContent: string, sourceContent: string): Promise<MergeResult> {
  *       // Custom merging logic
@@ -119,7 +113,7 @@ export interface MergeStrategyOptions {
  *       return this.buildResult(mergedContent, conflicts);
  *     }
  *   }
- *   ```
+ * ```
  */
 export abstract class BaseMergeStrategy {
   /** The effective options for this strategy: the supplied options layered over the defaults set in the constructor. */
@@ -129,10 +123,9 @@ export abstract class BaseMergeStrategy {
    * Creates a merge strategy.
    *
    * The defaults are automatic conflict resolution, a blank line between merged sections, no transclusions, frontmatter merging, structure preservation, the `![[{file}#{section}]]` transclusion template and a maximum transclusion depth. Any supplied option overrides its default.
-   *
    * @param options - Options that override the defaults.
    */
-  constructor(options: MergeStrategyOptions = {}) {
+  constructor(options: Readonly<MergeStrategyOptions> = {}) {
     this.options = {
       conflictResolution: "auto",
       separator: "\n\n",
@@ -149,7 +142,6 @@ export abstract class BaseMergeStrategy {
    * Merges the content of a source file into a target file.
    *
    * Each concrete strategy decides where the source content is placed. Conflicts are reported in the result rather than thrown, and a failure while merging is reported through `errors` with `success` set to false.
-   *
    * @param targetContent - The full content of the file being merged into, including any frontmatter.
    * @param sourceContent - The full content of the file being merged from, including any frontmatter.
    * @param targetFile - The path of the target file, used in conflict reports and transclusion loop checks.
@@ -165,7 +157,6 @@ export abstract class BaseMergeStrategy {
 
   /**
    * Extracts Obsidian transclusions (`![[file]]` or `![[file#section]]`) from content.
-   *
    * @param content - The markdown content to scan.
    * @returns One entry per transclusion, in document order.
    */
@@ -213,7 +204,6 @@ export abstract class BaseMergeStrategy {
    * Builds a transclusion reference from the configured `transclusionTemplate`.
    *
    * The `.md` extension is dropped from the file name. Without a section, the `#{section}` part of the template is removed.
-   *
    * @param file - The file to reference.
    * @param section - The section within the file, if any.
    * @returns The transclusion text.
@@ -223,11 +213,12 @@ export abstract class BaseMergeStrategy {
       this.options.transclusionTemplate ?? "![[{file}#{section}]]";
     const cleanFile = file.replace(/\.md$/, "");
 
-    if (section) {
+    if (section !== undefined && section !== "") {
       return template
         .replace("{file}", cleanFile)
         .replace("{section}", section);
     }
+
     return template.replace("{file}", cleanFile).replace("#{section}", "");
   }
 
@@ -235,7 +226,6 @@ export abstract class BaseMergeStrategy {
    * Detects whether transcluding the source into the target would create a loop.
    *
    * A loop is reported when any existing transclusion mentions the target file name, or when the source and target are the same file.
-   *
    * @param targetFile - The path of the file being merged into.
    * @param sourceFile - The path of the file that would be transcluded.
    * @param existingTransclusions - The transclusion references already in the target.
@@ -244,7 +234,7 @@ export abstract class BaseMergeStrategy {
   protected detectTransclusionLoops(
     targetFile: string,
     sourceFile: string,
-    existingTransclusions: string[],
+    existingTransclusions: readonly string[],
   ): boolean {
     // Check if source file already references target file
     if (
@@ -267,7 +257,6 @@ export abstract class BaseMergeStrategy {
    * Merges the frontmatter of the target and source.
    *
    * When only one side has frontmatter it is returned unchanged. Otherwise, for keys present on both sides the target's value wins, except that `tags`, `categories` and `keywords` are combined as de-duplicated lists when both sides hold lists.
-   *
    * @param targetFrontmatter - The target's raw frontmatter block, or an empty string.
    * @param sourceFrontmatter - The source's raw frontmatter block, or an empty string.
    * @returns The merged frontmatter block, or an empty string when neither side has any.
@@ -353,7 +342,6 @@ export abstract class BaseMergeStrategy {
 
   /**
    * Extracts every markdown header from content.
-   *
    * @param content - The markdown content to scan.
    * @returns One entry per header, in document order.
    */
@@ -387,7 +375,6 @@ export abstract class BaseMergeStrategy {
    * Finds source headers that also exist in the target.
    *
    * Headers match when their text is equal ignoring case and they have the same level.
-   *
    * @param targetContent - The target's content.
    * @param sourceContent - The source's content.
    * @returns One entry per colliding source header.
@@ -437,12 +424,10 @@ export abstract class BaseMergeStrategy {
  * Simply adds the source file content to the end of the target file, with optional separator and
  * frontmatter merging. This is the simplest merge strategy and works well for accumulating
  * content.
- *
  * @category Strategies
- *
  * @example
  *   Append merge with transclusions
- *   ```typescript
+ * ```typescript
  *   const strategy = new AppendMergeStrategy({
  *       createTransclusions: true,
  *       separator: '\n\n---\n\n'
@@ -450,21 +435,20 @@ export abstract class BaseMergeStrategy {
  *
  *   const result = await strategy.merge(targetContent, sourceContent, 'target.md', 'source.md');
  *   console.log(`Appended content, ${result.transclusions.length} transclusions created`);
- *   ```
+ * ```
  */
 export class AppendMergeStrategy extends BaseMergeStrategy {
   /**
    * Places the source content after the target content.
    *
    * Frontmatter is stripped from both bodies, the bodies are joined by the separator, and frontmatter is merged when `mergeFrontmatter` is on (otherwise the target's is kept). Duplicate headers are recorded as auto-resolved conflicts and left in place. When `createTransclusions` is on, a transclusion reference to the source is appended instead of its content, unless it would form a loop, in which case a warning is added and the content is appended.
-   *
    * @param targetContent - The full content of the file being merged into, including any frontmatter.
    * @param sourceContent - The full content of the file being merged from, including any frontmatter.
    * @param targetFile - The path of the target file.
    * @param sourceFile - The path of the source file.
    * @returns The merged result, or a failed result with `errors` populated and the target content returned unchanged if merging throws.
    */
-  merge(
+  async merge(
     targetContent: string,
     sourceContent: string,
     targetFile: string,
@@ -501,7 +485,7 @@ export class AppendMergeStrategy extends BaseMergeStrategy {
       }
 
       // Check for transclusion loops if creating transclusions
-      if (this.options.createTransclusions) {
+      if (this.options.createTransclusions === true) {
         const existingTransclusions =
           this.extractTransclusions(targetMainContent);
         const transclusionRefs = existingTransclusions.map((t) => t.ref);
@@ -519,12 +503,13 @@ export class AppendMergeStrategy extends BaseMergeStrategy {
           const finalContent = targetMainContent + separator + transclusionRef;
           transclusions.push(transclusionRef);
 
-          return Promise.resolve({
+          return await Promise.resolve({
             success: true,
             content: finalContent,
-            frontmatter: this.options.mergeFrontmatter
-              ? this.mergeFrontmatter(targetFrontmatter, sourceFrontmatter)
-              : targetFrontmatter,
+            frontmatter:
+              this.options.mergeFrontmatter === true
+                ? this.mergeFrontmatter(targetFrontmatter, sourceFrontmatter)
+                : targetFrontmatter,
             sourceFiles: [targetFile, sourceFile],
             conflicts,
             warnings,
@@ -538,12 +523,13 @@ export class AppendMergeStrategy extends BaseMergeStrategy {
       const separator = this.options.separator ?? "\n\n";
       const mergedContent = targetMainContent + separator + sourceMainContent;
 
-      return Promise.resolve({
+      return await Promise.resolve({
         success: true,
         content: mergedContent,
-        frontmatter: this.options.mergeFrontmatter
-          ? this.mergeFrontmatter(targetFrontmatter, sourceFrontmatter)
-          : targetFrontmatter,
+        frontmatter:
+          this.options.mergeFrontmatter === true
+            ? this.mergeFrontmatter(targetFrontmatter, sourceFrontmatter)
+            : targetFrontmatter,
         sourceFiles: [targetFile, sourceFile],
         conflicts,
         warnings,
@@ -554,7 +540,8 @@ export class AppendMergeStrategy extends BaseMergeStrategy {
       errors.push(
         `Failed to merge files: ${error instanceof Error ? error.message : String(error)}`,
       );
-      return Promise.resolve({
+
+      return await Promise.resolve({
         success: false,
         content: targetContent,
         sourceFiles: [targetFile, sourceFile],
@@ -568,6 +555,7 @@ export class AppendMergeStrategy extends BaseMergeStrategy {
 
   private extractFrontmatterFromContent(content: string): string {
     const match = /^---\n(.*?)\n---\n/s.exec(content);
+
     return match ? match[0] : "";
   }
 
@@ -581,12 +569,10 @@ export class AppendMergeStrategy extends BaseMergeStrategy {
  *
  * Adds the source file content to the beginning of the target file, after any frontmatter. This is
  * useful when you want new content to appear first in the document.
- *
  * @category Strategies
- *
  * @example
  *   Prepend merge with custom separator
- *   ```typescript
+ * ```typescript
  *   const strategy = new PrependMergeStrategy({
  *       separator: '\n\n<!-- New Content Above -->\n\n',
  *       mergeFrontmatter: true
@@ -594,21 +580,20 @@ export class AppendMergeStrategy extends BaseMergeStrategy {
  *
  *   const result = await strategy.merge(targetContent, sourceContent, 'target.md', 'source.md');
  *   console.log('Source content prepended to target');
- *   ```
+ * ```
  */
 export class PrependMergeStrategy extends BaseMergeStrategy {
   /**
    * Places the source content before the target content.
    *
    * Frontmatter is stripped from both bodies, the bodies are joined by the separator with the source first, and frontmatter is merged when `mergeFrontmatter` is on (otherwise the target's is kept). Duplicate headers are recorded as auto-resolved conflicts and left in place. Transclusions are not created by this strategy.
-   *
    * @param targetContent - The full content of the file being merged into, including any frontmatter.
    * @param sourceContent - The full content of the file being merged from, including any frontmatter.
    * @param targetFile - The path of the target file.
    * @param sourceFile - The path of the source file.
    * @returns The merged result, or a failed result with `errors` populated and the target content returned unchanged if merging throws.
    */
-  merge(
+  async merge(
     targetContent: string,
     sourceContent: string,
     targetFile: string,
@@ -648,12 +633,13 @@ export class PrependMergeStrategy extends BaseMergeStrategy {
       const separator = this.options.separator ?? "\n\n";
       const mergedContent = sourceMainContent + separator + targetMainContent;
 
-      return Promise.resolve({
+      return await Promise.resolve({
         success: true,
         content: mergedContent,
-        frontmatter: this.options.mergeFrontmatter
-          ? this.mergeFrontmatter(targetFrontmatter, sourceFrontmatter)
-          : targetFrontmatter,
+        frontmatter:
+          this.options.mergeFrontmatter === true
+            ? this.mergeFrontmatter(targetFrontmatter, sourceFrontmatter)
+            : targetFrontmatter,
         sourceFiles: [targetFile, sourceFile],
         conflicts,
         warnings,
@@ -664,7 +650,8 @@ export class PrependMergeStrategy extends BaseMergeStrategy {
       errors.push(
         `Failed to merge files: ${error instanceof Error ? error.message : String(error)}`,
       );
-      return Promise.resolve({
+
+      return await Promise.resolve({
         success: false,
         content: targetContent,
         sourceFiles: [targetFile, sourceFile],
@@ -678,6 +665,7 @@ export class PrependMergeStrategy extends BaseMergeStrategy {
 
   private extractFrontmatterFromContent(content: string): string {
     const match = /^---\n(.*?)\n---\n/s.exec(content);
+
     return match ? match[0] : "";
   }
 
@@ -692,12 +680,10 @@ export class PrependMergeStrategy extends BaseMergeStrategy {
  * Analyzes both files to detect potential conflicts such as duplicate headers, overlapping content,
  * or structural issues. Provides automatic resolution where possible and clear reporting of
  * conflicts that need manual attention.
- *
  * @category Strategies
- *
  * @example
  *   Interactive merge with conflict resolution
- *   ```typescript
+ * ```typescript
  *   const strategy = new InteractiveMergeStrategy({
  *       conflictResolution: 'auto',
  *       createTransclusions: true,
@@ -706,21 +692,20 @@ export class PrependMergeStrategy extends BaseMergeStrategy {
  *
  *   const result = await strategy.merge(targetContent, sourceContent, 'target.md', 'source.md');
  *   console.log(`Merge completed with ${result.conflicts.length} conflicts detected`);
- *   ```
+ * ```
  */
 export class InteractiveMergeStrategy extends BaseMergeStrategy {
   /**
    * Merges the files while recording each decision point as an unresolved conflict.
    *
    * Every duplicate header becomes a `header-collision` conflict and every source header becomes a `content-overlap` placement conflict, all marked as not auto-resolved. Two warnings state that manual resolution is required. The returned content is a fallback: the target, a `MERGE CONFLICT` comment and the source, each joined by the separator, with frontmatter merged when `mergeFrontmatter` is on.
-   *
    * @param targetContent - The full content of the file being merged into, including any frontmatter.
    * @param sourceContent - The full content of the file being merged from, including any frontmatter.
    * @param targetFile - The path of the target file.
    * @param sourceFile - The path of the source file.
    * @returns The merged result, or a failed result with `errors` populated and the target content returned unchanged if merging throws.
    */
-  merge(
+  async merge(
     targetContent: string,
     sourceContent: string,
     targetFile: string,
@@ -783,12 +768,13 @@ export class InteractiveMergeStrategy extends BaseMergeStrategy {
         targetMainContent + separator
       }<!-- MERGE CONFLICT: Review and resolve manually -->${separator}${sourceMainContent}`;
 
-      return Promise.resolve({
+      return await Promise.resolve({
         success: true,
         content: mergedContent,
-        frontmatter: this.options.mergeFrontmatter
-          ? this.mergeFrontmatter(targetFrontmatter, sourceFrontmatter)
-          : targetFrontmatter,
+        frontmatter:
+          this.options.mergeFrontmatter === true
+            ? this.mergeFrontmatter(targetFrontmatter, sourceFrontmatter)
+            : targetFrontmatter,
         sourceFiles: [targetFile, sourceFile],
         conflicts,
         warnings,
@@ -799,7 +785,8 @@ export class InteractiveMergeStrategy extends BaseMergeStrategy {
       errors.push(
         `Failed to perform interactive merge: ${error instanceof Error ? error.message : String(error)}`,
       );
-      return Promise.resolve({
+
+      return await Promise.resolve({
         success: false,
         content: targetContent,
         sourceFiles: [targetFile, sourceFile],
@@ -813,6 +800,7 @@ export class InteractiveMergeStrategy extends BaseMergeStrategy {
 
   private extractFrontmatterFromContent(content: string): string {
     const match = /^---\n(.*?)\n---\n/s.exec(content);
+
     return match ? match[0] : "";
   }
 
@@ -820,24 +808,24 @@ export class InteractiveMergeStrategy extends BaseMergeStrategy {
     return content.replace(/^---\n.*?\n---\n/s, "").trim();
   }
 
-  // private extractSectionContent(
-  //   content: string,
-  //   header: { text: string; level: number; line: number }
-  // ): string {
-  //   const lines = content.split('\n');
-  //   const startLine = header.line - 1; // Convert to 0-based
-  //   let endLine = lines.length;
+  /* private extractSectionContent(
+       content: string,
+       header: { text: string; level: number; line: number }
+     ): string {
+       const lines = content.split('\n');
+       const startLine = header.line - 1; // Convert to 0-based
+       let endLine = lines.length; */
 
-  //   // Find the next header of the same or higher level
-  //   for (let i = startLine + 1; i < lines.length; i++) {
-  //     const line = lines[i];
-  //     const match = line.match(/^(#+)\s+(.+)$/);
-  //     if (match && match[1].length <= header.level) {
-  //       endLine = i;
-  //       break;
-  //     }
-  //   }
+  /*   // Find the next header of the same or higher level
+       for (let i = startLine + 1; i < lines.length; i++) {
+         const line = lines[i];
+         const match = line.match(/^(#+)\s+(.+)$/);
+         if (match && match[1].length <= header.level) {
+           endLine = i;
+           break;
+         }
+       } */
 
-  //   return lines.slice(startLine, endLine).join('\n');
-  // }
+  /*   return lines.slice(startLine, endLine).join('\n');
+     } */
 }

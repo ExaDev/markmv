@@ -6,12 +6,14 @@ import {
   PrependMergeStrategy,
 } from "../strategies/merge-strategies.js";
 
+/** Number of merged lines shown in a verbose dry-run preview. */
+const PREVIEW_LINE_LIMIT = 10;
+
 /**
  * Configuration options for merge command operations.
  *
  * Controls how content from one markdown file is merged into another, including strategy selection,
  * transclusion creation, and preview mode.
- *
  * @category Commands
  */
 export interface MergeOptions {
@@ -40,58 +42,52 @@ export interface MergeOptions {
  *
  * The merge operation intelligently handles frontmatter, content sections, and provides
  * comprehensive conflict detection and resolution.
- *
  * @category Commands
- *
  * @example
- *   Append merge with transclusions
- *   ```typescript
- *   await mergeCommand('notes/section.md', 'docs/handbook.md', {
- *       strategy: 'append',
- *       createTransclusions: true,
- *       verbose: true
- *   });
- *   ```
- *
+ * Append merge with transclusions
+ * ```typescript
+ * await mergeCommand('notes/section.md', 'docs/handbook.md', {
+ *     strategy: 'append',
+ *     createTransclusions: true,
+ *     verbose: true
+ * });
+ * ```
  * @example
- *   Interactive merge with dry run
- *   ```typescript
- *   await mergeCommand('draft.md', 'final.md', {
- *       strategy: 'interactive',
- *       dryRun: true,
- *       verbose: true
- *   });
- *   ```
- *
+ * Interactive merge with dry run
+ * ```typescript
+ * await mergeCommand('draft.md', 'final.md', {
+ *     strategy: 'interactive',
+ *     dryRun: true,
+ *     verbose: true
+ * });
+ * ```
  * @example
- *   Prepend merge
- *   ```typescript
- *   await mergeCommand('intro.md', 'document.md', {
- *       strategy: 'prepend'
- *   });
- *   ```
- *
+ * Prepend merge
+ * ```typescript
+ * await mergeCommand('intro.md', 'document.md', {
+ *     strategy: 'prepend'
+ * });
+ * ```
  * @param source - Path to the source markdown file to merge from
  * @param target - Path to the target markdown file to merge into
  * @param options - Configuration options for the merge operation
- *
  * @throws Will exit the process with code 1 if the operation fails
  */
 export async function mergeCommand(
   source: string,
   target: string,
-  options: MergeOptions,
+  options: Readonly<MergeOptions>,
 ): Promise<void> {
   const strategy = options.strategy ?? "interactive";
 
-  if (options.verbose) {
+  if (options.verbose === true) {
     console.log(
       `🔀 Merging ${source} into ${target} using ${strategy} strategy`,
     );
-    if (options.dryRun) {
+    if (options.dryRun === true) {
       console.log("🔍 Dry run mode - no changes will be made");
     }
-    if (options.createTransclusions) {
+    if (options.createTransclusions === true) {
       console.log("🔗 Creating Obsidian transclusions where possible");
     }
   }
@@ -119,7 +115,7 @@ export async function mergeCommand(
           createTransclusions: options.createTransclusions ?? false,
         });
         break;
-      default:
+      case "interactive":
         mergeStrategy = new InteractiveMergeStrategy({
           createTransclusions: options.createTransclusions ?? false,
         });
@@ -144,7 +140,7 @@ export async function mergeCommand(
 
     // Build final content
     let finalContent = "";
-    if (result.frontmatter) {
+    if (result.frontmatter !== undefined && result.frontmatter !== "") {
       finalContent += result.frontmatter;
       if (!result.frontmatter.endsWith("\n")) {
         finalContent += "\n";
@@ -154,18 +150,20 @@ export async function mergeCommand(
     finalContent += result.content;
 
     // Display results
-    if (options.dryRun) {
+    if (options.dryRun === true) {
       console.log("\\n📋 Changes that would be made:");
       console.log("\\n📝 File that would be modified:");
       console.log(`  ~ ${target}`);
 
-      if (options.verbose) {
+      if (options.verbose === true) {
         console.log("\\n📄 Preview of merged content:");
-        const previewLines = finalContent.split("\\n").slice(0, 10);
+        const previewLines = finalContent
+          .split("\\n")
+          .slice(0, PREVIEW_LINE_LIMIT);
         for (const line of previewLines) {
           console.log(`  ${line}`);
         }
-        if (finalContent.split("\\n").length > 10) {
+        if (finalContent.split("\\n").length > PREVIEW_LINE_LIMIT) {
           console.log("  ... (content truncated)");
         }
       }
@@ -194,7 +192,7 @@ export async function mergeCommand(
       console.log("\\n⚠️  Conflicts detected:");
       for (const conflict of result.conflicts) {
         console.log(`  • ${conflict.type}: ${conflict.description}`);
-        if (conflict.resolution) {
+        if (conflict.resolution !== undefined && conflict.resolution !== "") {
           console.log(`    Resolution: ${conflict.resolution}`);
         }
         if (!conflict.autoResolved) {
@@ -212,7 +210,7 @@ export async function mergeCommand(
     }
 
     // Show helpful tips
-    if (!options.dryRun) {
+    if (options.dryRun !== true) {
       console.log("\\n💡 Tips:");
       console.log("  • Use --dry-run to preview changes before merging");
       console.log("  • Use --verbose for detailed operation logs");
@@ -233,8 +231,8 @@ export async function mergeCommand(
     }
   } catch (error) {
     if (
-      error &&
       typeof error === "object" &&
+      error !== null &&
       "code" in error &&
       error.code === "ENOENT"
     ) {

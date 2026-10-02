@@ -1,12 +1,14 @@
 /**
- * Authentication detection utilities for external link validation.
- *
- * @file Detects authentication-protected URLs and handles auth-aware validation
+ * Authentication detection utilities for external link validation, detecting authentication-protected URLs and handling auth-aware validation.
  */
+
+/** Default cap on the number of redirect hops followed. */
+const DEFAULT_MAX_REDIRECTS = 5;
+const HTTP_UNAUTHORIZED = 401;
+const HTTP_FORBIDDEN = 403;
 
 /**
  * Configuration for authentication detection.
- *
  * @category Types
  */
 export interface AuthConfig {
@@ -26,7 +28,6 @@ export interface AuthConfig {
 
 /**
  * Information about authentication status of a link.
- *
  * @category Types
  */
 export interface AuthInfo {
@@ -54,7 +55,7 @@ export interface AuthInfo {
 
 /** Authentication detector for external links. */
 export class AuthDetector {
-  private config: AuthConfig;
+  private readonly config: AuthConfig;
 
   constructor(config: Partial<AuthConfig> = {}) {
     this.config = {
@@ -100,7 +101,7 @@ export class AuthDetector {
         "/oauth",
         "/sso",
       ],
-      maxRedirects: config.maxRedirects ?? 5,
+      maxRedirects: config.maxRedirects ?? DEFAULT_MAX_REDIRECTS,
       customHeaders: config.customHeaders ?? {},
     };
   }
@@ -110,11 +111,16 @@ export class AuthDetector {
     return this.config.enabled;
   }
 
-  /** Analyze authentication requirements for a URL. */
-  analyzeAuth(
+  /** Analyze authentication requirements for a URL that was not reached through a known redirect chain. */
+  analyzeAuth(url: string, response?: Response): AuthInfo {
+    return this.analyzeAuthWithRedirects(url, response, []);
+  }
+
+  /** Analyze authentication requirements for a URL, given the redirect chain that led to its response. */
+  analyzeAuthWithRedirects(
     url: string,
-    response?: Response,
-    redirectHistory: string[] = [],
+    response: Response | undefined,
+    redirectHistory: readonly string[],
   ): AuthInfo {
     if (!this.config.enabled) {
       return {
@@ -136,7 +142,7 @@ export class AuthDetector {
 
     // Check domain-based auth detection first
     const domainAuth = this.checkAuthDomain(url);
-    if (domainAuth.requiresAuth) {
+    if (domainAuth.requiresAuth === true) {
       return {
         ...result,
         ...domainAuth,
@@ -145,9 +151,9 @@ export class AuthDetector {
     }
 
     // If we have a response, analyze it for auth indicators
-    if (response) {
+    if (response !== undefined) {
       const responseAuth = this.analyzeResponse(url, response, redirectHistory);
-      if (responseAuth.requiresAuth) {
+      if (responseAuth.requiresAuth === true) {
         return {
           ...result,
           ...responseAuth,
@@ -168,6 +174,7 @@ export class AuthDetector {
       for (const pattern of this.config.authDomainPatterns) {
         if (this.matchesPattern(fullUrl, hostname, pattern)) {
           const provider = this.detectAuthProvider(pattern, hostname);
+
           return {
             requiresAuth: true,
             authProvider: provider,
@@ -188,7 +195,7 @@ export class AuthDetector {
   private analyzeResponse(
     url: string,
     response: Response,
-    redirectHistory: string[],
+    redirectHistory: readonly string[],
   ): Partial<AuthInfo> {
     const finalUrl = response.url;
 
@@ -199,7 +206,7 @@ export class AuthDetector {
         finalUrl,
         redirectHistory,
       );
-      if (redirectAuth.requiresAuth) {
+      if (redirectAuth.requiresAuth === true) {
         return {
           ...redirectAuth,
           finalUrl,
@@ -209,7 +216,10 @@ export class AuthDetector {
     }
 
     // Check status codes that indicate auth requirement
-    if (response.status === 401 || response.status === 403) {
+    if (
+      response.status === HTTP_UNAUTHORIZED ||
+      response.status === HTTP_FORBIDDEN
+    ) {
       return {
         requiresAuth: true,
         finalUrl,
@@ -224,8 +234,8 @@ export class AuthDetector {
     try {
       const contentType = response.headers.get("content-type") ?? "";
       if (contentType.includes("text/html")) {
-        // Don't actually read the content in production to avoid performance issues
-        // This would be for future enhancement
+        /* Don't actually read the content in production to avoid performance issues
+           This would be for future enhancement */
         return { requiresAuth: false };
       }
     } catch {
@@ -239,7 +249,7 @@ export class AuthDetector {
   private analyzeRedirects(
     originalUrl: string,
     finalUrl: string,
-    redirectHistory: string[],
+    redirectHistory: readonly string[],
   ): Partial<AuthInfo> {
     const allUrls = [originalUrl, ...redirectHistory];
     if (finalUrl && finalUrl !== originalUrl) {
@@ -250,6 +260,7 @@ export class AuthDetector {
       for (const pattern of this.config.authRedirectPatterns) {
         if (redirectUrl.toLowerCase().includes(pattern.toLowerCase())) {
           const provider = this.detectAuthProviderFromUrl(redirectUrl);
+
           return {
             requiresAuth: true,
             authProvider: provider,
@@ -296,6 +307,7 @@ export class AuthDetector {
         .replace(/\./g, "\\.")
         .replace(/\*/g, "[^./]*");
       const regex = new RegExp(regexPattern, "i");
+
       return regex.test(hostname) || regex.test(fullUrl);
     }
 
@@ -410,6 +422,7 @@ export class AuthDetector {
   shouldAttemptAuth(url: string): boolean {
     try {
       const hostname = new URL(url).hostname;
+
       return (
         Object.keys(this.config.credentials).some(
           (key) =>
@@ -469,6 +482,6 @@ export const DEFAULT_AUTH_CONFIG: AuthConfig = {
     "/oauth",
     "/sso",
   ],
-  maxRedirects: 5,
+  maxRedirects: DEFAULT_MAX_REDIRECTS,
   customHeaders: {},
 };

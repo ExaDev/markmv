@@ -7,7 +7,6 @@ import type { ParsedMarkdownFile } from "../types/links.js";
  *
  * Obsidian resolves such links by path proximity, which means a file move can silently rebind them
  * without any text changing anywhere -- the reason ambiguity is reported rather than guessed.
- *
  * @category Core
  */
 export interface ObsidianAmbiguity {
@@ -19,7 +18,6 @@ export interface ObsidianAmbiguity {
 
 /**
  * A note stem shared by multiple markdown files, making bare wikilinks to it ambiguous.
- *
  * @category Core
  */
 export interface DuplicateNoteStem {
@@ -29,8 +27,6 @@ export interface DuplicateNoteStem {
   paths: string[];
 }
 
-export type { ParsedMarkdownFile };
-
 /**
  * Index of every known vault file by the names a wikilink can use to reach it.
  *
@@ -38,12 +34,12 @@ export type { ParsedMarkdownFile };
  * while other files (images, PDFs) are indexed by filename only, since embedding them always
  * includes the extension (![[image.png]]).
  */
-function buildNameIndex(filePaths: string[]): Map<string, string[]> {
+function buildNameIndex(filePaths: readonly string[]): Map<string, string[]> {
   const index = new Map<string, string[]>();
   for (const filePath of filePaths) {
     const name = basename(filePath);
-    // Obsidian resolves wikilink targets case-insensitively, so lookups go through lowercased
-    // keys while candidates keep their true-cased paths
+    /* Obsidian resolves wikilink targets case-insensitively, so lookups go through lowercased
+       keys while candidates keep their true-cased paths */
     const lowerName = name.toLowerCase();
     const candidates = index.get(lowerName) ?? [];
     candidates.push(filePath);
@@ -55,6 +51,7 @@ function buildNameIndex(filePaths: string[]): Map<string, string[]> {
       index.set(stem, stemCandidates);
     }
   }
+
   return index;
 }
 
@@ -67,20 +64,22 @@ function buildNameIndex(filePaths: string[]): Map<string, string[]> {
  * links gain resolvedPath and feed the file's dependencies, so the dependency graph treats them
  * like any other inbound reference. Ambiguous bare targets are deliberately left unresolved and
  * reported instead of guessed.
- *
  * @example
- *   ```typescript const files = await new LinkParser().parseDirectory(vaultRoot); const ambiguities = resolveWikilinks(files, vaultRoot);
+ * ```typescript
+ * const files = await new LinkParser().parseDirectory(vaultRoot);
+ * const ambiguities = resolveWikilinks(files, vaultRoot);
  *
- *   if (ambiguities.length > 0) { console.warn('Ambiguous wikilinks:', ambiguities); } ```;
- *
+ * if (ambiguities.length > 0) {
+ *   console.warn('Ambiguous wikilinks:', ambiguities);
+ * }
+ * ```
  * @param files - Every parsed markdown file in the vault
  * @param vaultRoot - Absolute path of the vault root path-qualified targets resolve against
- *
  * @returns Ambiguities encountered: bare targets that matched multiple notes
  * @category Core
  */
 export function resolveWikilinks(
-  files: ParsedMarkdownFile[],
+  files: readonly ParsedMarkdownFile[],
   vaultRoot: string,
 ): ObsidianAmbiguity[] {
   const nameIndex = buildNameIndex(files.map((file) => file.filePath));
@@ -101,7 +100,7 @@ export function resolveWikilinks(
       }
     }
 
-    rebuildDependencies(file);
+    file.dependencies = dependenciesOf(file);
   }
 
   return ambiguities;
@@ -109,7 +108,6 @@ export function resolveWikilinks(
 
 /**
  * The outcome of resolving one wikilink target against the vault.
- *
  * @category Core
  */
 export interface WikilinkResolution {
@@ -124,18 +122,17 @@ export interface WikilinkResolution {
  *
  * The index needs only file paths -- stems and filenames -- so callers that have a file list but no
  * parsed contents (link validation, for example) can resolve exactly like whole-vault passes.
- *
  * @param vaultRoot - Absolute path of the vault root path-qualified targets resolve against
  * @param filePaths - Absolute paths of every file in the vault
- *
  * @returns A function mapping a wikilink target to its resolution
  * @category Core
  */
 export function createWikilinkResolver(
   vaultRoot: string,
-  filePaths: string[],
+  filePaths: readonly string[],
 ): (target: string) => WikilinkResolution {
   const nameIndex = buildNameIndex(filePaths);
+
   return (target: string) => resolveTarget(target, vaultRoot, nameIndex);
 }
 
@@ -154,6 +151,7 @@ function resolveTarget(
     if (extname(normalized) === "" && existsSync(`${exact}.md`)) {
       return { resolvedPath: `${exact}.md` };
     }
+
     return {};
   }
 
@@ -163,6 +161,7 @@ function resolveTarget(
     if (unique.length === 1) {
       return { resolvedPath: unique[0] };
     }
+
     return { ambiguous: unique };
   }
 
@@ -181,12 +180,13 @@ function resolveTarget(
       }
     }
   }
+
   return {};
 }
 
-/** Rebuild a file's dependency list from its resolved links, wikilinks included */
-function rebuildDependencies(file: ParsedMarkdownFile): void {
-  file.dependencies = Array.from(
+/** Derive a file's dependency list from its resolved links, wikilinks included */
+function dependenciesOf(file: Readonly<ParsedMarkdownFile>): string[] {
+  return Array.from(
     new Set(
       file.links
         .map((link) => link.resolvedPath)
@@ -201,14 +201,12 @@ function rebuildDependencies(file: ParsedMarkdownFile): void {
  * A duplicate stem makes every bare wikilink to it ambiguous, and Obsidian resolves that ambiguity
  * by path proximity -- so moving a file can silently rebind existing links with zero text changes
  * anywhere. Surfacing the duplicates before a move is the only defence.
- *
  * @param files - Every parsed markdown file in the vault
- *
  * @returns Each stem that more than one markdown file carries
  * @category Core
  */
 export function findDuplicateNoteStems(
-  files: ParsedMarkdownFile[],
+  files: readonly ParsedMarkdownFile[],
 ): DuplicateNoteStem[] {
   const byStem = new Map<string, string[]>();
   for (const file of files) {
@@ -230,14 +228,12 @@ export function findDuplicateNoteStems(
  *
  * A stem carried by exactly one file resolves unambiguously vault-wide, so a rewritten wikilink can
  * use the bare form; any stem whose post-move count exceeds one needs the path-qualified form.
- *
  * @param files - Every parsed markdown file in the vault
- *
  * @returns Map from stem (basename without .md) to the number of markdown files carrying it
  * @category Core
  */
 export function computeNoteStemCounts(
-  files: ParsedMarkdownFile[],
+  files: readonly ParsedMarkdownFile[],
 ): Map<string, number> {
   const counts = new Map<string, number>();
   for (const file of files) {
@@ -246,6 +242,7 @@ export function computeNoteStemCounts(
     const stem = basename(name, ".md");
     counts.set(stem, (counts.get(stem) ?? 0) + 1);
   }
+
   return counts;
 }
 

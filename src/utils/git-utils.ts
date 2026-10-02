@@ -1,8 +1,5 @@
 /**
- * Git integration utilities for incremental validation.
- *
- * @file Provides git operations for detecting changed files and managing validation caching
- *
+ * Git integration utilities for incremental validation, providing git operations for detecting changed files and managing validation caching.
  * @category Utilities
  */
 
@@ -11,7 +8,6 @@ import { resolve } from "node:path";
 
 /**
  * Information about a file change in git.
- *
  * @category Utilities
  */
 export interface GitFileChange {
@@ -25,7 +21,6 @@ export interface GitFileChange {
 
 /**
  * Git repository information and status.
- *
  * @category Utilities
  */
 export interface GitStatus {
@@ -44,20 +39,29 @@ export interface GitStatus {
  *
  * Provides methods for detecting file changes, managing git state, and integrating with validation
  * workflows.
- *
  * @category Utilities
- *
  * @example
- *   Basic usage ```typescript const git = new GitUtils();
+ * ```typescript
+ * // Basic usage
+ * const git = new GitUtils();
  *
- *   if (git.isGitRepository()) { const changes = git.getChangedFiles('HEAD~1'); console.log(`Found ${changes.length} changed files`); } ```
- *
+ * if (git.isGitRepository()) {
+ *   const changes = git.getChangedFiles('HEAD~1');
+ *   console.log(`Found ${changes.length} changed files`);
+ * }
+ * ```
  * @example
- *   Pre-commit validation ```typescript const git = new GitUtils(); const stagedFiles = git.getStagedFiles(); const markdownFiles = stagedFiles.filter(f => f.path.endsWith('.md')); ```
+ * ```typescript
+ * // Pre-commit validation
+ * const git = new GitUtils();
+ * const stagedFiles = git.getStagedFiles();
+ * const markdownFiles = stagedFiles.filter(f => f.path.endsWith('.md'));
+ * ```
  */
 export class GitUtils {
   private rootDir: string | undefined;
-  private cwd: string;
+
+  private readonly cwd: string;
 
   constructor(cwd: string = process.cwd()) {
     this.cwd = cwd;
@@ -65,12 +69,12 @@ export class GitUtils {
 
   /**
    * Check if current directory is within a git repository.
-   *
    * @returns True if in a git repository
    */
   isGitRepository(): boolean {
     try {
       this.execGit("rev-parse --git-dir");
+
       return true;
     } catch {
       return false;
@@ -79,19 +83,18 @@ export class GitUtils {
 
   /**
    * Get git repository root directory.
-   *
    * @returns Absolute path to git root directory
-   *
    * @throws Error if not in a git repository
    */
   getRepositoryRoot(): string {
-    if (this.rootDir) {
+    if (this.rootDir !== undefined && this.rootDir !== "") {
       return this.rootDir;
     }
 
     try {
       const output = this.execGit("rev-parse --show-toplevel");
       this.rootDir = output.trim();
+
       return this.rootDir;
     } catch (error) {
       throw new Error(
@@ -103,7 +106,6 @@ export class GitUtils {
 
   /**
    * Get current git status information.
-   *
    * @returns Git status information
    */
   getStatus(): GitStatus {
@@ -122,7 +124,6 @@ export class GitUtils {
 
   /**
    * Get current branch name.
-   *
    * @returns Current branch name
    */
   getCurrentBranch(): string {
@@ -137,7 +138,6 @@ export class GitUtils {
 
   /**
    * Get current commit hash.
-   *
    * @returns Current commit hash (full)
    */
   getCurrentCommit(): string {
@@ -146,12 +146,12 @@ export class GitUtils {
 
   /**
    * Check if repository has uncommitted changes.
-   *
    * @returns True if there are uncommitted changes
    */
   hasUncommittedChanges(): boolean {
     try {
       const output = this.execGit("status --porcelain");
+
       return output.trim().length > 0;
     } catch {
       return false;
@@ -160,21 +160,23 @@ export class GitUtils {
 
   /**
    * Get files changed between two git references.
-   *
    * @example
-   *   ```typescript // Files changed since last commit const changes = git.getChangedFiles('HEAD~1');
+   * ```typescript
+   * // Files changed since last commit
+   * const changes = git.getChangedFiles('HEAD~1');
    *
-   *   // Files changed in current branch vs main const branchChanges = git.getChangedFiles('main', 'HEAD'); ```;
-   *
+   * // Files changed in current branch vs main
+   * const branchChanges = git.getChangedFiles('main', 'HEAD');
+   * ```
    * @param base - Base reference (commit, branch, tag)
    * @param head - Head reference (defaults to current HEAD)
-   *
    * @returns Array of changed files
    */
   getChangedFiles(base: string, head = "HEAD"): GitFileChange[] {
     try {
       const repositoryRoot = this.getRepositoryRoot();
       const output = this.execGit(`diff --name-status ${base}..${head}`);
+
       return this.parseFileChanges(output, repositoryRoot);
     } catch (error) {
       throw new Error(
@@ -186,13 +188,13 @@ export class GitUtils {
 
   /**
    * Get currently staged files.
-   *
    * @returns Array of staged files
    */
   getStagedFiles(): GitFileChange[] {
     try {
       const repositoryRoot = this.getRepositoryRoot();
       const output = this.execGit("diff --cached --name-status");
+
       return this.parseFileChanges(output, repositoryRoot);
     } catch (error) {
       throw new Error(
@@ -204,13 +206,13 @@ export class GitUtils {
 
   /**
    * Get files changed in working directory (unstaged).
-   *
    * @returns Array of unstaged changes
    */
   getUnstagedFiles(): GitFileChange[] {
     try {
       const repositoryRoot = this.getRepositoryRoot();
       const output = this.execGit("diff --name-status");
+
       return this.parseFileChanges(output, repositoryRoot);
     } catch (error) {
       throw new Error(
@@ -222,16 +224,18 @@ export class GitUtils {
 
   /**
    * Get list of all tracked files.
-   *
    * @param pattern - Optional file pattern to filter
-   *
    * @returns Array of tracked file paths
    */
   getTrackedFiles(pattern?: string): string[] {
     try {
       const repositoryRoot = this.getRepositoryRoot();
-      const cmd = pattern ? `ls-files ${pattern}` : "ls-files";
+      const cmd =
+        pattern !== undefined && pattern !== ""
+          ? `ls-files ${pattern}`
+          : "ls-files";
       const output = this.execGit(cmd);
+
       return output
         .split("\n")
         .map((line) => line.trim())
@@ -247,14 +251,13 @@ export class GitUtils {
 
   /**
    * Check if a specific commit exists.
-   *
    * @param ref - Git reference to check
-   *
    * @returns True if reference exists
    */
   refExists(ref: string): boolean {
     try {
       this.execGit(`rev-parse --verify ${ref}`);
+
       return true;
     } catch {
       return false;
@@ -263,10 +266,8 @@ export class GitUtils {
 
   /**
    * Get the merge base between two references.
-   *
    * @param ref1 - First reference
    * @param ref2 - Second reference
-   *
    * @returns Merge base commit hash
    */
   getMergeBase(ref1: string, ref2: string): string {
@@ -283,9 +284,7 @@ export class GitUtils {
   /**
    * Get files that have been modified since a specific commit. Includes both staged and unstaged
    * changes.
-   *
    * @param since - Commit to compare against
-   *
    * @returns Array of all modified files
    */
   getAllModifiedFiles(since?: string): GitFileChange[] {
@@ -298,7 +297,7 @@ export class GitUtils {
     changes.push(...this.getUnstagedFiles());
 
     // Get committed changes since specified commit
-    if (since) {
+    if (since !== undefined && since !== "") {
       changes.push(...this.getChangedFiles(since));
     }
 
@@ -315,7 +314,6 @@ export class GitUtils {
 
   /**
    * Execute a git command and return output.
-   *
    * @private
    */
   private execGit(command: string): string {
@@ -338,7 +336,6 @@ export class GitUtils {
 
   /**
    * Parse git diff output into file change objects.
-   *
    * @private
    */
   private parseFileChanges(
@@ -355,7 +352,8 @@ export class GitUtils {
       .filter((line) => line.length > 0)
       .map((line) => {
         const [status, ...pathParts] = line.split("\t");
-        let path = pathParts.join("\t"); // Handle paths with tabs
+        // Handle paths with tabs
+        let path = pathParts.join("\t");
 
         let changeStatus: GitFileChange["status"];
         let previousPath: string | undefined;
@@ -395,6 +393,7 @@ export class GitUtils {
         if (previousPath !== undefined) {
           change.previousPath = resolve(repositoryRoot, previousPath);
         }
+
         return change;
       });
   }

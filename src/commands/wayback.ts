@@ -4,7 +4,6 @@
  * Rewrites HTTP(S) markdown links to point at the Wayback Machine. This is a pure text
  * transformation: no network calls are made, and the original URL (scheme, query string, and
  * fragment included) is preserved verbatim after the archive prefix.
- *
  * @category Commands
  */
 
@@ -39,7 +38,6 @@ interface ContentEdit {
 
 /**
  * Configuration options for Wayback Machine conversion operations.
- *
  * @category Commands
  */
 export interface WaybackOptions {
@@ -55,7 +53,6 @@ export interface WaybackOptions {
 
 /**
  * A single converted link destination, with its location in the source file.
- *
  * @category Commands
  */
 export interface WaybackLinkChange {
@@ -71,7 +68,6 @@ export interface WaybackLinkChange {
 
 /**
  * Per-file outcome of a Wayback conversion pass.
- *
  * @category Commands
  */
 export interface WaybackFileResult {
@@ -91,7 +87,6 @@ export interface WaybackFileResult {
 
 /**
  * Aggregate outcome of a Wayback conversion run across all requested files.
- *
  * @category Commands
  */
 export interface WaybackResult {
@@ -121,14 +116,13 @@ export interface WaybackResult {
  * The result is the Wayback Machine origin followed by the any-snapshot wildcard path segment and
  * then the original URL appended verbatim, so query strings and anchor fragments stay part of the
  * original URL. A pure text transformation: no network access.
- *
  * @category Commands
- *
  * @example
- *   ```typescript toWaybackUrl('https://example.com/page?a=1#top'); // https://web.archive.org/web/[wildcard]/https://example.com/page?a=1#top```;
- *
+ * ```typescript
+ * toWaybackUrl('https://example.com/page?a=1#top');
+ * // https://web.archive.org/web/[wildcard]/https://example.com/page?a=1#top
+ * ```
  * @param url - The URL to convert
- *
  * @returns The Wayback Machine URL, or undefined when the URL is not convertible (not an absolute
  *   HTTP(S) URL, or already pointing at the Wayback Machine)
  */
@@ -140,9 +134,7 @@ export function toWaybackUrl(url: string): string | undefined {
 
 /**
  * Classify a link href for Wayback conversion purposes.
- *
  * @param href - The href or reference-definition URL to classify
- *
  * @returns The class: convertible HTTP(S) URL, HTTP(S) URL already archived, or non-web link
  */
 function classifyWebUrl(href: string): WebUrlClass {
@@ -168,18 +160,17 @@ function classifyWebUrl(href: string): WebUrlClass {
 
 /**
  * Compute the absolute offset at which each 1-based line begins in the content.
- *
  * @param lines - The content already split into lines (without their newline terminators)
- *
  * @returns Array where entry i is the offset of line i+1's first character
  */
-function computeLineStarts(lines: string[]): number[] {
+function computeLineStarts(lines: readonly string[]): number[] {
   const starts: number[] = [];
   let offset = 0;
   for (const line of lines) {
     starts.push(offset);
     offset += line.length + 1;
   }
+
   return starts;
 }
 
@@ -189,10 +180,8 @@ function computeLineStarts(lines: string[]): number[] {
  * A link or image node's destination is the text between the first closing-bracket-plus-parenthesis
  * sequence and the terminating parenthesis or whitespace; a bare destination cannot contain
  * whitespace, so the first whitespace or closing parenthesis after it ends it.
- *
  * @param content - The full file content
  * @param nodeStart - Absolute offset of the link node's first character
- *
  * @returns The destination span, or undefined when no plausible destination exists
  */
 function findInlineDestinationSpan(
@@ -205,6 +194,7 @@ function findInlineDestinationSpan(
     if (close === -1) {
       return undefined;
     }
+
     return { start: nodeStart + 1, end: close };
   }
 
@@ -220,6 +210,7 @@ function findInlineDestinationSpan(
     if (close === -1) {
       return undefined;
     }
+
     return { start: destStart + 1, end: close };
   }
 
@@ -232,10 +223,8 @@ function findInlineDestinationSpan(
  * A definition line has the form [label]: destination, optionally followed by a title; a bare
  * destination cannot contain whitespace, so it ends at the first whitespace, closing parenthesis,
  * carriage return, or end of line.
- *
  * @param lineText - The definition line's text without its newline terminator
  * @param lineStart - Absolute offset of the line's first character
- *
  * @returns The destination span, or undefined when the line has no definition delimiter
  */
 function findDefinitionSpan(
@@ -269,15 +258,14 @@ function findDefinitionSpan(
       return { start: lineStart + destStart, end: lineStart + i };
     }
   }
+
   return { start: lineStart + destStart, end: lineStart + lineText.length };
 }
 
 /**
  * Locate a bare (non-angle-bracketed) destination starting at the given offset.
- *
  * @param content - The full file content
  * @param destStart - Offset at which the destination text begins
- *
  * @returns The destination span, or undefined when the content ends before a terminator
  */
 function findBareDestinationSpan(
@@ -290,18 +278,17 @@ function findBareDestinationSpan(
       return { start: destStart, end: i };
     }
   }
+
   return undefined;
 }
 
 /**
  * Apply content edits without disturbing earlier offsets by splicing from the last edit backwards.
- *
  * @param content - The original file content
  * @param edits - The edits to apply; their spans must not overlap
- *
  * @returns The rewritten content
  */
-function applyEdits(content: string, edits: ContentEdit[]): string {
+function applyEdits(content: string, edits: readonly ContentEdit[]): string {
   let updated = content;
   const ordered = [...edits].sort((a, b) => b.span.start - a.span.start);
   for (const edit of ordered) {
@@ -310,6 +297,7 @@ function applyEdits(content: string, edits: ContentEdit[]): string {
       edit.replacement +
       updated.slice(edit.span.end);
   }
+
   return updated;
 }
 
@@ -318,10 +306,8 @@ function applyEdits(content: string, edits: ContentEdit[]): string {
  *
  * Link destinations are found with the LinkParser, so only genuine markdown links are rewritten;
  * URLs in code blocks or prose never match a parsed destination.
- *
  * @param filePath - Absolute path of the markdown file to process
  * @param dryRun - When true, compute the rewrite but leave the file on disk unchanged
- *
  * @returns The per-file outcome, with counts and per-link change details
  */
 async function processWaybackFile(
@@ -435,58 +421,85 @@ async function processWaybackFile(
   return result;
 }
 
+/** The outcome of expanding one source pattern, reported afterwards in pattern order. */
+type PatternExpansion =
+  | { readonly kind: "file" | "glob"; readonly files: readonly string[] }
+  | {
+      readonly kind: "directory";
+      readonly path: string;
+      readonly files: readonly string[];
+    }
+  | { readonly kind: "skipped-file"; readonly path: string };
+
+/**
+ * Expand a single source pattern: a markdown file, a directory of markdown files, or a glob.
+ * @param pattern - A file path, directory path or glob pattern
+ * @param options - Wayback options, used to decide whether directories expand recursively
+ * @returns The files the pattern resolved to, or the non-markdown file it skipped
+ */
+async function expandPattern(
+  pattern: string,
+  options: Readonly<WaybackOptions>,
+): Promise<PatternExpansion> {
+  const absolutePattern = resolve(pattern);
+
+  if (existsSync(absolutePattern) && statSync(absolutePattern).isFile()) {
+    return PathUtils.isMarkdownFile(absolutePattern)
+      ? { kind: "file", files: [absolutePattern] }
+      : { kind: "skipped-file", path: absolutePattern };
+  }
+
+  if (existsSync(absolutePattern) && statSync(absolutePattern).isDirectory()) {
+    /* A directory expands to its markdown files: everything beneath it recursively, or only its direct children.
+       Glob patterns use forward slashes on every platform; backslashes are pattern escapes */
+    const globPattern =
+      options.recursive === true
+        ? `${absolutePattern.replace(/\\/g, "/")}/**/*.md`
+        : `${absolutePattern.replace(/\\/g, "/")}/*.md`;
+    const files = await glob(globPattern, { absolute: true });
+
+    return { kind: "directory", path: absolutePattern, files };
+  }
+
+  const files = await glob(pattern.replace(/\\/g, "/"), { absolute: true });
+
+  return {
+    kind: "glob",
+    files: files.filter((file) => PathUtils.isMarkdownFile(file)),
+  };
+}
+
 /**
  * Expand source patterns (which may include globs) to actual markdown file paths.
- *
  * @param patterns - Array of file patterns or direct paths to expand
  * @param options - Wayback options, used for verbose output
- *
  * @returns Promise resolving to an array of absolute markdown file paths
- *
  * @throws Error if no markdown files are found
  */
 async function expandSourcePatterns(
-  patterns: string[],
-  options: WaybackOptions,
+  patterns: readonly string[],
+  options: Readonly<WaybackOptions>,
 ): Promise<string[]> {
+  const expansions = await Promise.all(
+    patterns.map(async (pattern) => expandPattern(pattern, options)),
+  );
   const resolvedFiles = new Set<string>();
 
-  for (const pattern of patterns) {
-    const absolutePattern = resolve(pattern);
-
-    if (existsSync(absolutePattern) && statSync(absolutePattern).isFile()) {
-      if (PathUtils.isMarkdownFile(absolutePattern)) {
-        resolvedFiles.add(absolutePattern);
-      } else {
-        console.warn(`Skipping non-markdown file: ${absolutePattern}`);
-      }
+  for (const expansion of expansions) {
+    if (expansion.kind === "skipped-file") {
+      console.warn(`Skipping non-markdown file: ${expansion.path}`);
       continue;
     }
 
-    if (
-      existsSync(absolutePattern) &&
-      statSync(absolutePattern).isDirectory()
-    ) {
-      // A directory expands to its markdown files: everything beneath it recursively, or only its direct children.
-      // Glob patterns use forward slashes on every platform; backslashes are pattern escapes
-      const globPattern = options.recursive
-        ? `${absolutePattern.replace(/\\/g, "/")}/**/*.md`
-        : `${absolutePattern.replace(/\\/g, "/")}/*.md`;
-      const files = await glob(globPattern, { absolute: true });
-      files.forEach((file) => resolvedFiles.add(file));
-      if (options.verbose) {
-        console.log(
-          `Added ${String(files.length)} files from directory: ${absolutePattern}`,
-        );
-      }
-      continue;
+    for (const file of expansion.files) {
+      resolvedFiles.add(file);
     }
 
-    const files = await glob(pattern.replace(/\\/g, "/"), { absolute: true });
-    const markdownFiles = files.filter((file) =>
-      PathUtils.isMarkdownFile(file),
-    );
-    markdownFiles.forEach((file) => resolvedFiles.add(file));
+    if (expansion.kind === "directory" && options.verbose === true) {
+      console.log(
+        `Added ${String(expansion.files.length)} files from directory: ${expansion.path}`,
+      );
+    }
   }
 
   const finalFiles = Array.from(resolvedFiles);
@@ -507,20 +520,18 @@ async function expandSourcePatterns(
  * Destinations already pointing at web.archive.org are preserved, and non-web links (mailto, ftp,
  * internal, anchors) are left untouched. Makes no network calls: this is a pure text transformation
  * over the parsed markdown links.
- *
  * @category Commands
- *
  * @example
- *   ```bash markmv wayback docs/*.md --dry-run --verbose```;
- *
+ * ```bash
+ * markmv wayback docs/*.md --dry-run --verbose
+ * ```
  * @param patterns - File patterns to process (supports globs)
  * @param options - Command options controlling dry-run, verbosity, JSON output, and recursion
- *
  * @returns Promise resolving to the aggregate conversion result
  */
 export async function waybackCommand(
-  patterns: string[],
-  options: WaybackOptions = {},
+  patterns: readonly string[],
+  options: Readonly<WaybackOptions> = {},
 ): Promise<WaybackResult> {
   let result: WaybackResult;
   try {
@@ -543,17 +554,14 @@ export async function waybackCommand(
  *
  * Per-file failures are collected into the result rather than thrown; only a failure to resolve any
  * file at all (invalid patterns, no matches) propagates to the caller.
- *
  * @param patterns - File patterns to process (supports globs)
  * @param options - Command options controlling dry-run, verbosity, JSON output, and recursion
- *
  * @returns Promise resolving to the aggregate conversion result
- *
  * @throws Error if no patterns are given or no markdown files match
  */
 async function convertPatterns(
-  patterns: string[],
-  options: WaybackOptions,
+  patterns: readonly string[],
+  options: Readonly<WaybackOptions>,
 ): Promise<WaybackResult> {
   if (patterns.length === 0) {
     throw new Error("At least one file pattern must be specified");
@@ -573,24 +581,41 @@ async function convertPatterns(
     errors: [],
   };
 
-  for (const file of files) {
-    try {
-      const fileResult = await processWaybackFile(file, result.dryRun);
-      result.files.push(fileResult);
-      result.totalConverted += fileResult.converted;
-      result.totalAlreadyArchived += fileResult.alreadyArchived;
-      result.totalUntouched += fileResult.untouched;
-      if (fileResult.modified) {
-        result.filesModified++;
+  const outcomes = await Promise.all(
+    files.map(async (file) => {
+      try {
+        return {
+          file,
+          fileResult: await processWaybackFile(file, result.dryRun),
+        };
+      } catch (error) {
+        return { file, error };
       }
-    } catch (error) {
+    }),
+  );
+
+  for (const outcome of outcomes) {
+    if ("error" in outcome) {
       result.success = false;
-      const message = error instanceof Error ? error.message : String(error);
-      result.errors.push(`Failed to process ${file}: ${message}`);
+      const message =
+        outcome.error instanceof Error
+          ? outcome.error.message
+          : String(outcome.error);
+      result.errors.push(`Failed to process ${outcome.file}: ${message}`);
+      continue;
+    }
+
+    const { fileResult } = outcome;
+    result.files.push(fileResult);
+    result.totalConverted += fileResult.converted;
+    result.totalAlreadyArchived += fileResult.alreadyArchived;
+    result.totalUntouched += fileResult.untouched;
+    if (fileResult.modified) {
+      result.filesModified++;
     }
   }
 
-  if (options.json) {
+  if (options.json === true) {
     console.log(JSON.stringify(result, null, 2));
   } else {
     printHumanSummary(result, options);
@@ -607,15 +632,14 @@ async function convertPatterns(
  *
  * Per-file detail and the change list are verbose-only; the summary block always prints so a plain
  * run still reports what happened.
- *
  * @param result - The aggregate conversion result to report
  * @param options - The command options controlling verbosity
  */
 function printHumanSummary(
   result: WaybackResult,
-  options: WaybackOptions,
+  options: Readonly<WaybackOptions>,
 ): void {
-  if (options.verbose) {
+  if (options.verbose === true) {
     console.log("🕸️ Starting Wayback Machine conversion...");
     if (result.dryRun) {
       console.log("Dry run mode: no files will be modified");

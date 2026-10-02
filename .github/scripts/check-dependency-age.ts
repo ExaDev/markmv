@@ -3,6 +3,13 @@ import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { parse } from "yaml";
 
+const MS_PER_SECOND = 1000;
+const SECONDS_PER_MINUTE = 60;
+const MINUTES_PER_HOUR = 60;
+const HOURS_PER_DAY = 24;
+const MS_PER_MINUTE = SECONDS_PER_MINUTE * MS_PER_SECOND;
+const MS_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR * MS_PER_MINUTE;
+
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -19,7 +26,8 @@ export function minimumAgeMsFromWorkspaceConfig(
       "pnpm-workspace.yaml has no numeric minimumReleaseAge setting",
     );
   }
-  return parsed.minimumReleaseAge * 60 * 1000;
+
+  return parsed.minimumReleaseAge * MS_PER_MINUTE;
 }
 
 export interface PackageVersion {
@@ -36,18 +44,20 @@ export function packageVersionsFromLockfile(yamlText: string): Set<string> {
   for (const key of Object.keys(doc.packages)) {
     entries.add(key.replace(/(\([^)]*\))+$/, ""));
   }
+
   return entries;
 }
 
 export function splitNameAndVersion(nameAtVersion: string): PackageVersion {
   const at = nameAtVersion.lastIndexOf("@");
+
   return {
     name: nameAtVersion.slice(0, at),
     version: nameAtVersion.slice(at + 1),
   };
 }
 
-function git(args: string[]): string {
+function git(args: readonly string[]): string {
   return execFileSync("git", args, { encoding: "utf8" });
 }
 
@@ -68,6 +78,7 @@ function publishedAt(name: string, version: string): Date {
       `pnpm info ${name} time --json had no timestamp for version ${version}`,
     );
   }
+
   return new Date(parsed[version]);
 }
 
@@ -113,16 +124,20 @@ function main(): void {
 
     const now = Date.now();
     const tooNew = introduced
-      .map((pkg) => ({ pkg, publishedAt: publishedAt(pkg.name, pkg.version) }))
-      .filter(({ publishedAt }) => now - publishedAt.getTime() < minimumAgeMs);
+      .map((pkg) => ({
+        pkg,
+        publishedTime: publishedAt(pkg.name, pkg.version),
+      }))
+      .filter(
+        ({ publishedTime }) => now - publishedTime.getTime() < minimumAgeMs,
+      );
 
     if (tooNew.length > 0) {
-      const minimumAgeDays = minimumAgeMs / (24 * 60 * 60 * 1000);
-      for (const { pkg, publishedAt } of tooNew) {
-        const ageDays = (
-          (now - publishedAt.getTime()) /
-          (24 * 60 * 60 * 1000)
-        ).toFixed(1);
+      const minimumAgeDays = minimumAgeMs / MS_PER_DAY;
+      for (const { pkg, publishedTime } of tooNew) {
+        const ageDays = ((now - publishedTime.getTime()) / MS_PER_DAY).toFixed(
+          1,
+        );
         console.log(
           `PR #${prNumber}: ${pkg.name}@${pkg.version} was published ${ageDays} days ago -- waiting for the ${String(minimumAgeDays)}-day grace period.`,
         );

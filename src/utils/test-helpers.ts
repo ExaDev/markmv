@@ -40,16 +40,10 @@ function getCaseSensitivity(): boolean {
 
   // Default assumptions based on platform
   const currentPlatform = platform();
-  switch (currentPlatform) {
-    case "win32":
-      return false; // Windows is typically case-insensitive
-    case "darwin":
-      return false; // macOS is typically case-insensitive (default APFS/HFS+)
-    case "linux":
-      return true; // Linux is typically case-sensitive
-    default:
-      return true; // Default to case-sensitive for unknown platforms
-  }
+
+  /* Windows and macOS (default APFS/HFS+) are typically case-insensitive; Linux and any
+     unknown platform are assumed case-sensitive */
+  return currentPlatform !== "win32" && currentPlatform !== "darwin";
 }
 
 /** Detect symbolic link support */
@@ -62,15 +56,10 @@ function getSymlinkSupport(): boolean {
 
   // Default assumptions based on platform
   const currentPlatform = platform();
-  switch (currentPlatform) {
-    case "win32":
-      return false; // Windows has limited symlink support
-    case "darwin":
-    case "linux":
-      return true; // Unix-like systems generally support symlinks
-    default:
-      return false; // Default to no symlink support for unknown platforms
-  }
+
+  /* Unix-like systems generally support symlinks; Windows has limited support and unknown
+     platforms are assumed not to */
+  return currentPlatform === "darwin" || currentPlatform === "linux";
 }
 
 /** Normalize path for the current platform */
@@ -85,7 +74,7 @@ export function normalizePath(path: string): string {
 }
 
 /** Create a path using the appropriate separator for the current platform */
-export function createPath(...segments: string[]): string {
+export function createPath(...segments: readonly string[]): string {
   const platformInfo = getPlatformInfo();
 
   if (platformInfo.isWindows) {
@@ -198,6 +187,7 @@ export function createConditionalTest(testFn: {
 export function fileExists(filePath: string): boolean {
   try {
     accessSync(filePath, constants.F_OK);
+
     return true;
   } catch {
     return false;
@@ -210,13 +200,15 @@ export const PLATFORM_TEST_PATHS = {
     absolute: ["C:\\Users\\test\\file.txt", "D:\\projects\\readme.md"],
     relative: ["subfolder\\document.md", "nested\\dir\\file.txt"],
     invalid: ["C:", "C:\\con", "C:\\prn", "C:\\aux"],
-    traversal: ["..\\parent\\file.txt"], // Separate category for path traversal tests
+    // Separate category for path traversal tests
+    traversal: ["..\\parent\\file.txt"],
   },
   unix: {
     absolute: ["/home/test/file.txt", "/usr/local/bin/script"],
     relative: ["subfolder/document.md", "nested/dir/file.txt"],
     invalid: ["", "\0path"],
-    traversal: ["../parent/file.txt"], // Separate category for path traversal tests
+    // Separate category for path traversal tests
+    traversal: ["../parent/file.txt"],
   },
 };
 

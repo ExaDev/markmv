@@ -25,16 +25,85 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+/** Whether an optional string holds any text; an empty string is treated like an absent one. */
+function isNonEmpty(value: string | undefined): value is string {
+  return value !== undefined && value !== "";
+}
+
+/** Print the changes a dry run would make, with before and after values where both are known. */
+function logPlannedChanges(changes: readonly OperationChange[]): void {
+  console.log("Dry run - changes that would be made:");
+  for (const change of changes) {
+    console.log(`  ${change.type}: ${change.filePath}`);
+    if (isNonEmpty(change.oldValue) && isNonEmpty(change.newValue)) {
+      console.log(`    ${change.oldValue} → ${change.newValue}`);
+    }
+  }
+}
+
+/** Mutable planning state shared by every step of a batch move's content-rewrite pass. */
+interface BatchPlan {
+  /** Current content of every parsed file, updated as earlier moves in the batch plan rewrites so later moves build on them. */
+  readonly fileContents: Map<string, string>;
+  /** Transaction collecting the planned writes. */
+  readonly transaction: TransactionManager;
+  /** When set, nothing is staged on the transaction. */
+  readonly dryRun: boolean;
+  /** Files whose content a rewrite changed. */
+  readonly modifiedFiles: Set<string>;
+  /** Every individual link change planned. */
+  readonly allChanges: OperationChange[];
+  /** Non-fatal problems reported by the refactorer. */
+  readonly warnings: string[];
+}
+
+/** A dependent file and the move that affects it. */
+interface BatchDependentTarget {
+  /** Key of the dependent file in the dependency graph. */
+  readonly dependentFilePath: string;
+  /** The parsed dependent file. */
+  readonly dependentFile: ParsedMarkdownFile;
+  /** Source path of the move being planned. */
+  readonly source: string;
+  /** Destination path of the move being planned. */
+  readonly destination: string;
+}
+
+/** A moved file whose own links are rewritten against the whole batch. */
+interface BatchSelfTarget {
+  /** The parsed moved file. */
+  readonly sourceFile: ParsedMarkdownFile;
+  /** Source path of the moved file. */
+  readonly source: string;
+  /** Destination path of the moved file. */
+  readonly destination: string;
+  /** Final location of every file the batch moves, keyed by resolved source path. */
+  readonly movedPathMap: Map<string, string>;
+}
+
+/** The result of refactoring one dependent file, or the failure that prevented it. */
+type DependentRefactorOutcome =
+  | {
+      readonly dependentFilePath: string;
+      readonly refactorResult: LinkRefactorResult;
+      readonly failure?: never;
+    }
+  | {
+      readonly dependentFilePath: string;
+      readonly failure: string;
+      readonly refactorResult?: never;
+    };
+
 /**
  * Order a batch of relocations so that a move whose destination is another relocation's source runs after that source has vacated it, making the batch's outcome independent of argument order. The order also governs the per-move link rewriting, which must see each move's source path free of any earlier move's output: a link rewritten to a vacated path would be rewritten again by the move that later claims that path.
  *
  * Relocations that cannot be ordered form rename cycles (a swap or rotation, where every remaining move's destination is freed only by another cyclic move). These are returned separately for rejection: no execution order completes them, and per-move link rewriting cannot express a permutation of paths.
- *
  * @param moves - Relocations to order; sources and destinations must already be resolved and unique
- *
  * @returns The relocations in execution order, plus any that form cycles and could not be ordered
  */
-function orderRelocations(moves: { source: string; destination: string }[]): {
+function orderRelocations(
+  moves: readonly { source: string; destination: string }[],
+): {
   ordered: { source: string; destination: string }[];
   cyclic: { source: string; destination: string }[];
 } {
@@ -69,6 +138,7 @@ function orderRelocations(moves: { source: string; destination: string }[]): {
       }
     }
   }
+
   return {
     ordered,
     cyclic: [...blocked],
@@ -82,7 +152,9 @@ function orderRelocations(moves: { source: string; destination: string }[]): {
  * combined list carries duplicates; vault-wide wikilink analysis (stem counts, duplicate detection)
  * must see each note exactly once or every moved file reports itself as a duplicate.
  */
-function uniqueByFilePath(files: ParsedMarkdownFile[]): ParsedMarkdownFile[] {
+function uniqueByFilePath(
+  files: readonly ParsedMarkdownFile[],
+): ParsedMarkdownFile[] {
   return Array.from(
     new Map(files.map((file) => [file.filePath, file])).values(),
   );
@@ -93,41 +165,40 @@ function uniqueByFilePath(files: ParsedMarkdownFile[]): ParsedMarkdownFile[] {
  *
  * This class provides the main functionality for moving, splitting, joining, and merging markdown
  * files while maintaining the integrity of cross-references and links.
- *
  * @category Core
- *
  * @example
- *   Basic file move
- *   ```typescript
- *   const fileOps = new FileOperations();
- *   const result = await fileOps.moveFile('old.md', 'new.md');
+ * Basic file move
+ * ```typescript
+ * const fileOps = new FileOperations();
+ * const result = await fileOps.moveFile('old.md', 'new.md');
  *
- *   if (result.success) {
- *     console.log(`Successfully moved file and updated ${result.modifiedFiles.length} references`);
- *   } else {
- *     console.error('Move failed:', result.errors);
- *   }
- *   ```
- *
+ * if (result.success) {
+ *   console.log(`Successfully moved file and updated ${result.modifiedFiles.length} references`);
+ * } else {
+ *   console.error('Move failed:', result.errors);
+ * }
+ * ```
  * @example
- *   Dry run with verbose output
- *   ```typescript
- *   const fileOps = new FileOperations();
- *   const result = await fileOps.moveFile('docs/guide.md', 'tutorials/guide.md', {
- *       dryRun: true,
- *       verbose: true
- *   });
+ * Dry run with verbose output
+ * ```typescript
+ * const fileOps = new FileOperations();
+ * const result = await fileOps.moveFile('docs/guide.md', 'tutorials/guide.md', {
+ *     dryRun: true,
+ *     verbose: true
+ * });
  *
- *   // Preview changes without actually modifying files
- *   result.changes.forEach(change => {
- *       console.log(`${change.type}: ${change.filePath} - ${change.description}`);
- *   });
- *   ```
+ * // Preview changes without actually modifying files
+ * result.changes.forEach(change => {
+ *     console.log(`${change.type}: ${change.filePath} - ${change.description}`);
+ * });
+ * ```
  */
 export class FileOperations {
-  private linkParser = new LinkParser();
+  private readonly linkParser = new LinkParser();
+
   private linkRefactorer = new LinkRefactorer();
-  private linkValidator = new LinkValidator();
+
+  private readonly linkValidator = new LinkValidator();
 
   /**
    * Move a file (markdown, or a non-markdown asset such as an image) and update all links that
@@ -143,31 +214,28 @@ export class FileOperations {
    *
    * A non-markdown source (an image, for example) is moved as-is; only the markdown files that link
    * to it are updated, since it has no markdown links of its own to refactor.
-   *
    * @example
-   *   ```typescript
-   *   const fileOps = new FileOperations();
+   * ```typescript
+   * const fileOps = new FileOperations();
    *
-   *   // Simple move
-   *   await fileOps.moveFile('docs/old.md', 'docs/new.md');
+   * // Simple move
+   * await fileOps.moveFile('docs/old.md', 'docs/new.md');
    *
-   *   // Move to directory (filename preserved)
-   *   await fileOps.moveFile('guide.md', './docs/');
+   * // Move to directory (filename preserved)
+   * await fileOps.moveFile('guide.md', './docs/');
    *
-   *   // Move a linked image, updating any markdown files that reference it
-   *   await fileOps.moveFile('image.png', 'assets/image.png');
+   * // Move a linked image, updating any markdown files that reference it
+   * await fileOps.moveFile('image.png', 'assets/image.png');
    *
-   *   // Dry run with verbose output
-   *   const result = await fileOps.moveFile('api.md', 'reference/api.md', {
-   *     dryRun: true,
-   *     verbose: true
-   *   });
-   *   ```;
-   *
+   * // Dry run with verbose output
+   * const result = await fileOps.moveFile('api.md', 'reference/api.md', {
+   *   dryRun: true,
+   *   verbose: true
+   * });
+   * ```
    * @param sourcePath - The current path of the file to move
    * @param destinationPath - The target path (can be a directory)
    * @param options - Configuration options for the move operation
-   *
    * @returns Promise resolving to detailed operation results
    */
   async moveFile(
@@ -264,47 +332,65 @@ export class FileOperations {
         );
       }
 
-      // Plan link updates in all dependent files
-      for (const dependentFilePath of dependentFiles) {
-        const dependentFile = dependencyGraph.getNode(dependentFilePath)?.data;
-        if (!dependentFile) continue;
+      // Plan link updates in all dependent files. Each file is refactored independently, so the work runs concurrently; the results are applied in dependent order so changes and warnings keep a stable order.
+      const dependentOutcomes = await Promise.all(
+        dependentFiles.map(
+          async (
+            dependentFilePath,
+          ): Promise<DependentRefactorOutcome | undefined> => {
+            const dependentFile =
+              dependencyGraph.getNode(dependentFilePath)?.data;
+            if (!dependentFile) return undefined;
 
-        try {
-          const refactorResult: LinkRefactorResult =
-            await this.linkRefactorer.refactorLinksForFileMove(
-              dependentFile,
-              sourcePath,
-              resolvedDestination,
-            );
+            try {
+              const refactorResult: LinkRefactorResult =
+                await this.linkRefactorer.refactorLinksForFileMove(
+                  dependentFile,
+                  sourcePath,
+                  resolvedDestination,
+                );
 
-          if (refactorResult.changes.length > 0) {
-            modifiedFiles.push(dependentFilePath);
-            changes.push(...refactorResult.changes);
-
-            if (!dryRun) {
-              transaction.addContentUpdate(
-                dependentFilePath,
-                refactorResult.updatedContent,
-                `Update links in ${dependentFilePath}`,
-              );
+              return { dependentFilePath, refactorResult };
+            } catch (error) {
+              return { dependentFilePath, failure: errorMessage(error) };
             }
-          }
+          },
+        ),
+      );
 
-          if (refactorResult.errors.length > 0) {
-            warnings.push(...refactorResult.errors);
-          }
-        } catch (error) {
+      for (const outcome of dependentOutcomes) {
+        if (outcome === undefined) continue;
+        if (outcome.failure !== undefined) {
           warnings.push(
-            `Failed to process ${dependentFilePath}: ${errorMessage(error)}`,
+            `Failed to process ${outcome.dependentFilePath}: ${outcome.failure}`,
           );
+          continue;
+        }
+
+        const { dependentFilePath, refactorResult } = outcome;
+        if (refactorResult.changes.length > 0) {
+          modifiedFiles.push(dependentFilePath);
+          changes.push(...refactorResult.changes);
+
+          if (!dryRun) {
+            transaction.addContentUpdate(
+              dependentFilePath,
+              refactorResult.updatedContent,
+              `Update links in ${dependentFilePath}`,
+            );
+          }
+        }
+
+        if (refactorResult.errors.length > 0) {
+          warnings.push(...refactorResult.errors);
         }
       }
 
       // Update links within the moved file itself (a non-markdown asset has no internal links to refactor and is moved as raw bytes, so this step only applies to markdown sources).
       if (sourceFile) {
         try {
-          // The file's own relocation is in the map so self-links point at the destination
-          // rather than the vacated path
+          /* The file's own relocation is in the map so self-links point at the destination
+             rather than the vacated path */
           const selfRefactorResult =
             await this.linkRefactorer.refactorLinksForCurrentFileMove(
               sourceFile,
@@ -314,21 +400,16 @@ export class FileOperations {
               ]),
             );
 
-          if (selfRefactorResult.changes.length > 0) {
-            changes.push(...selfRefactorResult.changes);
-
-            if (!dryRun) {
-              transaction.addContentUpdate(
-                resolvedDestination,
-                selfRefactorResult.updatedContent,
-                "Update internal links in moved file",
-              );
-            }
+          changes.push(...selfRefactorResult.changes);
+          if (!dryRun && selfRefactorResult.changes.length > 0) {
+            transaction.addContentUpdate(
+              resolvedDestination,
+              selfRefactorResult.updatedContent,
+              "Update internal links in moved file",
+            );
           }
 
-          if (selfRefactorResult.errors.length > 0) {
-            warnings.push(...selfRefactorResult.errors);
-          }
+          warnings.push(...selfRefactorResult.errors);
         } catch (error) {
           warnings.push(
             `Failed to update links in source file: ${errorMessage(error)}`,
@@ -339,13 +420,7 @@ export class FileOperations {
       // Execute transaction or return dry-run results
       if (dryRun) {
         if (verbose) {
-          console.log("Dry run - changes that would be made:");
-          for (const change of changes) {
-            console.log(`  ${change.type}: ${change.filePath}`);
-            if (change.oldValue && change.newValue) {
-              console.log(`    ${change.oldValue} → ${change.newValue}`);
-            }
-          }
+          logPlannedChanges(changes);
         }
 
         return {
@@ -401,7 +476,7 @@ export class FileOperations {
 
   /** Move multiple files in a single operation */
   async moveFiles(
-    moves: { source: string; destination: string }[],
+    moves: readonly { source: string; destination: string }[],
     options: MoveOperationOptions = {},
   ): Promise<OperationResult> {
     const { dryRun = false } = options;
@@ -513,16 +588,22 @@ export class FileOperations {
 
       // Parse markdown sources and build a comprehensive dependency graph. Non-markdown assets (e.g. images) have no links of their own to parse or refactor, so they are moved as raw bytes and never added to the dependency graph as nodes; they can still be discovered as dependencies of the markdown files that link to them.
       const allFiles: ParsedMarkdownFile[] = [];
-      const fileContents = new Map<string, string>(); // Store original file contents
+      // Store original file contents
+      const fileContents = new Map<string, string>();
 
-      for (const { source } of resolvedMoves) {
-        if (!PathUtils.isMarkdownFile(source)) continue;
-
-        const sourceFile = await this.linkParser.parseFile(source);
+      const markdownSources = resolvedMoves
+        .map(({ source }) => source)
+        .filter((source) => PathUtils.isMarkdownFile(source));
+      const parsedSources = await Promise.all(
+        markdownSources.map(async (source) => ({
+          source,
+          sourceFile: await this.linkParser.parseFile(source),
+          // The original content, stored before any moves
+          content: await FileUtils.readTextFile(source),
+        })),
+      );
+      for (const { source, sourceFile, content } of parsedSources) {
         allFiles.push(sourceFile);
-
-        // Store the original content before any moves
-        const content = await FileUtils.readTextFile(source);
         fileContents.set(source, content);
       }
 
@@ -550,13 +631,20 @@ export class FileOperations {
           .filter(({ source }) => PathUtils.isMarkdownFile(source))
           .map((m) => m.source),
       );
-      for (const filePath of [
+      const unreadPaths = [
         ...sourceFilePaths,
         ...projectFiles.map((f) => f.filePath),
-      ]) {
-        if (!fileContents.has(filePath) && (await FileUtils.exists(filePath))) {
-          const content = await FileUtils.readTextFile(filePath);
-          fileContents.set(filePath, content);
+      ].filter((filePath) => !fileContents.has(filePath));
+      const unreadContents = await Promise.all(
+        unreadPaths.map(async (filePath) =>
+          (await FileUtils.exists(filePath))
+            ? { filePath, content: await FileUtils.readTextFile(filePath) }
+            : undefined,
+        ),
+      );
+      for (const entry of unreadContents) {
+        if (entry !== undefined && !fileContents.has(entry.filePath)) {
+          fileContents.set(entry.filePath, entry.content);
         }
       }
 
@@ -584,134 +672,44 @@ export class FileOperations {
         ]),
       );
 
-      for (const { source, destination } of orderedMoves) {
-        // Find dependent files (files that depend on the source file being moved)
-        const dependentFiles = dependencyGraph.getDependents(source);
+      const plan: BatchPlan = {
+        fileContents,
+        transaction,
+        dryRun,
+        modifiedFiles,
+        allChanges,
+        warnings,
+      };
 
-        // Process dependent files
+      // Sequential by design: each move's rewrites build on the content the earlier moves already planned, so the order is the semantics.
+      for (const { source, destination } of orderedMoves) {
+        // Find dependent files (files that depend on the source file being moved). A dependent that is itself being moved in this batch is skipped here: its own self pass rewrites its links against every move in the batch through movedPathMap, so handling it here as well would record the same rewrite twice and stage a redundant partial content write
+        const dependentFiles = dependencyGraph
+          .getDependents(source)
+          .filter((dependentPath) => !batchSources.has(dependentPath));
+
         for (const dependentFilePath of dependentFiles) {
           const dependentFile =
             dependencyGraph.getNode(dependentFilePath)?.data;
           if (!dependentFile) continue;
 
-          // A dependent that is itself being moved in this batch is skipped here: its own self pass rewrites its links against every move in the batch through movedPathMap, so handling it here as well would record the same rewrite twice and stage a redundant partial content write
-          if (batchSources.has(dependentFilePath)) {
-            continue;
-          }
-
-          const actualDependentFile = dependentFile;
-          const actualDependentPath = dependentFilePath;
-          const contentToUse = fileContents.get(dependentFile.filePath);
-
-          if (!contentToUse) {
-            // Fallback to reading from file system
-            const refactorResult =
-              await this.linkRefactorer.refactorLinksForFileMove(
-                actualDependentFile,
-                source,
-                destination,
-              );
-
-            if (refactorResult.changes.length > 0) {
-              modifiedFiles.add(actualDependentPath);
-              allChanges.push(...refactorResult.changes);
-
-              if (!dryRun) {
-                transaction.addContentUpdate(
-                  actualDependentPath,
-                  refactorResult.updatedContent,
-                );
-              }
-
-              // Update stored content so subsequent moves in this batch build on it
-              fileContents.set(
-                actualDependentPath,
-                refactorResult.updatedContent,
-              );
-            }
-
-            warnings.push(...refactorResult.errors);
-          } else {
-            // Use stored content
-            const refactorResult =
-              this.linkRefactorer.refactorLinksForFileMoveWithContent(
-                actualDependentFile,
-                source,
-                destination,
-                contentToUse,
-              );
-
-            if (refactorResult.changes.length > 0) {
-              modifiedFiles.add(actualDependentPath);
-              allChanges.push(...refactorResult.changes);
-
-              if (!dryRun) {
-                transaction.addContentUpdate(
-                  actualDependentPath,
-                  refactorResult.updatedContent,
-                );
-              }
-
-              // Update stored content for subsequent processing
-              fileContents.set(
-                actualDependentPath,
-                refactorResult.updatedContent,
-              );
-            }
-
-            warnings.push(...refactorResult.errors);
-          }
+          await this.planBatchDependentUpdate(plan, {
+            dependentFilePath,
+            dependentFile,
+            source,
+            destination,
+          });
         }
 
         // Update the moved file itself
         const sourceFile = allFiles.find((f) => f.filePath === source);
         if (sourceFile) {
-          // Use stored content instead of reading from file system
-          const originalContent = fileContents.get(source);
-          if (originalContent) {
-            const selfRefactorResult =
-              this.linkRefactorer.refactorLinksForCurrentFileMoveWithContent(
-                sourceFile,
-                destination,
-                originalContent,
-                movedPathMap,
-              );
-
-            if (selfRefactorResult.changes.length > 0) {
-              allChanges.push(...selfRefactorResult.changes);
-
-              if (!dryRun) {
-                transaction.addContentUpdate(
-                  destination,
-                  selfRefactorResult.updatedContent,
-                );
-              }
-            }
-
-            // The original content is deliberately not published under the destination key: in a chained rename one move's destination is another move's source, and overwriting that source's stored original would make the later self pass refactor the wrong file's content
-            warnings.push(...selfRefactorResult.errors);
-          } else {
-            // Fallback to the original method if content not found
-            const selfRefactorResult =
-              await this.linkRefactorer.refactorLinksForCurrentFileMove(
-                sourceFile,
-                destination,
-                movedPathMap,
-              );
-
-            if (selfRefactorResult.changes.length > 0) {
-              allChanges.push(...selfRefactorResult.changes);
-
-              if (!dryRun) {
-                transaction.addContentUpdate(
-                  destination,
-                  selfRefactorResult.updatedContent,
-                );
-              }
-            }
-
-            warnings.push(...selfRefactorResult.errors);
-          }
+          await this.planBatchSelfUpdate(plan, {
+            sourceFile,
+            source,
+            destination,
+            movedPathMap,
+          });
         }
       }
 
@@ -756,6 +754,90 @@ export class FileOperations {
         changes: [],
       };
     }
+  }
+
+  /**
+   * Plan the link rewrite one move requires in a dependent file, from the file's stored content when one is held and from disk otherwise, and stage it on the batch transaction.
+   * @param plan - The batch's planning state
+   * @param target - The dependent file and the move that affects it
+   */
+  private async planBatchDependentUpdate(
+    plan: BatchPlan,
+    target: BatchDependentTarget,
+  ): Promise<void> {
+    const { dependentFilePath, dependentFile, source, destination } = target;
+    const storedContent = plan.fileContents.get(dependentFile.filePath);
+
+    const refactorResult = isNonEmpty(storedContent)
+      ? this.linkRefactorer.refactorLinksForFileMoveWithContent(
+          dependentFile,
+          source,
+          destination,
+          storedContent,
+        )
+      : await this.linkRefactorer.refactorLinksForFileMove(
+          dependentFile,
+          source,
+          destination,
+        );
+
+    if (refactorResult.changes.length > 0) {
+      plan.modifiedFiles.add(dependentFilePath);
+      plan.allChanges.push(...refactorResult.changes);
+
+      if (!plan.dryRun) {
+        plan.transaction.addContentUpdate(
+          dependentFilePath,
+          refactorResult.updatedContent,
+        );
+      }
+
+      // Update stored content so subsequent moves in this batch build on it
+      plan.fileContents.set(dependentFilePath, refactorResult.updatedContent);
+    }
+
+    plan.warnings.push(...refactorResult.errors);
+  }
+
+  /**
+   * Plan the rewrite of a moved file's own links against the final location of every target in the batch, from its stored original content when one is held and from disk otherwise, and stage it on the batch transaction.
+   *
+   * The original content is deliberately not published under the destination key: in a chained rename one move's destination is another move's source, and overwriting that source's stored original would make the later self pass refactor the wrong file's content.
+   * @param plan - The batch's planning state
+   * @param target - The moved file and the batch's path map
+   */
+  private async planBatchSelfUpdate(
+    plan: BatchPlan,
+    target: BatchSelfTarget,
+  ): Promise<void> {
+    const { sourceFile, source, destination, movedPathMap } = target;
+    const originalContent = plan.fileContents.get(source);
+
+    const selfRefactorResult = isNonEmpty(originalContent)
+      ? this.linkRefactorer.refactorLinksForCurrentFileMoveWithContent(
+          sourceFile,
+          destination,
+          originalContent,
+          movedPathMap,
+        )
+      : await this.linkRefactorer.refactorLinksForCurrentFileMove(
+          sourceFile,
+          destination,
+          movedPathMap,
+        );
+
+    if (selfRefactorResult.changes.length > 0) {
+      plan.allChanges.push(...selfRefactorResult.changes);
+
+      if (!plan.dryRun) {
+        plan.transaction.addContentUpdate(
+          destination,
+          selfRefactorResult.updatedContent,
+        );
+      }
+    }
+
+    plan.warnings.push(...selfRefactorResult.errors);
   }
 
   private validateMoveOperation(
@@ -818,7 +900,7 @@ export class FileOperations {
     return { valid: true };
   }
 
-  private async discoverProjectFiles(seedPaths: string[]): Promise<{
+  private async discoverProjectFiles(seedPaths: readonly string[]): Promise<{
     files: ParsedMarkdownFile[];
     parseFailures: {
       file: string;
@@ -841,28 +923,41 @@ export class FileOperations {
       );
 
       // Parse all files; a file that fails to parse is reported rather than silently dropped, because its links cannot be discovered or rewritten
+      const parseOutcomes = await Promise.all(
+        markdownFiles.map(async (filePath) => {
+          try {
+            return {
+              parsed: await this.linkParser.parseFile(filePath),
+            };
+          } catch (error) {
+            return {
+              failure: {
+                file: filePath,
+                error: errorMessage(error),
+                stack: error instanceof Error ? error.stack : undefined,
+              },
+            };
+          }
+        }),
+      );
       const parsedFiles: ParsedMarkdownFile[] = [];
       const parseFailures: {
         file: string;
         error: string;
         stack?: string | undefined;
       }[] = [];
-      for (const filePath of markdownFiles) {
-        try {
-          const parsed = await this.linkParser.parseFile(filePath);
-          parsedFiles.push(parsed);
-        } catch (error) {
-          parseFailures.push({
-            file: filePath,
-            error: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : undefined,
-          });
+      for (const outcome of parseOutcomes) {
+        if ("parsed" in outcome) {
+          parsedFiles.push(outcome.parsed);
+        } else {
+          parseFailures.push(outcome.failure);
         }
       }
 
       return { files: parsedFiles, parseFailures, vaultRoot: projectRoot };
     } catch (error) {
       console.warn(`Failed to discover project files: ${errorMessage(error)}`);
+
       return {
         files: [],
         parseFailures: [],
@@ -879,20 +974,19 @@ export class FileOperations {
    * between a bare stem and a path-qualified rewrite, and ambiguous or duplicate note names are
    * surfaced as warnings -- a duplicate makes every bare wikilink to it resolve by path proximity,
    * so a move can silently rebind those links without any text changing.
-   *
    * @param files - Every parsed markdown file in the scanned tree
    * @param vaultRoot - Root of the scanned tree, the base for vault-relative rewrites
    * @param options - The operation's options; obsidian mode activates when set
-   *
    * @returns Warnings about ambiguous wikilinks and duplicate note names
    */
   private prepareObsidianMode(
-    files: ParsedMarkdownFile[],
+    files: readonly ParsedMarkdownFile[],
     vaultRoot: string,
     options: MoveOperationOptions,
   ): string[] {
-    if (!options.obsidian) {
+    if (options.obsidian !== true) {
       this.linkRefactorer = new LinkRefactorer();
+
       return [];
     }
 
@@ -914,14 +1008,13 @@ export class FileOperations {
         noteStemCounts: computeNoteStemCounts(files),
       },
     });
+
     return warnings;
   }
 
   /**
    * Validates the links in every file an operation modified or created, skipping any that no longer exist on disk. A failure during validation is reported in the result rather than thrown.
-   *
    * @param result - Result of the operation to check.
-   *
    * @returns Whether the files are free of broken links, with the number of broken links and an error message for each.
    */
   async validateOperation(result: OperationResult): Promise<{
@@ -935,13 +1028,16 @@ export class FileOperations {
     try {
       const allFiles = [...result.modifiedFiles, ...result.createdFiles];
 
-      const parsedFiles: ParsedMarkdownFile[] = [];
-      for (const filePath of allFiles) {
-        if (await FileUtils.exists(filePath)) {
-          const parsed = await this.linkParser.parseFile(filePath);
-          parsedFiles.push(parsed);
-        }
-      }
+      const parsedOrAbsent = await Promise.all(
+        allFiles.map(async (filePath) =>
+          (await FileUtils.exists(filePath))
+            ? this.linkParser.parseFile(filePath)
+            : undefined,
+        ),
+      );
+      const parsedFiles = parsedOrAbsent.filter(
+        (parsed): parsed is ParsedMarkdownFile => parsed !== undefined,
+      );
 
       const validationResult =
         await this.linkValidator.validateFiles(parsedFiles);
