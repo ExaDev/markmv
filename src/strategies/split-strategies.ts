@@ -362,7 +362,7 @@ export class HeaderBasedSplitStrategy extends BaseSplitStrategy {
     }
 
     if (sections.length === 0) {
-      errors.push(`No headers found at level ${String(targetLevel)} or above`);
+      errors.push(`No headers found at level ${String(targetLevel)}`);
     }
 
     return Promise.resolve({
