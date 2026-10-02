@@ -1,6 +1,10 @@
 # A newly published package version can't be installed until this many minutes have passed, giving a compromised release time to be caught and pulled before it reaches this project. 10080 minutes = 7 days, matching the global npm/pnpm min-release-age configured on this machine.
 minimumReleaseAge: 10080
 
+# ExaDev publishes this package itself, so its releases are exempt from the age gate meant for third-party packages.
+minimumReleaseAgeExclude:
+  - "@exadev/eslint-config"
+
 # Moved from package.json's pnpm.overrides field -- pnpm 11 no longer reads settings from package.json's pnpm field.
 overrides:
   rollup: 4.62.4
