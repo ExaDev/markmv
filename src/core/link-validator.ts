@@ -99,6 +99,11 @@ export class LinkValidator {
   private freshnessDetector?: ContentFreshnessDetector;
   private authDetector?: AuthDetector;
 
+  /**
+   * Creates a validator, filling any option left unset with its default: external links unchecked, a 5000 ms external timeout, missing internal files treated as errors, Claude imports checked, freshness and authentication detection off, authentication-required links allowed, wikilinks unchecked, no skipped domains and 2 retries for transient external failures. The freshness and authentication detectors are created only when their option is enabled.
+   *
+   * @param options - Validation options.
+   */
   constructor(options: LinkValidatorOptions = {}) {
     this.options = {
       checkExternal: options.checkExternal ?? false,
@@ -131,6 +136,13 @@ export class LinkValidator {
     }
   }
 
+  /**
+   * Validates every link in each of the given files.
+   *
+   * @param files - Parsed markdown files to check.
+   *
+   * @returns A result that is valid only when no broken links were found, with the number of files and links checked.
+   */
   async validateFiles(files: ParsedMarkdownFile[]): Promise<ValidationResult> {
     const brokenLinks: BrokenLink[] = [];
     const warnings: string[] = [];
@@ -151,6 +163,13 @@ export class LinkValidator {
     };
   }
 
+  /**
+   * Validates every link in one file.
+   *
+   * @param file - Parsed markdown file to check.
+   *
+   * @returns The broken links found, empty when every link is valid or skipped by the options.
+   */
   async validateFile(file: ParsedMarkdownFile): Promise<BrokenLink[]> {
     const brokenLinks: BrokenLink[] = [];
 
@@ -164,6 +183,14 @@ export class LinkValidator {
     return brokenLinks;
   }
 
+  /**
+   * Validates one link according to its type and the validator's options. Link types whose checking is disabled, and reference links, are treated as valid. An unexpected failure while checking is reported as an `invalid-format` broken link rather than thrown.
+   *
+   * @param link - Link to check.
+   * @param sourceFile - Path of the file containing the link.
+   *
+   * @returns A broken link description, or `null` when the link is valid or not checked.
+   */
   async validateLink(
     link: MarkdownLink,
     sourceFile: string,
@@ -508,10 +535,21 @@ export class LinkValidator {
     }
   }
 
+  /**
+   * Combines link validation with circular reference detection across a set of files.
+   *
+   * @param files - Parsed markdown files to check.
+   *
+   * @returns A result whose `valid` flag is true only when there are no broken links and no cycles, plus the cycles, the broken links and any warnings.
+   */
   async validateLinkIntegrity(files: ParsedMarkdownFile[]): Promise<{
+    /** True when there are no broken links and no circular references */
     valid: boolean;
+    /** Dependency cycles found, each as a path of files */
     circularReferences: string[][];
+    /** Broken links found across the files */
     brokenLinks: BrokenLink[];
+    /** Warnings raised during validation, including a note when circular references exist */
     warnings: string[];
   }> {
     const validationResult = await this.validateFiles(files);
@@ -544,7 +582,10 @@ export class LinkValidator {
   async validateLinks(
     links: MarkdownLink[],
     sourceFile: string,
-  ): Promise<{ brokenLinks: BrokenLink[] }> {
+  ): Promise<{
+    /** Broken links found among the given links */
+    brokenLinks: BrokenLink[];
+  }> {
     const brokenLinks: BrokenLink[] = [];
 
     for (const link of links) {
@@ -558,14 +599,19 @@ export class LinkValidator {
   }
 
   /**
-   * Check for circular references - overloaded method that supports both parsed files and file
-   * paths.
+   * Checks for circular references. With parsed files, follows each file's dependencies and returns every cycle found as a path of files. With plain path strings there is no dependency information to follow, so the result always reports no circular references.
+   *
+   * @param files - Parsed markdown files or file paths to check.
+   *
+   * @returns The cycles for parsed files, or a summary object for paths.
    */
   async checkCircularReferences(
     files: ParsedMarkdownFile[],
   ): Promise<string[][]>;
   async checkCircularReferences(files: string[]): Promise<{
+    /** Whether a circular reference was found */
     hasCircularReferences: boolean;
+    /** Paths forming the circular reference, when one was found */
     circularPaths?: string[] | undefined;
   }>;
   checkCircularReferences(files: ParsedMarkdownFile[] | string[]): Promise<
@@ -633,14 +679,7 @@ export class LinkValidator {
     }
   }
 
-  /**
-   * Validates anchor links by checking if the target heading exists in the file.
-   *
-   * @param link - The anchor link to validate
-   * @param sourceFile - Path to the file containing the link
-   *
-   * @returns Promise resolving to BrokenLink if invalid, null if valid
-   */
+  /** Validates a wikilink or transclusion by resolving its target against the vault, reporting ambiguous matches and missing notes. */
   private async validateWikilinkLink(
     link: MarkdownLink,
     sourceFile: string,
@@ -683,6 +722,14 @@ export class LinkValidator {
     }
   }
 
+  /**
+   * Validates anchor links by checking if the target heading exists in the file.
+   *
+   * @param link - The anchor link to validate
+   * @param sourceFile - Path to the file containing the link
+   *
+   * @returns Promise resolving to BrokenLink if invalid, null if valid
+   */
   private async validateAnchorLink(
     link: MarkdownLink,
     sourceFile: string,

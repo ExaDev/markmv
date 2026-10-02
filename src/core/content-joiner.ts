@@ -60,6 +60,9 @@ import { LinkParser } from "./link-parser.js";
 export class ContentJoiner {
   private linkParser: LinkParser;
 
+  /**
+   * Creates a joiner with its own link parser, used to rewrite links in the joined content.
+   */
   constructor() {
     this.linkParser = new LinkParser();
   }

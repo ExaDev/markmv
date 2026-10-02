@@ -53,6 +53,9 @@ interface TextNode extends Node {
 export class LinkConverter {
   private parser: LinkParser;
 
+  /**
+   * Creates a converter with its own link parser.
+   */
   constructor() {
     this.parser = new LinkParser();
   }
@@ -420,7 +423,7 @@ export class LinkConverter {
     return "markdown";
   }
 
-  /** Convert link to combined format [@url](url). */
+  /** Convert link to combined format `[@url](url)`. */
   private convertToCombined(
     node: LinkNode,
     text: string,
@@ -481,7 +484,7 @@ export class LinkConverter {
     return false;
   }
 
-  /** Convert link to standard markdown format [text](url). */
+  /** Convert link to standard markdown format `[text](url)`. */
   private convertToMarkdown(
     node: LinkNode,
     text: string,

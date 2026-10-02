@@ -76,6 +76,19 @@ function orderRelocations(moves: { source: string; destination: string }[]): {
 }
 
 /**
+ * Collapse a parsed file list to one entry per path.
+ *
+ * Move operations parse the moved sources directly and again during project discovery, so the
+ * combined list carries duplicates; vault-wide wikilink analysis (stem counts, duplicate detection)
+ * must see each note exactly once or every moved file reports itself as a duplicate.
+ */
+function uniqueByFilePath(files: ParsedMarkdownFile[]): ParsedMarkdownFile[] {
+  return Array.from(
+    new Map(files.map((file) => [file.filePath, file])).values(),
+  );
+}
+
+/**
  * Core class for performing markdown file operations with intelligent link refactoring.
  *
  * This class provides the main functionality for moving, splitting, joining, and merging markdown
@@ -111,19 +124,6 @@ function orderRelocations(moves: { source: string; destination: string }[]): {
  *   });
  *   ```
  */
-/**
- * Collapse a parsed file list to one entry per path.
- *
- * Move operations parse the moved sources directly and again during project discovery, so the
- * combined list carries duplicates; vault-wide wikilink analysis (stem counts, duplicate detection)
- * must see each note exactly once or every moved file reports itself as a duplicate.
- */
-function uniqueByFilePath(files: ParsedMarkdownFile[]): ParsedMarkdownFile[] {
-  return Array.from(
-    new Map(files.map((file) => [file.filePath, file])).values(),
-  );
-}
-
 export class FileOperations {
   private linkParser = new LinkParser();
   private linkRefactorer = new LinkRefactorer();
@@ -917,10 +917,19 @@ export class FileOperations {
     return warnings;
   }
 
-  /** Validate the integrity of links after an operation */
+  /**
+   * Validates the links in every file an operation modified or created, skipping any that no longer exist on disk. A failure during validation is reported in the result rather than thrown.
+   *
+   * @param result - Result of the operation to check.
+   *
+   * @returns Whether the files are free of broken links, with the number of broken links and an error message for each.
+   */
   async validateOperation(result: OperationResult): Promise<{
+    /** True when no broken links were found in the modified and created files */
     valid: boolean;
+    /** Number of broken links found */
     brokenLinks: number;
+    /** One message per broken link, or a single message when validation itself failed */
     errors: string[];
   }> {
     try {
