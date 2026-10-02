@@ -229,8 +229,6 @@ const DEFAULT_CHECK_LINKS_OPTIONS: CheckLinksOperationOptions = {
  * @param options - Configuration options for the checking operation
  *
  * @returns Promise resolving to detailed results of the link checking operation
- *
- * @group Commands
  */
 export async function checkLinks(
   files: string[],

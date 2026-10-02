@@ -82,35 +82,42 @@ export interface IndexableFile {
 }
 
 /**
- * Execute the index command to generate documentation indexes.
- *
- * This is the main entry point for the index command functionality. It processes CLI options and
- * delegates to the core index generation logic.
+ * Raw CLI options accepted by {@link indexCommand}, before defaults are applied.
  *
  * @category Commands
- *
- * @param directory - Target directory for index generation (defaults to current directory)
- * @param cliOptions - Raw CLI options object
- *
- * @internal This is a CLI wrapper - use generateIndexFiles for programmatic access
  */
-/** CLI options interface for the index command */
-interface IndexCliOptions {
+export interface IndexCliOptions {
+  /** Type of index content to generate; defaults to `links` */
   type?: "links" | "import" | "embed" | "hybrid";
+  /** Strategy for organising files in the index; defaults to `directory` */
   strategy?: "directory" | "metadata" | "manual";
+  /** Where to place generated index files; defaults to `root` */
   location?: "all" | "root" | "branch" | "existing";
+  /** Name for generated index files; defaults to `index.md` */
   name?: string;
+  /** Style for embedded content; defaults to `obsidian` */
   embedStyle?: "obsidian" | "markdown";
+  /** Path to a custom template file */
   template?: string;
+  /** Report what would be written without changing any files */
   dryRun?: boolean;
+  /** Enable verbose output with detailed progress information */
   verbose?: boolean;
+  /** Print the result as JSON */
   json?: boolean;
+  /** Maximum depth to traverse subdirectories */
   maxDepth?: number;
+  /** Prevent traversing up from the specified directory */
   noTraverseUp?: boolean;
+  /** Explicit boundary path to limit scanning scope */
   boundary?: string;
+  /** Generate a table of contents for each indexed file */
   generateToc?: boolean;
+  /** Minimum heading depth included in generated tables of contents; defaults to 1 */
   tocMinDepth?: number;
+  /** Maximum heading depth included in generated tables of contents; defaults to 6 */
   tocMaxDepth?: number;
+  /** Include line numbers in generated tables of contents */
   tocIncludeLineNumbers?: boolean;
 }
 
@@ -134,8 +141,6 @@ interface IndexCliOptions {
  *
  * @param directory - Target directory for index generation
  * @param cliOptions - Command options specifying index parameters
- *
- * @group Commands
  */
 export async function indexCommand(
   directory: string | undefined,

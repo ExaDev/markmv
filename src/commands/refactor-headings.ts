@@ -148,8 +148,6 @@ const DEFAULT_REFACTOR_HEADINGS_OPTIONS: Partial<RefactorHeadingsOperationOption
  * @param options - Configuration options for the refactoring operation
  *
  * @returns Promise resolving to detailed results of the refactoring operation
- *
- * @group Commands
  */
 export async function refactorHeadings(
   files: string[],

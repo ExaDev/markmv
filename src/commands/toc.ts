@@ -54,15 +54,25 @@ export interface TocResult {
   /** Number of files skipped (no headings) */
   filesSkipped: number;
   /** Files that had processing errors */
-  fileErrors: { file: string; error: string }[];
+  fileErrors: {
+    /** Path of the file that failed to process */
+    file: string;
+    /** Error message */
+    error: string;
+  }[];
   /** Processing time in milliseconds */
   processingTime: number;
   /** Details of each file processed */
   fileDetails: {
+    /** Path of the processed file */
     file: string;
+    /** Number of headings found in the file */
     headingsFound: number;
+    /** Whether a table of contents was generated for the file */
     tocGenerated: boolean;
+    /** Length of the generated table of contents, in characters */
     tocLength: number;
+    /** Where the table of contents was placed, or `none` when no headings were found */
     position: string;
   }[];
 }
