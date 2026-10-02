@@ -48,9 +48,9 @@ export interface SplitOptions {
  *   Header-based splitting
  *   ```typescript
  *   await splitCommand('large-document.md', {
- *   strategy: 'headers',
- *   headerLevel: 2,
- *   output: './sections/'
+ *       strategy: 'headers',
+ *       headerLevel: 2,
+ *       output: './sections/'
  *   });
  *   ```
  *
@@ -58,10 +58,10 @@ export interface SplitOptions {
  *   Size-based splitting with dry run
  *   ```typescript
  *   await splitCommand('big-file.md', {
- *   strategy: 'size',
- *   maxSize: 50, // 50KB per file
- *   dryRun: true,
- *   verbose: true
+ *       strategy: 'size',
+ *       maxSize: 50, // 50KB per file
+ *       dryRun: true,
+ *       verbose: true
  *   });
  *   ```
  *
@@ -69,9 +69,9 @@ export interface SplitOptions {
  *   Line-based splitting
  *   ```typescript
  *   await splitCommand('content.md', {
- *   strategy: 'lines',
- *   splitLines: '100,250,400',
- *   output: './parts/'
+ *       strategy: 'lines',
+ *       splitLines: '100,250,400',
+ *       output: './parts/'
  *   });
  *   ```
  *

@@ -47,9 +47,9 @@ export interface MergeOptions {
  *   Append merge with transclusions
  *   ```typescript
  *   await mergeCommand('notes/section.md', 'docs/handbook.md', {
- *   strategy: 'append',
- *   createTransclusions: true,
- *   verbose: true
+ *       strategy: 'append',
+ *       createTransclusions: true,
+ *       verbose: true
  *   });
  *   ```
  *
@@ -57,9 +57,9 @@ export interface MergeOptions {
  *   Interactive merge with dry run
  *   ```typescript
  *   await mergeCommand('draft.md', 'final.md', {
- *   strategy: 'interactive',
- *   dryRun: true,
- *   verbose: true
+ *       strategy: 'interactive',
+ *       dryRun: true,
+ *       verbose: true
  *   });
  *   ```
  *
@@ -67,7 +67,7 @@ export interface MergeOptions {
  *   Prepend merge
  *   ```typescript
  *   await mergeCommand('intro.md', 'document.md', {
- *   strategy: 'prepend'
+ *       strategy: 'prepend'
  *   });
  *   ```
  *

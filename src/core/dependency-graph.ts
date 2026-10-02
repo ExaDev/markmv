@@ -46,7 +46,7 @@ export interface FileNode {
  *   // Check for circular dependencies
  *   const cycles = graph.detectCycles();
  *   if (cycles.length > 0) {
- *   console.warn('Circular dependencies detected');
+ *     console.warn('Circular dependencies detected');
  *   }
  *   ```
  *

@@ -133,8 +133,8 @@ export type GraphOutputFormat = "json" | "mermaid" | "dot" | "html";
  *   Basic graph generation
  *   ```typescript
  *   const generator = new LinkGraphGenerator({
- *   includeExternal: false,
- *   maxDepth: 5
+ *       includeExternal: false,
+ *       maxDepth: 5
  *   });
  *
  *   const graph = await generator.generateGraph(['docs/**\/*.md']);

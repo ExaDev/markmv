@@ -58,10 +58,10 @@ export interface LinkRedistributionResult {
  *   ```typescript
  *   const splitter = new ContentSplitter();
  *   const result = await splitter.splitFile('large-guide.md', {
- *   strategy: 'headers',
- *   headerLevel: 2,
- *   outputDir: './split-guides/',
- *   preserveLinks: true
+ *       strategy: 'headers',
+ *       headerLevel: 2,
+ *       outputDir: './split-guides/',
+ *       preserveLinks: true
  *   });
  *
  *   console.log(`Created ${result.createdFiles.length} files`);
@@ -72,10 +72,10 @@ export interface LinkRedistributionResult {
  *   ```typescript
  *   const splitter = new ContentSplitter();
  *   const result = await splitter.splitFile('large-document.md', {
- *   strategy: 'size',
- *   maxSize: '50KB',
- *   outputDir: './chunks/',
- *   dryRun: true // Preview without creating files
+ *       strategy: 'size',
+ *       maxSize: '50KB',
+ *       outputDir: './chunks/',
+ *       dryRun: true // Preview without creating files
  *   });
  *   ```
  */
@@ -94,10 +94,10 @@ export class ContentSplitter {
    *   Basic header splitting
    *   ```typescript
    *   const result = await splitter.splitFile('documentation.md', {
-   *   strategy: 'headers',
-   *   headerLevel: 1, // Split on H1 headers
-   *   outputDir: './docs-sections/',
-   *   preserveLinks: true
+   *       strategy: 'headers',
+   *       headerLevel: 1, // Split on H1 headers
+   *       outputDir: './docs-sections/',
+   *       preserveLinks: true
    *   });
    *   ```
    *
@@ -105,9 +105,9 @@ export class ContentSplitter {
    *   Manual marker splitting
    *   ```typescript
    *   const result = await splitter.splitFile('article.md', {
-   *   strategy: 'manual',
-   *   markers: ['<!-- split -->', '---split---'],
-   *   outputDir: './article-parts/'
+   *       strategy: 'manual',
+   *       markers: ['<!-- split -->', '---split---'],
+   *       outputDir: './article-parts/'
    *   });
    *   ```
    *

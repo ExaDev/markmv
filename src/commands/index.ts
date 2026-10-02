@@ -141,6 +141,7 @@ export interface IndexCliOptions {
  *
  * @param directory - Target directory for index generation
  * @param cliOptions - Command options specifying index parameters
+ * @category Commands
  */
 export async function indexCommand(
   directory: string | undefined,

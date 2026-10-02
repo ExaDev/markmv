@@ -69,14 +69,14 @@ export interface ObsidianVaultContext {
  *   Basic link refactoring
  *   ```typescript
  *   const refactorer = new LinkRefactorer({
- *   preferRelativePaths: true,
- *   updateClaudeImports: true
+ *       preferRelativePaths: true,
+ *       updateClaudeImports: true
  *   });
  *
  *   const result = await refactorer.refactorLinks(
- *   parsedFile,
- *   'old/path/file.md',
- *   'new/path/file.md'
+ *     parsedFile,
+ *     'old/path/file.md',
+ *     'new/path/file.md'
  *   );
  *
  *   console.log(`Updated ${result.changes.length} links`);
@@ -86,13 +86,13 @@ export interface ObsidianVaultContext {
  *   Bulk refactoring with path mapping
  *   ```typescript
  *   const pathMap = new Map([
- *   ['docs/old.md', 'guides/new.md'],
- *   ['api/legacy.md', 'reference/current.md']
+ *       ['docs/old.md', 'guides/new.md'],
+ *       ['api/legacy.md', 'reference/current.md']
  *   ]);
  *
  *   const result = await refactorer.refactorLinksWithMapping(
- *   parsedFile,
- *   pathMap
+ *     parsedFile,
+ *     pathMap
  *   );
  *   ```
  */

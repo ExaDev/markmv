@@ -95,8 +95,8 @@ interface ClipResult extends OperationResult {
  *   Basic usage
  *   ```typescript
  *   await clipCommand(['https://example.com/article'], {
- *   output: 'article.md',
- *   strategy: 'readability'
+ *       output: 'article.md',
+ *       strategy: 'readability'
  *   });
  *   ```
  *
@@ -104,9 +104,9 @@ interface ClipResult extends OperationResult {
  *   Batch processing
  *   ```typescript
  *   await clipCommand(['urls.txt'], {
- *   batch: true,
- *   outputDir: './clipped',
- *   downloadImages: true
+ *       batch: true,
+ *       outputDir: './clipped',
+ *       downloadImages: true
  *   });
  *   ```
  *

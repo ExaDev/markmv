@@ -29,16 +29,16 @@ import { LinkParser } from "./link-parser.js";
  *   ```typescript
  *   const joiner = new ContentJoiner();
  *   const result = await joiner.joinFiles(
- *   ['intro.md', 'setup.md', 'usage.md'],
- *   {
- *   outputPath: 'complete-guide.md',
- *   strategy: 'alphabetical',
- *   dryRun: false
- *   }
+ *     ['intro.md', 'setup.md', 'usage.md'],
+ *     {
+ *       outputPath: 'complete-guide.md',
+ *       strategy: 'alphabetical',
+ *       dryRun: false
+ *     }
  *   );
  *
  *   if (result.success) {
- *   console.log(`Created ${result.createdFiles[0]}`);
+ *     console.log(`Created ${result.createdFiles[0]}`);
  *   }
  *   ```
  *
@@ -47,13 +47,13 @@ import { LinkParser } from "./link-parser.js";
  *   ```typescript
  *   const joiner = new ContentJoiner();
  *   const result = await joiner.joinFiles(
- *   ['api.md', 'examples.md', 'getting-started.md'],
- *   {
- *   outputPath: 'documentation.md',
- *   strategy: 'dependency',
- *   preserveHeaders: true,
- *   handleFrontmatter: 'merge'
- *   }
+ *     ['api.md', 'examples.md', 'getting-started.md'],
+ *     {
+ *       outputPath: 'documentation.md',
+ *       strategy: 'dependency',
+ *       preserveHeaders: true,
+ *       handleFrontmatter: 'merge'
+ *     }
  *   );
  *   ```
  */

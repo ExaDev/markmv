@@ -21,16 +21,16 @@
  *
  *   const fileOps = new FileOperations();
  *   const options: MoveOperationOptions = {
- *   dryRun: true,
- *   verbose: true
+ *     dryRun: true,
+ *     verbose: true
  *   };
  *
  *   const result = await fileOps.moveFile('docs/old.md', 'docs/new.md', options);
  *   if (result.success) {
- *   console.log(`Would modify ${result.modifiedFiles.length} files`);
- *   result.changes.forEach(change => {
- *   console.log(`${change.type}: ${change.filePath}`);
- *   });
+ *     console.log(`Would modify ${result.modifiedFiles.length} files`);
+ *     result.changes.forEach(change => {
+ *         console.log(`${change.type}: ${change.filePath}`);
+ *     });
  *   }
  *   ```
  */
@@ -216,9 +216,20 @@ export type { FileNode } from "./core/dependency-graph.js";
 export type {
   RefactorOptions,
   LinkRefactorResult,
+  ObsidianVaultContext,
 } from "./core/link-refactorer.js";
 export type { LinkValidatorOptions } from "./core/link-validator.js";
 export type { TransactionOptions } from "./utils/transaction-manager.js";
+export type {
+  FileStats,
+  FileCopyOptions,
+  FileMoveOptions,
+} from "./utils/file-utils.js";
+export type { AuthConfig, AuthInfo } from "./utils/auth-detection.js";
+export type {
+  FreshnessConfig,
+  ContentFreshnessInfo,
+} from "./utils/content-freshness.js";
 export type {
   TocOperationOptions,
   TocCliOptions,
@@ -266,6 +277,7 @@ export type {
  *   ```;
  *
  * @returns A new FileOperations instance
+ * @category Core
  */
 export function createMarkMv(): FileOperations {
   return new FileOperations();
@@ -290,6 +302,7 @@ export function createMarkMv(): FileOperations {
  * @param options - Optional configuration
  *
  * @returns Promise resolving to operation result
+ * @category Core
  */
 export async function moveFile(
   sourcePath: string,
@@ -318,6 +331,7 @@ export async function moveFile(
  * @param options - Optional configuration
  *
  * @returns Promise resolving to operation result
+ * @category Core
  */
 export async function moveFiles(
   moves: { source: string; destination: string }[],
@@ -345,6 +359,7 @@ export async function moveFiles(
  * @param result - The operation result to validate
  *
  * @returns Promise resolving to the validity flag, the number of broken links and a message for each
+ * @category Core
  */
 export async function validateOperation(result: OperationResult): Promise<{
   /** Whether every link in the modified and created files resolved */
@@ -374,6 +389,7 @@ export async function validateOperation(result: OperationResult): Promise<{
  * @param options - TOC generation options
  *
  * @returns Promise resolving to TOC result
+ * @category Core
  */
 export async function generateToc(
   content: string,
@@ -404,6 +420,7 @@ export async function generateToc(
  * @param options - Index generation options
  *
  * @returns Promise resolving when index generation is complete
+ * @category Core
  */
 export async function generateIndex(
   directory: string,
@@ -433,6 +450,7 @@ export async function generateIndex(
  * @param options - Barrel generation options (same as IndexOptions)
  *
  * @returns Promise resolving when barrel generation is complete
+ * @category Core
  */
 export async function generateBarrel(
   directory: string,
@@ -464,9 +482,9 @@ export async function generateBarrel(
  *   import { generateLinkGraph } from 'markmv';
  *
  *   const result = await generateLinkGraph(['**\/*.md'], {
- *   format: 'html',
- *   output: 'visualization.html',
- *   includeImages: true
+ *       format: 'html',
+ *       output: 'visualization.html',
+ *       includeImages: true
  *   });
  *
  *   console.log('Interactive graph saved to: ' + result.outputFile);
@@ -476,6 +494,7 @@ export async function generateBarrel(
  * @param options - Graph generation options
  *
  * @returns Promise resolving to graph generation result
+ * @category Core
  */
 export async function generateLinkGraph(
   patterns: string[],

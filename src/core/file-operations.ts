@@ -103,9 +103,9 @@ function uniqueByFilePath(files: ParsedMarkdownFile[]): ParsedMarkdownFile[] {
  *   const result = await fileOps.moveFile('old.md', 'new.md');
  *
  *   if (result.success) {
- *   console.log(`Successfully moved file and updated ${result.modifiedFiles.length} references`);
+ *     console.log(`Successfully moved file and updated ${result.modifiedFiles.length} references`);
  *   } else {
- *   console.error('Move failed:', result.errors);
+ *     console.error('Move failed:', result.errors);
  *   }
  *   ```
  *
@@ -114,13 +114,13 @@ function uniqueByFilePath(files: ParsedMarkdownFile[]): ParsedMarkdownFile[] {
  *   ```typescript
  *   const fileOps = new FileOperations();
  *   const result = await fileOps.moveFile('docs/guide.md', 'tutorials/guide.md', {
- *   dryRun: true,
- *   verbose: true
+ *       dryRun: true,
+ *       verbose: true
  *   });
  *
  *   // Preview changes without actually modifying files
  *   result.changes.forEach(change => {
- *   console.log(`${change.type}: ${change.filePath} - ${change.description}`);
+ *       console.log(`${change.type}: ${change.filePath} - ${change.description}`);
  *   });
  *   ```
  */

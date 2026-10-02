@@ -62,7 +62,11 @@ export function findInlineImages(content: string): ImageLinkOccurrence[] {
   return findImageOccurrences(content, (href) => href.startsWith("data:"));
 }
 
-/** The payload of a parsed inline data URI: its exact media type and base64 payload. */
+/**
+ * The payload of a parsed inline data URI: its exact media type and base64 payload.
+ *
+ * @category Core
+ */
 export interface ParsedImageDataUri {
   /** Media type exactly as written in the URI, always an image type */
   mimeType: string;
@@ -238,7 +242,11 @@ function findImageOccurrences(
   return occurrences;
 }
 
-/** A source span to replace with new text. */
+/**
+ * A source span to replace with new text.
+ *
+ * @category Core
+ */
 export interface SpanReplacement {
   /** Start offset of the span, inclusive */
   start: number;

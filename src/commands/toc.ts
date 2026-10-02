@@ -87,9 +87,9 @@ export interface TocResult {
  *   Basic TOC generation
  *   ```typescript
  *   const result = await generateToc(['README.md'], {
- *   position: 'after-title',
- *   minDepth: 2,
- *   maxDepth: 4
+ *       position: 'after-title',
+ *       minDepth: 2,
+ *       maxDepth: 4
  *   });
  *
  *   console.log(`Added TOC to ${result.filesModified} files`);
@@ -99,9 +99,9 @@ export interface TocResult {
  *   Replace existing TOC
  *   ```typescript
  *   const result = await generateToc(['docs/*.md'], {
- *   position: 'replace',
- *   marker: '<!-- TOC -->',
- *   skipEmpty: true
+ *       position: 'replace',
+ *       marker: '<!-- TOC -->',
+ *       skipEmpty: true
  *   });
  *   ```
  *
@@ -109,6 +109,7 @@ export interface TocResult {
  * @param options - TOC generation configuration options
  *
  * @returns Promise resolving to generation results
+ * @category Commands
  */
 export async function generateToc(
   filePaths: string[],
@@ -402,6 +403,7 @@ function escapeRegExp(string: string): string {
  *
  * @param filePaths - Array of file paths to process
  * @param cliOptions - CLI-specific options
+ * @category Commands
  */
 export async function tocCommand(
   filePaths: string[],

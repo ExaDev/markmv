@@ -21,7 +21,7 @@ import { PathUtils } from "./path-utils.js";
  *
  * @category Utilities
  */
-interface FileStats {
+export interface FileStats {
   /** The path the statistics were read for, exactly as passed to `getStats`. */
   path: string;
   /** Size in bytes. */
@@ -44,7 +44,7 @@ interface FileStats {
  *
  * @category Utilities
  */
-interface CopyOptions {
+export interface FileCopyOptions {
   /** Replace an existing destination file. When false (the default), copying onto an existing file throws. */
   overwrite?: boolean;
   /** Set the destination's access and modification times to those of the source after copying. Defaults to false. */
@@ -61,7 +61,7 @@ interface CopyOptions {
  *
  * @category Utilities
  */
-interface MoveOptions extends CopyOptions {
+export interface FileMoveOptions extends FileCopyOptions {
   /** When overwriting an existing destination, first copy it to the same path with a `.backup` suffix. Has no effect unless `overwrite` is also set. Defaults to false. */
   backup?: boolean;
 }
@@ -154,7 +154,7 @@ async function writeTextFile(
 async function copyFile(
   sourcePath: string,
   destinationPath: string,
-  options: CopyOptions = {},
+  options: FileCopyOptions = {},
 ): Promise<void> {
   const { overwrite = false, createDirectories = true } = options;
 
@@ -183,7 +183,7 @@ async function copyFile(
 async function moveFile(
   sourcePath: string,
   destinationPath: string,
-  options: MoveOptions = {},
+  options: FileMoveOptions = {},
 ): Promise<void> {
   const {
     overwrite = false,

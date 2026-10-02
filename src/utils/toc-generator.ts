@@ -12,7 +12,7 @@ interface HeadingNode extends Node {
 /**
  * Represents a heading extracted from markdown content.
  *
- * @category Utils
+ * @category Utilities
  */
 export interface MarkdownHeading {
   /** Heading level (1-6) */
@@ -28,7 +28,7 @@ export interface MarkdownHeading {
 /**
  * Configuration options for table of contents generation.
  *
- * @category Utils
+ * @category Utilities
  */
 export interface TocOptions {
   /** Minimum heading level to include (default: 1) */
@@ -44,7 +44,7 @@ export interface TocOptions {
 /**
  * Result of table of contents generation.
  *
- * @category Utils
+ * @category Utilities
  */
 export interface TocResult {
   /** Generated table of contents markdown */
@@ -59,7 +59,7 @@ export interface TocResult {
  * This class extracts headings from markdown content and generates formatted table of contents with
  * proper indentation and anchor links.
  *
- * @category Utils
+ * @category Utilities
  *
  * @example
  *   Basic usage
@@ -81,9 +81,9 @@ export interface TocResult {
  *   ```typescript
  *   const generator = new TocGenerator();
  *   const options = {
- *   minDepth: 2,
- *   maxDepth: 4,
- *   includeLineNumbers: true
+ *     minDepth: 2,
+ *     maxDepth: 4,
+ *     includeLineNumbers: true
  *   };
  *   const result = generator.generateToc(content, options);
  *   ```

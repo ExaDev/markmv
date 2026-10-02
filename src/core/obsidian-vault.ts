@@ -77,6 +77,7 @@ function buildNameIndex(filePaths: string[]): Map<string, string[]> {
  * @param vaultRoot - Absolute path of the vault root path-qualified targets resolve against
  *
  * @returns Ambiguities encountered: bare targets that matched multiple notes
+ * @category Core
  */
 export function resolveWikilinks(
   files: ParsedMarkdownFile[],
@@ -128,6 +129,7 @@ export interface WikilinkResolution {
  * @param filePaths - Absolute paths of every file in the vault
  *
  * @returns A function mapping a wikilink target to its resolution
+ * @category Core
  */
 export function createWikilinkResolver(
   vaultRoot: string,
@@ -203,6 +205,7 @@ function rebuildDependencies(file: ParsedMarkdownFile): void {
  * @param files - Every parsed markdown file in the vault
  *
  * @returns Each stem that more than one markdown file carries
+ * @category Core
  */
 export function findDuplicateNoteStems(
   files: ParsedMarkdownFile[],
@@ -231,6 +234,7 @@ export function findDuplicateNoteStems(
  * @param files - Every parsed markdown file in the vault
  *
  * @returns Map from stem (basename without .md) to the number of markdown files carrying it
+ * @category Core
  */
 export function computeNoteStemCounts(
   files: ParsedMarkdownFile[],

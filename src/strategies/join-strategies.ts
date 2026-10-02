@@ -112,11 +112,11 @@ export interface JoinStrategyOptions {
  *   Implementing a custom join strategy
  *   ```typescript
  *   class CustomJoinStrategy extends BaseJoinStrategy {
- *   async join(sections: JoinSection[]): Promise<JoinResult> {
- *   // Custom ordering logic
- *   const orderedSections = this.customSort(sections);
- *   return this.buildResult(orderedSections);
- *   }
+ *     async join(sections: JoinSection[]): Promise<JoinResult> {
+ *       // Custom ordering logic
+ *       const orderedSections = this.customSort(sections);
+ *       return this.buildResult(orderedSections);
+ *     }
  *   }
  *   ```
  */
@@ -461,13 +461,13 @@ export abstract class BaseJoinStrategy {
  *   Dependency-based joining
  *   ```typescript
  *   const strategy = new DependencyOrderJoinStrategy({
- *   mergeFrontmatter: true,
- *   deduplicateLinks: true
+ *       mergeFrontmatter: true,
+ *       deduplicateLinks: true
  *   });
  *
  *   const result = await strategy.join(sections);
  *   if (result.success) {
- *   console.log(`Joined ${result.sourceFiles.length} files in dependency order`);
+ *     console.log(`Joined ${result.sourceFiles.length} files in dependency order`);
  *   }
  *   ```
  */
@@ -640,7 +640,7 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
  *   Alphabetical joining
  *   ```typescript
  *   const strategy = new AlphabeticalJoinStrategy({
- *   separator: '\n\n<!-- Next Section -->\n\n'
+ *       separator: '\n\n<!-- Next Section -->\n\n'
  *   });
  *
  *   const result = await strategy.join(sections);
@@ -741,8 +741,8 @@ export class AlphabeticalJoinStrategy extends BaseJoinStrategy {
  *   Manual ordering with fallback
  *   ```typescript
  *   const strategy = new ManualOrderJoinStrategy({
- *   customOrder: ['intro.md', 'main-content.md', 'conclusion.md'],
- *   mergeFrontmatter: true
+ *       customOrder: ['intro.md', 'main-content.md', 'conclusion.md'],
+ *       mergeFrontmatter: true
  *   });
  *
  *   // Files will be ordered as specified, with any others alphabetically
@@ -864,7 +864,7 @@ export class ManualOrderJoinStrategy extends BaseJoinStrategy {
  *   Chronological joining
  *   ```typescript
  *   const strategy = new ChronologicalJoinStrategy({
- *   separator: '\n\n---\n\n'
+ *       separator: '\n\n---\n\n'
  *   });
  *
  *   // Files will be ordered by date (oldest first)

@@ -51,7 +51,7 @@ interface LinkNode extends Node {
  *
  *   console.log(`Found ${parsed.links.length} links`);
  *   parsed.links.forEach(link => {
- *   console.log(`${link.type}: ${link.href} (line ${link.line})`);
+ *       console.log(`${link.type}: ${link.href} (line ${link.line})`);
  *   });
  *   ```
  *
@@ -62,14 +62,14 @@ interface LinkNode extends Node {
  *   const parsed = await parser.parseFile('guide.md');
  *
  *   const localLinks = parsed.links.filter(link =>
- *   link.type === 'internal' && !link.href.startsWith('http')
+ *     link.type === 'internal' && !link.href.startsWith('http')
  *   );
  *
  *   for (const link of localLinks) {
- *   const exists = await parser.validateInternalLink(link, parsed.filePath);
- *   if (!exists) {
- *   console.warn(`Broken link: ${link.href} at line ${link.line}`);
- *   }
+ *     const exists = await parser.validateInternalLink(link, parsed.filePath);
+ *     if (!exists) {
+ *       console.warn(`Broken link: ${link.href} at line ${link.line}`);
+ *     }
  *   }
  *   ```
  */

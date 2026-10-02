@@ -44,11 +44,11 @@ export type LinkStyle =
  *   const links: MarkdownLink[] = parsedFile.links;
  *
  *   links.forEach(link => {
- *   console.log(`${link.type} link: ${link.href}`);
- *   if (link.resolvedPath) {
- *   console.log(`  Resolves to: ${link.resolvedPath}`);
- *   }
- *   console.log(`  Location: line ${link.line}, column ${link.column}`);
+ *       console.log(`${link.type} link: ${link.href}`);
+ *       if (link.resolvedPath) {
+ *         console.log(`  Resolves to: ${link.resolvedPath}`);
+ *       }
+ *       console.log(`  Location: line ${link.line}, column ${link.column}`);
  *   });
  *   ```
  */
@@ -89,10 +89,10 @@ export interface MarkdownLink {
  *   const references: LinkReference[] = parsedFile.references;
  *
  *   references.forEach(ref => {
- *   console.log(`Reference [${ref.id}]: ${ref.url}`);
- *   if (ref.title) {
- *   console.log(`  Title: ${ref.title}`);
- *   }
+ *       console.log(`Reference [${ref.id}]: ${ref.url}`);
+ *       if (ref.title) {
+ *         console.log(`  Title: ${ref.title}`);
+ *       }
  *   });
  *   ```
  */

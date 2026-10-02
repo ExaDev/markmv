@@ -359,7 +359,11 @@ export function renderTreeAscii(
   return lines.join("\n");
 }
 
-/** Options controlling scanner progress output */
+/**
+ * Options controlling scanner progress output
+ *
+ * @category Commands
+ */
 export interface ScanOptions {
   /** Print each directory walked and each file parsed */
   verbose?: boolean;
@@ -498,7 +502,11 @@ export async function scanMarkdownTree(
   );
 }
 
-/** Output formats supported by the tree command */
+/**
+ * Output formats supported by the tree command
+ *
+ * @category Commands
+ */
 export type TreeFormat = "ascii" | "json";
 
 /**

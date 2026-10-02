@@ -3,7 +3,7 @@
  *
  * @file Provides git operations for detecting changed files and managing validation caching
  *
- * @category Utils
+ * @category Utilities
  */
 
 import { execSync } from "node:child_process";
@@ -12,7 +12,7 @@ import { resolve } from "node:path";
 /**
  * Information about a file change in git.
  *
- * @category Utils
+ * @category Utilities
  */
 export interface GitFileChange {
   /** Path to the changed file */
@@ -26,7 +26,7 @@ export interface GitFileChange {
 /**
  * Git repository information and status.
  *
- * @category Utils
+ * @category Utilities
  */
 export interface GitStatus {
   /** Current branch name */
@@ -45,7 +45,7 @@ export interface GitStatus {
  * Provides methods for detecting file changes, managing git state, and integrating with validation
  * workflows.
  *
- * @category Utils
+ * @category Utilities
  *
  * @example
  *   Basic usage ```typescript const git = new GitUtils();

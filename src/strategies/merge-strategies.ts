@@ -113,11 +113,11 @@ export interface MergeStrategyOptions {
  *   Implementing a custom merge strategy
  *   ```typescript
  *   class CustomMergeStrategy extends BaseMergeStrategy {
- *   async merge(targetContent: string, sourceContent: string): Promise<MergeResult> {
- *   // Custom merging logic
- *   const conflicts = this.detectConflicts(targetContent, sourceContent);
- *   return this.buildResult(mergedContent, conflicts);
- *   }
+ *     async merge(targetContent: string, sourceContent: string): Promise<MergeResult> {
+ *       // Custom merging logic
+ *       const conflicts = this.detectConflicts(targetContent, sourceContent);
+ *       return this.buildResult(mergedContent, conflicts);
+ *     }
  *   }
  *   ```
  */
@@ -444,8 +444,8 @@ export abstract class BaseMergeStrategy {
  *   Append merge with transclusions
  *   ```typescript
  *   const strategy = new AppendMergeStrategy({
- *   createTransclusions: true,
- *   separator: '\n\n---\n\n'
+ *       createTransclusions: true,
+ *       separator: '\n\n---\n\n'
  *   });
  *
  *   const result = await strategy.merge(targetContent, sourceContent, 'target.md', 'source.md');
@@ -588,8 +588,8 @@ export class AppendMergeStrategy extends BaseMergeStrategy {
  *   Prepend merge with custom separator
  *   ```typescript
  *   const strategy = new PrependMergeStrategy({
- *   separator: '\n\n<!-- New Content Above -->\n\n',
- *   mergeFrontmatter: true
+ *       separator: '\n\n<!-- New Content Above -->\n\n',
+ *       mergeFrontmatter: true
  *   });
  *
  *   const result = await strategy.merge(targetContent, sourceContent, 'target.md', 'source.md');
@@ -699,9 +699,9 @@ export class PrependMergeStrategy extends BaseMergeStrategy {
  *   Interactive merge with conflict resolution
  *   ```typescript
  *   const strategy = new InteractiveMergeStrategy({
- *   conflictResolution: 'auto',
- *   createTransclusions: true,
- *   preserveStructure: true
+ *       conflictResolution: 'auto',
+ *       createTransclusions: true,
+ *       preserveStructure: true
  *   });
  *
  *   const result = await strategy.merge(targetContent, sourceContent, 'target.md', 'source.md');

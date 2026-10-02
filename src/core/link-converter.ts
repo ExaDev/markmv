@@ -44,9 +44,9 @@ interface TextNode extends Node {
  *
  *   // Convert all links to relative paths and wikilink style
  *   const result = await converter.convertFile('document.md', {
- *   pathResolution: 'relative',
- *   linkStyle: 'wikilink',
- *   basePath: process.cwd()
+ *       pathResolution: 'relative',
+ *       linkStyle: 'wikilink',
+ *       basePath: process.cwd()
  *   });
  *   ```
  */

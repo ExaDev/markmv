@@ -12,10 +12,10 @@
  *   const result: ValidationResult = await validator.validateFiles(files);
  *
  *   if (!result.valid) {
- *   console.log(`Found ${result.brokenLinks.length} broken links in ${result.filesChecked} files`);
- *   result.brokenLinks.forEach(link => {
- *   console.log(`- ${link.sourceFile}: ${link.reason}`);
- *   });
+ *     console.log(`Found ${result.brokenLinks.length} broken links in ${result.filesChecked} files`);
+ *     result.brokenLinks.forEach(link => {
+ *         console.log(`- ${link.sourceFile}: ${link.reason}`);
+ *     });
  *   }
  *   ```
  */
@@ -46,12 +46,12 @@ export interface ValidationResult {
  *   const brokenLinks: BrokenLink[] = validationResult.brokenLinks;
  *
  *   brokenLinks.forEach(broken => {
- *   console.log(`${broken.sourceFile}:`);
- *   console.log(`  Link: ${broken.link.href}`);
- *   console.log(`  Reason: ${broken.reason}`);
- *   if (broken.details) {
- *   console.log(`  Details: ${broken.details}`);
- *   }
+ *       console.log(`${broken.sourceFile}:`);
+ *       console.log(`  Link: ${broken.link.href}`);
+ *       console.log(`  Reason: ${broken.reason}`);
+ *       if (broken.details) {
+ *         console.log(`  Details: ${broken.details}`);
+ *       }
  *   });
  *   ```
  */
