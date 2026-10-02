@@ -125,7 +125,12 @@ function generateUniqueFilename(desiredPath: string): string {
 }
 
 /** Validate that a path is safe for file operations */
-function validatePath(path: string): { valid: boolean; reason?: string } {
+function validatePath(path: string): {
+  /** Whether the path is acceptable. */
+  valid: boolean;
+  /** Why the path was rejected. Present only when `valid` is false. */
+  reason?: string;
+} {
   if (!path || path.trim() === "") {
     return { valid: false, reason: "Path cannot be empty" };
   }
@@ -249,21 +254,38 @@ function resolveDestination(
  *   Relative path updates for moved files ```typescript // When moving a file, update its relative links const originalLink = '../images/diagram.png'; const updatedLink = PathUtils.updateRelativePath( originalLink, 'docs/guide.md',      // old file location 'tutorials/guide.md'  // new file location ); // Result: '../../docs/images/diagram.png' ```
  */
 export const PathUtils = {
+  /** Resolves a path to an absolute one. A leading `~/` expands to the home directory, an absolute path is normalised, and a relative path is resolved against `basePath` when given, otherwise the current working directory. */
   resolvePath,
+  /** Computes the path from a directory to an absolute path, using the platform's separator. */
   makeRelative,
+  /** Recomputes a relative link target for a source file that is moving. Absolute and `~/` paths are returned unchanged, an anchor fragment is preserved, and a target that is itself being moved (present in `movedPaths`, keyed by its resolved absolute path) is pointed at its new location. */
   updateRelativePath,
+  /** Recomputes a relative Claude import path for a source file that is moving, with the same rules as `updateRelativePath`: absolute and `~/` paths are unchanged, a fragment is preserved and targets in `movedPaths` follow their move. */
   updateClaudeImportPath,
+  /** Rewrites every `/` or `\` separator in a path to the platform's separator, without resolving the path. */
   normalizePath,
+  /** True when `filePath` is the directory itself or lies beneath it, judged lexically from the relative path between them. No file system access is made. */
   isWithinDirectory,
+  /** Returns the desired path when nothing exists there, otherwise the first free path formed by appending `-1`, `-2` and so on to the file name before its extension. */
   generateUniqueFilename,
+  /** Checks that a path is safe to use for a file operation. It rejects empty or whitespace-only paths, paths containing null bytes, and paths using `..` that resolve outside the current working directory. */
   validatePath,
+  /** Counts the segments of a path once resolved to an absolute path. */
   getDirectoryDepth,
+  /** Finds the deepest directory shared by all the given paths once resolved. Returns an empty string for no paths, the parent directory for a single path, and the root separator when nothing beyond it is shared. */
   findCommonBase,
+  /** Replaces every backslash with a forward slash, for writing Windows paths into markdown links. */
   toUnixPath,
+  /** Returns the extension of a path including its leading dot, or an empty string when there is none. */
   getExtension,
+  /** True when the path's extension, compared case-insensitively, is `.md`, `.markdown`, `.mdown`, `.mkd` or `.mdx`. */
   isMarkdownFile,
+  /** Joins path segments after dropping empty and whitespace-only ones, and resolves the result to an absolute path. Returns an empty string when no segments remain. */
   safejoin,
+  /** True when the path (resolved with `resolvePath`) exists and is a directory, and false when it does not exist or cannot be examined. */
   isDirectory,
+  /** True when the path text ends in a forward or back slash, indicating a directory without consulting the file system. */
   looksLikeDirectory,
+  /** Resolves a move or copy destination. When it ends in a separator or is an existing directory, the source's file name is appended to it; otherwise the resolved destination is returned unchanged. */
   resolveDestination,
 };

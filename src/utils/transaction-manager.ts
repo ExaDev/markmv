@@ -15,16 +15,22 @@ function errorMessage(error: unknown): string {
  * @category Utilities
  */
 export interface TransactionStep {
+  /** Identifier made of the step kind and its position when added (for example `move-0`). */
   id: string;
+  /** The kind of operation the step performs. */
   type:
     | "file-move"
     | "file-copy"
     | "file-delete"
     | "file-create"
     | "content-update";
+  /** Human-readable summary, used in error messages and previews. */
   description: string;
+  /** Performs the operation. Rejects when it fails. */
   execute: () => Promise<void>;
+  /** Undoes the operation. Implementations log a warning rather than rejecting when the undo itself fails. */
   rollback: () => Promise<void>;
+  /** True once `execute` has succeeded, and false again after the step is rolled back. */
   completed: boolean;
 }
 
@@ -84,6 +90,11 @@ export class TransactionManager {
   private backups = new Map<string, string>();
   private options: Required<TransactionOptions>;
 
+  /**
+   * Creates an empty transaction.
+   *
+   * @param options - Behaviour settings. `createBackups` defaults to true, `continueOnError` to false and `maxRetries` to 3.
+   */
   constructor(options: TransactionOptions = {}) {
     this.options = {
       createBackups: options.createBackups ?? true,
@@ -92,7 +103,13 @@ export class TransactionManager {
     };
   }
 
-  /** Add a file move operation to the transaction */
+  /**
+   * Queues a move of a file. Execution backs up the source when backups are enabled, creates the destination's parent directories and refuses to overwrite an existing destination. Rollback removes the destination and restores the source from the backup.
+   *
+   * @param sourcePath - File to move.
+   * @param destinationPath - Where to move it to.
+   * @param description - Overrides the generated description.
+   */
   addFileMove(
     sourcePath: string,
     destinationPath: string,
@@ -142,7 +159,13 @@ export class TransactionManager {
     });
   }
 
-  /** Add a content update operation to the transaction */
+  /**
+   * Queues replacing the content of a file, creating parent directories as needed. Execution remembers the previous content if the file exists. Rollback restores it, or deletes the file when it did not exist before.
+   *
+   * @param filePath - File to write.
+   * @param newContent - The full new content.
+   * @param description - Overrides the generated description.
+   */
   addContentUpdate(
     filePath: string,
     newContent: string,
@@ -185,7 +208,13 @@ export class TransactionManager {
     });
   }
 
-  /** Add a file creation operation to the transaction */
+  /**
+   * Queues creating a new file, with parent directories created as needed. Execution fails if the file already exists. Rollback deletes the file.
+   *
+   * @param filePath - File to create.
+   * @param content - Content to write.
+   * @param description - Overrides the generated description.
+   */
   addFileCreate(filePath: string, content: string, description?: string): void {
     const stepId = `create-${String(this.steps.length)}`;
 
@@ -217,7 +246,12 @@ export class TransactionManager {
     });
   }
 
-  /** Add a file deletion operation to the transaction */
+  /**
+   * Queues deleting a file. Execution does nothing when the file is already absent, and otherwise remembers its content. Rollback writes that content back, recreating parent directories, if the file had existed.
+   *
+   * @param filePath - File to delete.
+   * @param description - Overrides the generated description.
+   */
   addFileDelete(filePath: string, description?: string): void {
     const stepId = `delete-${String(this.steps.length)}`;
     let originalContent: string | null = null;
@@ -252,11 +286,19 @@ export class TransactionManager {
     });
   }
 
-  /** Execute all steps in the transaction */
+  /**
+   * Runs the queued steps in order, retrying a failing step up to `maxRetries` times with exponential backoff starting at one second. Unless `continueOnError` is set, a step that exhausts its retries rolls back every executed step and removes leftover backups. Backups are removed after a successful run.
+   *
+   * @returns The outcome. On a rolled-back failure `changes` is empty.
+   */
   async execute(): Promise<{
+    /** True when no step finally failed. */
     success: boolean;
+    /** Number of steps that executed successfully, including any later rolled back. */
     completedSteps: number;
+    /** One message per failed step, or for a failure of the transaction as a whole. */
     errors: string[];
+    /** The changes made by the executed steps, derived from each step's type and description. */
     changes: OperationChange[];
   }> {
     const errors: string[] = [];
@@ -333,7 +375,7 @@ export class TransactionManager {
     }
   }
 
-  /** Rollback all executed steps */
+  /** Rolls back every executed step in reverse order and forgets them. A step whose rollback throws is reported in a single warning and does not stop the others. */
   async rollback(): Promise<void> {
     const rollbackErrors: string[] = [];
 
@@ -357,8 +399,17 @@ export class TransactionManager {
     }
   }
 
-  /** Get a preview of all planned operations */
-  getPreview(): { description: string; type: string }[] {
+  /**
+   * Lists the queued steps, in order, without executing anything.
+   *
+   * @returns One entry per step.
+   */
+  getPreview(): {
+    /** The step's description. */
+    description: string;
+    /** The step's kind, such as `file-move`. */
+    type: string;
+  }[] {
     return this.steps.map((step) => ({
       description: step.description,
       type: step.type,
