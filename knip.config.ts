@@ -7,7 +7,7 @@ const config: KnipConfig = {
   ignoreDependencies: [
     // Resolved by semantic-release from the "conventionalcommits" preset string inside release.config.ts's commit-analyzer/release-notes-generator plugin options, not from the top-level plugins array knip's semantic-release plugin inspects.
     "conventional-changelog-conventionalcommits",
-    // Resolved at runtime via require.resolve('tsx') in link-parser.test.ts to test the real ESM claude-import path, not imported anywhere statically.
+    // Resolved at runtime via require.resolve('tsx') in link-parser.integration.test.ts to test the real ESM claude-import path, not imported anywhere statically.
     "tsx",
   ],
   // False positive: check-dependency-age.ts calls `execFileSync("pnpm", ["info", ...])`, and knip's binary-usage heuristic reads the literal string "info" as a reference to the real npm package of that name rather than pnpm's own `info` subcommand.
