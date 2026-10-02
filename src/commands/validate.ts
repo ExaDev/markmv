@@ -112,7 +112,7 @@ export interface ValidateCliOptions extends Omit<
  *
  * @category Commands
  */
-interface ExtendedBrokenLink extends BrokenLink {
+export interface ExtendedBrokenLink extends BrokenLink {
   /** Link type for grouping */
   type: LinkType;
   /** Link URL for display */
@@ -140,7 +140,14 @@ export interface ValidateResult {
   /** Broken links grouped by type */
   brokenLinksByType: Partial<Record<LinkType, ExtendedBrokenLink[]>>;
   /** Files that had processing errors */
-  fileErrors: { file: string; error: string; stack?: string | undefined }[];
+  fileErrors: {
+    /** Path of the file that failed to process */
+    file: string;
+    /** Error message */
+    error: string;
+    /** Stack trace, when the error carried one */
+    stack?: string | undefined;
+  }[];
   /** Whether circular references were detected */
   hasCircularReferences: boolean;
   /** Circular reference details if found */
@@ -171,12 +178,21 @@ export interface ValidateResult {
   /** Number of successfully authenticated links */
   authenticatedLinks?: number;
   /** Files missing required frontmatter fields */
-  frontmatterViolations: { file: string; missingFields: string[] }[];
+  frontmatterViolations: {
+    /** Path of the file missing required fields */
+    file: string;
+    /** Required frontmatter fields the file does not define */
+    missingFields: string[];
+  }[];
   /** Internal links whose href form violates the enforced link format */
   formatViolations: {
+    /** Path of the file containing the link */
     file: string;
+    /** The link target as written */
     href: string;
+    /** Line number of the link */
     line: number;
+    /** The enforced form the link should take, `relative` or `absolute` */
     expected: string;
   }[];
 }

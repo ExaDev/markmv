@@ -201,9 +201,24 @@ export type {
 } from "./core/link-graph-generator.js";
 export type {
   IndexOptions,
+  IndexCliOptions,
   FileMetadata,
   IndexableFile,
 } from "./commands/index.js";
+export type { ConvertOptions } from "./commands/convert.js";
+export type {
+  ValidateOperationOptions,
+  ExtendedBrokenLink,
+} from "./commands/validate.js";
+export type { ValidationResult, BrokenLink } from "./types/config.js";
+export type { LinkReference } from "./types/links.js";
+export type { FileNode } from "./core/dependency-graph.js";
+export type {
+  RefactorOptions,
+  LinkRefactorResult,
+} from "./core/link-refactorer.js";
+export type { LinkValidatorOptions } from "./core/link-validator.js";
+export type { TransactionOptions } from "./utils/transaction-manager.js";
 export type {
   TocOperationOptions,
   TocCliOptions,
@@ -251,8 +266,6 @@ export type {
  *   ```;
  *
  * @returns A new FileOperations instance
- *
- * @group Core API
  */
 export function createMarkMv(): FileOperations {
   return new FileOperations();
@@ -277,8 +290,6 @@ export function createMarkMv(): FileOperations {
  * @param options - Optional configuration
  *
  * @returns Promise resolving to operation result
- *
- * @group Core API
  */
 export async function moveFile(
   sourcePath: string,
@@ -307,8 +318,6 @@ export async function moveFile(
  * @param options - Optional configuration
  *
  * @returns Promise resolving to operation result
- *
- * @group Core API
  */
 export async function moveFiles(
   moves: { source: string; destination: string }[],
@@ -319,7 +328,7 @@ export async function moveFiles(
 }
 
 /**
- * Convenience function for validating markdown file operations
+ * Convenience function that re-parses the files an operation modified or created (those that still exist on disk) and checks that every link in them resolves. A validation failure is reported in the result rather than thrown.
  *
  * @example
  *   ```typescript
@@ -335,13 +344,14 @@ export async function moveFiles(
  *
  * @param result - The operation result to validate
  *
- * @returns Promise resolving to validation result
- *
- * @group Core API
+ * @returns Promise resolving to the validity flag, the number of broken links and a message for each
  */
 export async function validateOperation(result: OperationResult): Promise<{
+  /** Whether every link in the modified and created files resolved */
   valid: boolean;
+  /** Number of broken links found */
   brokenLinks: number;
+  /** One message per broken link, or a single message when validation itself failed */
   errors: string[];
 }> {
   const fileOps = new FileOperations();
@@ -364,8 +374,6 @@ export async function validateOperation(result: OperationResult): Promise<{
  * @param options - TOC generation options
  *
  * @returns Promise resolving to TOC result
- *
- * @group Utilities
  */
 export async function generateToc(
   content: string,
@@ -396,8 +404,6 @@ export async function generateToc(
  * @param options - Index generation options
  *
  * @returns Promise resolving when index generation is complete
- *
- * @group Commands
  */
 export async function generateIndex(
   directory: string,
@@ -427,8 +433,6 @@ export async function generateIndex(
  * @param options - Barrel generation options (same as IndexOptions)
  *
  * @returns Promise resolving when barrel generation is complete
- *
- * @group Commands
  */
 export async function generateBarrel(
   directory: string,
@@ -472,8 +476,6 @@ export async function generateBarrel(
  * @param options - Graph generation options
  *
  * @returns Promise resolving to graph generation result
- *
- * @group Commands
  */
 export async function generateLinkGraph(
   patterns: string[],
@@ -486,7 +488,7 @@ export async function generateLinkGraph(
 }
 
 /**
- * Test function to demonstrate auto-exposure pattern
+ * Echoes the input back with a timestamp. Scaffolding used to check that exported functions are exposed automatically; it performs no markdown work and is not part of the supported API.
  *
  * @example
  *   ```typescript
@@ -498,13 +500,16 @@ export async function generateLinkGraph(
  *
  * @param input - The input message to echo
  *
- * @returns Promise resolving to echo result
+ * @returns Promise resolving to the echoed message, the ISO timestamp of the call and a success flag
  *
- * @group Testing
+ * @internal
  */
 export function testAutoExposure(input: string): Promise<{
+  /** The input prefixed with `Echo: ` */
   message: string;
+  /** ISO 8601 time at which the call was made */
   timestamp: string;
+  /** Always `true` */
   success: boolean;
 }> {
   return Promise.resolve({

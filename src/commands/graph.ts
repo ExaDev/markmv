@@ -221,6 +221,11 @@ export async function generateGraph(
   return result;
 }
 
+/** Narrow a string to one of the supported graph output formats. */
+function isGraphOutputFormat(value: string): value is GraphOutputFormat {
+  return ["json", "mermaid", "dot", "html"].some((valid) => valid === value);
+}
+
 /**
  * CLI command handler for graph operations.
  *
@@ -245,10 +250,6 @@ export async function generateGraph(
  * @param patterns - File patterns to process
  * @param cliOptions - CLI-specific options
  */
-function isGraphOutputFormat(value: string): value is GraphOutputFormat {
-  return ["json", "mermaid", "dot", "html"].some((valid) => valid === value);
-}
-
 export async function graphCommand(
   patterns: string[],
   cliOptions: GraphCliOptions,

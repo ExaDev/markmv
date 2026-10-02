@@ -259,8 +259,6 @@ function printConvertSummary(
  *
  * @param patterns - File patterns to process (supports globs)
  * @param options - Command options specifying conversion parameters
- *
- * @group Commands
  */
 export async function convertCommand(
   patterns: string[],

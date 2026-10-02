@@ -59,7 +59,12 @@ export interface RefactorIndexResult {
   /** Warnings reported by the move machinery */
   warnings: string[];
   /** Files that failed to parse during the operation; their links could not be checked or rewritten */
-  parseFailures: { file: string; error: string }[];
+  parseFailures: {
+    /** Path of the file that failed to parse */
+    file: string;
+    /** Parse error message */
+    error: string;
+  }[];
   /** Errors that prevented the operation */
   errors: string[];
 }
