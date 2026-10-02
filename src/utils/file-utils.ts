@@ -22,11 +22,17 @@ import { PathUtils } from "./path-utils.js";
  * @category Utilities
  */
 interface FileStats {
+  /** The path the statistics were read for, exactly as passed to `getStats`. */
   path: string;
+  /** Size in bytes. */
   size: number;
+  /** Whether the path is a regular file. */
   isFile: boolean;
+  /** Whether the path is a directory. */
   isDirectory: boolean;
+  /** Time of last modification (`mtime`). */
   modified: Date;
+  /** Creation (birth) time, as reported by the file system. */
   created: Date;
 }
 
@@ -39,8 +45,11 @@ interface FileStats {
  * @category Utilities
  */
 interface CopyOptions {
+  /** Replace an existing destination file. When false (the default), copying onto an existing file throws. */
   overwrite?: boolean;
+  /** Set the destination's access and modification times to those of the source after copying. Defaults to false. */
   preserveTimestamps?: boolean;
+  /** Create missing parent directories of the destination first. Defaults to true. */
   createDirectories?: boolean;
 }
 
@@ -53,6 +62,7 @@ interface CopyOptions {
  * @category Utilities
  */
 interface MoveOptions extends CopyOptions {
+  /** When overwriting an existing destination, first copy it to the same path with a `.backup` suffix. Has no effect unless `overwrite` is also set. Defaults to false. */
   backup?: boolean;
 }
 
@@ -128,7 +138,10 @@ async function readTextFile(filePath: string): Promise<string> {
 async function writeTextFile(
   filePath: string,
   content: string,
-  options: { createDirectories?: boolean } = {},
+  options: {
+    /** Create missing parent directories of the file first. Defaults to false. */
+    createDirectories?: boolean;
+  } = {},
 ): Promise<void> {
   if (options.createDirectories) {
     await ensureDirectory(dirname(filePath));
@@ -243,8 +256,11 @@ async function deleteFile(filePath: string): Promise<void> {
 async function listFiles(
   dirPath: string,
   options: {
+    /** Descend into subdirectories. Defaults to false. */
     recursive?: boolean;
+    /** Only include files whose lower-cased extension, with its leading dot (for example `.md`), is in this list. Files of every extension are included when omitted. */
     extensions?: string[];
+    /** Also include directory paths in the result. Defaults to false. */
     includeDirectories?: boolean;
   } = {},
 ): Promise<string[]> {
@@ -357,21 +373,38 @@ function getRelativePath(fromFile: string, toFile: string): string {
  *   // Find markdown files const files = await FileUtils.findMarkdownFiles('./docs', true); ```
  */
 export const FileUtils = {
+  /** Resolves to true when the path exists, and false when it does not or cannot be accessed. */
   exists,
+  /** Resolves to true when the current process has read permission on the path, and false when it lacks it or the path does not exist. */
   isReadable,
+  /** Resolves to true when the current process has write permission on the path, and false when it lacks it or the path does not exist. */
   isWritable,
+  /** Reads the size, type and timestamps of a path into a `FileStats`. Rejects when the path does not exist. */
   getStats,
+  /** Creates a directory and any missing parents. Resolves without error when the directory already exists. */
   ensureDirectory,
+  /** Reads a whole file and decodes it as UTF-8. No other encoding is detected. */
   readTextFile,
+  /** Writes a string to a file as UTF-8, replacing any existing content. Optionally creates the parent directories first. */
   writeTextFile,
+  /** Copies a file. Throws when the destination exists unless `overwrite` is set, creates the destination's parent directories by default, and can preserve the source timestamps. */
   copyFile,
+  /** Moves a file after validating both paths and checking the source exists. Throws when the destination exists unless `overwrite` is set, optionally backing the old destination up first. Renames in place, falling back to copy and delete when the move crosses file systems. */
   moveFile,
+  /** Deletes a file. Resolves without error when the path does not exist. */
   deleteFile,
+  /** Lists the files in a directory as joined paths, optionally recursing, filtering by extension and including directories. */
   listFiles,
+  /** Lists the markdown files (extensions `.md`, `.markdown`, `.mdown`, `.mkd` and `.mdx`) in a directory, recursing into subdirectories unless `recursive` is false. */
   findMarkdownFiles,
+  /** Copies a file to its own path plus a suffix (`.backup` by default) and resolves to the backup's path. Throws when that backup already exists. */
   createBackup,
+  /** Resolves to the size of a file in bytes. */
   getFileSize,
+  /** Resolves to true when both files decode to identical text, and false when they differ or either cannot be read. */
   filesEqual,
+  /** Replaces characters that are invalid in file names (`<>:"/\|?*`) and whitespace with hyphens, collapses repeated hyphens and trims hyphens from both ends. */
   sanitizeFilename,
+  /** Computes the path to `toFile` relative to the directory containing `fromFile`, as used for a link written inside `fromFile`. */
   getRelativePath,
 };
