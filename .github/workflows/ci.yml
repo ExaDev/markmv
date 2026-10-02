@@ -74,6 +74,15 @@ jobs:
           task: knip
           command: pnpm run knip
 
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+        with:
+          task: docs-check
+          command: pnpm run docs:check
+
   # Self-healing: a high-severity advisory with a published, aged-out patch is auto-fixed by pinning a pnpm-workspace.yaml override and opening its own PR, dispatched and merged once that PR's own CI is green; anything not auto-fixable (no patch yet, the fix package itself is too new, a resolution conflict) is deferred and surfaced as a warning, never blocking this run's own release -- matching the original job's advisory-only behaviour.
   audit:
     runs-on: ubuntu-latest
@@ -304,26 +313,6 @@ jobs:
           echo "TEST_COVERAGE=$COVERAGE" >> $GITHUB_ENV
           echo "📊 Test coverage: $COVERAGE%" >> $GITHUB_STEP_SUMMARY
 
-      - name: Generate documentation coverage
-        if: matrix.node-version == '24.x' && matrix.os == 'ubuntu-latest'
-        run: |
-          # Generate regular report for summary
-          pnpm run docs:coverage
-
-          # Generate JSON report for programmatic access (suppress all output to avoid warnings in JSON)
-          DOCS_COVERAGE=$(OUTPUT_JSON=true node scripts/check-docs-coverage.js 2>/dev/null | jq -r '.overallCoverage')
-
-          # If jq failed, try to extract directly from the script output
-          if [ -z "$DOCS_COVERAGE" ] || [ "$DOCS_COVERAGE" = "null" ]; then
-            DOCS_COVERAGE=$(OUTPUT_JSON=true node scripts/check-docs-coverage.js 2>/dev/null | grep -o '"overallCoverage":[0-9.]*' | cut -d':' -f2)
-          fi
-
-          echo "DOCS_COVERAGE=$DOCS_COVERAGE" >> $GITHUB_ENV
-          echo "📚 Documentation coverage: $DOCS_COVERAGE%" >> $GITHUB_STEP_SUMMARY
-
-          # Save JSON for artifacts (optional)
-          OUTPUT_JSON=true node scripts/check-docs-coverage.js 2>/dev/null > docs-coverage.json || echo '{"overallCoverage": 0}' > docs-coverage.json
-
       - name: Upload coverage artifacts
         if: matrix.node-version == '24.x' && matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v7
@@ -332,12 +321,11 @@ jobs:
           path: |
             coverage/
             coverage-output.txt
-            docs-coverage.json
           retention-days: 30
 
   # Release - only after every quality gate passes
   release:
-    needs: [commitlint, lint, typecheck, build, knip, audit, test]
+    needs: [commitlint, lint, typecheck, build, knip, docs, audit, test]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
@@ -407,14 +395,6 @@ jobs:
         uses: actions/attest@v4
         with:
           subject-path: sbom.spdx.json
-
-      # Keeps the README's typedoc-derived API reference section in sync with the built code.
-      # @semantic-release/git stages README.md itself (it's in its own assets list), so no manual
-      # git add is needed here.
-      - name: Generate updated README for release
-        run: |
-          echo "🔄 Generating README from TypeScript documentation..."
-          pnpm run docs:readme-generate
 
       - name: Release
         env:

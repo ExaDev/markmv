@@ -171,17 +171,10 @@ export default defineConfig(
     },
   },
   {
-    // TypeDoc's own generated section wraps a hand-authored template (templates/README-for-typedoc.md) around API docs, and both use raw <div>/<a> tags for layout GitHub's markdown renderer needs (centered badges, anchors) that CommonMark itself has no syntax for -- not a case of unreviewed HTML slipping into hand-written docs.
-    files: ["README.md", "templates/README-for-typedoc.md"],
-    rules: {
-      "markdown/no-html": "off",
-    },
-  },
-  {
-    // typedoc-plugin-markdown's mergeReadme option only inlines the entry-point module's own page into README.md; a type referenced from that page but declared elsewhere (e.g. MoveOperationOptions, OperationResult in src/types/operations.ts, which isn't a typedoc.markdown.json entry point) still gets a real anchor on its own separate generated page, but the link to it inside the merged README points at a same-document fragment that page never brings along. This is a limitation of the docs:readme-generate pipeline's own output, regenerated on every release, not a hand-authored linking mistake.
+    // The README uses raw <div>/<a> tags for layout GitHub's markdown renderer needs (centred badges and links) that CommonMark itself has no syntax for, so it is not a case of unreviewed HTML slipping into hand-written docs.
     files: ["README.md"],
     rules: {
-      "markdown/no-missing-link-fragments": "off",
+      "markdown/no-html": "off",
     },
   },
   {

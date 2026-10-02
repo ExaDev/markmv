@@ -5,8 +5,6 @@ const config: KnipConfig = {
   entry: [".github/scripts/*.ts"],
   project: ["src/**/*.ts", ".github/scripts/**/*.ts"],
   ignoreDependencies: [
-    // Referenced only in typedoc.markdown.json's `plugin` array; knip's typedoc plugin only auto-discovers the canonically-named typedoc.json, not alternate config files.
-    "typedoc-plugin-markdown",
     // Resolved by semantic-release from the "conventionalcommits" preset string inside release.config.ts's commit-analyzer/release-notes-generator plugin options, not from the top-level plugins array knip's semantic-release plugin inspects.
     "conventional-changelog-conventionalcommits",
     // Resolved at runtime via require.resolve('tsx') in link-parser.test.ts to test the real ESM claude-import path, not imported anywhere statically.
