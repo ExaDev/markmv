@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "rootDir": ".",
+    "sourceMap": false
+  },
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/**/*",
+    "*.config.ts",
+    ".github/scripts/*.ts",
+    "examples/*.ts",
+    "examples/*.js",
+    "scripts/*.js"
+  ]
+}

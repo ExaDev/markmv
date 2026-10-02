@@ -5,23 +5,23 @@
       "inputs": ["src/**/*.ts", "tsconfig.json", "tsconfig.build.json"],
       "outputs": ["dist/**", "tsconfig.tsbuildinfo"]
     },
-    "_lint": {
-      "outputs": [".eslintcache"]
-    },
-    "_typecheck": {
-      "inputs": ["src/**/*.ts", "tsconfig.json"],
+    "_check": {
+      "dependsOn": ["_typecheck", "_lint"],
       "outputs": []
-    },
-    "_test": {
-      "inputs": ["src/**/*.ts", "vitest.config.ts"],
-      "outputs": ["coverage/**"]
     },
     "_knip": {
       "inputs": ["src/**/*.ts", "knip.config.ts"],
       "outputs": []
     },
-    "_check": {
-      "dependsOn": ["_typecheck", "_lint"],
+    "_lint": {
+      "outputs": [".eslintcache"]
+    },
+    "_test": {
+      "inputs": ["src/**/*.ts", "vitest.config.ts"],
+      "outputs": ["coverage/**"]
+    },
+    "_typecheck": {
+      "inputs": ["src/**/*.ts", "tsconfig.json"],
       "outputs": []
     }
   }
