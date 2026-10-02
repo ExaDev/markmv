@@ -4,11 +4,7 @@
 npx markmv --help
 ```
 
-[![CI](https://github.com/ExaDev/markmv/actions/workflows/ci.yml/badge.svg)](https://github.com/ExaDev/markmv/actions/workflows/ci.yml)
-[![npm version](https://badge.fury.io/js/markmv.svg)](https://badge.fury.io/js/markmv)
-[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
-[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)](https://www.typescriptlang.org/)
+[![GitHub](https://img.shields.io/badge/GitHub-181717?logo=github&logoColor=white)](https://github.com/ExaDev/markmv) [![npm](https://img.shields.io/badge/npm-CB3837?logo=npm&logoColor=white)](https://www.npmjs.com/package/markmv) [![Release](https://img.shields.io/github/v/release/ExaDev/markmv)](https://github.com/ExaDev/markmv/releases/latest) [![CI](https://img.shields.io/github/actions/workflow/status/ExaDev/markmv/ci.yml?branch=main)](https://github.com/ExaDev/markmv/actions)
 
 > TypeScript CLI for markdown file operations with intelligent link refactoring
 
