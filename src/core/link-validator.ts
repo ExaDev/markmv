@@ -59,18 +59,18 @@ export interface LinkValidatorOptions {
  *   Basic link validation
  *   ```typescript
  *   const validator = new LinkValidator({
- *   checkExternal: true,
- *   strictInternal: true,
- *   externalTimeout: 10000
+ *       checkExternal: true,
+ *       strictInternal: true,
+ *       externalTimeout: 10000
  *   });
  *
  *   const result = await validator.validateFile('docs/api.md');
  *
  *   if (!result.isValid) {
- *   console.log(`Found ${result.brokenLinks.length} broken links`);
- *   result.brokenLinks.forEach(link => {
- *   console.log(`- ${link.href} (line ${link.line}): ${link.reason}`);
- *   });
+ *     console.log(`Found ${result.brokenLinks.length} broken links`);
+ *     result.brokenLinks.forEach(link => {
+ *         console.log(`- ${link.href} (line ${link.line}): ${link.reason}`);
+ *     });
  *   }
  *   ```
  *

@@ -153,12 +153,12 @@ export interface BarrelOperationOptions extends OperationOptions {
  *   const result: OperationResult = await fileOps.moveFile('old.md', 'new.md');
  *
  *   if (result.success) {
- *   console.log(`Operation completed successfully`);
- *   console.log(`Modified ${result.modifiedFiles.length} files`);
- *   console.log(`Created ${result.createdFiles.length} files`);
+ *     console.log(`Operation completed successfully`);
+ *     console.log(`Modified ${result.modifiedFiles.length} files`);
+ *     console.log(`Created ${result.createdFiles.length} files`);
  *   } else {
- *   console.error('Operation failed:');
- *   result.errors.forEach(error => console.error(`  ${error}`));
+ *     console.error('Operation failed:');
+ *     result.errors.forEach(error => console.error(`  ${error}`));
  *   }
  *   ```
  */
@@ -202,10 +202,10 @@ export interface OperationResult {
  *   const changes: OperationChange[] = result.changes;
  *
  *   changes.forEach(change => {
- *   console.log(`${change.type} in ${change.filePath}`);
- *   if (change.line) {
- *   console.log(`  Line ${change.line}: ${change.oldValue} → ${change.newValue}`);
- *   }
+ *       console.log(`${change.type} in ${change.filePath}`);
+ *       if (change.line) {
+ *         console.log(`  Line ${change.line}: ${change.oldValue} → ${change.newValue}`);
+ *       }
  *   });
  *   ```
  */

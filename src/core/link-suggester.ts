@@ -61,6 +61,7 @@ function editDistance(a: string, b: string): number {
  * @param limit - Maximum number of suggestions to return (default 3)
  *
  * @returns Ranked suggestions, best first; empty when nothing is reasonably similar
+ * @category Core
  */
 export function suggestLinkFixes(
   brokenHref: string,

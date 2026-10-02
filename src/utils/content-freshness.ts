@@ -9,7 +9,11 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { existsSync } from "node:fs";
 
-/** Configuration for content freshness detection. */
+/**
+ * Configuration for content freshness detection.
+ *
+ * @category Types
+ */
 export interface FreshnessConfig {
   /** Enable freshness detection */
   enabled: boolean;
@@ -25,7 +29,11 @@ export interface FreshnessConfig {
   detectContentChanges: boolean;
 }
 
-/** Information about content freshness. */
+/**
+ * Information about content freshness.
+ *
+ * @category Types
+ */
 export interface ContentFreshnessInfo {
   /** URL being checked */
   url: string;

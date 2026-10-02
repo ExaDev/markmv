@@ -252,6 +252,7 @@ export type FixPrompter = (fix: PlannedLinkFix) => Promise<number | undefined>;
  * @param knownFiles - Absolute paths of every candidate file in the project
  *
  * @returns One planned fix per broken internal link that has suggestions
+ * @category Commands
  */
 export function planLinkFixes(
   result: ValidateResult,
@@ -286,6 +287,7 @@ export function planLinkFixes(
  *
  * @param fix - The planned fix being accepted
  * @param choiceIndex - Zero-based index into fix.suggestions
+ * @category Commands
  */
 export async function applyLinkFix(
   fix: PlannedLinkFix,
@@ -392,8 +394,8 @@ async function scanKnownFiles(patterns: string[]): Promise<string[]> {
  *   Basic validation
  *   ```typescript
  *   const result = await validateLinks(['**\/*.md'], {
- *   checkExternal: true,
- *   onlyBroken: true
+ *       checkExternal: true,
+ *       onlyBroken: true
  *   });
  *
  *   console.log('Found ' + result.brokenLinks + ' broken links in ' + result.filesProcessed + ' files');
@@ -403,9 +405,9 @@ async function scanKnownFiles(patterns: string[]): Promise<string[]> {
  *   Validate specific link types only
  *   ```typescript
  *   const result = await validateLinks(['docs\/*.md'], {
- *   linkTypes: ['internal', 'image'],
- *   strictInternal: true,
- *   includeContext: true
+ *       linkTypes: ['internal', 'image'],
+ *       strictInternal: true,
+ *       includeContext: true
  *   });
  *   ```
  *
@@ -413,6 +415,7 @@ async function scanKnownFiles(patterns: string[]): Promise<string[]> {
  * @param options - Validation configuration options
  *
  * @returns Promise resolving to validation results
+ * @category Commands
  */
 export async function validateLinks(
   patterns: string[],
@@ -954,6 +957,7 @@ export async function validateLinks(
  *
  * @param patterns - File patterns to validate
  * @param cliOptions - CLI-specific options
+ * @category Commands
  */
 export async function validateCommand(
   patterns: string[],

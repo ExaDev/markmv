@@ -133,7 +133,7 @@ Restart Claude Desktop and look for the 🔧 MCP icon in the chat. If configured
 
 ## 📖 Documentation
 
-The [API reference](https://exadev.github.io/markmv/) is generated from the TypeScript sources on every release: [commands](https://exadev.github.io/markmv/modules.html#Commands), [core classes](https://exadev.github.io/markmv/modules.html#Core), the join, merge and split [strategies](https://exadev.github.io/markmv/modules.html#Strategies), and the exported types. See the [changelog](https://github.com/ExaDev/markmv/blob/main/CHANGELOG.md) for what changed in each release.
+The [API reference](https://exadev.github.io/markmv/) is generated from the TypeScript sources on every release: [commands](https://exadev.github.io/markmv/modules.html#commands), [core classes](https://exadev.github.io/markmv/modules.html#core), the join, merge and split [strategies](https://exadev.github.io/markmv/modules.html#strategies), and the exported types. See the [changelog](https://github.com/ExaDev/markmv/blob/main/CHANGELOG.md) for what changed in each release.
 
 ## 🛠️ Development
 

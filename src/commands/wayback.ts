@@ -53,7 +53,11 @@ export interface WaybackOptions {
   recursive?: boolean;
 }
 
-/** A single converted link destination, with its location in the source file. */
+/**
+ * A single converted link destination, with its location in the source file.
+ *
+ * @category Commands
+ */
 export interface WaybackLinkChange {
   /** Absolute path of the file containing the link */
   file: string;
@@ -65,7 +69,11 @@ export interface WaybackLinkChange {
   to: string;
 }
 
-/** Per-file outcome of a Wayback conversion pass. */
+/**
+ * Per-file outcome of a Wayback conversion pass.
+ *
+ * @category Commands
+ */
 export interface WaybackFileResult {
   /** Absolute path of the processed file */
   file: string;
@@ -81,7 +89,11 @@ export interface WaybackFileResult {
   changes: WaybackLinkChange[];
 }
 
-/** Aggregate outcome of a Wayback conversion run across all requested files. */
+/**
+ * Aggregate outcome of a Wayback conversion run across all requested files.
+ *
+ * @category Commands
+ */
 export interface WaybackResult {
   /** Whether every file was processed without error */
   success: boolean;

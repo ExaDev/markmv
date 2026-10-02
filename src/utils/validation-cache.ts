@@ -3,7 +3,7 @@
  *
  * @file Provides caching capabilities for link validation results to improve performance
  *
- * @category Utils
+ * @category Utilities
  */
 
 import { createHash } from "node:crypto";
@@ -15,7 +15,7 @@ import type { BrokenLink } from "../types/config.js";
 /**
  * The per-file validation outcome stored in the cache.
  *
- * @category Utils
+ * @category Utilities
  */
 export interface ValidationResult {
   /** Broken links found in the file */
@@ -29,7 +29,7 @@ export interface ValidationResult {
 /**
  * Cached validation result for a file.
  *
- * @category Utils
+ * @category Utilities
  */
 export interface CachedValidationResult {
   /** File path that was validated */
@@ -53,7 +53,7 @@ export interface CachedValidationResult {
 /**
  * Cache metadata and statistics.
  *
- * @category Utils
+ * @category Utilities
  */
 export interface CacheMetadata {
   /** Total number of cached files */
@@ -73,7 +73,7 @@ export interface CacheMetadata {
 /**
  * Cache configuration options.
  *
- * @category Utils
+ * @category Utilities
  */
 export interface CacheConfig {
   /** Cache directory path */
@@ -126,7 +126,7 @@ const DEFAULT_CACHE_CONFIG: CacheConfig = {
  * Provides efficient caching of validation results with content-based invalidation, TTL for
  * external links, and automatic cleanup of stale entries.
  *
- * @category Utils
+ * @category Utilities
  *
  * @example
  *   Basic usage
@@ -136,8 +136,8 @@ const DEFAULT_CACHE_CONFIG: CacheConfig = {
  *   // Check for cached result
  *   const cached = await cache.get('/path/to/file.md', contentHash);
  *   if (cached) {
- *   console.log('Using cached validation result');
- *   return cached.result;
+ *     console.log('Using cached validation result');
+ *     return cached.result;
  *   }
  *
  *   // Perform validation and cache result
@@ -551,7 +551,7 @@ export class ValidationCache {
 /**
  * Calculate hash of file content.
  *
- * @category Utils
+ * @category Utilities
  *
  * @param filePath - Path to the file
  *
@@ -572,7 +572,7 @@ export async function calculateFileHash(filePath: string): Promise<string> {
 /**
  * Calculate hash of configuration object.
  *
- * @category Utils
+ * @category Utilities
  *
  * @param config - Configuration object
  *

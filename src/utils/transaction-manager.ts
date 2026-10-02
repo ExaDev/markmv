@@ -64,8 +64,8 @@ export interface TransactionOptions {
  *   Transactional file operations
  *   ```typescript
  *   const transaction = new TransactionManager({
- *   createBackups: true,
- *   continueOnError: false
+ *       createBackups: true,
+ *       continueOnError: false
  *   });
  *
  *   // Add operations to the transaction
@@ -73,14 +73,14 @@ export interface TransactionOptions {
  *   transaction.addContentUpdate('target.md', newContent);
  *
  *   try {
- *   const result = await transaction.execute();
- *   if (result.success) {
- *   console.log('All operations completed successfully');
- *   } else {
- *   console.log('Transaction failed, all changes rolled back');
- *   }
+ *     const result = await transaction.execute();
+ *     if (result.success) {
+ *       console.log('All operations completed successfully');
+ *     } else {
+ *       console.log('Transaction failed, all changes rolled back');
+ *     }
  *   } catch (error) {
- *   console.error('Transaction error:', error);
+ *     console.error('Transaction error:', error);
  *   }
  *   ```
  */

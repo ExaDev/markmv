@@ -181,8 +181,8 @@ const DEFAULT_CLIPPER_OPTIONS: Required<
  *   Basic usage
  *   ```typescript
  *   const clipper = new WebClipper({
- *   strategy: 'readability',
- *   imageStrategy: 'download'
+ *       strategy: 'readability',
+ *       imageStrategy: 'download'
  *   });
  *
  *   const result = await clipper.clip('https://example.com/article');
@@ -193,8 +193,8 @@ const DEFAULT_CLIPPER_OPTIONS: Required<
  *   Custom extraction
  *   ```typescript
  *   const clipper = new WebClipper({
- *   strategy: 'manual',
- *   selectors: ['article', '.content', 'main']
+ *       strategy: 'manual',
+ *       selectors: ['article', '.content', 'main']
  *   });
  *
  *   const result = await clipper.clip('https://docs.example.com');

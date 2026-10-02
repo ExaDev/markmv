@@ -4,7 +4,11 @@
  * @file Detects authentication-protected URLs and handles auth-aware validation
  */
 
-/** Configuration for authentication detection. */
+/**
+ * Configuration for authentication detection.
+ *
+ * @category Types
+ */
 export interface AuthConfig {
   /** Enable authentication detection */
   enabled: boolean;
@@ -20,7 +24,11 @@ export interface AuthConfig {
   customHeaders: Record<string, Record<string, string>>;
 }
 
-/** Information about authentication status of a link. */
+/**
+ * Information about authentication status of a link.
+ *
+ * @category Types
+ */
 export interface AuthInfo {
   /** URL being checked */
   url: string;

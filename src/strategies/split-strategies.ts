@@ -78,11 +78,11 @@ export interface SplitStrategyOptions {
  *   Implementing a custom split strategy
  *   ```typescript
  *   class CustomSplitStrategy extends BaseSplitStrategy {
- *   async split(content: string, originalFilename: string): Promise<SplitResult> {
- *   // Custom splitting logic
- *   const sections = this.customSplit(content);
- *   return { sections, remainingContent: undefined, errors: [], warnings: [] };
- *   }
+ *     async split(content: string, originalFilename: string): Promise<SplitResult> {
+ *       // Custom splitting logic
+ *       const sections = this.customSplit(content);
+ *       return { sections, remainingContent: undefined, errors: [], warnings: [] };
+ *     }
  *   }
  *   ```
  */
@@ -268,9 +268,9 @@ export abstract class BaseSplitStrategy {
  *   Header-based splitting
  *   ```typescript
  *   const strategy = new HeaderBasedSplitStrategy({
- *   headerLevel: 2,  // Split on ## headers
- *   outputDir: './sections/',
- *   filenamePattern: '{title}'
+ *       headerLevel: 2,  // Split on ## headers
+ *       outputDir: './sections/',
+ *       filenamePattern: '{title}'
  *   });
  *
  *   const result = await strategy.split(content, 'document.md');
@@ -388,9 +388,9 @@ export class HeaderBasedSplitStrategy extends BaseSplitStrategy {
  *   Size-based splitting
  *   ```typescript
  *   const strategy = new SizeBasedSplitStrategy({
- *   maxSize: 50,  // 50KB per file
- *   outputDir: './chunks/',
- *   filenamePattern: '{original}-part-{index}'
+ *       maxSize: 50,  // 50KB per file
+ *       outputDir: './chunks/',
+ *       filenamePattern: '{original}-part-{index}'
  *   });
  *
  *   const result = await strategy.split(content, 'large-document.md');
@@ -570,9 +570,9 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
  *   Manual marker splitting
  *   ```typescript
  *   const strategy = new ManualSplitStrategy({
- *   splitMarkers: ['<!-- split -->', '---BREAK---'],
- *   outputDir: './parts/',
- *   filenamePattern: '{title}'
+ *       splitMarkers: ['<!-- split -->', '---BREAK---'],
+ *       outputDir: './parts/',
+ *       filenamePattern: '{title}'
  *   });
  *
  *   // Content with markers like: <!-- split -->
@@ -702,9 +702,9 @@ export class ManualSplitStrategy extends BaseSplitStrategy {
  *   Line-based splitting
  *   ```typescript
  *   const strategy = new LineBasedSplitStrategy({
- *   splitLines: [100, 250, 400],  // Split at these line numbers
- *   outputDir: './sections/',
- *   filenamePattern: 'section-{index}'
+ *       splitLines: [100, 250, 400],  // Split at these line numbers
+ *       outputDir: './sections/',
+ *       filenamePattern: 'section-{index}'
  *   });
  *
  *   const result = await strategy.split(content, 'document.md');

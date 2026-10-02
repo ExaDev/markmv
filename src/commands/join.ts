@@ -41,8 +41,8 @@ export interface JoinOptions {
  *   Basic file joining
  *   ```typescript
  *   await joinCommand(['intro.md', 'content.md', 'conclusion.md'], {
- *   output: 'complete-guide.md',
- *   orderStrategy: 'dependency'
+ *       output: 'complete-guide.md',
+ *       orderStrategy: 'dependency'
  *   });
  *   ```
  *
@@ -50,10 +50,10 @@ export interface JoinOptions {
  *   Dry run with verbose output
  *   ```typescript
  *   await joinCommand(['docs/*.md'], {
- *   output: 'handbook.md',
- *   dryRun: true,
- *   verbose: true,
- *   orderStrategy: 'alphabetical'
+ *       output: 'handbook.md',
+ *       dryRun: true,
+ *       verbose: true,
+ *       orderStrategy: 'alphabetical'
  *   });
  *   ```
  *

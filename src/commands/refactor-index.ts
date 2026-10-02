@@ -119,6 +119,7 @@ function refusalResult(
  * @param options - Configuration options for the operation
  *
  * @returns Promise resolving to the outcome of the conversion
+ * @category Commands
  */
 export async function refactorIndex(
   filePath: string,

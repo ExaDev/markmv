@@ -80,8 +80,8 @@ export interface GraphResult {
  *   Basic graph generation
  *   ```typescript
  *   const result = await generateGraph(['docs/**\/*.md'], {
- *   format: 'mermaid',
- *   includeExternal: false
+ *       format: 'mermaid',
+ *       includeExternal: false
  *   });
  *
  *   console.log('Generated Mermaid diagram:');
@@ -92,9 +92,9 @@ export interface GraphResult {
  *   Generate interactive HTML visualization
  *   ```typescript
  *   const result = await generateGraph(['**\/*.md'], {
- *   format: 'html',
- *   output: 'graph.html',
- *   includeImages: true
+ *       format: 'html',
+ *       output: 'graph.html',
+ *       includeImages: true
  *   });
  *
  *   console.log('Interactive graph saved to: ' + result.outputFile);
@@ -104,6 +104,7 @@ export interface GraphResult {
  * @param options - Graph generation options
  *
  * @returns Promise resolving to graph generation results
+ * @category Commands
  */
 export async function generateGraph(
   patterns: string[],
@@ -249,6 +250,7 @@ function isGraphOutputFormat(value: string): value is GraphOutputFormat {
  *
  * @param patterns - File patterns to process
  * @param cliOptions - CLI-specific options
+ * @category Commands
  */
 export async function graphCommand(
   patterns: string[],
