@@ -12,6 +12,9 @@ npx markmv --help
 
 > TypeScript CLI for markdown file operations with intelligent link refactoring
 
+[![npm downloads chart, log scale](https://shieldcn.dev/chart/npm/markmv.svg?bg=transparent&logo=false&yScale=log)](https://www.npmjs.com/package/markmv)
+[![GitHub stars chart, log scale](https://shieldcn.dev/chart/stars/ExaDev/markmv.svg?bg=transparent&logo=false&yScale=log)](https://github.com/ExaDev/markmv/stargazers)
+
 **markmv** revolutionises how you manage markdown documentation by providing intelligent file operations that automatically maintain link integrity across your entire project. Whether you're reorganising documentation, splitting large files, or combining related content, markmv ensures your links never break.
 
 ## ✨ Key Features
