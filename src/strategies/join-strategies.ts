@@ -121,8 +121,16 @@ export interface JoinStrategyOptions {
  *   ```
  */
 export abstract class BaseJoinStrategy {
+  /** The effective options for this strategy: the supplied options layered over the defaults set in the constructor. */
   protected options: JoinStrategyOptions;
 
+  /**
+   * Creates a join strategy.
+   *
+   * The defaults are dependency ordering, a `---` rule between sections, frontmatter merging, link deduplication and structure preservation, with automatic header conflict resolution off. Any supplied option overrides its default.
+   *
+   * @param options - Options that override the defaults.
+   */
   constructor(options: JoinStrategyOptions = {}) {
     this.options = {
       orderStrategy: "dependency",
@@ -135,6 +143,14 @@ export abstract class BaseJoinStrategy {
     };
   }
 
+  /**
+   * Orders the sections and combines them into a single document.
+   *
+   * Each concrete strategy decides the section order. Conflicts between sections are reported in the result rather than thrown, and a failure while joining is reported through `errors` with `success` set to false.
+   *
+   * @param sections - The sections to join, one per source file.
+   * @returns The combined content, merged frontmatter (when enabled), the source files in their final order, and any conflicts, warnings, errors and removed duplicate links.
+   */
   abstract join(sections: JoinSection[]): Promise<JoinResult>;
 
   /**
@@ -149,7 +165,15 @@ export abstract class BaseJoinStrategy {
     return filePath;
   }
 
-  /** Extract title from content (frontmatter or first header) */
+  /**
+   * Extracts a title from a document.
+   *
+   * A `title:` frontmatter line takes precedence, with any quote characters removed. Otherwise the text of the first markdown header in the content is used.
+   *
+   * @param content - The document body to scan for a header.
+   * @param frontmatter - The raw frontmatter block, if the document has one.
+   * @returns The title, or undefined when there is neither a frontmatter title nor a header.
+   */
   protected extractTitle(
     content: string,
     frontmatter?: string,
@@ -174,7 +198,14 @@ export abstract class BaseJoinStrategy {
     return undefined;
   }
 
-  /** Merge multiple frontmatter blocks */
+  /**
+   * Merges the frontmatter blocks of several sections into one block.
+   *
+   * The `tags`, `categories` and `keywords` keys are collected across all sections as de-duplicated lists. Differing `title` values are combined with ` & `. Every other key keeps the first value found, and a purely numeric value is written as a number.
+   *
+   * @param sections - The sections whose frontmatter is merged, in output order.
+   * @returns A `---` delimited frontmatter block, or an empty string when no section supplies any keys.
+   */
   protected mergeFrontmatter(sections: JoinSection[]): string {
     const frontmatterData: Partial<Record<string, string | number | string[]>> =
       {};
@@ -260,7 +291,14 @@ export abstract class BaseJoinStrategy {
     return result;
   }
 
-  /** Detect conflicts between sections */
+  /**
+   * Detects conflicts between sections.
+   *
+   * Reports a `duplicate-headers` conflict for each header (compared case-insensitively) that appears in more than one section, and a `frontmatter-merge` conflict for each frontmatter key present in more than one section.
+   *
+   * @param sections - The sections to compare.
+   * @returns One conflict per duplicated header or frontmatter key, naming the files involved.
+   */
   protected detectConflicts(sections: JoinSection[]): JoinConflict[] {
     const conflicts: JoinConflict[] = [];
     const seenHeaders = new Set<string>();
@@ -328,7 +366,12 @@ export abstract class BaseJoinStrategy {
     return conflicts;
   }
 
-  /** Extract all headers from content */
+  /**
+   * Extracts the text of every markdown header in a document.
+   *
+   * @param content - The markdown content to scan.
+   * @returns The header texts in document order, without the leading `#` markers.
+   */
   protected extractHeaders(content: string): string[] {
     const headers: string[] = [];
     const lines = content.split("\n");
@@ -343,9 +386,18 @@ export abstract class BaseJoinStrategy {
     return headers;
   }
 
-  /** Deduplicate links in combined content */
+  /**
+   * Removes repeated links from combined content.
+   *
+   * The first occurrence of each markdown link (same text and target) and each bare URL is kept. A repeated markdown link is replaced by its link text (or its URL when the text is empty), and a repeated bare URL is deleted.
+   *
+   * @param content - The combined document content.
+   * @returns The de-duplicated content and the occurrences that were removed.
+   */
   protected deduplicateLinks(content: string): {
+    /** The content with repeated links replaced or removed. */
     content: string;
+    /** Each removed occurrence exactly as it appeared, in document order. */
     removedLinks: string[];
   } {
     const seenLinks = new Set<string>();
@@ -420,6 +472,14 @@ export abstract class BaseJoinStrategy {
  *   ```
  */
 export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
+  /**
+   * Joins sections in dependency order.
+   *
+   * Sections are topologically sorted so that a file comes after every file in the input that it depends on. Dependencies that are not among the input sections are ignored. If the dependencies are circular, a warning is recorded and the sections are ordered by their `order` field instead.
+   *
+   * @param sections - The sections to join.
+   * @returns The joined result, or a failed result with `errors` populated if joining throws.
+   */
   join(sections: JoinSection[]): Promise<JoinResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
@@ -588,6 +648,14 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
  *   ```
  */
 export class AlphabeticalJoinStrategy extends BaseJoinStrategy {
+  /**
+   * Joins sections in case-insensitive alphabetical order.
+   *
+   * Sections are sorted by title, using the file path for a section with no title.
+   *
+   * @param sections - The sections to join.
+   * @returns The joined result, or a failed result with `errors` populated if joining throws.
+   */
   join(sections: JoinSection[]): Promise<JoinResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
@@ -682,6 +750,14 @@ export class AlphabeticalJoinStrategy extends BaseJoinStrategy {
  *   ```
  */
 export class ManualOrderJoinStrategy extends BaseJoinStrategy {
+  /**
+   * Joins sections in the order given by the `customOrder` option.
+   *
+   * Sections named in `customOrder` come first, in that order. A named file with no matching section adds a warning. Remaining sections follow in case-insensitive alphabetical order by title, using the file path for a section with no title.
+   *
+   * @param sections - The sections to join.
+   * @returns The joined result, or a failed result with `errors` populated if joining throws.
+   */
   join(sections: JoinSection[]): Promise<JoinResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
@@ -797,6 +873,14 @@ export class ManualOrderJoinStrategy extends BaseJoinStrategy {
  *   ```
  */
 export class ChronologicalJoinStrategy extends BaseJoinStrategy {
+  /**
+   * Joins sections from oldest to newest.
+   *
+   * Each section's date comes from a `date:` frontmatter line, or failing that from a `YYYY-MM-DD` date in its file path. Sections with no usable date are placed last.
+   *
+   * @param sections - The sections to join.
+   * @returns The joined result, or a failed result with `errors` populated if joining throws.
+   */
   join(sections: JoinSection[]): Promise<JoinResult> {
     const errors: string[] = [];
     const warnings: string[] = [];

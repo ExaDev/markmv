@@ -122,8 +122,16 @@ export interface MergeStrategyOptions {
  *   ```
  */
 export abstract class BaseMergeStrategy {
+  /** The effective options for this strategy: the supplied options layered over the defaults set in the constructor. */
   protected options: MergeStrategyOptions;
 
+  /**
+   * Creates a merge strategy.
+   *
+   * The defaults are automatic conflict resolution, a blank line between merged sections, no transclusions, frontmatter merging, structure preservation, the `![[{file}#{section}]]` transclusion template and a maximum transclusion depth. Any supplied option overrides its default.
+   *
+   * @param options - Options that override the defaults.
+   */
   constructor(options: MergeStrategyOptions = {}) {
     this.options = {
       conflictResolution: "auto",
@@ -137,6 +145,17 @@ export abstract class BaseMergeStrategy {
     };
   }
 
+  /**
+   * Merges the content of a source file into a target file.
+   *
+   * Each concrete strategy decides where the source content is placed. Conflicts are reported in the result rather than thrown, and a failure while merging is reported through `errors` with `success` set to false.
+   *
+   * @param targetContent - The full content of the file being merged into, including any frontmatter.
+   * @param sourceContent - The full content of the file being merged from, including any frontmatter.
+   * @param targetFile - The path of the target file, used in conflict reports and transclusion loop checks.
+   * @param sourceFile - The path of the source file, used in conflict reports and transclusion references.
+   * @returns The merged content and frontmatter, the files involved, and any conflicts, warnings, errors and created transclusions.
+   */
   abstract merge(
     targetContent: string,
     sourceContent: string,
@@ -144,10 +163,22 @@ export abstract class BaseMergeStrategy {
     sourceFile: string,
   ): Promise<MergeResult>;
 
-  /** Extract Obsidian transclusions from content */
-  protected extractTransclusions(
-    content: string,
-  ): { ref: string; file: string; section?: string; line: number }[] {
+  /**
+   * Extracts Obsidian transclusions (`![[file]]` or `![[file#section]]`) from content.
+   *
+   * @param content - The markdown content to scan.
+   * @returns One entry per transclusion, in document order.
+   */
+  protected extractTransclusions(content: string): {
+    /** The full transclusion text as written, for example `![[notes#intro]]`. */
+    ref: string;
+    /** The referenced file, with a `.md` extension added when the reference had none. */
+    file: string;
+    /** The referenced section, when the reference includes one after `#`. */
+    section?: string;
+    /** The one-based line number on which the transclusion appears. */
+    line: number;
+  }[] {
     const transclusions: {
       ref: string;
       file: string;
@@ -178,7 +209,15 @@ export abstract class BaseMergeStrategy {
     return transclusions;
   }
 
-  /** Create an Obsidian transclusion reference */
+  /**
+   * Builds a transclusion reference from the configured `transclusionTemplate`.
+   *
+   * The `.md` extension is dropped from the file name. Without a section, the `#{section}` part of the template is removed.
+   *
+   * @param file - The file to reference.
+   * @param section - The section within the file, if any.
+   * @returns The transclusion text.
+   */
   protected createTransclusion(file: string, section?: string): string {
     const template =
       this.options.transclusionTemplate ?? "![[{file}#{section}]]";
@@ -192,7 +231,16 @@ export abstract class BaseMergeStrategy {
     return template.replace("{file}", cleanFile).replace("#{section}", "");
   }
 
-  /** Detect potential transclusion loops */
+  /**
+   * Detects whether transcluding the source into the target would create a loop.
+   *
+   * A loop is reported when any existing transclusion mentions the target file name, or when the source and target are the same file.
+   *
+   * @param targetFile - The path of the file being merged into.
+   * @param sourceFile - The path of the file that would be transcluded.
+   * @param existingTransclusions - The transclusion references already in the target.
+   * @returns True when a loop would result.
+   */
   protected detectTransclusionLoops(
     targetFile: string,
     sourceFile: string,
@@ -215,7 +263,15 @@ export abstract class BaseMergeStrategy {
     return false;
   }
 
-  /** Merge frontmatter from two sources */
+  /**
+   * Merges the frontmatter of the target and source.
+   *
+   * When only one side has frontmatter it is returned unchanged. Otherwise, for keys present on both sides the target's value wins, except that `tags`, `categories` and `keywords` are combined as de-duplicated lists when both sides hold lists.
+   *
+   * @param targetFrontmatter - The target's raw frontmatter block, or an empty string.
+   * @param sourceFrontmatter - The source's raw frontmatter block, or an empty string.
+   * @returns The merged frontmatter block, or an empty string when neither side has any.
+   */
   protected mergeFrontmatter(
     targetFrontmatter: string,
     sourceFrontmatter: string,
@@ -295,10 +351,20 @@ export abstract class BaseMergeStrategy {
     return result;
   }
 
-  /** Extract headers from content with their levels */
-  protected extractHeaders(
-    content: string,
-  ): { text: string; level: number; line: number }[] {
+  /**
+   * Extracts every markdown header from content.
+   *
+   * @param content - The markdown content to scan.
+   * @returns One entry per header, in document order.
+   */
+  protected extractHeaders(content: string): {
+    /** The header text, without the `#` markers. */
+    text: string;
+    /** The header level, equal to the number of `#` characters. */
+    level: number;
+    /** The one-based line number of the header. */
+    line: number;
+  }[] {
     const headers: { text: string; level: number; line: number }[] = [];
     const lines = content.split("\n");
 
@@ -317,11 +383,26 @@ export abstract class BaseMergeStrategy {
     return headers;
   }
 
-  /** Find potential header conflicts between target and source */
+  /**
+   * Finds source headers that also exist in the target.
+   *
+   * Headers match when their text is equal ignoring case and they have the same level.
+   *
+   * @param targetContent - The target's content.
+   * @param sourceContent - The source's content.
+   * @returns One entry per colliding source header.
+   */
   protected findHeaderConflicts(
     targetContent: string,
     sourceContent: string,
-  ): { header: string; targetLine: number; sourceLine: number }[] {
+  ): {
+    /** The text of the source header. */
+    header: string;
+    /** The one-based line of the matching header in the target. */
+    targetLine: number;
+    /** The one-based line of the header in the source. */
+    sourceLine: number;
+  }[] {
     const targetHeaders = this.extractHeaders(targetContent);
     const sourceHeaders = this.extractHeaders(sourceContent);
     const conflicts: {
@@ -372,6 +453,17 @@ export abstract class BaseMergeStrategy {
  *   ```
  */
 export class AppendMergeStrategy extends BaseMergeStrategy {
+  /**
+   * Places the source content after the target content.
+   *
+   * Frontmatter is stripped from both bodies, the bodies are joined by the separator, and frontmatter is merged when `mergeFrontmatter` is on (otherwise the target's is kept). Duplicate headers are recorded as auto-resolved conflicts and left in place. When `createTransclusions` is on, a transclusion reference to the source is appended instead of its content, unless it would form a loop, in which case a warning is added and the content is appended.
+   *
+   * @param targetContent - The full content of the file being merged into, including any frontmatter.
+   * @param sourceContent - The full content of the file being merged from, including any frontmatter.
+   * @param targetFile - The path of the target file.
+   * @param sourceFile - The path of the source file.
+   * @returns The merged result, or a failed result with `errors` populated and the target content returned unchanged if merging throws.
+   */
   merge(
     targetContent: string,
     sourceContent: string,
@@ -505,6 +597,17 @@ export class AppendMergeStrategy extends BaseMergeStrategy {
  *   ```
  */
 export class PrependMergeStrategy extends BaseMergeStrategy {
+  /**
+   * Places the source content before the target content.
+   *
+   * Frontmatter is stripped from both bodies, the bodies are joined by the separator with the source first, and frontmatter is merged when `mergeFrontmatter` is on (otherwise the target's is kept). Duplicate headers are recorded as auto-resolved conflicts and left in place. Transclusions are not created by this strategy.
+   *
+   * @param targetContent - The full content of the file being merged into, including any frontmatter.
+   * @param sourceContent - The full content of the file being merged from, including any frontmatter.
+   * @param targetFile - The path of the target file.
+   * @param sourceFile - The path of the source file.
+   * @returns The merged result, or a failed result with `errors` populated and the target content returned unchanged if merging throws.
+   */
   merge(
     targetContent: string,
     sourceContent: string,
@@ -606,6 +709,17 @@ export class PrependMergeStrategy extends BaseMergeStrategy {
  *   ```
  */
 export class InteractiveMergeStrategy extends BaseMergeStrategy {
+  /**
+   * Merges the files while recording each decision point as an unresolved conflict.
+   *
+   * Every duplicate header becomes a `header-collision` conflict and every source header becomes a `content-overlap` placement conflict, all marked as not auto-resolved. Two warnings state that manual resolution is required. The returned content is a fallback: the target, a `MERGE CONFLICT` comment and the source, each joined by the separator, with frontmatter merged when `mergeFrontmatter` is on.
+   *
+   * @param targetContent - The full content of the file being merged into, including any frontmatter.
+   * @param sourceContent - The full content of the file being merged from, including any frontmatter.
+   * @param targetFile - The path of the target file.
+   * @param sourceFile - The path of the source file.
+   * @returns The merged result, or a failed result with `errors` populated and the target content returned unchanged if merging throws.
+   */
   merge(
     targetContent: string,
     sourceContent: string,

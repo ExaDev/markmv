@@ -87,8 +87,16 @@ export interface SplitStrategyOptions {
  *   ```
  */
 export abstract class BaseSplitStrategy {
+  /** The effective options for this strategy: the supplied options layered over the defaults set in the constructor. */
   protected options: SplitStrategyOptions;
 
+  /**
+   * Creates a split strategy.
+   *
+   * The defaults are a header level of 2, frontmatter preserved in the original file, and the `{title}` filename pattern. Any supplied option overrides its default.
+   *
+   * @param options - Options that override the defaults.
+   */
   constructor(options: SplitStrategyOptions = {}) {
     this.options = {
       headerLevel: 2,
@@ -98,6 +106,15 @@ export abstract class BaseSplitStrategy {
     };
   }
 
+  /**
+   * Divides content into sections that can each become their own file.
+   *
+   * Each concrete strategy decides where the split points are. Problems are reported in the result's `errors` and `warnings` rather than thrown.
+   *
+   * @param content - The full content of the file to split, including any frontmatter.
+   * @param originalFilename - The name of the file being split, used when generating section filenames.
+   * @returns The sections to create, the content to leave in the original file (the frontmatter when `preserveFrontmatter` is on), and any errors and warnings.
+   */
   abstract split(
     content: string,
     originalFilename: string,
@@ -131,7 +148,16 @@ export abstract class BaseSplitStrategy {
     return fallback;
   }
 
-  /** Generate a safe filename from a title */
+  /**
+   * Generates a filename for a section from the `filenamePattern` option.
+   *
+   * `{title}` is replaced by the sanitised title (or `section-N` when that is empty), `{index}` by the one-based index and `{original}` by the original filename without its extension. The original file's extension is appended, defaulting to `.md`.
+   *
+   * @param title - The section title.
+   * @param index - The zero-based position of the section.
+   * @param originalFilename - The name of the file being split.
+   * @returns The generated filename.
+   */
   protected generateFilename(
     title: string,
     index: number,
@@ -154,7 +180,14 @@ export abstract class BaseSplitStrategy {
     );
   }
 
-  /** Sanitize a string to be safe for use as filename */
+  /**
+   * Converts a string into a filename-safe slug.
+   *
+   * The text is lower-cased, characters other than letters, digits, spaces and hyphens are removed, whitespace becomes hyphens, repeated and surrounding hyphens are collapsed, and the result is limited to 50 characters.
+   *
+   * @param str - The text to convert.
+   * @returns The slug, which may be empty.
+   */
   protected sanitizeFilename(str: string): string {
     return str
       .toLowerCase()
@@ -165,9 +198,16 @@ export abstract class BaseSplitStrategy {
       .substring(0, 50);
   }
 
-  /** Extract frontmatter from content */
+  /**
+   * Separates a leading frontmatter block from the rest of the content.
+   *
+   * @param content - The full file content.
+   * @returns The split content.
+   */
   protected extractFrontmatter(content: string): {
+    /** The leading `---` delimited block including its delimiters, or an empty string when there is none. */
     frontmatter: string;
+    /** The content following the frontmatter, or the whole input when there is none. */
     content: string;
   } {
     const frontmatterMatch = /^---\n(.*?)\n---\n/s.exec(content);
@@ -182,18 +222,34 @@ export abstract class BaseSplitStrategy {
     return { frontmatter: "", content };
   }
 
-  /** Extract title from header line */
+  /**
+   * Extracts the title text from a header line.
+   *
+   * @param headerLine - A markdown header line.
+   * @returns The text after the `#` markers, trimmed.
+   */
   protected extractTitleFromHeader(headerLine: string): string {
     return headerLine.replace(/^#+\s*/, "").trim();
   }
 
-  /** Count the header level (number of # characters) */
+  /**
+   * Returns the header level of a line.
+   *
+   * @param line - The line to inspect.
+   * @returns The number of leading `#` characters when the line is a header (the markers followed by whitespace or the end of the line), otherwise 0.
+   */
   protected getHeaderLevel(line: string): number {
     const match = /^(#+)(\s|$)/.exec(line);
     return match ? match[1].length : 0;
   }
 
-  /** Check if a line is a header at or above the specified level */
+  /**
+   * Checks whether a line is a header of exactly the given level.
+   *
+   * @param line - The line to inspect.
+   * @param targetLevel - The header level to match.
+   * @returns True when the line's header level equals `targetLevel`; headers of other levels do not match.
+   */
   protected isTargetHeader(line: string, targetLevel: number): boolean {
     const level = this.getHeaderLevel(line);
     return level === targetLevel;
@@ -222,6 +278,15 @@ export abstract class BaseSplitStrategy {
  *   ```
  */
 export class HeaderBasedSplitStrategy extends BaseSplitStrategy {
+  /**
+   * Splits at every header of the `headerLevel` option (default 2).
+   *
+   * Only headers of exactly that level start a section, so deeper headers stay inside their parent section. Each section runs from its header to the line before the next matching header, and content before the first matching header is not placed in any section. An empty header produces a warning and a numbered title. If no matching header exists, an error is recorded.
+   *
+   * @param content - The full content of the file to split, including any frontmatter.
+   * @param originalFilename - The name of the file being split, used when generating section filenames.
+   * @returns The sections, titled by their header text, with the frontmatter as remaining content when `preserveFrontmatter` is on.
+   */
   split(content: string, originalFilename: string): Promise<SplitResult> {
     const { frontmatter, content: mainContent } =
       this.extractFrontmatter(content);
@@ -333,6 +398,15 @@ export class HeaderBasedSplitStrategy extends BaseSplitStrategy {
  *   ```
  */
 export class SizeBasedSplitStrategy extends BaseSplitStrategy {
+  /**
+   * Splits into consecutive parts that stay within the `maxSize` option (in kilobytes, default 100).
+   *
+   * Lines are accumulated until adding the next one would exceed the limit, then a new part starts at that line, so splits fall on line boundaries and a single line larger than the limit becomes a part of its own. Each part is titled after the nearest header (searching backwards from its first line, then forwards), or `Part N` when the content has no headers. Filenames from the second part onwards carry an index suffix to keep them unique. An error is recorded when the content yields no parts.
+   *
+   * @param content - The full content of the file to split, including any frontmatter.
+   * @param originalFilename - The name of the file being split, used when generating section filenames.
+   * @returns The parts, with the frontmatter as remaining content when `preserveFrontmatter` is on.
+   */
   split(content: string, originalFilename: string): Promise<SplitResult> {
     const { frontmatter, content: mainContent } =
       this.extractFrontmatter(content);
@@ -506,6 +580,15 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
  *   ```
  */
 export class ManualSplitStrategy extends BaseSplitStrategy {
+  /**
+   * Splits at lines that contain one of the `splitMarkers` (default `<!-- split -->` and `---split---`).
+   *
+   * The marker lines are dropped and the text between them becomes the sections, including the text before the first marker and after the last. A section is titled by its first header, otherwise by its first line of text (limited to 50 characters) that is not a comment or rule, otherwise `Section N`. When no marker is found a warning is added, no sections are returned, and the whole original content is returned as remaining content.
+   *
+   * @param content - The full content of the file to split, including any frontmatter.
+   * @param originalFilename - The name of the file being split, used when generating section filenames.
+   * @returns The sections, with the frontmatter as remaining content when `preserveFrontmatter` is on.
+   */
   split(content: string, originalFilename: string): Promise<SplitResult> {
     const { frontmatter, content: mainContent } =
       this.extractFrontmatter(content);
@@ -629,6 +712,15 @@ export class ManualSplitStrategy extends BaseSplitStrategy {
  *   ```
  */
 export class LineBasedSplitStrategy extends BaseSplitStrategy {
+  /**
+   * Splits before each one-based line number in the `splitLines` option.
+   *
+   * Line numbers are de-duplicated and sorted, and numbering counts lines after the frontmatter. A number below 1 or beyond the last line produces a warning; a number only slightly past the end is treated as the last line. Sections containing only whitespace are skipped. Each section is titled by its first header, otherwise by the first few words of its first suitable line, otherwise by its starting line. With no `splitLines`, an error is recorded and the whole original content is returned as remaining content. When no valid line remains, the content is returned as a single section.
+   *
+   * @param content - The full content of the file to split, including any frontmatter.
+   * @param originalFilename - The name of the file being split, used when generating section filenames.
+   * @returns The sections, with the frontmatter as remaining content when `preserveFrontmatter` is on.
+   */
   split(content: string, originalFilename: string): Promise<SplitResult> {
     const { frontmatter, content: mainContent } =
       this.extractFrontmatter(content);
