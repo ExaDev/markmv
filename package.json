@@ -1,73 +1,35 @@
 {
   "name": "markmv",
-  "version": "1.40.0",
   "description": "TypeScript CLI for markdown file operations with intelligent link refactoring",
-  "type": "module",
-  "packageManager": "pnpm@11.22.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "version": "1.40.0",
+  "author": "Joe Mearman",
   "bin": {
     "markmv": "./dist/cli.js",
-    "markmv-mcp": "./dist/mcp-server.js",
-    "markmv-api": "./dist/api-server.js"
+    "markmv-api": "./dist/api-server.js",
+    "markmv-mcp": "./dist/mcp-server.js"
   },
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./package.json": "./package.json"
+  "bugs": {
+    "url": "https://github.com/ExaDev/markmv/issues"
   },
-  "scripts": {
-    "build": "turbo run _build",
-    "_build": "tsc -p tsconfig.build.json",
-    "dev": "tsc -p tsconfig.build.json --watch",
-    "start": "node dist/cli.js",
-    "mcp-server": "node dist/mcp-server.js",
-    "api-server": "node dist/api-server.js",
-    "test": "vitest",
-    "test:run": "turbo run _test",
-    "_test": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "test:cross-platform": "node scripts/test-cross-platform.js",
-    "test:cross-platform:data": "node scripts/test-cross-platform.js --test-data-only",
-    "test:cross-platform:cli": "node scripts/test-cross-platform.js --cli-only",
-    "lint": "turbo run _lint",
-    "_lint": "eslint . --cache --max-warnings 0",
-    "lint:fix": "eslint . --fix",
-    "check": "turbo run _check",
-    "typecheck": "turbo run _typecheck",
-    "_typecheck": "tsc --noEmit",
-    "docs": "typedoc",
-    "docs:check": "typedoc --emit none",
-    "docs:serve": "npx serve docs",
-    "docs:view": "pnpm run docs && open docs/index.html",
-    "docs:watch": "typedoc --watch",
-    "release": "semantic-release",
-    "release:dry": "semantic-release --dry-run",
-    "commit": "cz",
-    "prepublishOnly": "pnpm run build && pnpm run test:run",
-    "publish:npm": "npm publish --access public",
-    "publish:dry": "npm pack --dry-run",
-    "prepare": "husky",
-    "knip": "turbo run _knip",
-    "_knip": "knip"
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
   },
-  "keywords": [
-    "markdown",
-    "cli",
-    "typescript",
-    "links",
-    "refactoring",
-    "file-operations",
-    "programmatic",
-    "api",
-    "library",
-    "documentation",
-    "cross-references"
-  ],
-  "author": "Joe Mearman",
-  "license": "CC-BY-NC-SA-4.0",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@mozilla/readability": "^0.6.0",
+    "commander": "^14.0.3",
+    "glob": "^13.0.6",
+    "jsdom": "^26.1.0",
+    "node-html-parser": "^7.0.1",
+    "remark-parse": "^11.0.0",
+    "remark-stringify": "^11.0.0",
+    "turndown": "^7.2.0",
+    "unified": "^11.0.5",
+    "unist-util-visit": "^5.1.0",
+    "zod": "4.6.5"
+  },
   "devDependencies": {
     "@commitlint/cli": "^21.2.2",
     "@commitlint/config-conventional": "^21.2.2",
@@ -75,6 +37,7 @@
     "@eslint/js": "^10.0.1",
     "@eslint/json": "2.0.1",
     "@eslint/markdown": "8.0.3",
+    "@exadev/eslint-config": "2.35.0",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
     "@types/jsdom": "^21.1.7",
@@ -107,22 +70,16 @@
     "yaml": "2.9.1",
     "yaml-eslint-parser": "2.1.0"
   },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "@mozilla/readability": "^0.6.0",
-    "commander": "^14.0.3",
-    "glob": "^13.0.6",
-    "jsdom": "^26.1.0",
-    "node-html-parser": "^7.0.1",
-    "remark-parse": "^11.0.0",
-    "remark-stringify": "^11.0.0",
-    "turndown": "^7.2.0",
-    "unified": "^11.0.5",
-    "unist-util-visit": "^5.1.0",
-    "zod": "4.6.5"
-  },
+  "documentation": "https://exadev.github.io/markmv/",
   "engines": {
     "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist/**/*",
@@ -131,6 +88,23 @@
     "CHANGELOG.md",
     "CONTRIBUTING.md"
   ],
+  "homepage": "https://exadev.github.io/markmv/",
+  "keywords": [
+    "api",
+    "cli",
+    "cross-references",
+    "documentation",
+    "file-operations",
+    "library",
+    "links",
+    "markdown",
+    "programmatic",
+    "refactoring",
+    "typescript"
+  ],
+  "license": "CC-BY-NC-SA-4.0",
+  "main": "dist/index.js",
+  "packageManager": "pnpm@11.22.0",
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/",
@@ -140,14 +114,41 @@
     "type": "git",
     "url": "https://github.com/ExaDev/markmv.git"
   },
-  "homepage": "https://exadev.github.io/markmv/",
-  "documentation": "https://exadev.github.io/markmv/",
-  "bugs": {
-    "url": "https://github.com/ExaDev/markmv/issues"
+  "scripts": {
+    "_build": "tsc -p tsconfig.build.json",
+    "_knip": "knip",
+    "_lint": "eslint . --cache --max-warnings 0",
+    "_test": "vitest run",
+    "_typecheck": "tsc --noEmit",
+    "api-server": "node dist/api-server.js",
+    "build": "turbo run _build",
+    "check": "turbo run _check",
+    "commit": "cz",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "docs": "typedoc",
+    "docs:check": "typedoc --emit none",
+    "docs:serve": "npx serve docs",
+    "docs:view": "pnpm run docs && open docs/index.html",
+    "docs:watch": "typedoc --watch",
+    "knip": "turbo run _knip",
+    "lint": "turbo run _lint",
+    "lint:fix": "eslint . --fix",
+    "mcp-server": "node dist/mcp-server.js",
+    "prepare": "husky",
+    "prepublishOnly": "pnpm run build && pnpm run test:run",
+    "publish:dry": "npm pack --dry-run",
+    "publish:npm": "npm publish --access public",
+    "release": "semantic-release",
+    "release:dry": "semantic-release --dry-run",
+    "start": "node dist/cli.js",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:cross-platform": "node scripts/test-cross-platform.js",
+    "test:cross-platform:cli": "node scripts/test-cross-platform.js --cli-only",
+    "test:cross-platform:data": "node scripts/test-cross-platform.js --test-data-only",
+    "test:run": "turbo run _test",
+    "typecheck": "turbo run _typecheck"
   },
-  "config": {
-    "commitizen": {
-      "path": "./node_modules/cz-conventional-changelog"
-    }
-  }
+  "type": "module",
+  "types": "dist/index.d.ts"
 }
