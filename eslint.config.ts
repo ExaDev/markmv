@@ -35,6 +35,28 @@ export default defineConfig(
     },
   },
   {
+    // These loops are sequential by design, never an oversight: output and result order follow input order, a fail-fast loop must stop at the first failure, retries depend on the previous attempt failing, external link checks are rate limited, a transaction applies and rolls back its steps in order, and an unbounded fan-out over a large tree risks exhausting file handles. Loops whose iterations are independent were rewritten with Promise.all instead.
+    files: [
+      "src/commands/check-links.ts",
+      "src/commands/clip.ts",
+      "src/commands/convert.ts",
+      "src/commands/embed.ts",
+      "src/commands/extract.ts",
+      "src/commands/generate-index.ts",
+      "src/commands/move.ts",
+      "src/commands/toc.ts",
+      "src/commands/tree.ts",
+      "src/commands/validate.ts",
+      "src/core/file-operations.ts",
+      "src/core/link-converter.ts",
+      "src/core/link-validator.ts",
+      "src/utils/content-freshness.integration.test.ts",
+      "src/utils/file-utils.ts",
+      "src/utils/transaction-manager.ts",
+    ],
+    rules: { "no-await-in-loop": "off" },
+  },
+  {
     // Test fixtures legitimately encode raw literal values (sizes, counts, line numbers, timestamps) that are the point of the assertion; naming each would obscure what the test checks.
     files: ["**/*.test.ts"],
     rules: { "@typescript-eslint/no-magic-numbers": "off" },

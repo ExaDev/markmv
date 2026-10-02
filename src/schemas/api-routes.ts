@@ -14,9 +14,18 @@ import {
   toMoveOptions,
   toOperationResult,
   type MethodName,
-} from "./index.js";
+} from "./method-schemas.js";
 import { validateOutput } from "./validators.js";
 import type { FileOperations } from "../core/file-operations.js";
+
+/** HTTP status code for a request whose body fails schema validation. */
+const HTTP_BAD_REQUEST = 400;
+
+/** HTTP status code for a successful request. */
+const HTTP_OK = 200;
+
+/** HTTP status code for an unexpected failure while handling a request. */
+const HTTP_INTERNAL_SERVER_ERROR = 500;
 
 export interface ApiRoute {
   path: string;
@@ -84,10 +93,11 @@ function createHandler<T>(
         const errors = parseResult.error.issues.map(
           (issue) => `${issue.path.join(".")}: ${issue.message}`,
         );
-        res.writeHead(400, { "Content-Type": "application/json" });
+        res.writeHead(HTTP_BAD_REQUEST, { "Content-Type": "application/json" });
         res.end(
           JSON.stringify({ error: "Validation failed", details: errors }),
         );
+
         return;
       }
 
@@ -101,10 +111,12 @@ function createHandler<T>(
         );
       }
 
-      res.writeHead(200, { "Content-Type": "application/json" });
+      res.writeHead(HTTP_OK, { "Content-Type": "application/json" });
       res.end(JSON.stringify(result));
     } catch (error) {
-      res.writeHead(500, { "Content-Type": "application/json" });
+      res.writeHead(HTTP_INTERNAL_SERVER_ERROR, {
+        "Content-Type": "application/json",
+      });
       res.end(
         JSON.stringify({
           error: "Internal server error",
@@ -121,7 +133,7 @@ function buildApiRoutes(): ApiRoute[] {
     moveFile: createHandler(
       "moveFile",
       (body) => methodSchemas.moveFile.input.safeParse(body),
-      (markmv, input) =>
+      async (markmv, input) =>
         markmv.moveFile(
           input.sourcePath,
           input.destinationPath,
@@ -131,13 +143,13 @@ function buildApiRoutes(): ApiRoute[] {
     moveFiles: createHandler(
       "moveFiles",
       (body) => methodSchemas.moveFiles.input.safeParse(body),
-      (markmv, input) =>
+      async (markmv, input) =>
         markmv.moveFiles(input.moves, toMoveOptions(input.options ?? {})),
     ),
     validateOperation: createHandler(
       "validateOperation",
       (body) => methodSchemas.validateOperation.input.safeParse(body),
-      (markmv, input) =>
+      async (markmv, input) =>
         markmv.validateOperation(toOperationResult(input.result)),
     ),
     testAutoExposure: createHandler(
@@ -145,6 +157,7 @@ function buildApiRoutes(): ApiRoute[] {
       (body) => methodSchemas.testAutoExposure.input.safeParse(body),
       async (_markmv, input) => {
         const { testAutoExposure } = await import("../index.js");
+
         return testAutoExposure(input.input);
       },
     ),

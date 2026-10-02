@@ -1,7 +1,8 @@
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { satisfies } from "semver";
-import { Document, parse, parseDocument } from "yaml";
+import type { Document } from "yaml";
+import { parse, parseDocument } from "yaml";
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 
 export interface AuditAdvisory {
@@ -42,6 +43,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export function isAuditAdvisory(value: unknown): value is AuditAdvisory {
   if (!isRecord(value)) return false;
+
   return (
     typeof value.module_name === "string" &&
     typeof value.vulnerable_versions === "string" &&
@@ -56,6 +58,7 @@ export function isAuditAdvisory(value: unknown): value is AuditAdvisory {
 export function isAuditReport(value: unknown): value is AuditReport {
   if (!isRecord(value)) return false;
   if (!("advisories" in value) || !isRecord(value.advisories)) return false;
+
   return Object.values(value.advisories).every(isAuditAdvisory);
 }
 
@@ -78,6 +81,7 @@ function runAudit(): AuditReport {
       "pnpm audit --json output did not match the expected shape",
     );
   }
+
   return parsed;
 }
 
@@ -95,10 +99,12 @@ function writeWorkspaceDoc(doc: Document): void {
   writeFileSync(WORKSPACE_FILE, doc.toString());
 }
 
-// Mutates a clone rather than the original document, and preserves every other key and comment in pnpm-workspace.yaml (minimumReleaseAge, nodeLinker, allowBuilds) -- a naive parse-to-object-then-JSON.stringify round trip would silently discard all of that.
+/**
+ * Mutates a clone rather than the original document, and preserves every other key and comment in pnpm-workspace.yaml (minimumReleaseAge, nodeLinker, allowBuilds) -- a naive parse-to-object-then-JSON.stringify round trip would silently discard all of that.
+ */
 export function withOverrides(
   workspace: Document,
-  overrides: Record<string, string>,
+  overrides: Readonly<Record<string, string>>,
 ): Document {
   const cloned = workspace.clone();
   // An empty map is written as a bare `overrides: {}` line that never goes away on its own -- deleting the key when there is nothing to override keeps a fully-pruned file clean instead of accumulating dead boilerplate.
@@ -107,6 +113,7 @@ export function withOverrides(
   } else {
     cloned.set("overrides", overrides);
   }
+
   return cloned;
 }
 
@@ -118,6 +125,7 @@ export function currentOverrides(workspace: Document): Record<string, string> {
   for (const [key, value] of Object.entries(overrides)) {
     if (typeof value === "string") result[key] = value;
   }
+
   return result;
 }
 
@@ -131,13 +139,13 @@ function restoreFromGit(): void {
 
 function setOutput(name: string, value: string): void {
   const outputFile = process.env.GITHUB_OUTPUT;
-  if (!outputFile) return;
+  if (outputFile === undefined || outputFile === "") return;
   appendFileSync(outputFile, `${name}=${value}\n`);
 }
 
 function appendSummary(markdown: string): void {
   const summaryFile = process.env.GITHUB_STEP_SUMMARY;
-  if (!summaryFile) return;
+  if (summaryFile === undefined || summaryFile === "") return;
   appendFileSync(summaryFile, markdown);
 }
 
@@ -150,8 +158,8 @@ function fail(message: string): never {
 // pnpm's own exit code from `update` is not a reliable signal that an override actually took effect -- an unsatisfiable override (no published version clears it) still exits 0, silently leaving the package at whatever it could otherwise resolve. The only trustworthy signal is re-auditing and checking whether each candidate's own specific advisories are gone. A non-zero exit from `update` itself does mean something more fundamental broke (e.g. an unresolvable peer conflict) and is reported as `conflicted` so the caller can isolate which candidate is responsible.
 function attemptBatch(
   workspace: Document,
-  baseOverrides: Record<string, string>,
-  batch: Candidate[],
+  baseOverrides: Readonly<Record<string, string>>,
+  batch: readonly Candidate[],
 ): { succeeded: Candidate[]; conflicted: boolean } {
   const overrides = { ...baseOverrides };
   for (const c of batch) overrides[c.overrideKey] = c.range;
@@ -170,14 +178,15 @@ function attemptBatch(
   const succeeded = batch.filter((c) =>
     c.advisories.every((a) => !present.has(a.github_advisory_id)),
   );
+
   return { succeeded, conflicted: false };
 }
 
 // A single candidate whose override the registry can never satisfy (or that conflicts with peers) must not sink every other, independently-fixable candidate in the same batch. attemptBatch's own audit check already tells us exactly which candidates in a batch succeeded when the update itself ran cleanly, so bisection is only needed to isolate a genuine `conflicted` (non-zero exit) failure; if two halves that each update fine independently still conflict combined, fall back to a linear greedy pass, which always terminates with a verified-working subset.
 function resolveMaximalSubset(
   workspace: Document,
-  baseOverrides: Record<string, string>,
-  batch: Candidate[],
+  baseOverrides: Readonly<Record<string, string>>,
+  batch: readonly Candidate[],
 ): Candidate[] {
   if (batch.length === 0) return [];
 
@@ -207,8 +216,8 @@ function resolveMaximalSubset(
 
 function greedyResolve(
   workspace: Document,
-  baseOverrides: Record<string, string>,
-  batch: Candidate[],
+  baseOverrides: Readonly<Record<string, string>>,
+  batch: readonly Candidate[],
 ): Candidate[] {
   const working: Candidate[] = [];
   for (const c of batch) {
@@ -217,11 +226,16 @@ function greedyResolve(
       working.push(c);
     }
   }
+
   return working;
 }
 
-// Splits audit advisories into fixable candidates (grouped by override selector) and deferred entries with a reason each. Pure -- no filesystem, no subprocesses -- so the unit tests cover grouping, dedup, and the not-overridable and no-patch deferral paths through it.
-export function classifyAdvisories(advisories: AuditAdvisory[]): Classified {
+/**
+ * Splits audit advisories into fixable candidates (grouped by override selector) and deferred entries with a reason each. Pure -- no filesystem, no subprocesses -- so the unit tests cover grouping, dedup, and the not-overridable and no-patch deferral paths through it.
+ */
+export function classifyAdvisories(
+  advisories: readonly AuditAdvisory[],
+): Classified {
   const deferred: { advisory: AuditAdvisory; reason: string }[] = [];
   const candidatesByKey = new Map<string, Candidate>();
 
@@ -262,9 +276,11 @@ export function classifyAdvisories(advisories: AuditAdvisory[]): Classified {
   return { deferred, candidates: [...candidatesByKey.values()] };
 }
 
-// An override is inert when no version its selector could rewrite is present: the selector is the vulnerable range on the key (`pkg@<range>`), and the override only acts on resolutions matching that range. If nothing resolved matches the selector, the override forces nothing today -- regardless of what the package resolves outside the selector. The autofix only ever adds overrides, so without this pass the map accumulates one entry per historical advisory forever. Dropping inert entries is self-correcting rather than risky: if a future update resolves back into a vulnerable range, the next audit run re-adds the override through the same fix path.
+/**
+ * An override is inert when no version its selector could rewrite is present: the selector is the vulnerable range on the key (`pkg@<range>`), and the override only acts on resolutions matching that range. If nothing resolved matches the selector, the override forces nothing today -- regardless of what the package resolves outside the selector. The autofix only ever adds overrides, so without this pass the map accumulates one entry per historical advisory forever. Dropping inert entries is self-correcting rather than risky: if a future update resolves back into a vulnerable range, the next audit run re-adds the override through the same fix path.
+ */
 export function inertOverrideKeys(
-  overrides: Record<string, string>,
+  overrides: Readonly<Record<string, string>>,
   resolvedVersions: Map<string, Set<string>>,
 ): string[] {
   const inert: string[] = [];
@@ -280,10 +296,11 @@ export function inertOverrideKeys(
       inert.push(key);
     }
   }
+
   return inert;
 }
 
-// The resolved package@version set from the lockfile's single-document packages map, minus peer-dependency suffixes.
+/** The resolved package\@version set from the lockfile's single-document packages map, minus peer-dependency suffixes. */
 export function resolvedVersionsFromLockfileText(
   yamlText: string,
 ): Map<string, Set<string>> {
@@ -301,6 +318,7 @@ export function resolvedVersionsFromLockfileText(
     existing.add(version);
     byPackage.set(pkg, existing);
   }
+
   return byPackage;
 }
 

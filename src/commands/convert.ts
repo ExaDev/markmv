@@ -2,14 +2,16 @@ import { existsSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { glob } from "glob";
 import { LinkConverter } from "../core/link-converter.js";
-import type { ConvertOperationOptions } from "../types/operations.js";
+import type {
+  ConvertOperationOptions,
+  OperationResult,
+} from "../types/operations.js";
 import { PathUtils } from "../utils/path-utils.js";
 
 /**
  * Configuration options for convert command operations.
  *
  * Controls the behavior of the convert command including target formats and processing options.
- *
  * @category Commands
  */
 export interface ConvertOptions {
@@ -39,9 +41,8 @@ export interface ConvertOptions {
  *
  * It validates that all resolved files are markdown files and provides verbose output when
  * requested.
- *
  * @example
- *   ```typescript
+ * ```typescript
  *   // Direct file paths
  *   await expandSourcePatterns(['README.md', 'docs/guide.md']);
  *
@@ -50,18 +51,15 @@ export interface ConvertOptions {
  *
  *   // Recursive directory processing
  *   await expandSourcePatterns(['docs/'], { recursive: true });
- *   ```;
- *
+ * ```
  * @param patterns - Array of file patterns, paths, or directories to expand
  * @param options - Conversion options including recursive processing
- *
  * @returns Promise resolving to an array of absolute markdown file paths
- *
  * @throws Error if no markdown files are found or if patterns are invalid
  */
 async function expandSourcePatterns(
-  patterns: string[],
-  options: ConvertOptions,
+  patterns: readonly string[],
+  options: Readonly<ConvertOptions>,
 ): Promise<string[]> {
   const resolvedFiles = new Set<string>();
 
@@ -72,7 +70,7 @@ async function expandSourcePatterns(
     if (existsSync(absolutePattern) && statSync(absolutePattern).isFile()) {
       if (PathUtils.isMarkdownFile(absolutePattern)) {
         resolvedFiles.add(absolutePattern);
-        if (options.verbose) {
+        if (options.verbose === true) {
           console.log(`Added file: ${absolutePattern}`);
         }
       } else {
@@ -86,24 +84,18 @@ async function expandSourcePatterns(
       existsSync(absolutePattern) &&
       statSync(absolutePattern).isDirectory()
     ) {
-      if (options.recursive) {
-        const globPattern = `${absolutePattern}/**/*.md`;
-        const files = await glob(globPattern, { absolute: true });
-        files.forEach((file) => resolvedFiles.add(file));
-        if (options.verbose) {
-          console.log(
-            `Added ${String(files.length)} files from directory: ${absolutePattern}`,
-          );
-        }
-      } else {
-        const globPattern = `${absolutePattern}/*.md`;
-        const files = await glob(globPattern, { absolute: true });
-        files.forEach((file) => resolvedFiles.add(file));
-        if (options.verbose) {
-          console.log(
-            `Added ${String(files.length)} files from directory: ${absolutePattern}`,
-          );
-        }
+      const globPattern =
+        options.recursive === true
+          ? `${absolutePattern}/**/*.md`
+          : `${absolutePattern}/*.md`;
+      const files = await glob(globPattern, { absolute: true });
+      for (const file of files) {
+        resolvedFiles.add(file);
+      }
+      if (options.verbose === true) {
+        console.log(
+          `Added ${String(files.length)} files from directory: ${absolutePattern}`,
+        );
       }
       continue;
     }
@@ -115,13 +107,15 @@ async function expandSourcePatterns(
         PathUtils.isMarkdownFile(file),
       );
 
-      if (markdownFiles.length === 0 && options.verbose) {
+      if (markdownFiles.length === 0 && options.verbose === true) {
         console.warn(`No markdown files found for pattern: ${pattern}`);
       }
 
-      markdownFiles.forEach((file) => resolvedFiles.add(file));
+      for (const file of markdownFiles) {
+        resolvedFiles.add(file);
+      }
 
-      if (options.verbose) {
+      if (options.verbose === true) {
         console.log(
           `Pattern "${pattern}" matched ${String(markdownFiles.length)} markdown files`,
         );
@@ -147,19 +141,18 @@ async function expandSourcePatterns(
 
 /**
  * Validate conversion options and provide defaults.
- *
  * @param options - Raw conversion options from CLI
- *
  * @returns Validated options with defaults applied
- *
  * @throws Error if options are invalid
  */
-function validateConvertOptions(options: ConvertOptions): ConvertOptions {
+function validateConvertOptions(
+  options: Readonly<ConvertOptions>,
+): ConvertOptions {
   const validated = { ...options };
 
   // Validate path resolution
   if (
-    validated.pathResolution &&
+    validated.pathResolution !== undefined &&
     !["absolute", "relative"].includes(validated.pathResolution)
   ) {
     throw new Error(
@@ -169,7 +162,7 @@ function validateConvertOptions(options: ConvertOptions): ConvertOptions {
 
   // Validate link style
   if (
-    validated.linkStyle &&
+    validated.linkStyle !== undefined &&
     !["markdown", "claude", "combined", "wikilink"].includes(
       validated.linkStyle,
     )
@@ -180,14 +173,20 @@ function validateConvertOptions(options: ConvertOptions): ConvertOptions {
   }
 
   // Require at least one conversion operation
-  if (!validated.pathResolution && !validated.linkStyle) {
+  if (
+    validated.pathResolution === undefined &&
+    validated.linkStyle === undefined
+  ) {
     throw new Error(
       "At least one conversion option must be specified (--path-resolution or --link-style)",
     );
   }
 
   // Set default base path
-  if (validated.pathResolution && !validated.basePath) {
+  if (
+    validated.pathResolution !== undefined &&
+    (validated.basePath === undefined || validated.basePath === "")
+  ) {
     validated.basePath = process.cwd();
   }
 
@@ -196,45 +195,44 @@ function validateConvertOptions(options: ConvertOptions): ConvertOptions {
 
 /**
  * Print conversion summary statistics.
- *
  * @param files - Array of files processed
  * @param result - Operation result with conversion details
  * @param options - Conversion options for context
  */
 function printConvertSummary(
-  files: string[],
-  result: import("../types/operations.js").OperationResult,
-  options: ConvertOptions,
+  files: readonly string[],
+  result: Readonly<OperationResult>,
+  options: Readonly<ConvertOptions>,
 ): void {
   console.log("\n=== Conversion Summary ===");
   console.log(`Files processed: ${String(files.length)}`);
   console.log(`Files modified: ${String(result.modifiedFiles.length)}`);
   console.log(`Total changes: ${String(result.changes.length)}`);
 
-  if (options.pathResolution && options.linkStyle) {
+  if (options.pathResolution !== undefined && options.linkStyle !== undefined) {
     console.log(`Path resolution: converted to ${options.pathResolution}`);
     console.log(`Link style: converted to ${options.linkStyle}`);
-  } else if (options.pathResolution) {
+  } else if (options.pathResolution !== undefined) {
     console.log(`Path resolution: converted to ${options.pathResolution}`);
-  } else if (options.linkStyle) {
+  } else if (options.linkStyle !== undefined) {
     console.log(`Link style: converted to ${options.linkStyle}`);
   }
 
   if (result.errors.length > 0) {
     console.log(`Errors: ${String(result.errors.length)}`);
-    result.errors.forEach((error) => {
+    for (const error of result.errors) {
       console.error(`  - ${error}`);
-    });
+    }
   }
 
   if (result.warnings.length > 0) {
     console.log(`Warnings: ${String(result.warnings.length)}`);
-    result.warnings.forEach((warning) => {
+    for (const warning of result.warnings) {
       console.warn(`  - ${warning}`);
-    });
+    }
   }
 
-  if (options.dryRun) {
+  if (options.dryRun === true) {
     console.log("\n(Dry run - no files were actually modified)");
   }
 }
@@ -244,9 +242,8 @@ function printConvertSummary(
  *
  * Processes markdown files to convert link formats and path resolution according to specified
  * options. Supports dry run mode, verbose output, and various conversion strategies.
- *
  * @example
- *   ```bash
+ * ```bash
  *   # Convert all links to relative paths
  *   markmv convert docs/star.md --path-resolution relative
  *
@@ -255,15 +252,14 @@ function printConvertSummary(
  *
  *   # Dry run with verbose output
  *   markmv convert README.md --link-style claude --dry-run --verbose
- *   ```;
- *
+ * ```
  * @param patterns - File patterns to process (supports globs)
  * @param options - Command options specifying conversion parameters
  * @category Commands
  */
 export async function convertCommand(
-  patterns: string[],
-  options: ConvertOptions,
+  patterns: readonly string[],
+  options: Readonly<ConvertOptions>,
 ): Promise<void> {
   try {
     // Validate input patterns
@@ -274,16 +270,16 @@ export async function convertCommand(
     // Validate and normalize options
     const validatedOptions = validateConvertOptions(options);
 
-    if (validatedOptions.verbose) {
+    if (validatedOptions.verbose === true) {
       console.log("Starting link conversion...");
       console.log(`Patterns: ${patterns.join(", ")}`);
-      if (validatedOptions.pathResolution) {
+      if (validatedOptions.pathResolution !== undefined) {
         console.log(`Path resolution: ${validatedOptions.pathResolution}`);
       }
-      if (validatedOptions.linkStyle) {
+      if (validatedOptions.linkStyle !== undefined) {
         console.log(`Link style: ${validatedOptions.linkStyle}`);
       }
-      if (validatedOptions.dryRun) {
+      if (validatedOptions.dryRun === true) {
         console.log("Dry run mode: no files will be modified");
       }
     }
@@ -291,31 +287,38 @@ export async function convertCommand(
     // Expand file patterns
     const files = await expandSourcePatterns(patterns, validatedOptions);
 
-    if (validatedOptions.verbose) {
+    if (validatedOptions.verbose === true) {
       console.log(`Found ${String(files.length)} markdown files to process`);
     }
 
     // Create converter and process files
     const converter = new LinkConverter();
     const operationOptions: ConvertOperationOptions = {
-      ...(validatedOptions.pathResolution && {
+      ...(validatedOptions.pathResolution !== undefined && {
         pathResolution: validatedOptions.pathResolution,
       }),
-      ...(validatedOptions.basePath && { basePath: validatedOptions.basePath }),
-      ...(validatedOptions.linkStyle && {
+      ...(validatedOptions.basePath !== undefined &&
+        validatedOptions.basePath !== "" && {
+          basePath: validatedOptions.basePath,
+        }),
+      ...(validatedOptions.linkStyle !== undefined && {
         linkStyle: validatedOptions.linkStyle,
       }),
-      ...(validatedOptions.recursive && {
+      ...(validatedOptions.recursive === true && {
         recursive: validatedOptions.recursive,
       }),
-      ...(validatedOptions.dryRun && { dryRun: validatedOptions.dryRun }),
-      ...(validatedOptions.verbose && { verbose: validatedOptions.verbose }),
+      ...(validatedOptions.dryRun === true && {
+        dryRun: validatedOptions.dryRun,
+      }),
+      ...(validatedOptions.verbose === true && {
+        verbose: validatedOptions.verbose,
+      }),
     };
 
     const result = await converter.convertFiles(files, operationOptions);
 
     // Print results
-    if (validatedOptions.verbose || result.changes.length > 0) {
+    if (validatedOptions.verbose === true || result.changes.length > 0) {
       printConvertSummary(files, result, validatedOptions);
     }
 

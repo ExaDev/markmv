@@ -1,7 +1,5 @@
 /**
- * Content freshness detection utilities for external links.
- *
- * @file Detects potentially stale external content even when links are valid
+ * Content freshness detection utilities for external links, detecting potentially stale external content even when links are valid.
  */
 
 import { createHash } from "node:crypto";
@@ -9,9 +7,24 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { existsSync } from "node:fs";
 
+const MS_PER_SECOND = 1000;
+const SECONDS_PER_MINUTE = 60;
+const MINUTES_PER_HOUR = 60;
+const HOURS_PER_DAY = 24;
+const MS_PER_DAY =
+  HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MS_PER_SECOND;
+const DAYS_PER_YEAR = 365;
+/** A month is approximated as thirty days, which is accurate enough for a staleness threshold. */
+const DAYS_PER_MONTH = 30;
+const MONTHS_IN_HALF_YEAR = 6;
+const MS_PER_MONTH = DAYS_PER_MONTH * MS_PER_DAY;
+const MS_PER_YEAR = DAYS_PER_YEAR * MS_PER_DAY;
+
+const TWO_YEARS_MS = 2 * MS_PER_YEAR;
+const SIX_MONTHS_MS = MONTHS_IN_HALF_YEAR * MS_PER_MONTH;
+
 /**
  * Configuration for content freshness detection.
- *
  * @category Types
  */
 export interface FreshnessConfig {
@@ -31,7 +44,6 @@ export interface FreshnessConfig {
 
 /**
  * Information about content freshness.
- *
  * @category Types
  */
 export interface ContentFreshnessInfo {
@@ -90,6 +102,7 @@ export interface ResponseInfo {
 /** Narrow untrusted cache-file JSON entries into CachedContentInfo values. */
 function isCachedContentInfo(value: unknown): value is CachedContentInfo {
   if (typeof value !== "object" || value === null) return false;
+
   return "url" in value && "contentHash" in value && "lastChecked" in value;
 }
 
@@ -99,21 +112,21 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export class ContentFreshnessDetector {
-  private config: FreshnessConfig;
-  private cacheFile: string;
+  private readonly config: FreshnessConfig;
+
+  private readonly cacheFile: string;
 
   constructor(config: Partial<FreshnessConfig> = {}) {
     this.config = {
       enabled: config.enabled ?? true,
-      defaultThreshold:
-        config.defaultThreshold ?? 2 * 365 * 24 * 60 * 60 * 1000, // 2 years
+      defaultThreshold: config.defaultThreshold ?? TWO_YEARS_MS,
       domainThresholds: config.domainThresholds ?? {
-        "firebase.google.com": 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
-        "docs.github.com": 6 * 30 * 24 * 60 * 60 * 1000, // 6 months
-        "api.github.com": 6 * 30 * 24 * 60 * 60 * 1000, // 6 months
-        "developers.google.com": 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
-        "docs.aws.amazon.com": 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
-        "docs.microsoft.com": 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
+        "firebase.google.com": MS_PER_YEAR,
+        "docs.github.com": SIX_MONTHS_MS,
+        "api.github.com": SIX_MONTHS_MS,
+        "developers.google.com": MS_PER_YEAR,
+        "docs.aws.amazon.com": MS_PER_YEAR,
+        "docs.microsoft.com": MS_PER_YEAR,
       },
       stalePatterns: config.stalePatterns ?? [
         "deprecated",
@@ -202,7 +215,7 @@ export class ContentFreshnessDetector {
         result.previousContentHash = cached.contentHash;
         result.hasContentChanged = true;
 
-        if (!result.warning) {
+        if (result.warning === undefined) {
           result.warning = "Content has changed since last validation";
           result.suggestion =
             "Review changes to ensure links are still relevant";
@@ -231,7 +244,9 @@ export class ContentFreshnessDetector {
   }
 
   /** Parse Last-Modified header. */
-  private parseLastModified(headers: Record<string, string>): Date | undefined {
+  private parseLastModified(
+    headers: Readonly<Record<string, string>>,
+  ): Date | undefined {
     const lastModified = headers["last-modified"] || headers["Last-Modified"];
     if (!lastModified) {
       return undefined;
@@ -260,14 +275,14 @@ export class ContentFreshnessDetector {
 
   /** Calculate content hash for change detection. */
   private calculateContentHash(content: string): string {
-    // Normalize content to reduce false positives
+    // Normalise content to reduce false positives: collapse whitespace, then strip HTML comments, scripts and styles, then replace dates and times with placeholders.
     const normalized = content
-      .replace(/\s+/g, " ") // Normalize whitespace
-      .replace(/<!--.*?-->/gs, "") // Remove HTML comments
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "") // Remove scripts
-      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "") // Remove styles
-      .replace(/\d{4}-\d{2}-\d{2}/g, "DATE") // Replace dates
-      .replace(/\b\d{1,2}:\d{2}(:\d{2})?\b/g, "TIME") // Replace times
+      .replace(/\s+/g, " ")
+      .replace(/<!--.*?-->/gs, "")
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "")
+      .replace(/\d{4}-\d{2}-\d{2}/g, "DATE")
+      .replace(/\b\d{1,2}:\d{2}(:\d{2})?\b/g, "TIME")
       .trim();
 
     return createHash("sha256").update(normalized, "utf8").digest("hex");
@@ -275,13 +290,9 @@ export class ContentFreshnessDetector {
 
   /** Format age in human-readable format. */
   private formatAge(ageMs: number): string {
-    const years = Math.floor(ageMs / (365 * 24 * 60 * 60 * 1000));
-    const months = Math.floor(
-      (ageMs % (365 * 24 * 60 * 60 * 1000)) / (30 * 24 * 60 * 60 * 1000),
-    );
-    const days = Math.floor(
-      (ageMs % (30 * 24 * 60 * 60 * 1000)) / (24 * 60 * 60 * 1000),
-    );
+    const years = Math.floor(ageMs / MS_PER_YEAR);
+    const months = Math.floor((ageMs % MS_PER_YEAR) / MS_PER_MONTH);
+    const days = Math.floor((ageMs % MS_PER_MONTH) / MS_PER_DAY);
 
     if (years > 0) {
       return months > 0
@@ -293,6 +304,7 @@ export class ContentFreshnessDetector {
         ? `${String(months)} month${months > 1 ? "s" : ""}, ${String(days)} day${days > 1 ? "s" : ""}`
         : `${String(months)} month${months > 1 ? "s" : ""}`;
     }
+
     return `${String(days)} day${days > 1 ? "s" : ""}`;
   }
 
@@ -313,41 +325,53 @@ export class ContentFreshnessDetector {
       }
 
       const entry = cacheData[url];
+
       return isCachedContentInfo(entry) ? entry : undefined;
     } catch {
       return undefined;
     }
   }
 
+  /** Read every well-formed entry from the cache file, treating a missing or invalid file as empty. */
+  private async readValidEntries(): Promise<Record<string, CachedContentInfo>> {
+    const entries: Record<string, CachedContentInfo> = {};
+
+    if (!existsSync(this.cacheFile)) {
+      return entries;
+    }
+
+    try {
+      const parsed: unknown = JSON.parse(
+        await readFile(this.cacheFile, "utf8"),
+      );
+      if (!isPlainRecord(parsed)) {
+        return entries;
+      }
+
+      for (const [key, value] of Object.entries(parsed)) {
+        if (isCachedContentInfo(value)) {
+          entries[key] = value;
+        }
+      }
+    } catch {
+      // Invalid cache file, start fresh
+    }
+
+    return entries;
+  }
+
   /** Update cached content information. */
   private async updateCachedContent(
     url: string,
     contentHash: string,
-    headers: Record<string, string>,
+    headers: Readonly<Record<string, string>>,
     lastModified?: Date,
   ): Promise<void> {
     try {
       // Ensure cache directory exists
       await mkdir(dirname(this.cacheFile), { recursive: true });
 
-      const cacheData: Record<string, CachedContentInfo> = {};
-
-      if (existsSync(this.cacheFile)) {
-        try {
-          const parsed: unknown = JSON.parse(
-            await readFile(this.cacheFile, "utf8"),
-          );
-          if (isPlainRecord(parsed)) {
-            for (const [key, value] of Object.entries(parsed)) {
-              if (isCachedContentInfo(value)) {
-                cacheData[key] = value;
-              }
-            }
-          }
-        } catch {
-          // Invalid cache file, start fresh
-        }
-      }
+      const cacheData = await this.readValidEntries();
 
       cacheData[url] = {
         url,
@@ -416,6 +440,7 @@ export class ContentFreshnessDetector {
       }
 
       const timestamps = entries.map((entry) => entry.lastChecked);
+
       return {
         totalEntries: entries.length,
         oldestEntry: new Date(Math.min(...timestamps)),
@@ -430,14 +455,14 @@ export class ContentFreshnessDetector {
 /** Default freshness configuration. */
 export const DEFAULT_FRESHNESS_CONFIG: FreshnessConfig = {
   enabled: true,
-  defaultThreshold: 2 * 365 * 24 * 60 * 60 * 1000, // 2 years
+  defaultThreshold: TWO_YEARS_MS,
   domainThresholds: {
-    "firebase.google.com": 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
-    "docs.github.com": 6 * 30 * 24 * 60 * 60 * 1000, // 6 months
-    "api.github.com": 6 * 30 * 24 * 60 * 60 * 1000, // 6 months
-    "developers.google.com": 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
-    "docs.aws.amazon.com": 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
-    "docs.microsoft.com": 1 * 365 * 24 * 60 * 60 * 1000, // 1 year
+    "firebase.google.com": MS_PER_YEAR,
+    "docs.github.com": SIX_MONTHS_MS,
+    "api.github.com": SIX_MONTHS_MS,
+    "developers.google.com": MS_PER_YEAR,
+    "docs.aws.amazon.com": MS_PER_YEAR,
+    "docs.microsoft.com": MS_PER_YEAR,
   },
   stalePatterns: [
     "deprecated",

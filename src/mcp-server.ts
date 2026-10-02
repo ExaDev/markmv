@@ -3,7 +3,7 @@
  *
  * Provides Model Context Protocol server that exposes markmv functionality as tools for AI agents.
  * Tools, their input schemas, and validation all come directly from the Zod schemas in
- * schemas/index.ts, so a method's schema is the only place its shape is defined. Allows seamless
+ * schemas/method-schemas.ts, so a method's schema is the only place its shape is defined. Allows seamless
  * integration with Claude and other MCP clients.
  */
 
@@ -14,7 +14,7 @@ import {
   methodSchemas,
   toMoveOptions,
   toOperationResult,
-} from "./schemas/index.js";
+} from "./schemas/method-schemas.js";
 
 const markmv = createMarkMv();
 
@@ -46,6 +46,7 @@ export function createMcpServer(): McpServer {
         destinationPath,
         toMoveOptions(options ?? {}),
       );
+
       return textResult(result);
     },
   );
@@ -61,6 +62,7 @@ export function createMcpServer(): McpServer {
         moves,
         toMoveOptions(options ?? {}),
       );
+
       return textResult(result);
     },
   );
@@ -75,6 +77,7 @@ export function createMcpServer(): McpServer {
       const result = await markmv.validateOperation(
         toOperationResult(operationResult),
       );
+
       return textResult(result);
     },
   );
@@ -87,6 +90,7 @@ export function createMcpServer(): McpServer {
     },
     async ({ input }) => {
       const result = await testAutoExposure(input);
+
       return textResult(result);
     },
   );

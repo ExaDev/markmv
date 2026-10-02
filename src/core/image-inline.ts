@@ -16,7 +16,6 @@ interface ImageNode extends Node {
  *
  * The span covers the whole `![alt](href)` expression so callers can rewrite the occurrence
  * surgically without re-serialising the surrounding document.
- *
  * @category Core
  */
 export interface ImageLinkOccurrence {
@@ -38,11 +37,8 @@ export interface ImageLinkOccurrence {
  * Uses the markdown AST, so images that merely look like syntax (inside fenced code blocks, for
  * example) are not reported. A href counts as local when it carries no URI scheme, is not a data
  * URI, and is not a same-file anchor.
- *
  * @category Core
- *
  * @param content - Markdown content to scan
- *
  * @returns Occurrences of local image links in source order
  */
 export function findLocalImages(content: string): ImageLinkOccurrence[] {
@@ -51,11 +47,8 @@ export function findLocalImages(content: string): ImageLinkOccurrence[] {
 
 /**
  * Find image links in markdown content whose href is an inline data URI.
- *
  * @category Core
- *
  * @param content - Markdown content to scan
- *
  * @returns Occurrences of data URI image links in source order
  */
 export function findInlineImages(content: string): ImageLinkOccurrence[] {
@@ -64,7 +57,6 @@ export function findInlineImages(content: string): ImageLinkOccurrence[] {
 
 /**
  * The payload of a parsed inline data URI: its exact media type and base64 payload.
- *
  * @category Core
  */
 export interface ParsedImageDataUri {
@@ -79,13 +71,9 @@ const ERROR_PREVIEW_LENGTH = 60;
 
 /**
  * Parse an inline base64 image data URI.
- *
  * @category Core
- *
  * @param href - The data URI to parse, typically an image link href
- *
  * @returns The media type and base64 payload
- *
  * @throws Error when the URI is malformed, not base64 encoded, or not an image type
  */
 export function parseImageDataUri(href: string): ParsedImageDataUri {
@@ -140,13 +128,9 @@ const EXTENSION_BY_MIME: Partial<Record<string, string>> = {
 
 /**
  * Resolve the mime type for an image file extension.
- *
  * @category Core
- *
  * @param extension - File extension with or without a leading dot; case-insensitive
- *
  * @returns The image mime type for the extension
- *
  * @throws Error when the extension has no known image mime type
  */
 export function imageMimeTypeForExtension(extension: string): string {
@@ -157,18 +141,15 @@ export function imageMimeTypeForExtension(extension: string): string {
       `Unsupported image extension ".${normalised}"; supported extensions: ${Object.keys(MIME_BY_EXTENSION).join(", ")}`,
     );
   }
+
   return mimeType;
 }
 
 /**
  * Resolve the preferred file extension for an image mime type.
- *
  * @category Core
- *
  * @param mimeType - Image mime type, for example the one parsed from a data URI
- *
  * @returns The file extension without a leading dot
- *
  * @throws Error when the mime type has no known image file extension
  */
 export function imageExtensionForMimeType(mimeType: string): string {
@@ -178,6 +159,7 @@ export function imageExtensionForMimeType(mimeType: string): string {
       `Unsupported image mime type "${mimeType}"; supported types: ${Object.keys(EXTENSION_BY_MIME).join(", ")}`,
     );
   }
+
   return extension;
 }
 
@@ -187,13 +169,10 @@ export function imageExtensionForMimeType(mimeType: string): string {
  * Bracket characters in the alt text are backslash-escaped so the rendered link stays a single
  * image node when re-parsed. A href containing whitespace is angle-wrapped, the form markdown
  * requires for such hrefs; data URIs never contain whitespace and pass through unwrapped.
- *
  * @category Core
- *
  * @param alt - Alt text, or undefined for empty brackets
  * @param href - The href, typically a data URI or a filesystem path
  * @param title - Optional link title rendered after the href
- *
  * @returns The rendered `![alt](href "title")` expression
  */
 export function renderImageMarkdown(
@@ -205,6 +184,7 @@ export function renderImageMarkdown(
   const wrappedHref = /\s/.test(href) ? `<${href}>` : href;
   const titlePart =
     title === undefined ? "" : ` "${title.replaceAll('"', '\\"')}"`;
+
   return `![${escapedAlt}](${wrappedHref}${titlePart})`;
 }
 
@@ -212,6 +192,7 @@ export function renderImageMarkdown(
 function isLocalImagePath(href: string): boolean {
   if (href === "" || href.startsWith("#") || href.startsWith("data:"))
     return false;
+
   // A leading URI scheme (https:, mailto:, file:, ...) marks a non-filesystem reference. Schemes are two or more characters so a windows drive letter (C:/pics/x.png) stays a local path.
   return !/^[a-zA-Z][a-zA-Z0-9+.-]{1,}:/.test(href);
 }
@@ -244,7 +225,6 @@ function findImageOccurrences(
 
 /**
  * A source span to replace with new text.
- *
  * @category Core
  */
 export interface SpanReplacement {
@@ -258,19 +238,15 @@ export interface SpanReplacement {
 
 /**
  * Replace spans of content with new text, leaving everything outside the spans byte-identical.
- *
  * @category Core
- *
  * @param content - The original content
  * @param replacements - Spans to replace, in any order; they must not overlap
- *
  * @returns The content with every span replaced
- *
  * @throws Error when spans overlap or lie outside the content bounds
  */
 export function replaceSpans(
   content: string,
-  replacements: SpanReplacement[],
+  replacements: readonly SpanReplacement[],
 ): string {
   const ordered = [...replacements].sort((a, b) => a.start - b.start);
 
@@ -299,5 +275,6 @@ export function replaceSpans(
     result += content.slice(cursor, start) + replacement;
     cursor = end;
   }
+
   return result + content.slice(cursor);
 }

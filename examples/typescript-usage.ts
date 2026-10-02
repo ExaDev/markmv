@@ -20,9 +20,14 @@ import {
 import { join } from "node:path";
 import { writeFileSync, mkdirSync, rmSync, existsSync } from "node:fs";
 
+/** Format an unknown caught value as a human-readable error message */
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 /** Type-safe wrapper for file operations with enhanced error handling */
 class SafeMarkMv {
-  private fileOps: FileOperations;
+  private readonly fileOps: FileOperations;
 
   constructor() {
     this.fileOps = new FileOperations();
@@ -51,13 +56,10 @@ class SafeMarkMv {
   } {
     const linkUpdates = result.changes.filter((c) => c.type === "link-updated");
 
-    const changesByType = result.changes.reduce(
-      (acc, change) => {
-        acc[change.type] = (acc[change.type] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
+    const changesByType: Record<string, number> = {};
+    for (const change of result.changes) {
+      changesByType[change.type] = (changesByType[change.type] ?? 0) + 1;
+    }
 
     return {
       filesAffected:
@@ -125,18 +127,20 @@ const example = "TypeScript code";
 
     console.log(`✅ Move operation: ${result.success ? "SUCCESS" : "FAILED"}`);
     console.log(
-      `📊 Summary: ${result.modifiedFiles.length} modified, ${result.createdFiles.length} created, ${result.deletedFiles.length} deleted`,
+      `📊 Summary: ${String(result.modifiedFiles.length)} modified, ${String(result.createdFiles.length)} created, ${String(result.deletedFiles.length)} deleted`,
     );
 
     // Type-safe change analysis
     const linkChanges: OperationChange[] = result.changes.filter(
       (c) => c.type === "link-updated",
     );
-    console.log(`🔗 Link updates: ${linkChanges.length}`);
+    console.log(`🔗 Link updates: ${String(linkChanges.length)}`);
 
     linkChanges.forEach((change) => {
       console.log(`   📄 ${change.filePath}`);
-      console.log(`      "${change.oldValue}" → "${change.newValue}"`);
+      console.log(
+        `      "${change.oldValue ?? ""}" → "${change.newValue ?? ""}"`,
+      );
     });
     console.log("");
 
@@ -154,14 +158,14 @@ const example = "TypeScript code";
     console.log(
       `✅ Enhanced operation: ${enhancedResult.success ? "SUCCESS" : "FAILED"}`,
     );
-    console.log(`📊 Files affected: ${stats.filesAffected}`);
-    console.log(`🔗 Links updated: ${stats.linksUpdated}`);
+    console.log(`📊 Files affected: ${String(stats.filesAffected)}`);
+    console.log(`🔗 Links updated: ${String(stats.linksUpdated)}`);
     console.log(`🔍 Validation: ${validation.valid ? "PASSED" : "FAILED"}`);
-    console.log(`⚠️  Broken links: ${validation.brokenLinks}`);
+    console.log(`⚠️  Broken links: ${String(validation.brokenLinks)}`);
 
     console.log("📋 Changes by type:");
     Object.entries(stats.changesByType).forEach(([type, count]) => {
-      console.log(`   ${type}: ${count}`);
+      console.log(`   ${type}: ${String(count)}`);
     });
     console.log("");
 
@@ -177,13 +181,15 @@ const example = "TypeScript code";
 
     // Create source files
     files.forEach((file, index) => {
+      const documentNumber = index + 1;
+      const linkedDocumentNumber = (documentNumber % files.length) + 1;
       writeFileSync(
         file,
-        `# Document ${index + 1}
+        `# Document ${String(documentNumber)}
 
-Content for document ${index + 1}.
+Content for document ${String(documentNumber)}.
 
-[Link to doc ${((index + 1) % 3) + 1}](./doc${((index + 1) % 3) + 1}.md)
+[Link to doc ${String(linkedDocumentNumber)}](./doc${String(linkedDocumentNumber)}.md)
 `,
       );
     });
@@ -200,10 +206,16 @@ Content for document ${index + 1}.
     console.log(
       `✅ Batch operation: ${batchResult.success ? "SUCCESS" : "FAILED"}`,
     );
-    console.log(`📁 Files in batch: ${moves.length}`);
-    console.log(`📄 Files to be created: ${batchResult.createdFiles.length}`);
-    console.log(`🗑️  Files to be deleted: ${batchResult.deletedFiles.length}`);
-    console.log(`📝 Files to be modified: ${batchResult.modifiedFiles.length}`);
+    console.log(`📁 Files in batch: ${String(moves.length)}`);
+    console.log(
+      `📄 Files to be created: ${String(batchResult.createdFiles.length)}`,
+    );
+    console.log(
+      `🗑️  Files to be deleted: ${String(batchResult.deletedFiles.length)}`,
+    );
+    console.log(
+      `📝 Files to be modified: ${String(batchResult.modifiedFiles.length)}`,
+    );
 
     // Detailed change analysis
     const changeTypes = new Set(batchResult.changes.map((c) => c.type));
@@ -222,16 +234,15 @@ Content for document ${index + 1}.
 
       if (!invalidResult.success) {
         console.log("❌ Operation failed as expected:");
-        invalidResult.errors.forEach((error) => console.log(`   ${error}`));
+        invalidResult.errors.forEach((error) => {
+          console.log(`   ${error}`);
+        });
       }
     } catch (error) {
-      console.log("❌ Caught exception:", (error as Error).message);
+      console.log("❌ Caught exception:", errorMessage(error));
     }
   } catch (error) {
-    console.error(
-      "❌ Error running TypeScript examples:",
-      (error as Error).message,
-    );
+    console.error("❌ Error running TypeScript examples:", errorMessage(error));
   } finally {
     // Clean up
     if (existsSync(exampleDir)) {
@@ -250,8 +261,9 @@ export interface ProjectConfig {
 
 /** Example of a more complex integration pattern */
 export class ProjectReorganizer {
-  private config: ProjectConfig;
-  private markmv: FileOperations;
+  private readonly config: ProjectConfig;
+
+  private readonly markmv: FileOperations;
 
   constructor(config: ProjectConfig) {
     this.config = config;
@@ -262,10 +274,7 @@ export class ProjectReorganizer {
     // This would contain your project-specific logic
     console.log("📁 Project reorganization would happen here...");
 
-    // Example: Move all docs to a new structure
-    const results: OperationResult[] = [];
-
-    // Simulate some moves
+    // Example: move all docs to a new structure, simulated here with a single move
     const exampleMoves = [
       {
         source: join(this.config.sourceDir, "readme.md"),
@@ -273,16 +282,15 @@ export class ProjectReorganizer {
       },
     ];
 
-    for (const move of exampleMoves) {
-      const result = await this.markmv.moveFile(
-        move.source,
-        move.destination,
-        this.config.moveOptions,
-      );
-      results.push(result);
-    }
-
-    return results;
+    return Promise.all(
+      exampleMoves.map(async (move) =>
+        this.markmv.moveFile(
+          move.source,
+          move.destination,
+          this.config.moveOptions,
+        ),
+      ),
+    );
   }
 }
 

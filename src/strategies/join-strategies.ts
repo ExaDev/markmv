@@ -3,7 +3,6 @@
  *
  * Contains all necessary information for intelligent joining including content, metadata,
  * dependencies, and ordering information.
- *
  * @category Strategies
  */
 export interface JoinSection {
@@ -26,7 +25,6 @@ export interface JoinSection {
  *
  * Provides comprehensive information about the joining process including success status, conflicts,
  * and any issues encountered.
- *
  * @category Strategies
  */
 export interface JoinResult {
@@ -53,7 +51,6 @@ export interface JoinResult {
  *
  * Conflicts can arise from duplicate headers, frontmatter merging issues, or content overlaps that
  * require resolution.
- *
  * @category Strategies
  */
 export interface JoinConflict {
@@ -78,7 +75,6 @@ export interface JoinConflict {
  *
  * Controls various aspects of the joining process including ordering, content formatting, and
  * conflict resolution behavior.
- *
  * @category Strategies
  */
 export interface JoinStrategyOptions {
@@ -105,20 +101,18 @@ export interface JoinStrategyOptions {
  *
  * Provides common functionality for joining markdown files including frontmatter merging, conflict
  * detection, and link deduplication. Concrete strategies implement specific ordering algorithms.
- *
  * @category Strategies
- *
  * @example
  *   Implementing a custom join strategy
- *   ```typescript
+ * ```typescript
  *   class CustomJoinStrategy extends BaseJoinStrategy {
  *     async join(sections: JoinSection[]): Promise<JoinResult> {
  *       // Custom ordering logic
  *       const orderedSections = this.customSort(sections);
- *       return this.buildResult(orderedSections);
+ *       return await Promise.resolve(this.buildResult(orderedSections));
  *     }
  *   }
- *   ```
+ * ```
  */
 export abstract class BaseJoinStrategy {
   /** The effective options for this strategy: the supplied options layered over the defaults set in the constructor. */
@@ -128,7 +122,6 @@ export abstract class BaseJoinStrategy {
    * Creates a join strategy.
    *
    * The defaults are dependency ordering, a `---` rule between sections, frontmatter merging, link deduplication and structure preservation, with automatic header conflict resolution off. Any supplied option overrides its default.
-   *
    * @param options - Options that override the defaults.
    */
   constructor(options: JoinStrategyOptions = {}) {
@@ -147,21 +140,20 @@ export abstract class BaseJoinStrategy {
    * Orders the sections and combines them into a single document.
    *
    * Each concrete strategy decides the section order. Conflicts between sections are reported in the result rather than thrown, and a failure while joining is reported through `errors` with `success` set to false.
-   *
    * @param sections - The sections to join, one per source file.
    * @returns The combined content, merged frontmatter (when enabled), the source files in their final order, and any conflicts, warnings, errors and removed duplicate links.
    */
-  abstract join(sections: JoinSection[]): Promise<JoinResult>;
+  abstract join(sections: readonly JoinSection[]): Promise<JoinResult>;
 
   /**
-   * Returns `title` unless it is undefined or the empty string, in which case `filePath` is used --
-   * an empty title is treated as "no title supplied" rather than a meaningful value to sort or
-   * display by.
+   * Returns `title` unless it is undefined or the empty string, in which case `filePath` is used.
+   * An empty title is treated as "no title supplied" rather than a meaningful value to sort or display by.
    */
   protected titleOrPath(title: string | undefined, filePath: string): string {
-    if (title) {
+    if (title !== undefined && title !== "") {
       return title;
     }
+
     return filePath;
   }
 
@@ -169,7 +161,6 @@ export abstract class BaseJoinStrategy {
    * Extracts a title from a document.
    *
    * A `title:` frontmatter line takes precedence, with any quote characters removed. Otherwise the text of the first markdown header in the content is used.
-   *
    * @param content - The document body to scan for a header.
    * @param frontmatter - The raw frontmatter block, if the document has one.
    * @returns The title, or undefined when there is neither a frontmatter title nor a header.
@@ -179,7 +170,7 @@ export abstract class BaseJoinStrategy {
     frontmatter?: string,
   ): string | undefined {
     // Try frontmatter first
-    if (frontmatter) {
+    if (frontmatter !== undefined && frontmatter !== "") {
       const titleMatch = /^title:\s*(.+)$/m.exec(frontmatter);
       if (titleMatch) {
         return titleMatch[1].trim().replace(/['"]/g, "");
@@ -202,17 +193,17 @@ export abstract class BaseJoinStrategy {
    * Merges the frontmatter blocks of several sections into one block.
    *
    * The `tags`, `categories` and `keywords` keys are collected across all sections as de-duplicated lists. Differing `title` values are combined with ` & `. Every other key keeps the first value found, and a purely numeric value is written as a number.
-   *
    * @param sections - The sections whose frontmatter is merged, in output order.
    * @returns A `---` delimited frontmatter block, or an empty string when no section supplies any keys.
    */
-  protected mergeFrontmatter(sections: JoinSection[]): string {
-    const frontmatterData: Partial<Record<string, string | number | string[]>> =
-      {};
-    const arrays: Partial<Record<string, string[]>> = {};
+  protected mergeFrontmatter(sections: readonly JoinSection[]): string {
+    const frontmatterData = new Map<string, string | number | string[]>();
+    const arrays = new Map<string, string[]>();
 
     for (const section of sections) {
-      if (!section.frontmatter) continue;
+      if (section.frontmatter === undefined || section.frontmatter === "") {
+        continue;
+      }
 
       const lines = section.frontmatter
         .replace(/^---\n/, "")
@@ -222,62 +213,29 @@ export abstract class BaseJoinStrategy {
       for (const line of lines) {
         const match = /^([^:]+):\s*(.*)$/.exec(line);
         if (match) {
-          const key = match[1].trim();
-          const value = match[2].trim();
-
-          if (key === "tags" || key === "categories" || key === "keywords") {
-            // Handle arrays
-            const arrayValue = (arrays[key] ??= []);
-            if (value.startsWith("[") && value.endsWith("]")) {
-              // Parse array format
-              const items = value
-                .slice(1, -1)
-                .split(",")
-                .map((item) => item.trim().replace(/['"]/g, ""));
-              arrayValue.push(...items);
-            } else {
-              arrayValue.push(value.replace(/['"]/g, ""));
-            }
-          } else if (key === "title") {
-            // Use first title found, or combine if different
-            const existingTitle = frontmatterData[key];
-            const cleanValue = value.replace(/['"]/g, "");
-            if (existingTitle === undefined) {
-              frontmatterData[key] = cleanValue;
-            } else if (
-              typeof existingTitle === "string" &&
-              existingTitle !== cleanValue
-            ) {
-              frontmatterData[key] = `${existingTitle} & ${cleanValue}`;
-            }
-          } else {
-            // Simple key-value pairs - use first found
-            if (!frontmatterData[key]) {
-              const cleanValue = value.replace(/['"]/g, "");
-              // Try to parse as number if it looks like one
-              if (/^\d+$/.test(cleanValue)) {
-                frontmatterData[key] = Number.parseInt(cleanValue, 10);
-              } else {
-                frontmatterData[key] = cleanValue;
-              }
-            }
-          }
+          this.mergeFrontmatterEntry(
+            match[1].trim(),
+            match[2].trim(),
+            frontmatterData,
+            arrays,
+          );
         }
       }
     }
 
     // Merge arrays back into frontmatter
-    for (const [key, values] of Object.entries(arrays)) {
-      frontmatterData[key] = [...new Set(values)]; // Remove duplicates
+    for (const [key, values] of arrays) {
+      // Remove duplicates
+      frontmatterData.set(key, [...new Set(values)]);
     }
 
     // Generate frontmatter string
-    if (Object.keys(frontmatterData).length === 0) {
+    if (frontmatterData.size === 0) {
       return "";
     }
 
     let result = "---\n";
-    for (const [key, value] of Object.entries(frontmatterData)) {
+    for (const [key, value] of frontmatterData) {
       if (Array.isArray(value)) {
         result += `${key}: [${value.map((v) => `"${v}"`).join(", ")}]\n`;
       } else if (typeof value === "number") {
@@ -292,14 +250,95 @@ export abstract class BaseJoinStrategy {
   }
 
   /**
+   * Folds one `key: value` frontmatter line into the merged data.
+   *
+   * List keys accumulate into `arrays`, differing titles are combined, and any other key keeps the first value found.
+   * @param key - The frontmatter key.
+   * @param value - The trimmed raw value for the key.
+   * @param frontmatterData - The merged values, updated in place.
+   * @param arrays - The accumulated list values, updated in place.
+   */
+  private mergeFrontmatterEntry(
+    key: string,
+    value: string,
+    frontmatterData: Map<string, string | number | string[]>,
+    arrays: Map<string, string[]>,
+  ): void {
+    if (key === "tags" || key === "categories" || key === "keywords") {
+      const arrayValue = arrays.get(key) ?? [];
+      arrays.set(key, arrayValue);
+      if (value.startsWith("[") && value.endsWith("]")) {
+        // Parse array format
+        const items = value
+          .slice(1, -1)
+          .split(",")
+          .map((item) => item.trim().replace(/['"]/g, ""));
+        arrayValue.push(...items);
+      } else {
+        arrayValue.push(value.replace(/['"]/g, ""));
+      }
+
+      return;
+    }
+
+    const cleanValue = value.replace(/['"]/g, "");
+    const existing = frontmatterData.get(key);
+
+    if (key === "title") {
+      // Use first title found, or combine if different
+      if (existing === undefined) {
+        frontmatterData.set(key, cleanValue);
+      } else if (typeof existing === "string" && existing !== cleanValue) {
+        frontmatterData.set(key, `${existing} & ${cleanValue}`);
+      }
+
+      return;
+    }
+
+    // Simple key-value pairs - use first found
+    if (existing === undefined || existing === "" || existing === 0) {
+      // Try to parse as number if it looks like one
+      frontmatterData.set(
+        key,
+        /^\d+$/.test(cleanValue) ? Number.parseInt(cleanValue, 10) : cleanValue,
+      );
+    }
+  }
+
+  /**
+   * Maps each frontmatter key to the files whose frontmatter declares it.
+   * @param sections - The sections whose frontmatter is scanned.
+   * @returns The declaring files per key, in section order.
+   */
+  private collectFrontmatterKeyFiles(
+    sections: readonly JoinSection[],
+  ): Partial<Record<string, string[]>> {
+    const keyFiles: Partial<Record<string, string[]>> = {};
+
+    for (const section of sections) {
+      if (section.frontmatter === undefined || section.frontmatter === "") {
+        continue;
+      }
+
+      for (const line of section.frontmatter.split("\n")) {
+        const match = /^([^:]+):/.exec(line);
+        if (match) {
+          (keyFiles[match[1].trim()] ??= []).push(section.filePath);
+        }
+      }
+    }
+
+    return keyFiles;
+  }
+
+  /**
    * Detects conflicts between sections.
    *
    * Reports a `duplicate-headers` conflict for each header (compared case-insensitively) that appears in more than one section, and a `frontmatter-merge` conflict for each frontmatter key present in more than one section.
-   *
    * @param sections - The sections to compare.
    * @returns One conflict per duplicated header or frontmatter key, naming the files involved.
    */
-  protected detectConflicts(sections: JoinSection[]): JoinConflict[] {
+  protected detectConflicts(sections: readonly JoinSection[]): JoinConflict[] {
     const conflicts: JoinConflict[] = [];
     const seenHeaders = new Set<string>();
     const headerFiles: Partial<Record<string, string[]>> = {};
@@ -331,26 +370,7 @@ export abstract class BaseJoinStrategy {
     }
 
     // Check for frontmatter conflicts
-    const frontmatterKeys = new Set<string>();
-    const conflictingKeys: Partial<Record<string, string[]>> = {};
-
-    for (const section of sections) {
-      if (section.frontmatter) {
-        const lines = section.frontmatter.split("\n");
-        for (const line of lines) {
-          const match = /^([^:]+):/.exec(line);
-          if (match) {
-            const key = match[1].trim();
-            if (frontmatterKeys.has(key)) {
-              (conflictingKeys[key] ??= []).push(section.filePath);
-            } else {
-              frontmatterKeys.add(key);
-              conflictingKeys[key] = [section.filePath];
-            }
-          }
-        }
-      }
-    }
+    const conflictingKeys = this.collectFrontmatterKeyFiles(sections);
 
     for (const [key, files] of Object.entries(conflictingKeys)) {
       if ((files ?? []).length > 1) {
@@ -368,7 +388,6 @@ export abstract class BaseJoinStrategy {
 
   /**
    * Extracts the text of every markdown header in a document.
-   *
    * @param content - The markdown content to scan.
    * @returns The header texts in document order, without the leading `#` markers.
    */
@@ -390,7 +409,6 @@ export abstract class BaseJoinStrategy {
    * Removes repeated links from combined content.
    *
    * The first occurrence of each markdown link (same text and target) and each bare URL is kept. A repeated markdown link is replaced by its link text (or its URL when the text is empty), and a repeated bare URL is deleted.
-   *
    * @param content - The combined document content.
    * @returns The de-duplicated content and the occurrences that were removed.
    */
@@ -454,12 +472,10 @@ export abstract class BaseJoinStrategy {
  * Uses topological sorting to arrange sections so that files are ordered according to their
  * cross-reference dependencies. Files with no dependencies come first, followed by files that
  * depend on them.
- *
  * @category Strategies
- *
  * @example
  *   Dependency-based joining
- *   ```typescript
+ * ```typescript
  *   const strategy = new DependencyOrderJoinStrategy({
  *       mergeFrontmatter: true,
  *       deduplicateLinks: true
@@ -469,18 +485,17 @@ export abstract class BaseJoinStrategy {
  *   if (result.success) {
  *     console.log(`Joined ${result.sourceFiles.length} files in dependency order`);
  *   }
- *   ```
+ * ```
  */
 export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
   /**
    * Joins sections in dependency order.
    *
    * Sections are topologically sorted so that a file comes after every file in the input that it depends on. Dependencies that are not among the input sections are ignored. If the dependencies are circular, a warning is recorded and the sections are ordered by their `order` field instead.
-   *
    * @param sections - The sections to join.
    * @returns The joined result, or a failed result with `errors` populated if joining throws.
    */
-  join(sections: JoinSection[]): Promise<JoinResult> {
+  async join(sections: readonly JoinSection[]): Promise<JoinResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
     const conflicts = this.detectConflicts(sections);
@@ -496,19 +511,21 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
         const fallbackSections = [...sections].sort(
           (a, b) => a.order - b.order,
         );
-        return Promise.resolve(
+
+        return await Promise.resolve(
           this.buildResult(fallbackSections, conflicts, warnings, errors),
         );
       }
 
-      return Promise.resolve(
+      return await Promise.resolve(
         this.buildResult(orderedSections, conflicts, warnings, errors),
       );
     } catch (error) {
       errors.push(
         `Failed to join sections: ${error instanceof Error ? error.message : String(error)}`,
       );
-      return Promise.resolve({
+
+      return await Promise.resolve({
         success: false,
         content: "",
         frontmatter: undefined,
@@ -521,7 +538,9 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
     }
   }
 
-  private topologicalSort(sections: JoinSection[]): JoinSection[] | null {
+  private topologicalSort(
+    sections: readonly JoinSection[],
+  ): JoinSection[] | null {
     const graph = new Map<string, Set<string>>();
     const inDegree = new Map<string, number>();
     const fileToSection = new Map<string, JoinSection>();
@@ -560,7 +579,7 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
 
     while (queue.length > 0) {
       const current = queue.shift();
-      if (!current) break;
+      if (current === undefined) break;
 
       const section = fileToSection.get(current);
       if (!section) continue;
@@ -579,17 +598,18 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
 
     // Check for cycles
     if (result.length !== sections.length) {
-      return null; // Circular dependency detected
+      // Circular dependency detected
+      return null;
     }
 
     return result;
   }
 
   private buildResult(
-    orderedSections: JoinSection[],
-    conflicts: JoinConflict[],
-    warnings: string[],
-    errors: string[],
+    orderedSections: readonly JoinSection[],
+    conflicts: readonly JoinConflict[],
+    warnings: readonly string[],
+    errors: readonly string[],
   ): JoinResult {
     const sourceFiles = orderedSections.map((s) => s.filePath);
     const separator = this.options.separator ?? "\n\n---\n\n";
@@ -602,7 +622,7 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
     let deduplicatedLinks: string[] = [];
 
     // Deduplicate links if requested
-    if (this.options.deduplicateLinks) {
+    if (this.options.deduplicateLinks === true) {
       const dedupeResult = this.deduplicateLinks(combinedContent);
       combinedContent = dedupeResult.content;
       deduplicatedLinks = dedupeResult.removedLinks;
@@ -610,7 +630,7 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
 
     // Merge frontmatter if requested
     let frontmatter: string | undefined;
-    if (this.options.mergeFrontmatter) {
+    if (this.options.mergeFrontmatter === true) {
       frontmatter = this.mergeFrontmatter(orderedSections);
     }
 
@@ -619,9 +639,9 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
       content: combinedContent,
       frontmatter,
       sourceFiles,
-      conflicts,
-      warnings,
-      errors,
+      conflicts: [...conflicts],
+      warnings: [...warnings],
+      errors: [...errors],
       deduplicatedLinks,
     };
   }
@@ -633,30 +653,27 @@ export class DependencyOrderJoinStrategy extends BaseJoinStrategy {
  * Provides simple, predictable ordering by sorting files alphabetically based on their extracted
  * title (from frontmatter or first header) or falling back to the filename if no title is
  * available.
- *
  * @category Strategies
- *
  * @example
  *   Alphabetical joining
- *   ```typescript
+ * ```typescript
  *   const strategy = new AlphabeticalJoinStrategy({
  *       separator: '\n\n<!-- Next Section -->\n\n'
  *   });
  *
  *   const result = await strategy.join(sections);
  *   console.log(`Files ordered: ${result.sourceFiles.join(', ')}`);
- *   ```
+ * ```
  */
 export class AlphabeticalJoinStrategy extends BaseJoinStrategy {
   /**
    * Joins sections in case-insensitive alphabetical order.
    *
    * Sections are sorted by title, using the file path for a section with no title.
-   *
    * @param sections - The sections to join.
    * @returns The joined result, or a failed result with `errors` populated if joining throws.
    */
-  join(sections: JoinSection[]): Promise<JoinResult> {
+  async join(sections: readonly JoinSection[]): Promise<JoinResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
     const conflicts = this.detectConflicts(sections);
@@ -666,17 +683,19 @@ export class AlphabeticalJoinStrategy extends BaseJoinStrategy {
       const orderedSections = [...sections].sort((a, b) => {
         const titleA = this.titleOrPath(a.title, a.filePath);
         const titleB = this.titleOrPath(b.title, b.filePath);
+
         return titleA.toLowerCase().localeCompare(titleB.toLowerCase());
       });
 
-      return Promise.resolve(
+      return await Promise.resolve(
         this.buildResult(orderedSections, conflicts, warnings, errors),
       );
     } catch (error) {
       errors.push(
         `Failed to join sections: ${error instanceof Error ? error.message : String(error)}`,
       );
-      return Promise.resolve({
+
+      return await Promise.resolve({
         success: false,
         content: "",
         frontmatter: undefined,
@@ -690,10 +709,10 @@ export class AlphabeticalJoinStrategy extends BaseJoinStrategy {
   }
 
   private buildResult(
-    orderedSections: JoinSection[],
-    conflicts: JoinConflict[],
-    warnings: string[],
-    errors: string[],
+    orderedSections: readonly JoinSection[],
+    conflicts: readonly JoinConflict[],
+    warnings: readonly string[],
+    errors: readonly string[],
   ): JoinResult {
     const sourceFiles = orderedSections.map((s) => s.filePath);
     const separator = this.options.separator ?? "\n\n---\n\n";
@@ -704,14 +723,14 @@ export class AlphabeticalJoinStrategy extends BaseJoinStrategy {
 
     let deduplicatedLinks: string[] = [];
 
-    if (this.options.deduplicateLinks) {
+    if (this.options.deduplicateLinks === true) {
       const dedupeResult = this.deduplicateLinks(combinedContent);
       combinedContent = dedupeResult.content;
       deduplicatedLinks = dedupeResult.removedLinks;
     }
 
     let frontmatter: string | undefined;
-    if (this.options.mergeFrontmatter) {
+    if (this.options.mergeFrontmatter === true) {
       frontmatter = this.mergeFrontmatter(orderedSections);
     }
 
@@ -720,9 +739,9 @@ export class AlphabeticalJoinStrategy extends BaseJoinStrategy {
       content: combinedContent,
       frontmatter,
       sourceFiles,
-      conflicts,
-      warnings,
-      errors,
+      conflicts: [...conflicts],
+      warnings: [...warnings],
+      errors: [...errors],
       deduplicatedLinks,
     };
   }
@@ -734,12 +753,10 @@ export class AlphabeticalJoinStrategy extends BaseJoinStrategy {
  * Allows explicit specification of file order through the customOrder option. Files not specified
  * in the custom order are appended in alphabetical order. This provides maximum control over the
  * final document structure.
- *
  * @category Strategies
- *
  * @example
  *   Manual ordering with fallback
- *   ```typescript
+ * ```typescript
  *   const strategy = new ManualOrderJoinStrategy({
  *       customOrder: ['intro.md', 'main-content.md', 'conclusion.md'],
  *       mergeFrontmatter: true
@@ -747,18 +764,17 @@ export class AlphabeticalJoinStrategy extends BaseJoinStrategy {
  *
  *   // Files will be ordered as specified, with any others alphabetically
  *   const result = await strategy.join(sections);
- *   ```
+ * ```
  */
 export class ManualOrderJoinStrategy extends BaseJoinStrategy {
   /**
    * Joins sections in the order given by the `customOrder` option.
    *
    * Sections named in `customOrder` come first, in that order. A named file with no matching section adds a warning. Remaining sections follow in case-insensitive alphabetical order by title, using the file path for a section with no title.
-   *
    * @param sections - The sections to join.
    * @returns The joined result, or a failed result with `errors` populated if joining throws.
    */
-  join(sections: JoinSection[]): Promise<JoinResult> {
+  async join(sections: readonly JoinSection[]): Promise<JoinResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
     const conflicts = this.detectConflicts(sections);
@@ -787,19 +803,21 @@ export class ManualOrderJoinStrategy extends BaseJoinStrategy {
         .sort((a, b) => {
           const titleA = this.titleOrPath(a.title, a.filePath);
           const titleB = this.titleOrPath(b.title, b.filePath);
+
           return titleA.toLowerCase().localeCompare(titleB.toLowerCase());
         });
 
       orderedSections.push(...remainingSections);
 
-      return Promise.resolve(
+      return await Promise.resolve(
         this.buildResult(orderedSections, conflicts, warnings, errors),
       );
     } catch (error) {
       errors.push(
         `Failed to join sections: ${error instanceof Error ? error.message : String(error)}`,
       );
-      return Promise.resolve({
+
+      return await Promise.resolve({
         success: false,
         content: "",
         frontmatter: undefined,
@@ -813,10 +831,10 @@ export class ManualOrderJoinStrategy extends BaseJoinStrategy {
   }
 
   private buildResult(
-    orderedSections: JoinSection[],
-    conflicts: JoinConflict[],
-    warnings: string[],
-    errors: string[],
+    orderedSections: readonly JoinSection[],
+    conflicts: readonly JoinConflict[],
+    warnings: readonly string[],
+    errors: readonly string[],
   ): JoinResult {
     const sourceFiles = orderedSections.map((s) => s.filePath);
     const separator = this.options.separator ?? "\n\n---\n\n";
@@ -827,14 +845,14 @@ export class ManualOrderJoinStrategy extends BaseJoinStrategy {
 
     let deduplicatedLinks: string[] = [];
 
-    if (this.options.deduplicateLinks) {
+    if (this.options.deduplicateLinks === true) {
       const dedupeResult = this.deduplicateLinks(combinedContent);
       combinedContent = dedupeResult.content;
       deduplicatedLinks = dedupeResult.removedLinks;
     }
 
     let frontmatter: string | undefined;
-    if (this.options.mergeFrontmatter) {
+    if (this.options.mergeFrontmatter === true) {
       frontmatter = this.mergeFrontmatter(orderedSections);
     }
 
@@ -843,9 +861,9 @@ export class ManualOrderJoinStrategy extends BaseJoinStrategy {
       content: combinedContent,
       frontmatter,
       sourceFiles,
-      conflicts,
-      warnings,
-      errors,
+      conflicts: [...conflicts],
+      warnings: [...warnings],
+      errors: [...errors],
       deduplicatedLinks,
     };
   }
@@ -857,12 +875,10 @@ export class ManualOrderJoinStrategy extends BaseJoinStrategy {
  * Extracts dates from frontmatter (date, created, modified fields) or attempts to parse dates from
  * filenames. Orders content from oldest to newest, providing a timeline-based organization for
  * content.
- *
  * @category Strategies
- *
  * @example
  *   Chronological joining
- *   ```typescript
+ * ```typescript
  *   const strategy = new ChronologicalJoinStrategy({
  *       separator: '\n\n---\n\n'
  *   });
@@ -870,18 +886,17 @@ export class ManualOrderJoinStrategy extends BaseJoinStrategy {
  *   // Files will be ordered by date (oldest first)
  *   const result = await strategy.join(sections);
  *   console.log(`Chronological order: ${result.sourceFiles.join(' → ')}`);
- *   ```
+ * ```
  */
 export class ChronologicalJoinStrategy extends BaseJoinStrategy {
   /**
    * Joins sections from oldest to newest.
    *
    * Each section's date comes from a `date:` frontmatter line, or failing that from a `YYYY-MM-DD` date in its file path. Sections with no usable date are placed last.
-   *
    * @param sections - The sections to join.
    * @returns The joined result, or a failed result with `errors` populated if joining throws.
    */
-  join(sections: JoinSection[]): Promise<JoinResult> {
+  async join(sections: readonly JoinSection[]): Promise<JoinResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
     const conflicts = this.detectConflicts(sections);
@@ -893,20 +908,23 @@ export class ChronologicalJoinStrategy extends BaseJoinStrategy {
         const dateB = this.extractDate(b);
 
         if (!dateA && !dateB) return 0;
-        if (!dateA) return 1; // Put undated items last
-        if (!dateB) return -1; // Put undated items last
+        // Put undated items last
+        if (!dateA) return 1;
+        // Put undated items last
+        if (!dateB) return -1;
 
         return dateA.getTime() - dateB.getTime();
       });
 
-      return Promise.resolve(
+      return await Promise.resolve(
         this.buildResult(orderedSections, conflicts, warnings, errors),
       );
     } catch (error) {
       errors.push(
         `Failed to join sections: ${error instanceof Error ? error.message : String(error)}`,
       );
-      return Promise.resolve({
+
+      return await Promise.resolve({
         success: false,
         content: "",
         frontmatter: undefined,
@@ -921,7 +939,7 @@ export class ChronologicalJoinStrategy extends BaseJoinStrategy {
 
   private extractDate(section: JoinSection): Date | null {
     // Try frontmatter first
-    if (section.frontmatter) {
+    if (section.frontmatter !== undefined && section.frontmatter !== "") {
       const dateMatch = /^date:\s*(.+)$/m.exec(section.frontmatter);
       if (dateMatch) {
         const date = new Date(dateMatch[1].trim().replace(/['"]/g, ""));
@@ -944,10 +962,10 @@ export class ChronologicalJoinStrategy extends BaseJoinStrategy {
   }
 
   private buildResult(
-    orderedSections: JoinSection[],
-    conflicts: JoinConflict[],
-    warnings: string[],
-    errors: string[],
+    orderedSections: readonly JoinSection[],
+    conflicts: readonly JoinConflict[],
+    warnings: readonly string[],
+    errors: readonly string[],
   ): JoinResult {
     const sourceFiles = orderedSections.map((s) => s.filePath);
     const separator = this.options.separator ?? "\n\n---\n\n";
@@ -958,14 +976,14 @@ export class ChronologicalJoinStrategy extends BaseJoinStrategy {
 
     let deduplicatedLinks: string[] = [];
 
-    if (this.options.deduplicateLinks) {
+    if (this.options.deduplicateLinks === true) {
       const dedupeResult = this.deduplicateLinks(combinedContent);
       combinedContent = dedupeResult.content;
       deduplicatedLinks = dedupeResult.removedLinks;
     }
 
     let frontmatter: string | undefined;
-    if (this.options.mergeFrontmatter) {
+    if (this.options.mergeFrontmatter === true) {
       frontmatter = this.mergeFrontmatter(orderedSections);
     }
 
@@ -974,9 +992,9 @@ export class ChronologicalJoinStrategy extends BaseJoinStrategy {
       content: combinedContent,
       frontmatter,
       sourceFiles,
-      conflicts,
-      warnings,
-      errors,
+      conflicts: [...conflicts],
+      warnings: [...warnings],
+      errors: [...errors],
       deduplicatedLinks,
     };
   }

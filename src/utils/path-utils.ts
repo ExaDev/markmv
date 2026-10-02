@@ -13,15 +13,14 @@ import {
 
 /**
  * Resolve a path that may be relative, absolute, or use home directory notation.
- *
  * @example
- *   ```typescript PathUtils.resolvePath('~/docs/file.md'); // Returns: '/Users/username/docs/file.md'
+ * ```typescript
+ *   PathUtils.resolvePath('~/docs/file.md'); // Returns: '/Users/username/docs/file.md'
  *
- *   PathUtils.resolvePath('../file.md', '/current/working/dir'); // Returns: '/current/working/file.md' ```;
- *
+ *   PathUtils.resolvePath('../file.md', '/current/working/dir'); // Returns: '/current/working/file.md'
+ * ```
  * @param path - The path to resolve (supports ~/, relative, and absolute paths)
  * @param basePath - Optional base directory for relative path resolution
- *
  * @returns Resolved absolute path
  */
 function resolvePath(path: string, basePath?: string): string {
@@ -33,7 +32,7 @@ function resolvePath(path: string, basePath?: string): string {
     return resolve(path);
   }
 
-  if (basePath) {
+  if (basePath !== undefined && basePath !== "") {
     return resolve(join(basePath, path));
   }
 
@@ -69,6 +68,7 @@ function updateRelativePath(
 
   // Create new relative path from new location
   const newSourceDir = dirname(newSourceFilePath);
+
   return makeRelative(finalTargetPath, newSourceDir) + fragment;
 }
 
@@ -104,6 +104,7 @@ function normalizePath(path: string): string {
 /** Check if a path is within a given directory */
 function isWithinDirectory(filePath: string, directoryPath: string): boolean {
   const relativePath = relative(directoryPath, filePath);
+
   return !relativePath.startsWith("..") && !isAbsolute(relativePath);
 }
 
@@ -154,11 +155,12 @@ function validatePath(path: string): {
 /** Extract directory depth from a path */
 function getDirectoryDepth(path: string): number {
   const normalized = resolve(path);
+
   return normalized.split(sep).filter((part) => part !== "").length;
 }
 
 /** Find common base directory for multiple paths */
-function findCommonBase(paths: string[]): string {
+function findCommonBase(paths: readonly string[]): string {
   if (paths.length === 0) return "";
   if (paths.length === 1) return dirname(paths[0]);
 
@@ -188,18 +190,20 @@ function toUnixPath(path: string): string {
 /** Get file extension with fallback handling */
 function getExtension(path: string): string {
   const ext = extname(path);
+
   return ext || "";
 }
 
 /** Check if path represents a markdown file */
 function isMarkdownFile(path: string): boolean {
   const ext = getExtension(path).toLowerCase();
+
   return [".md", ".markdown", ".mdown", ".mkd", ".mdx"].includes(ext);
 }
 
 /** Safely join paths, handling edge cases */
-function safejoin(...parts: string[]): string {
-  const filteredParts = parts.filter((part) => part && part.trim() !== "");
+function safejoin(...parts: readonly string[]): string {
+  const filteredParts = parts.filter((part) => part.trim() !== "");
   if (filteredParts.length === 0) return "";
 
   return resolve(join(...filteredParts));
@@ -209,6 +213,7 @@ function safejoin(...parts: string[]): string {
 function isDirectory(path: string): boolean {
   try {
     const resolvedPath = resolvePath(path);
+
     return existsSync(resolvedPath) && statSync(resolvedPath).isDirectory();
   } catch {
     return false;
@@ -233,6 +238,7 @@ function resolveDestination(
   // If destination looks like a directory or exists as a directory
   if (looksLikeDirectory(destinationPath) || isDirectory(resolvedDest)) {
     const sourceFileName = basename(sourcePath);
+
     return join(resolvedDest, sourceFileName);
   }
 
@@ -244,14 +250,25 @@ function resolveDestination(
  *
  * Provides comprehensive path handling for markdown file operations including relative path
  * updates, home directory resolution, and cross-platform compatibility.
- *
  * @category Utilities
- *
- * @example
- *   Path resolution ```typescript // Resolve various path formats PathUtils.resolvePath('~/docs/file.md');     // Home directory PathUtils.resolvePath('../guide.md', '/current/dir');  // Relative PathUtils.resolvePath('/absolute/path.md');  // Absolute ```
- *
- * @example
- *   Relative path updates for moved files ```typescript // When moving a file, update its relative links const originalLink = '../images/diagram.png'; const updatedLink = PathUtils.updateRelativePath( originalLink, 'docs/guide.md',      // old file location 'tutorials/guide.md'  // new file location ); // Result: '../../docs/images/diagram.png' ```
+ * @example Path resolution
+ * ```typescript
+ *   // Resolve various path formats
+ *   PathUtils.resolvePath('~/docs/file.md');     // Home directory
+ *   PathUtils.resolvePath('../guide.md', '/current/dir');  // Relative
+ *   PathUtils.resolvePath('/absolute/path.md');  // Absolute
+ * ```
+ * @example Relative path updates for moved files
+ * ```typescript
+ *   // When moving a file, update its relative links
+ *   const originalLink = '../images/diagram.png';
+ *   const updatedLink = PathUtils.updateRelativePath(
+ *     originalLink,
+ *     'docs/guide.md',      // old file location
+ *     'tutorials/guide.md'  // new file location
+ *   );
+ *   // Result: '../../docs/images/diagram.png'
+ * ```
  */
 export const PathUtils = {
   /** Resolves a path to an absolute one. A leading `~/` expands to the home directory, an absolute path is normalised, and a relative path is resolved against `basePath` when given, otherwise the current working directory. */

@@ -3,9 +3,14 @@ import { resolve, relative, dirname } from "node:path";
 import { LinkParser } from "./link-parser.js";
 import type { MarkdownLink } from "../types/links.js";
 
+/** Depth used when `maxDepth` is not supplied. */
+const DEFAULT_MAX_DEPTH = 10;
+
+/** A node with more links than this (inbound plus outbound) is flagged as a hub. */
+const HUB_LINK_THRESHOLD = 10;
+
 /**
  * Configuration options for link graph generation.
- *
  * @category Core
  */
 export interface LinkGraphOptions {
@@ -23,7 +28,6 @@ export interface LinkGraphOptions {
 
 /**
  * Represents a node in the link graph.
- *
  * @category Core
  */
 export interface GraphNode {
@@ -59,7 +63,6 @@ export interface GraphNode {
 
 /**
  * Represents an edge in the link graph.
- *
  * @category Core
  */
 export interface GraphEdge {
@@ -79,7 +82,6 @@ export interface GraphEdge {
 
 /**
  * Complete link graph representation.
- *
  * @category Core
  */
 export interface LinkGraph {
@@ -115,7 +117,6 @@ export interface LinkGraph {
 
 /**
  * Output format for graph export.
- *
  * @category Core
  */
 export type GraphOutputFormat = "json" | "mermaid" | "dot" | "html";
@@ -126,12 +127,10 @@ export type GraphOutputFormat = "json" | "mermaid" | "dot" | "html";
  * The LinkGraphGenerator analyzes markdown files to extract internal links and builds directed
  * graphs of file relationships. Supports multiple output formats including JSON data, Mermaid
  * diagrams, and interactive HTML visualizations.
- *
  * @category Core
- *
  * @example
  *   Basic graph generation
- *   ```typescript
+ * ```typescript
  *   const generator = new LinkGraphGenerator({
  *       includeExternal: false,
  *       maxDepth: 5
@@ -139,11 +138,10 @@ export type GraphOutputFormat = "json" | "mermaid" | "dot" | "html";
  *
  *   const graph = await generator.generateGraph(['docs/**\/*.md']);
  *   console.log('Generated graph with ' + graph.nodes.length + ' nodes and ' + graph.edges.length + ' edges');
- *   ```
- *
+ * ```
  * @example
  *   Export to different formats
- *   ```typescript
+ * ```typescript
  *   const generator = new LinkGraphGenerator();
  *   const graph = await generator.generateGraph(['*.md']);
  *
@@ -155,23 +153,23 @@ export type GraphOutputFormat = "json" | "mermaid" | "dot" | "html";
  *
  *   // Export as interactive HTML
  *   const html = generator.exportGraph(graph, 'html');
- *   ```
+ * ```
  */
 export class LinkGraphGenerator {
-  private options: Required<LinkGraphOptions>;
-  private parser: LinkParser;
+  private readonly options: Required<LinkGraphOptions>;
+
+  private readonly parser: LinkParser;
 
   /**
-   * Creates a generator, filling any option left unset with its default: external links excluded, images included, anchors excluded, a maximum depth of 10 and the current working directory as base.
-   *
+   * Creates a generator, filling any option left unset with its default: external links excluded, images included, anchors excluded, the default maximum depth and the current working directory as base.
    * @param options - Graph generation options.
    */
-  constructor(options: LinkGraphOptions = {}) {
+  constructor(options: Readonly<LinkGraphOptions> = {}) {
     this.options = {
       includeExternal: options.includeExternal ?? false,
       includeImages: options.includeImages ?? true,
       includeAnchors: options.includeAnchors ?? false,
-      maxDepth: options.maxDepth ?? 10,
+      maxDepth: options.maxDepth ?? DEFAULT_MAX_DEPTH,
       baseDir: options.baseDir ?? process.cwd(),
     };
     this.parser = new LinkParser();
@@ -179,12 +177,10 @@ export class LinkGraphGenerator {
 
   /**
    * Generates a complete link graph from markdown files.
-   *
    * @param patterns - File patterns to process (supports globs)
-   *
    * @returns Promise resolving to the generated link graph
    */
-  async generateGraph(patterns: string[]): Promise<LinkGraph> {
+  async generateGraph(patterns: readonly string[]): Promise<LinkGraph> {
     // Parse all files to extract links
     const parsedFiles = await this.parseFiles(patterns);
 
@@ -210,10 +206,8 @@ export class LinkGraphGenerator {
 
   /**
    * Exports a link graph to the specified format.
-   *
    * @param graph - The link graph to export
    * @param format - Output format
-   *
    * @returns Formatted graph representation
    */
   exportGraph(graph: LinkGraph, format: GraphOutputFormat): string {
@@ -231,44 +225,52 @@ export class LinkGraphGenerator {
     }
   }
 
-  private async parseFiles(patterns: string[]): Promise<
+  private async parseFiles(patterns: readonly string[]): Promise<
     {
       filePath: string;
       links: MarkdownLink[];
     }[]
   > {
     const { glob } = await import("glob");
-    const files: string[] = [];
 
     // Resolve file patterns
-    for (const pattern of patterns) {
-      const matches = await glob(pattern, {
-        absolute: true,
-        ignore: ["**/node_modules/**", "**/dist/**", "**/coverage/**"],
-      });
-      files.push(...matches.filter((f) => f.endsWith(".md")));
-    }
+    const matchesPerPattern = await Promise.all(
+      patterns.map(async (pattern) =>
+        glob(pattern, {
+          absolute: true,
+          ignore: ["**/node_modules/**", "**/dist/**", "**/coverage/**"],
+        }),
+      ),
+    );
+    const files = matchesPerPattern.flatMap((matches) =>
+      matches.filter((f) => f.endsWith(".md")),
+    );
 
     // Parse each file
-    const parsedFiles = [];
-    for (const filePath of files) {
-      try {
-        const parsed = await this.parser.parseFile(filePath);
-        parsedFiles.push({
-          filePath,
-          links: parsed.links,
-        });
-      } catch (error) {
-        // Skip files that cannot be parsed
-        console.warn("Failed to parse " + filePath + ":", error);
-      }
-    }
+    const parsedOrUndefined = await Promise.all(
+      files.map(async (filePath) => this.parseFileLinks(filePath)),
+    );
 
-    return parsedFiles;
+    return parsedOrUndefined.filter((parsed) => parsed !== undefined);
+  }
+
+  private async parseFileLinks(
+    filePath: string,
+  ): Promise<{ filePath: string; links: MarkdownLink[] } | undefined> {
+    try {
+      const parsed = await this.parser.parseFile(filePath);
+
+      return { filePath, links: parsed.links };
+    } catch (error) {
+      // Skip files that cannot be parsed
+      console.warn("Failed to parse " + filePath + ":", error);
+
+      return undefined;
+    }
   }
 
   private async buildGraph(
-    parsedFiles: {
+    parsedFiles: readonly {
       filePath: string;
       links: MarkdownLink[];
     }[],
@@ -277,12 +279,23 @@ export class LinkGraphGenerator {
     const edges: GraphEdge[] = [];
 
     // Create nodes for all source files
-    for (const { filePath } of parsedFiles) {
-      const node = await this.createNode(filePath, "markdown");
+    const sourceNodes = await Promise.all(
+      parsedFiles.map(async ({ filePath }) => ({
+        filePath,
+        node: await this.createNode(filePath, "markdown"),
+      })),
+    );
+    for (const { filePath, node } of sourceNodes) {
       nodeMap.set(filePath, node);
     }
 
-    // Process links to create edges and target nodes
+    // Collect the included links and the target nodes they need, in encounter order
+    const pendingTargets = new Map<string, GraphNode["type"]>();
+    const includedLinks: {
+      sourceId: string;
+      targetPath: string;
+      link: MarkdownLink;
+    }[] = [];
     for (const { filePath, links } of parsedFiles) {
       const sourceNode = nodeMap.get(filePath);
       if (!sourceNode) continue;
@@ -291,44 +304,29 @@ export class LinkGraphGenerator {
         // Filter links based on options
         if (!this.shouldIncludeLink(link)) continue;
 
-        // Create target node if it doesn't exist
         const targetPath = this.resolveTargetPath(link, filePath);
-        if (!nodeMap.has(targetPath)) {
-          const targetType = this.getNodeType(link, targetPath);
-          const targetNode = await this.createNode(targetPath, targetType);
-          nodeMap.set(targetPath, targetNode);
+        if (!nodeMap.has(targetPath) && !pendingTargets.has(targetPath)) {
+          pendingTargets.set(targetPath, this.getNodeType(link, targetPath));
         }
+        includedLinks.push({ sourceId: sourceNode.id, targetPath, link });
+      }
+    }
 
-        // Create edge - filter out unsupported link types
-        const edgeType = link.type === "reference" ? "internal" : link.type;
+    // Create target nodes that do not exist yet
+    const targetNodes = await Promise.all(
+      [...pendingTargets].map(async ([targetPath, targetType]) =>
+        this.createNode(targetPath, targetType),
+      ),
+    );
+    for (const targetNode of targetNodes) {
+      nodeMap.set(targetNode.path, targetNode);
+    }
 
-        // Type guard to ensure we only create edges with valid types
-        if (
-          edgeType === "internal" ||
-          edgeType === "external" ||
-          edgeType === "image" ||
-          edgeType === "anchor" ||
-          edgeType === "claude-import"
-        ) {
-          const targetNode = nodeMap.get(targetPath);
-          if (targetNode === undefined) continue;
-
-          const edge: GraphEdge = {
-            source: sourceNode.id,
-            target: targetNode.id,
-            type: edgeType,
-            weight: 1,
-          };
-
-          if (link.text) {
-            edge.text = link.text;
-          }
-          if (link.line) {
-            edge.line = link.line;
-          }
-
-          edges.push(edge);
-        }
+    // Create edges
+    for (const { sourceId, targetPath, link } of includedLinks) {
+      const edge = this.createEdge(sourceId, nodeMap.get(targetPath), link);
+      if (edge !== undefined) {
+        edges.push(edge);
       }
     }
 
@@ -339,6 +337,44 @@ export class LinkGraphGenerator {
       nodes: Array.from(nodeMap.values()),
       edges,
     };
+  }
+
+  private createEdge(
+    sourceId: string,
+    targetNode: Readonly<GraphNode> | undefined,
+    link: Readonly<MarkdownLink>,
+  ): GraphEdge | undefined {
+    if (targetNode === undefined) return undefined;
+
+    // Filter out unsupported link types
+    const edgeType = link.type === "reference" ? "internal" : link.type;
+
+    // Type guard to ensure we only create edges with valid types
+    if (
+      edgeType !== "internal" &&
+      edgeType !== "external" &&
+      edgeType !== "image" &&
+      edgeType !== "anchor" &&
+      edgeType !== "claude-import"
+    ) {
+      return undefined;
+    }
+
+    const edge: GraphEdge = {
+      source: sourceId,
+      target: targetNode.id,
+      type: edgeType,
+      weight: 1,
+    };
+
+    if (link.text !== undefined && link.text !== "") {
+      edge.text = link.text;
+    }
+    if (link.line) {
+      edge.line = link.line;
+    }
+
+    return edge;
   }
 
   private async createNode(
@@ -383,26 +419,27 @@ export class LinkGraphGenerator {
     return node;
   }
 
-  private shouldIncludeLink(link: MarkdownLink): boolean {
-    switch (link.type) {
-      case "external":
-        return this.options.includeExternal;
-      case "image":
-        return this.options.includeImages;
-      case "anchor":
-        return this.options.includeAnchors;
-      case "internal":
-      case "claude-import":
-        return true;
-      case "reference":
-        return false; // Skip reference links for now
-      default:
-        return false;
-    }
+  private shouldIncludeLink(link: Readonly<MarkdownLink>): boolean {
+    const includedByType: Record<MarkdownLink["type"], boolean> = {
+      external: this.options.includeExternal,
+      image: this.options.includeImages,
+      anchor: this.options.includeAnchors,
+      internal: true,
+      "claude-import": true,
+      // Reference links are skipped for now
+      reference: false,
+      wikilink: false,
+      "obsidian-transclusion": false,
+    };
+
+    return includedByType[link.type];
   }
 
-  private resolveTargetPath(link: MarkdownLink, sourceFile: string): string {
-    if (link.resolvedPath) {
+  private resolveTargetPath(
+    link: Readonly<MarkdownLink>,
+    sourceFile: string,
+  ): string {
+    if (link.resolvedPath !== undefined && link.resolvedPath !== "") {
       return resolve(link.resolvedPath);
     }
 
@@ -415,7 +452,7 @@ export class LinkGraphGenerator {
   }
 
   private getNodeType(
-    link: MarkdownLink,
+    link: Readonly<MarkdownLink>,
     targetPath: string,
   ): GraphNode["type"] {
     if (link.type === "external") {
@@ -441,6 +478,7 @@ export class LinkGraphGenerator {
     if (type === "external") {
       try {
         const url = new URL(path);
+
         return url.hostname;
       } catch {
         return path;
@@ -450,7 +488,10 @@ export class LinkGraphGenerator {
     return relative(this.options.baseDir, path) || path;
   }
 
-  private calculateNodeStats(nodes: GraphNode[], edges: GraphEdge[]): void {
+  private calculateNodeStats(
+    nodes: readonly GraphNode[],
+    edges: readonly GraphEdge[],
+  ): void {
     // Reset stats
     for (const node of nodes) {
       node.stats.inbound = 0;
@@ -473,18 +514,23 @@ export class LinkGraphGenerator {
     // Calculate totals and identify hubs/orphans
     for (const node of nodes) {
       node.stats.total = node.stats.inbound + node.stats.outbound;
-      node.properties.isHub = node.stats.total > 10; // Threshold for hub detection
+      // Threshold for hub detection
+      node.properties.isHub = node.stats.total > HUB_LINK_THRESHOLD;
       node.properties.isOrphan = node.stats.total === 0;
     }
   }
 
   private analyzeGraph(
-    nodes: GraphNode[],
-    edges: GraphEdge[],
+    nodes: readonly GraphNode[],
+    edges: readonly GraphEdge[],
   ): LinkGraph["analysis"] {
-    const hubs = nodes.filter((n) => n.properties.isHub).map((n) => n.id);
+    const hubs = nodes
+      .filter((n) => n.properties.isHub === true)
+      .map((n) => n.id);
 
-    const orphans = nodes.filter((n) => n.properties.isOrphan).map((n) => n.id);
+    const orphans = nodes
+      .filter((n) => n.properties.isOrphan === true)
+      .map((n) => n.id);
 
     // Simple circular reference detection
     const circularReferences = this.detectCircularReferences(nodes, edges);
@@ -504,19 +550,20 @@ export class LinkGraphGenerator {
   }
 
   private detectCircularReferences(
-    nodes: GraphNode[],
-    edges: GraphEdge[],
+    nodes: readonly GraphNode[],
+    edges: readonly GraphEdge[],
   ): string[][] {
     const cycles: string[][] = [];
     const visited = new Set<string>();
     const recursionStack = new Set<string>();
 
-    const dfs = (nodeId: string, path: string[]): void => {
+    const dfs = (nodeId: string, path: readonly string[]): void => {
       if (recursionStack.has(nodeId)) {
         // Found a cycle
         const cycleStart = path.indexOf(nodeId);
         const cycle = path.slice(cycleStart).concat(nodeId);
         cycles.push(cycle);
+
         return;
       }
 
@@ -546,20 +593,21 @@ export class LinkGraphGenerator {
   }
 
   private findStronglyConnectedComponents(
-    nodes: GraphNode[],
-    edges: GraphEdge[],
+    nodes: readonly GraphNode[],
+    edges: readonly GraphEdge[],
   ): string[][] {
     // Simplified implementation - just return connected components
     const components: string[][] = [];
     const visited = new Set<string>();
 
-    const dfs = (nodeId: string, component: string[]): void => {
+    // Collects the nodes first reached from nodeId, in depth-first pre-order
+    const collect = (nodeId: string): string[] => {
       if (visited.has(nodeId)) {
-        return;
+        return [];
       }
 
       visited.add(nodeId);
-      component.push(nodeId);
+      const component = [nodeId];
 
       // Find all connected nodes (both directions)
       const connectedEdges = edges.filter(
@@ -569,14 +617,15 @@ export class LinkGraphGenerator {
       for (const edge of connectedEdges) {
         const connectedNode =
           edge.source === nodeId ? edge.target : edge.source;
-        dfs(connectedNode, component);
+        component.push(...collect(connectedNode));
       }
+
+      return component;
     };
 
     for (const node of nodes) {
       if (!visited.has(node.id)) {
-        const component: string[] = [];
-        dfs(node.id, component);
+        const component = collect(node.id);
         if (component.length > 1) {
           components.push(component);
         }
@@ -596,7 +645,8 @@ export class LinkGraphGenerator {
     // Add nodes with labels
     for (const node of graph.nodes) {
       const shape = this.getMermaidNodeShape(node);
-      const label = node.label.replace(/[[\]]/g, ""); // Remove brackets
+      // Remove brackets
+      const label = node.label.replace(/[[\]]/g, "");
       lines.push("  " + node.id + shape[0] + label + shape[1]);
     }
 
@@ -624,15 +674,16 @@ export class LinkGraphGenerator {
     }
   }
 
-  private getMermaidArrow(edge: GraphEdge): string {
-    switch (edge.type) {
-      case "external":
-        return "-..->";
-      case "image":
-        return "==->";
-      default:
-        return "-->";
-    }
+  private getMermaidArrow(edge: Readonly<GraphEdge>): string {
+    const arrows: Record<GraphEdge["type"], string> = {
+      external: "-..->",
+      image: "==->",
+      internal: "-->",
+      anchor: "-->",
+      "claude-import": "-->",
+    };
+
+    return arrows[edge.type];
   }
 
   private exportToDot(graph: LinkGraph): string {
@@ -656,17 +707,18 @@ export class LinkGraphGenerator {
     }
 
     lines.push("}");
+
     return lines.join("\n");
   }
 
   private getDotNodeStyle(node: GraphNode): string {
     const styles = [];
 
-    if (node.properties.isHub) {
+    if (node.properties.isHub === true) {
       styles.push("color=red");
     }
 
-    if (node.properties.isOrphan) {
+    if (node.properties.isOrphan === true) {
       styles.push("color=gray");
     }
 
@@ -677,12 +729,15 @@ export class LinkGraphGenerator {
       case "image":
         styles.push("shape=diamond");
         break;
+      case "markdown":
+      case "directory":
+        break;
     }
 
     return styles.length > 0 ? ", " + styles.join(", ") : "";
   }
 
-  private getDotEdgeStyle(edge: GraphEdge): string {
+  private getDotEdgeStyle(edge: Readonly<GraphEdge>): string {
     const styles = [];
 
     switch (edge.type) {
@@ -691,6 +746,10 @@ export class LinkGraphGenerator {
         break;
       case "image":
         styles.push("color=blue");
+        break;
+      case "internal":
+      case "anchor":
+      case "claude-import":
         break;
     }
 

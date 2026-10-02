@@ -34,7 +34,6 @@
     "@commitlint/cli": "^21.2.2",
     "@commitlint/config-conventional": "^21.2.2",
     "@commitlint/types": "^21.2.0",
-    "@eslint/js": "^10.0.1",
     "@eslint/json": "2.0.1",
     "@eslint/markdown": "8.0.3",
     "@exadev/eslint-config": "2.35.0",

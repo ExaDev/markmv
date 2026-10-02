@@ -18,7 +18,6 @@ import { PathUtils } from "./path-utils.js";
  *
  * Provides comprehensive information about a file or directory including size, type, and timestamp
  * information.
- *
  * @category Utilities
  */
 export interface FileStats {
@@ -41,7 +40,6 @@ export interface FileStats {
  *
  * Controls behavior during file copying including overwrite handling, timestamp preservation, and
  * directory creation.
- *
  * @category Utilities
  */
 export interface FileCopyOptions {
@@ -58,7 +56,6 @@ export interface FileCopyOptions {
  *
  * Extends copy options with move-specific features like backup creation. Move operations are
  * typically implemented as copy-then-delete.
- *
  * @category Utilities
  */
 export interface FileMoveOptions extends FileCopyOptions {
@@ -70,6 +67,7 @@ export interface FileMoveOptions extends FileCopyOptions {
 async function exists(path: string): Promise<boolean> {
   try {
     await access(path, constants.F_OK);
+
     return true;
   } catch {
     return false;
@@ -80,6 +78,7 @@ async function exists(path: string): Promise<boolean> {
 async function isReadable(path: string): Promise<boolean> {
   try {
     await access(path, constants.R_OK);
+
     return true;
   } catch {
     return false;
@@ -90,6 +89,7 @@ async function isReadable(path: string): Promise<boolean> {
 async function isWritable(path: string): Promise<boolean> {
   try {
     await access(path, constants.W_OK);
+
     return true;
   } catch {
     return false;
@@ -99,6 +99,7 @@ async function isWritable(path: string): Promise<boolean> {
 /** Get file statistics */
 async function getStats(path: string): Promise<FileStats> {
   const stats = await stat(path);
+
   return {
     path,
     size: stats.size,
@@ -109,18 +110,23 @@ async function getStats(path: string): Promise<FileStats> {
   };
 }
 
+/** Whether the thrown value is an object carrying the given Node.js error code. */
+function hasErrorCode(error: unknown, code: string): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === code
+  );
+}
+
 /** Ensure directory exists, creating it if necessary */
 async function ensureDirectory(dirPath: string): Promise<void> {
   try {
     await mkdir(dirPath, { recursive: true });
   } catch (error) {
     // Ignore error if directory already exists
-    if (!(
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      error.code === "EEXIST"
-    )) {
+    if (!hasErrorCode(error, "EEXIST")) {
       throw error;
     }
   }
@@ -138,12 +144,12 @@ async function readTextFile(filePath: string): Promise<string> {
 async function writeTextFile(
   filePath: string,
   content: string,
-  options: {
+  options: Readonly<{
     /** Create missing parent directories of the file first. Defaults to false. */
     createDirectories?: boolean;
-  } = {},
+  }> = {},
 ): Promise<void> {
-  if (options.createDirectories) {
+  if (options.createDirectories === true) {
     await ensureDirectory(dirname(filePath));
   }
 
@@ -154,7 +160,7 @@ async function writeTextFile(
 async function copyFile(
   sourcePath: string,
   destinationPath: string,
-  options: FileCopyOptions = {},
+  options: Readonly<FileCopyOptions> = {},
 ): Promise<void> {
   const { overwrite = false, createDirectories = true } = options;
 
@@ -172,7 +178,7 @@ async function copyFile(
   await fsCopyFile(sourcePath, destinationPath);
 
   // TODO: Preserve timestamps if requested
-  if (options.preserveTimestamps) {
+  if (options.preserveTimestamps === true) {
     const sourceStats = await stat(sourcePath);
     const { utimes } = await import("node:fs/promises");
     await utimes(destinationPath, sourceStats.atime, sourceStats.mtime);
@@ -183,7 +189,7 @@ async function copyFile(
 async function moveFile(
   sourcePath: string,
   destinationPath: string,
-  options: FileMoveOptions = {},
+  options: Readonly<FileMoveOptions> = {},
 ): Promise<void> {
   const {
     overwrite = false,
@@ -231,12 +237,7 @@ async function moveFile(
     await rename(sourcePath, destinationPath);
   } catch (error) {
     // If rename fails, fall back to copy + delete
-    if (
-      error &&
-      typeof error === "object" &&
-      "code" in error &&
-      error.code === "EXDEV"
-    ) {
+    if (hasErrorCode(error, "EXDEV")) {
       await copyFile(sourcePath, destinationPath, { overwrite: true });
       await unlink(sourcePath);
     } else {
@@ -283,7 +284,7 @@ async function listFiles(
         }
       } else if (stats.isFile) {
         // Filter by extensions if specified
-        if (extensions) {
+        if (extensions !== undefined) {
           const ext = PathUtils.getExtension(fullPath).toLowerCase();
           if (extensions.includes(ext)) {
             files.push(fullPath);
@@ -296,6 +297,7 @@ async function listFiles(
   };
 
   await processDirectory(dirPath);
+
   return files;
 }
 
@@ -317,12 +319,14 @@ async function createBackup(
 ): Promise<string> {
   const backupPath = `${filePath}${suffix}`;
   await copyFile(filePath, backupPath);
+
   return backupPath;
 }
 
 /** Get file size in bytes */
 async function getFileSize(filePath: string): Promise<number> {
   const stats = await getStats(filePath);
+
   return stats.size;
 }
 
@@ -333,6 +337,7 @@ async function filesEqual(path1: string, path2: string): Promise<boolean> {
       readTextFile(path1),
       readTextFile(path2),
     ]);
+
     return content1 === content2;
   } catch {
     return false;
@@ -360,17 +365,21 @@ function getRelativePath(fromFile: string, toFile: string): string {
  * Provides a comprehensive set of functions for file and directory manipulation, with proper error
  * handling and cross-platform compatibility. All methods are async and use Node.js promises-based
  * file system APIs.
- *
  * @category Utilities
- *
  * @example
- *   Basic file operations ```typescript // Check if file exists const exists = await FileUtils.exists('document.md');
+ * ```typescript
+ * // Check if file exists
+ * const exists = await FileUtils.exists('document.md');
  *
- *   // Read file content const content = await FileUtils.readTextFile('document.md');
+ * // Read file content
+ * const content = await FileUtils.readTextFile('document.md');
  *
- *   // Write new content await FileUtils.writeTextFile('output.md', content, { createDirectories: true });
+ * // Write new content
+ * await FileUtils.writeTextFile('output.md', content, { createDirectories: true });
  *
- *   // Find markdown files const files = await FileUtils.findMarkdownFiles('./docs', true); ```
+ * // Find markdown files
+ * const files = await FileUtils.findMarkdownFiles('./docs', true);
+ * ```
  */
 export const FileUtils = {
   /** Resolves to true when the path exists, and false when it does not or cannot be accessed. */

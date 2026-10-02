@@ -22,6 +22,13 @@ import {
 const markmv = createMarkMv();
 const startTime = Date.now();
 
+const HTTP_OK = 200;
+const HTTP_NOT_FOUND = 404;
+const HTTP_INTERNAL_SERVER_ERROR = 500;
+
+/** Port used when none is supplied by the caller or the PORT environment variable. */
+const DEFAULT_PORT = 3000;
+
 /** Type guard to check if an object is a valid API route */
 function isApiRoute(obj: unknown): obj is {
   method: string;
@@ -62,9 +69,15 @@ function sendJSON(
 /** Create a standardized API response */
 function createApiResponse<T>(
   success: boolean,
-  data?: T,
-  error?: string,
-  details?: string[],
+  {
+    data,
+    error,
+    details,
+  }: Readonly<{
+    data?: T;
+    error?: string;
+    details?: readonly string[];
+  }> = {},
 ): ApiResponse<T> {
   const response: ApiResponse<T> = {
     success,
@@ -78,7 +91,7 @@ function createApiResponse<T>(
     response.error = error;
   }
   if (details !== undefined) {
-    response.details = details;
+    response.details = [...details];
   }
 
   return response;
@@ -89,7 +102,7 @@ function createErrorResponse(
   statusCode: number,
   error: string,
   message: string,
-  details?: string[],
+  details?: readonly string[],
 ): ErrorResponse {
   const response: ErrorResponse = {
     error,
@@ -98,7 +111,7 @@ function createErrorResponse(
   };
 
   if (details !== undefined) {
-    response.details = details;
+    response.details = [...details];
   }
 
   return response;
@@ -110,14 +123,16 @@ function handleCORS(
   response: http.ServerResponse,
 ): boolean {
   if (request.method === "OPTIONS") {
-    response.writeHead(200, {
+    response.writeHead(HTTP_OK, {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
     });
     response.end();
+
     return true;
   }
+
   return false;
 }
 
@@ -133,8 +148,8 @@ function handleHealth(response: http.ServerResponse): void {
     },
   };
 
-  const apiResponse = createApiResponse(true, healthResponse);
-  sendJSON(response, 200, apiResponse);
+  const apiResponse = createApiResponse(true, { data: healthResponse });
+  sendJSON(response, HTTP_OK, apiResponse);
 }
 
 /** Main request handler */
@@ -155,6 +170,7 @@ async function handleRequest(
     // Handle health endpoint
     if (method === "GET" && path === "/health") {
       handleHealth(response);
+
       return;
     }
 
@@ -168,6 +184,7 @@ async function handleRequest(
     if (autoRoute && isApiRoute(autoRoute)) {
       // Call the auto-generated handler with the markmv instance
       await autoRoute.handler(request, response, markmv);
+
       return;
     }
 
@@ -177,25 +194,25 @@ async function handleRequest(
       ...getApiRoutePaths().map((p: string) => `POST ${p}`),
     ];
     const errorResponse = createErrorResponse(
-      404,
+      HTTP_NOT_FOUND,
       "NotFound",
       `Route ${String(method)} ${String(path)} not found`,
       [`Available routes: ${availableRoutes.join(", ")}`],
     );
-    sendJSON(response, 404, errorResponse);
+    sendJSON(response, HTTP_NOT_FOUND, errorResponse);
   } catch (error) {
     console.error("Unhandled error:", error);
     const errorResponse = createErrorResponse(
-      500,
+      HTTP_INTERNAL_SERVER_ERROR,
       "InternalServerError",
       "An unexpected error occurred",
     );
-    sendJSON(response, 500, errorResponse);
+    sendJSON(response, HTTP_INTERNAL_SERVER_ERROR, errorResponse);
   }
 }
 
 /** Create and start the HTTP server */
-export function createApiServer(port = 3000): http.Server {
+export function createApiServer(port = DEFAULT_PORT): http.Server {
   const server = http.createServer((request, response) => {
     void handleRequest(request, response);
   });
@@ -211,7 +228,10 @@ export function createApiServer(port = 3000): http.Server {
 
 /** Start the API server with environment-based configuration */
 export function startApiServer(): http.Server {
-  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  const { PORT } = process.env;
+  const port =
+    PORT !== undefined && PORT !== "" ? parseInt(PORT, 10) : DEFAULT_PORT;
+
   return createApiServer(port);
 }
 

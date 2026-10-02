@@ -1,6 +1,12 @@
 import type { OperationChange } from "../types/operations.js";
 import { FileUtils } from "./file-utils.js";
 
+/** Retries a failing step gets before the transaction treats it as failed, when the caller does not say. */
+const DEFAULT_MAX_RETRIES = 3;
+
+/** Delay before the first retry; each further retry doubles it. */
+const RETRY_BASE_DELAY_MS = 1000;
+
 /** Format an unknown caught value as a human-readable error message. */
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -11,7 +17,6 @@ function errorMessage(error: unknown): string {
  *
  * Each step can be executed and rolled back independently, providing the foundation for
  * transactional file operations with full rollback capability.
- *
  * @category Utilities
  */
 export interface TransactionStep {
@@ -39,7 +44,6 @@ export interface TransactionStep {
  *
  * Controls transaction behavior including backup creation, error handling, and retry logic for
  * robust file operations.
- *
  * @category Utilities
  */
 export interface TransactionOptions {
@@ -57,55 +61,54 @@ export interface TransactionOptions {
  * Provides transactional semantics for file system operations, ensuring that either all operations
  * complete successfully or all changes are rolled back. Supports automatic backups and retry
  * logic.
- *
  * @category Utilities
- *
  * @example
- *   Transactional file operations
- *   ```typescript
- *   const transaction = new TransactionManager({
- *       createBackups: true,
- *       continueOnError: false
- *   });
+ * Transactional file operations
+ * ```typescript
+ * const transaction = new TransactionManager({
+ *     createBackups: true,
+ *     continueOnError: false
+ * });
  *
- *   // Add operations to the transaction
- *   transaction.addFileMove('old.md', 'new.md');
- *   transaction.addContentUpdate('target.md', newContent);
+ * // Add operations to the transaction
+ * transaction.addFileMove('old.md', 'new.md');
+ * transaction.addContentUpdate('target.md', newContent);
  *
- *   try {
- *     const result = await transaction.execute();
- *     if (result.success) {
- *       console.log('All operations completed successfully');
- *     } else {
- *       console.log('Transaction failed, all changes rolled back');
- *     }
- *   } catch (error) {
- *     console.error('Transaction error:', error);
+ * try {
+ *   const result = await transaction.execute();
+ *   if (result.success) {
+ *     console.log('All operations completed successfully');
+ *   } else {
+ *     console.log('Transaction failed, all changes rolled back');
  *   }
- *   ```
+ * } catch (error) {
+ *   console.error('Transaction error:', error);
+ * }
+ * ```
  */
 export class TransactionManager {
   private steps: TransactionStep[] = [];
+
   private executedSteps: TransactionStep[] = [];
-  private backups = new Map<string, string>();
-  private options: Required<TransactionOptions>;
+
+  private readonly backups = new Map<string, string>();
+
+  private readonly options: Required<TransactionOptions>;
 
   /**
    * Creates an empty transaction.
-   *
    * @param options - Behaviour settings. `createBackups` defaults to true, `continueOnError` to false and `maxRetries` to 3.
    */
-  constructor(options: TransactionOptions = {}) {
+  constructor(options: Readonly<TransactionOptions> = {}) {
     this.options = {
       createBackups: options.createBackups ?? true,
       continueOnError: options.continueOnError ?? false,
-      maxRetries: options.maxRetries ?? 3,
+      maxRetries: options.maxRetries ?? DEFAULT_MAX_RETRIES,
     };
   }
 
   /**
    * Queues a move of a file. Execution backs up the source when backups are enabled, creates the destination's parent directories and refuses to overwrite an existing destination. Rollback removes the destination and restores the source from the backup.
-   *
    * @param sourcePath - File to move.
    * @param destinationPath - Where to move it to.
    * @param description - Overrides the generated description.
@@ -148,7 +151,10 @@ export class TransactionManager {
 
           // Restore from backup if available
           const backupPath = this.backups.get(stepId);
-          if (backupPath && (await FileUtils.exists(backupPath))) {
+          if (
+            backupPath !== undefined &&
+            (await FileUtils.exists(backupPath))
+          ) {
             await FileUtils.moveFile(backupPath, sourcePath);
             this.backups.delete(stepId);
           }
@@ -161,7 +167,6 @@ export class TransactionManager {
 
   /**
    * Queues replacing the content of a file, creating parent directories as needed. Execution remembers the previous content if the file exists. Rollback restores it, or deletes the file when it did not exist before.
-   *
    * @param filePath - File to write.
    * @param newContent - The full new content.
    * @param description - Overrides the generated description.
@@ -210,7 +215,6 @@ export class TransactionManager {
 
   /**
    * Queues creating a new file, with parent directories created as needed. Execution fails if the file already exists. Rollback deletes the file.
-   *
    * @param filePath - File to create.
    * @param content - Content to write.
    * @param description - Overrides the generated description.
@@ -248,7 +252,6 @@ export class TransactionManager {
 
   /**
    * Queues deleting a file. Execution does nothing when the file is already absent, and otherwise remembers its content. Rollback writes that content back, recreating parent directories, if the file had existed.
-   *
    * @param filePath - File to delete.
    * @param description - Overrides the generated description.
    */
@@ -288,7 +291,6 @@ export class TransactionManager {
 
   /**
    * Runs the queued steps in order, retrying a failing step up to `maxRetries` times with exponential backoff starting at one second. Unless `continueOnError` is set, a step that exhausts its retries rolls back every executed step and removes leftover backups. Backups are removed after a successful run.
-   *
    * @returns The outcome. On a rolled-back failure `changes` is empty.
    */
   async execute(): Promise<{
@@ -306,49 +308,37 @@ export class TransactionManager {
     let completedSteps = 0;
 
     try {
+      // Sequential by design: steps run in queue order and a failure rolls back exactly the steps executed before it.
       for (const step of this.steps) {
-        let retries = 0;
-        let stepSuccess = false;
+        const failure = await this.runStepWithRetries(step);
 
-        while (retries <= this.options.maxRetries && !stepSuccess) {
-          try {
-            await step.execute();
-            step.completed = true;
-            this.executedSteps.push(step);
-            stepSuccess = true;
-            completedSteps++;
+        if (failure === undefined) {
+          step.completed = true;
+          this.executedSteps.push(step);
+          completedSteps++;
 
-            // Record the change
-            changes.push({
-              type: this.mapStepTypeToChangeType(step.type),
-              filePath: this.extractFilePathFromDescription(step.description),
-            });
-          } catch (error) {
-            retries++;
-            const stepErrorMessage = `Step "${step.description}" failed (attempt ${String(retries)}): ${errorMessage(error)}`;
+          // Record the change
+          changes.push({
+            type: this.mapStepTypeToChangeType(step.type),
+            filePath: this.extractFilePathFromDescription(step.description),
+          });
+          continue;
+        }
 
-            if (retries > this.options.maxRetries) {
-              errors.push(stepErrorMessage);
+        errors.push(failure);
 
-              if (!this.options.continueOnError) {
-                // Rollback all executed steps
-                await this.rollback();
-                // The failed step never completed, so no rollback consumes the backup its attempt created; deleting it here keeps a stray copy from failing every later run on the same source
-                await this.cleanupBackups();
-                return {
-                  success: false,
-                  completedSteps,
-                  errors,
-                  changes: [],
-                };
-              }
-            } else {
-              // Wait before retry (exponential backoff)
-              await new Promise((resolve) =>
-                setTimeout(resolve, 2 ** (retries - 1) * 1000),
-              );
-            }
-          }
+        if (!this.options.continueOnError) {
+          // Rollback all executed steps
+          await this.rollback();
+          // The failed step never completed, so no rollback consumes the backup its attempt created; deleting it here keeps a stray copy from failing every later run on the same source
+          await this.cleanupBackups();
+
+          return {
+            success: false,
+            completedSteps,
+            errors,
+            changes: [],
+          };
         }
       }
 
@@ -375,11 +365,43 @@ export class TransactionManager {
     }
   }
 
+  /**
+   * Executes one step, retrying with exponential backoff until it succeeds or `maxRetries` retries have failed.
+   * @param step - The step to execute.
+   * @returns Undefined on success, otherwise the message for the final failed attempt.
+   */
+  private async runStepWithRetries(
+    step: Readonly<TransactionStep>,
+  ): Promise<string | undefined> {
+    let failure: string | undefined;
+
+    // Sequential by design: each attempt follows the backoff delay after the previous one failed.
+    for (let attempt = 1; attempt <= this.options.maxRetries + 1; attempt++) {
+      try {
+        await step.execute();
+
+        return undefined;
+      } catch (error) {
+        failure = `Step "${step.description}" failed (attempt ${String(attempt)}): ${errorMessage(error)}`;
+
+        if (attempt <= this.options.maxRetries) {
+          // Wait before retry (exponential backoff)
+          const delayMs = 2 ** (attempt - 1) * RETRY_BASE_DELAY_MS;
+          await new Promise<void>((resolve) => {
+            setTimeout(resolve, delayMs);
+          });
+        }
+      }
+    }
+
+    return failure;
+  }
+
   /** Rolls back every executed step in reverse order and forgets them. A step whose rollback throws is reported in a single warning and does not stop the others. */
   async rollback(): Promise<void> {
     const rollbackErrors: string[] = [];
 
-    // Rollback in reverse order
+    // Sequential by design: steps must be undone in reverse execution order.
     for (let i = this.executedSteps.length - 1; i >= 0; i--) {
       const step = this.executedSteps[i];
       try {
@@ -401,7 +423,6 @@ export class TransactionManager {
 
   /**
    * Lists the queued steps, in order, without executing anything.
-   *
    * @returns One entry per step.
    */
   getPreview(): {
@@ -429,15 +450,17 @@ export class TransactionManager {
   }
 
   private async cleanupBackups(): Promise<void> {
-    for (const backupPath of this.backups.values()) {
-      try {
-        await FileUtils.deleteFile(backupPath);
-      } catch (error) {
-        console.warn(
-          `Failed to cleanup backup ${backupPath}: ${errorMessage(error)}`,
-        );
-      }
-    }
+    await Promise.all(
+      [...this.backups.values()].map(async (backupPath) => {
+        try {
+          await FileUtils.deleteFile(backupPath);
+        } catch (error) {
+          console.warn(
+            `Failed to cleanup backup ${backupPath}: ${errorMessage(error)}`,
+          );
+        }
+      }),
+    );
     this.backups.clear();
   }
 
@@ -462,6 +485,7 @@ export class TransactionManager {
       /(?:Move|Update|Create|Delete)\s+(?:content of\s+)?([^\s]+)/.exec(
         description,
       );
+
     return match?.[1] ?? "";
   }
 }

@@ -1,9 +1,36 @@
+/** Longest slug a section title is reduced to when it becomes a filename. */
+const MAX_SLUG_LENGTH = 50;
+
+/** Size limit, in kilobytes, applied by the size strategy when `maxSize` is absent or zero. */
+const DEFAULT_MAX_SIZE_KB = 100;
+
+const BYTES_PER_KB = 1024;
+
+/** Number of leading words of a line that make up a derived section title. */
+const TITLE_WORD_COUNT = 5;
+
+/** Longest derived section title, ellipsis included. */
+const MAX_TITLE_LENGTH = 50;
+
+const TITLE_ELLIPSIS = "...";
+
+/**
+ * Derives a section title from a prose line: its first few words, truncated with an ellipsis when long and stripped of trailing sentence punctuation otherwise.
+ */
+function titleFromLine(line: string): string {
+  const words = line.split(/\s+/).slice(0, TITLE_WORD_COUNT).join(" ");
+  if (words.length > MAX_TITLE_LENGTH) {
+    return `${words.substring(0, MAX_TITLE_LENGTH - TITLE_ELLIPSIS.length)}${TITLE_ELLIPSIS}`;
+  }
+
+  return words.replace(/[.!?]+$/, "");
+}
+
 /**
  * Represents a section of content extracted during a split operation.
  *
  * Contains all information needed to create a separate file from a portion of the original markdown
  * content.
- *
  * @category Strategies
  */
 export interface SplitSection {
@@ -26,7 +53,6 @@ export interface SplitSection {
  *
  * Provides information about all sections that were created and any content that remains in the
  * original file.
- *
  * @category Strategies
  */
 export interface SplitResult {
@@ -45,7 +71,6 @@ export interface SplitResult {
  *
  * Controls various aspects of the splitting process including output location, splitting criteria,
  * and filename generation patterns.
- *
  * @category Strategies
  */
 export interface SplitStrategyOptions {
@@ -71,12 +96,10 @@ export interface SplitStrategyOptions {
  * Provides common functionality for splitting markdown files including filename generation,
  * frontmatter handling, and content sanitization. Concrete strategies implement specific splitting
  * algorithms.
- *
  * @category Strategies
- *
  * @example
  *   Implementing a custom split strategy
- *   ```typescript
+ * ```typescript
  *   class CustomSplitStrategy extends BaseSplitStrategy {
  *     async split(content: string, originalFilename: string): Promise<SplitResult> {
  *       // Custom splitting logic
@@ -84,7 +107,7 @@ export interface SplitStrategyOptions {
  *       return { sections, remainingContent: undefined, errors: [], warnings: [] };
  *     }
  *   }
- *   ```
+ * ```
  */
 export abstract class BaseSplitStrategy {
   /** The effective options for this strategy: the supplied options layered over the defaults set in the constructor. */
@@ -94,7 +117,6 @@ export abstract class BaseSplitStrategy {
    * Creates a split strategy.
    *
    * The defaults are a header level of 2, frontmatter preserved in the original file, and the `{title}` filename pattern. Any supplied option overrides its default.
-   *
    * @param options - Options that override the defaults.
    */
   constructor(options: SplitStrategyOptions = {}) {
@@ -110,7 +132,6 @@ export abstract class BaseSplitStrategy {
    * Divides content into sections that can each become their own file.
    *
    * Each concrete strategy decides where the split points are. Problems are reported in the result's `errors` and `warnings` rather than thrown.
-   *
    * @param content - The full content of the file to split, including any frontmatter.
    * @param originalFilename - The name of the file being split, used when generating section filenames.
    * @returns The sections to create, the content to leave in the original file (the frontmatter when `preserveFrontmatter` is on), and any errors and warnings.
@@ -121,30 +142,32 @@ export abstract class BaseSplitStrategy {
   ): Promise<SplitResult>;
 
   /**
-   * Returns `value` unless it is nullish or the empty string, in which case `fallback` is used --
+   * Returns `value` unless it is nullish or the empty string, in which case `fallback` is used,
    * an empty string is treated as "no value supplied" rather than a meaningful value to preserve.
    */
   protected static stringOrDefault(
     value: string | null | undefined,
     fallback: string,
   ): string {
-    if (value) {
+    if (value !== null && value !== undefined && value !== "") {
       return value;
     }
+
     return fallback;
   }
 
   /**
-   * Returns `value` unless it is nullish or zero, in which case `fallback` is used -- zero is not a
+   * Returns `value` unless it is nullish or zero, in which case `fallback` is used, since zero is not a
    * meaningful value for these options (header levels start at 1, size limits must be positive).
    */
   protected static numberOrDefault(
     value: number | undefined,
     fallback: number,
   ): number {
-    if (value) {
+    if (value !== undefined && value !== 0 && !Number.isNaN(value)) {
       return value;
     }
+
     return fallback;
   }
 
@@ -152,7 +175,6 @@ export abstract class BaseSplitStrategy {
    * Generates a filename for a section from the `filenamePattern` option.
    *
    * `{title}` is replaced by the sanitised title (or `section-N` when that is empty), `{index}` by the one-based index and `{original}` by the original filename without its extension. The original file's extension is appended, defaulting to `.md`.
-   *
    * @param title - The section title.
    * @param index - The zero-based position of the section.
    * @param originalFilename - The name of the file being split.
@@ -184,7 +206,6 @@ export abstract class BaseSplitStrategy {
    * Converts a string into a filename-safe slug.
    *
    * The text is lower-cased, characters other than letters, digits, spaces and hyphens are removed, whitespace becomes hyphens, repeated and surrounding hyphens are collapsed, and the result is limited to 50 characters.
-   *
    * @param str - The text to convert.
    * @returns The slug, which may be empty.
    */
@@ -195,12 +216,11 @@ export abstract class BaseSplitStrategy {
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-")
       .replace(/^-|-$/g, "")
-      .substring(0, 50);
+      .substring(0, MAX_SLUG_LENGTH);
   }
 
   /**
    * Separates a leading frontmatter block from the rest of the content.
-   *
    * @param content - The full file content.
    * @returns The split content.
    */
@@ -224,7 +244,6 @@ export abstract class BaseSplitStrategy {
 
   /**
    * Extracts the title text from a header line.
-   *
    * @param headerLine - A markdown header line.
    * @returns The text after the `#` markers, trimmed.
    */
@@ -234,24 +253,24 @@ export abstract class BaseSplitStrategy {
 
   /**
    * Returns the header level of a line.
-   *
    * @param line - The line to inspect.
    * @returns The number of leading `#` characters when the line is a header (the markers followed by whitespace or the end of the line), otherwise 0.
    */
   protected getHeaderLevel(line: string): number {
     const match = /^(#+)(\s|$)/.exec(line);
+
     return match ? match[1].length : 0;
   }
 
   /**
    * Checks whether a line is a header of exactly the given level.
-   *
    * @param line - The line to inspect.
    * @param targetLevel - The header level to match.
    * @returns True when the line's header level equals `targetLevel`; headers of other levels do not match.
    */
   protected isTargetHeader(line: string, targetLevel: number): boolean {
     const level = this.getHeaderLevel(line);
+
     return level === targetLevel;
   }
 }
@@ -261,12 +280,10 @@ export abstract class BaseSplitStrategy {
  *
  * Splits the file at headers of a specified level, creating a new file for each section. This is
  * ideal for documents with clear hierarchical structure where each major section can stand alone.
- *
  * @category Strategies
- *
  * @example
  *   Header-based splitting
- *   ```typescript
+ * ```typescript
  *   const strategy = new HeaderBasedSplitStrategy({
  *       headerLevel: 2,  // Split on ## headers
  *       outputDir: './sections/',
@@ -275,19 +292,18 @@ export abstract class BaseSplitStrategy {
  *
  *   const result = await strategy.split(content, 'document.md');
  *   console.log(`Created ${result.sections.length} sections`);
- *   ```
+ * ```
  */
 export class HeaderBasedSplitStrategy extends BaseSplitStrategy {
   /**
    * Splits at every header of the `headerLevel` option (default 2).
    *
    * Only headers of exactly that level start a section, so deeper headers stay inside their parent section. Each section runs from its header to the line before the next matching header, and content before the first matching header is not placed in any section. An empty header produces a warning and a numbered title. If no matching header exists, an error is recorded.
-   *
    * @param content - The full content of the file to split, including any frontmatter.
    * @param originalFilename - The name of the file being split, used when generating section filenames.
    * @returns The sections, titled by their header text, with the frontmatter as remaining content when `preserveFrontmatter` is on.
    */
-  split(content: string, originalFilename: string): Promise<SplitResult> {
+  async split(content: string, originalFilename: string): Promise<SplitResult> {
     const { frontmatter, content: mainContent } =
       this.extractFrontmatter(content);
     const lines = mainContent.split("\n");
@@ -367,9 +383,8 @@ export class HeaderBasedSplitStrategy extends BaseSplitStrategy {
 
     return Promise.resolve({
       sections,
-      remainingContent: this.options.preserveFrontmatter
-        ? frontmatter
-        : undefined,
+      remainingContent:
+        this.options.preserveFrontmatter === true ? frontmatter : undefined,
       errors,
       warnings,
     });
@@ -381,12 +396,10 @@ export class HeaderBasedSplitStrategy extends BaseSplitStrategy {
  *
  * Creates new files when the current section exceeds a specified size limit. This ensures that no
  * generated file becomes too large, which is useful for performance or platform constraints.
- *
  * @category Strategies
- *
  * @example
  *   Size-based splitting
- *   ```typescript
+ * ```typescript
  *   const strategy = new SizeBasedSplitStrategy({
  *       maxSize: 50,  // 50KB per file
  *       outputDir: './chunks/',
@@ -395,23 +408,25 @@ export class HeaderBasedSplitStrategy extends BaseSplitStrategy {
  *
  *   const result = await strategy.split(content, 'large-document.md');
  *   console.log(`Split into ${result.sections.length} files under 50KB each`);
- *   ```
+ * ```
  */
 export class SizeBasedSplitStrategy extends BaseSplitStrategy {
   /**
    * Splits into consecutive parts that stay within the `maxSize` option (in kilobytes, default 100).
    *
    * Lines are accumulated until adding the next one would exceed the limit, then a new part starts at that line, so splits fall on line boundaries and a single line larger than the limit becomes a part of its own. Each part is titled after the nearest header (searching backwards from its first line, then forwards), or `Part N` when the content has no headers. Filenames from the second part onwards carry an index suffix to keep them unique. An error is recorded when the content yields no parts.
-   *
    * @param content - The full content of the file to split, including any frontmatter.
    * @param originalFilename - The name of the file being split, used when generating section filenames.
    * @returns The parts, with the frontmatter as remaining content when `preserveFrontmatter` is on.
    */
-  split(content: string, originalFilename: string): Promise<SplitResult> {
+  async split(content: string, originalFilename: string): Promise<SplitResult> {
     const { frontmatter, content: mainContent } =
       this.extractFrontmatter(content);
     const maxSizeBytes =
-      BaseSplitStrategy.numberOrDefault(this.options.maxSize, 100) * 1024; // Convert KB to bytes
+      BaseSplitStrategy.numberOrDefault(
+        this.options.maxSize,
+        DEFAULT_MAX_SIZE_KB,
+      ) * BYTES_PER_KB;
     const lines = mainContent.split("\n");
     const sections: SplitSection[] = [];
     const errors: string[] = [];
@@ -501,16 +516,15 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
 
     return Promise.resolve({
       sections,
-      remainingContent: this.options.preserveFrontmatter
-        ? frontmatter
-        : undefined,
+      remainingContent:
+        this.options.preserveFrontmatter === true ? frontmatter : undefined,
       errors,
       warnings,
     });
   }
 
   private findNearestHeader(
-    lines: string[],
+    lines: readonly string[],
     startIndex: number,
   ): string | null {
     // Look backwards for a header
@@ -563,12 +577,10 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
  *
  * Looks for specific comment markers or text patterns in the content to determine split points.
  * This provides precise control over where splits occur, regardless of content structure.
- *
  * @category Strategies
- *
  * @example
  *   Manual marker splitting
- *   ```typescript
+ * ```typescript
  *   const strategy = new ManualSplitStrategy({
  *       splitMarkers: ['<!-- split -->', '---BREAK---'],
  *       outputDir: './parts/',
@@ -577,19 +589,18 @@ export class SizeBasedSplitStrategy extends BaseSplitStrategy {
  *
  *   // Content with markers like: <!-- split -->
  *   const result = await strategy.split(content, 'document.md');
- *   ```
+ * ```
  */
 export class ManualSplitStrategy extends BaseSplitStrategy {
   /**
    * Splits at lines that contain one of the `splitMarkers` (default `<!-- split -->` and `---split---`).
    *
    * The marker lines are dropped and the text between them becomes the sections, including the text before the first marker and after the last. A section is titled by its first header, otherwise by its first line of text (limited to 50 characters) that is not a comment or rule, otherwise `Section N`. When no marker is found a warning is added, no sections are returned, and the whole original content is returned as remaining content.
-   *
    * @param content - The full content of the file to split, including any frontmatter.
    * @param originalFilename - The name of the file being split, used when generating section filenames.
    * @returns The sections, with the frontmatter as remaining content when `preserveFrontmatter` is on.
    */
-  split(content: string, originalFilename: string): Promise<SplitResult> {
+  async split(content: string, originalFilename: string): Promise<SplitResult> {
     const { frontmatter, content: mainContent } =
       this.extractFrontmatter(content);
     const markers = this.options.splitMarkers ?? [
@@ -615,6 +626,7 @@ export class ManualSplitStrategy extends BaseSplitStrategy {
       warnings.push(
         "No split markers found. Use <!-- split --> or ---split--- to mark split points.",
       );
+
       return Promise.resolve({
         sections: [],
         remainingContent: content,
@@ -653,20 +665,20 @@ export class ManualSplitStrategy extends BaseSplitStrategy {
         });
       }
 
-      startLine = endLine + 1; // Skip the marker line
+      // Skip the marker line
+      startLine = endLine + 1;
     }
 
     return Promise.resolve({
       sections,
-      remainingContent: this.options.preserveFrontmatter
-        ? frontmatter
-        : undefined,
+      remainingContent:
+        this.options.preserveFrontmatter === true ? frontmatter : undefined,
       errors,
       warnings,
     });
   }
 
-  private findSectionTitle(lines: string[]): string | null {
+  private findSectionTitle(lines: readonly string[]): string | null {
     // Look for the first header in the section
     for (const line of lines) {
       if (this.getHeaderLevel(line) > 0) {
@@ -682,7 +694,7 @@ export class ManualSplitStrategy extends BaseSplitStrategy {
         !trimmed.startsWith("<!--") &&
         !trimmed.startsWith("---")
       ) {
-        return trimmed.substring(0, 50);
+        return trimmed.substring(0, MAX_SLUG_LENGTH);
       }
     }
 
@@ -695,12 +707,10 @@ export class ManualSplitStrategy extends BaseSplitStrategy {
  *
  * Allows precise splitting at user-specified line numbers. This is useful when you know exactly
  * where you want to split a document, perhaps based on analysis or external requirements.
- *
  * @category Strategies
- *
  * @example
  *   Line-based splitting
- *   ```typescript
+ * ```typescript
  *   const strategy = new LineBasedSplitStrategy({
  *       splitLines: [100, 250, 400],  // Split at these line numbers
  *       outputDir: './sections/',
@@ -709,19 +719,18 @@ export class ManualSplitStrategy extends BaseSplitStrategy {
  *
  *   const result = await strategy.split(content, 'document.md');
  *   console.log(`Split at lines: ${strategy.options.splitLines?.join(', ')}`);
- *   ```
+ * ```
  */
 export class LineBasedSplitStrategy extends BaseSplitStrategy {
   /**
    * Splits before each one-based line number in the `splitLines` option.
    *
    * Line numbers are de-duplicated and sorted, and numbering counts lines after the frontmatter. A number below 1 or beyond the last line produces a warning; a number only slightly past the end is treated as the last line. Sections containing only whitespace are skipped. Each section is titled by its first header, otherwise by the first few words of its first suitable line, otherwise by its starting line. With no `splitLines`, an error is recorded and the whole original content is returned as remaining content. When no valid line remains, the content is returned as a single section.
-   *
    * @param content - The full content of the file to split, including any frontmatter.
    * @param originalFilename - The name of the file being split, used when generating section filenames.
    * @returns The sections, with the frontmatter as remaining content when `preserveFrontmatter` is on.
    */
-  split(content: string, originalFilename: string): Promise<SplitResult> {
+  async split(content: string, originalFilename: string): Promise<SplitResult> {
     const { frontmatter, content: mainContent } =
       this.extractFrontmatter(content);
     const splitLines = this.options.splitLines ?? [];
@@ -733,6 +742,7 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
       errors.push(
         "No split lines specified. Use --split-lines option with comma-separated line numbers.",
       );
+
       return Promise.resolve({
         sections: [],
         remainingContent: content,
@@ -785,11 +795,11 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
           filename: this.generateFilename(title, 0, originalFilename),
         });
       }
+
       return Promise.resolve({
         sections,
-        remainingContent: this.options.preserveFrontmatter
-          ? frontmatter
-          : undefined,
+        remainingContent:
+          this.options.preserveFrontmatter === true ? frontmatter : undefined,
         errors,
         warnings,
       });
@@ -799,18 +809,17 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
     let startLine = 0;
 
     for (let i = 0; i <= uniqueSplitLines.length; i++) {
+      // Convert to 0-based and split before the line
       const endLine =
-        i < uniqueSplitLines.length
-          ? uniqueSplitLines[i] - 1 // Convert to 0-based and split before the line
-          : lines.length;
+        i < uniqueSplitLines.length ? uniqueSplitLines[i] - 1 : lines.length;
 
       if (endLine > startLine) {
         const sectionLines = lines.slice(startLine, endLine);
         const sectionContent = sectionLines.join("\n");
 
         if (sectionContent.trim()) {
-          // Only create section if it has content
-          // Find title for this section
+          /* Only create section if it has content
+             Find title for this section */
           const title = BaseSplitStrategy.stringOrDefault(
             this.findLineSectionTitle(sectionLines, startLine + 1),
             `Lines ${String(startLine + 1)}-${String(endLine)}`,
@@ -839,16 +848,15 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
 
     return Promise.resolve({
       sections,
-      remainingContent: this.options.preserveFrontmatter
-        ? frontmatter
-        : undefined,
+      remainingContent:
+        this.options.preserveFrontmatter === true ? frontmatter : undefined,
       errors,
       warnings,
     });
   }
 
   private findLineSectionTitle(
-    lines: string[],
+    lines: readonly string[],
     actualStartLine: number,
   ): string | null {
     // Look for the first header in the section
@@ -858,8 +866,8 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
       }
     }
 
-    // If no header, try to extract from first meaningful line
-    // Look for lines that seem like good titles (complete thoughts, not fragments)
+    /* If no header, try to extract from first meaningful line
+       Look for lines that seem like good titles (complete thoughts, not fragments) */
     for (const line of lines) {
       const trimmed = line.trim();
       if (
@@ -872,14 +880,7 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
           continue;
         }
 
-        // Use first few words as title, but limit to reasonable length
-        const words = trimmed.split(/\s+/).slice(0, 5).join(" ");
-        // If the line is long, truncate it
-        if (words.length > 50) {
-          return `${words.substring(0, 47)}...`;
-        }
-        // If it's a sentence, remove trailing punctuation for cleaner title
-        return words.replace(/[.!?]+$/, "");
+        return titleFromLine(trimmed);
       }
     }
 
@@ -891,11 +892,7 @@ export class LineBasedSplitStrategy extends BaseSplitStrategy {
         !trimmed.startsWith("<!--") &&
         !trimmed.startsWith("---")
       ) {
-        const words = trimmed.split(/\s+/).slice(0, 5).join(" ");
-        if (words.length > 50) {
-          return `${words.substring(0, 47)}...`;
-        }
-        return words.replace(/[.!?]+$/, "");
+        return titleFromLine(trimmed);
       }
     }
 

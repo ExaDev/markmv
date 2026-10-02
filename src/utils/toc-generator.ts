@@ -11,7 +11,6 @@ interface HeadingNode extends Node {
 
 /**
  * Represents a heading extracted from markdown content.
- *
  * @category Utilities
  */
 export interface MarkdownHeading {
@@ -27,7 +26,6 @@ export interface MarkdownHeading {
 
 /**
  * Configuration options for table of contents generation.
- *
  * @category Utilities
  */
 export interface TocOptions {
@@ -43,7 +41,6 @@ export interface TocOptions {
 
 /**
  * Result of table of contents generation.
- *
  * @category Utilities
  */
 export interface TocResult {
@@ -58,12 +55,9 @@ export interface TocResult {
  *
  * This class extracts headings from markdown content and generates formatted table of contents with
  * proper indentation and anchor links.
- *
  * @category Utilities
- *
- * @example
- *   Basic usage
- *   ```typescript
+ * @example Basic usage
+ * ```typescript
  *   const generator = new TocGenerator();
  *   const content = `# Title\n## Section 1\n### Subsection\n## Section 2`;
  *   const result = generator.generateToc(content);
@@ -74,11 +68,9 @@ export interface TocResult {
  *   //   - [Section 1](#section-1)
  *   //     - [Subsection](#subsection)
  *   //   - [Section 2](#section-2)
- *   ```
- *
- * @example
- *   With custom options
- *   ```typescript
+ * ```
+ * @example With custom options
+ * ```typescript
  *   const generator = new TocGenerator();
  *   const options = {
  *     minDepth: 2,
@@ -86,20 +78,18 @@ export interface TocResult {
  *     includeLineNumbers: true
  *   };
  *   const result = generator.generateToc(content, options);
- *   ```
+ * ```
  */
 export class TocGenerator {
-  private processor = unified().use(remarkParse);
+  private readonly processor = unified().use(remarkParse);
 
   /**
    * Generate table of contents from markdown content.
-   *
    * @param content - Markdown content to analyze
    * @param options - Configuration options
-   *
    * @returns TOC result
    */
-  generateToc(content: string, options: TocOptions = {}): TocResult {
+  generateToc(content: string, options: Readonly<TocOptions> = {}): TocResult {
     const {
       minDepth = 1,
       maxDepth = 6,
@@ -140,30 +130,27 @@ export class TocGenerator {
 
   /**
    * Extract headings from markdown content without generating TOC.
-   *
    * @param content - Markdown content to analyze
    * @param options - Configuration options
-   *
    * @returns Array of headings
    */
   extractHeadings(
     content: string,
-    options: TocOptions = {},
+    options: Readonly<TocOptions> = {},
   ): MarkdownHeading[] {
     const result = this.generateToc(content, options);
+
     return result.headings;
   }
 
   /**
    * Format headings into a table of contents string.
-   *
    * @param headings - Array of extracted headings
    * @param includeLineNumbers - Whether to include line numbers
-   *
    * @returns Formatted TOC markdown
    */
   private formatToc(
-    headings: MarkdownHeading[],
+    headings: readonly MarkdownHeading[],
     includeLineNumbers: boolean,
   ): string {
     if (headings.length === 0) {
@@ -187,13 +174,11 @@ export class TocGenerator {
 
   /**
    * Extract text content from AST nodes recursively.
-   *
    * @param nodes - Array of AST nodes
-   *
    * @returns Combined text content
    */
   private extractTextFromNodes(
-    nodes: { type: string; value?: string; children?: unknown[] }[],
+    nodes: readonly { type: string; value?: string; children?: unknown[] }[],
   ): string {
     return nodes
       .map((node) => {
@@ -210,8 +195,10 @@ export class TocGenerator {
               children?: unknown[];
             } => typeof child === "object" && child !== null && "type" in child,
           );
+
           return this.extractTextFromNodes(childNodes);
         }
+
         return "";
       })
       .join("");
@@ -220,16 +207,20 @@ export class TocGenerator {
 
 /**
  * Default slugify function that converts text to URL-friendly anchors.
- *
  * @param text - Text to slugify
- *
  * @returns URL-friendly slug
  */
 function defaultSlugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, "-") // Replace special characters with hyphens
-    .replace(/\s+/g, "-") // Replace spaces with hyphens
-    .replace(/-+/g, "-") // Replace multiple hyphens with single
-    .replace(/^-|-$/g, ""); // Remove leading/trailing hyphens
+  return (
+    text
+      .toLowerCase()
+      // Replace special characters with hyphens
+      .replace(/[^\w\s-]/g, "-")
+      // Replace spaces with hyphens
+      .replace(/\s+/g, "-")
+      // Replace multiple hyphens with single
+      .replace(/-+/g, "-")
+      // Remove leading/trailing hyphens
+      .replace(/^-|-$/g, "")
+  );
 }

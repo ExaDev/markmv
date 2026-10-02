@@ -64,15 +64,26 @@ This is referenced by document.md.
     });
 
     console.log(`✅ Operation ${result.success ? "succeeded" : "failed"}`);
-    console.log(`📁 Files to be modified: ${result.modifiedFiles.length}`);
-    console.log(`📄 Files to be created: ${result.createdFiles.length}`);
-    console.log(`🗑️  Files to be deleted: ${result.deletedFiles.length}`);
+    console.log(
+      `📁 Files to be modified: ${String(result.modifiedFiles.length)}`,
+    );
+    console.log(
+      `📄 Files to be created: ${String(result.createdFiles.length)}`,
+    );
+    console.log(
+      `🗑️  Files to be deleted: ${String(result.deletedFiles.length)}`,
+    );
 
     if (result.changes.length > 0) {
       console.log("📋 Changes preview:");
       result.changes.forEach((change) => {
         console.log(`   ${change.type}: ${change.filePath}`);
-        if (change.oldValue && change.newValue) {
+        if (
+          change.oldValue !== undefined &&
+          change.oldValue !== "" &&
+          change.newValue !== undefined &&
+          change.newValue !== ""
+        ) {
           console.log(`      "${change.oldValue}" → "${change.newValue}"`);
         }
       });
@@ -107,7 +118,9 @@ This is referenced by document.md.
     console.log(
       `✅ Multi move ${multiResult.success ? "succeeded" : "failed"}`,
     );
-    console.log(`📁 Would move ${multiResult.createdFiles.length} files`);
+    console.log(
+      `📁 Would move ${String(multiResult.createdFiles.length)} files`,
+    );
     console.log("");
 
     // Example 3: Direct class usage with complex operations
@@ -145,17 +158,19 @@ See [document](./document.md#section-1) for details.
       `✅ Complex move ${complexResult.success ? "succeeded" : "failed"}`,
     );
     console.log(
-      `🔗 Link updates required: ${complexResult.changes.filter((c) => c.type === "link-updated").length}`,
+      `🔗 Link updates required: ${String(complexResult.changes.filter((c) => c.type === "link-updated").length)}`,
     );
 
     // Validate the operation
     const validation = await fileOps.validateOperation(complexResult);
     console.log(`🔍 Validation: ${validation.valid ? "passed" : "failed"}`);
-    console.log(`⚠️  Broken links: ${validation.brokenLinks}`);
+    console.log(`⚠️  Broken links: ${String(validation.brokenLinks)}`);
 
     if (validation.errors.length > 0) {
       console.log("❌ Validation errors:");
-      validation.errors.forEach((error) => console.log(`   ${error}`));
+      validation.errors.forEach((error) => {
+        console.log(`   ${error}`);
+      });
     }
   } catch (error) {
     console.error("❌ Error running examples:", error.message);

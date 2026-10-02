@@ -40,12 +40,10 @@ interface LinkNode extends Node {
  *
  * This class uses the unified/remark ecosystem to parse markdown files and extract comprehensive
  * link information including inline links, images, reference-style links, and link definitions.
- *
  * @category Core
- *
  * @example
  *   Basic usage
- *   ```typescript
+ * ```typescript
  *   const parser = new LinkParser();
  *   const parsed = await parser.parseFile('docs/readme.md');
  *
@@ -53,11 +51,10 @@ interface LinkNode extends Node {
  *   parsed.links.forEach(link => {
  *       console.log(`${link.type}: ${link.href} (line ${link.line})`);
  *   });
- *   ```
- *
+ * ```
  * @example
  *   Link validation
- *   ```typescript
+ * ```typescript
  *   const parser = new LinkParser();
  *   const parsed = await parser.parseFile('guide.md');
  *
@@ -71,26 +68,23 @@ interface LinkNode extends Node {
  *       console.warn(`Broken link: ${link.href} at line ${link.line}`);
  *     }
  *   }
- *   ```
+ * ```
  */
 export class LinkParser {
-  private processor = unified().use(remarkParse);
+  private readonly processor = unified().use(remarkParse);
 
   /**
    * Parse a markdown file and extract all links, references, and metadata.
-   *
    * @example
-   *   ```typescript
+   * ```typescript
    *   const parser = new LinkParser();
    *   const result = await parser.parseFile('docs/api.md');
    *
    *   console.log(`File: ${result.filePath}`);
    *   console.log(`Links: ${result.links.length}`);
    *   console.log(`References: ${result.references.length}`);
-   *   ```
-   *
+   * ```
    * @param filePath - Path to the markdown file to parse
-   *
    * @returns Promise resolving to comprehensive file analysis
    */
   async parseFile(filePath: string): Promise<ParsedMarkdownFile> {
@@ -125,7 +119,8 @@ export class LinkParser {
         const link: MarkdownLink = {
           type: "claude-import",
           href: importPath,
-          text: match[0], // Full "@path" text
+          // Full "@path" text
+          text: match[0],
           referenceId: undefined,
           line: node.position.start.line,
           column: node.position.start.column + match.index,
@@ -256,7 +251,8 @@ export class LinkParser {
       links,
       references,
       dependencies,
-      dependents: [], // Will be populated by DependencyGraph
+      // Will be populated by DependencyGraph
+      dependents: [],
     };
   }
 
@@ -303,26 +299,28 @@ export class LinkParser {
     return resolve(join(baseDir, importPath));
   }
 
-  private extractDependencies(links: MarkdownLink[]): string[] {
-    return links
-      .filter(
-        (link) =>
-          (link.type === "internal" ||
-            link.type === "claude-import" ||
-            link.type === "image") &&
-          link.resolvedPath,
-      )
-      .map((link) => link.resolvedPath)
-      .filter((path): path is string => path !== undefined)
-      .filter((path, index, arr) => arr.indexOf(path) === index); // Remove duplicates
+  private extractDependencies(links: readonly MarkdownLink[]): string[] {
+    return (
+      links
+        .filter(
+          (link) =>
+            (link.type === "internal" ||
+              link.type === "claude-import" ||
+              link.type === "image") &&
+            link.resolvedPath !== undefined &&
+            link.resolvedPath !== "",
+        )
+        .map((link) => link.resolvedPath)
+        .filter((path): path is string => path !== undefined)
+        // Remove duplicates
+        .filter((path, index, arr) => arr.indexOf(path) === index)
+    );
   }
 
   /**
    * Parses every markdown file found by recursively walking a directory. Files that fail to parse are skipped silently, so the result may hold fewer entries than there are matching files.
-   *
    * @param dirPath - Directory to search.
    * @param extensions - File extensions to treat as markdown, including the leading dot.
-   *
    * @returns The parsed files that were read successfully.
    */
   async parseDirectory(
@@ -331,7 +329,7 @@ export class LinkParser {
   ): Promise<ParsedMarkdownFile[]> {
     const files = await this.findMarkdownFiles(dirPath, extensions);
     const results = await Promise.allSettled(
-      files.map((file: string) => this.parseFile(file)),
+      files.map(async (file: string) => this.parseFile(file)),
     );
 
     return results
@@ -344,25 +342,28 @@ export class LinkParser {
 
   private async findMarkdownFiles(
     dirPath: string,
-    extensions: string[],
+    extensions: readonly string[],
   ): Promise<string[]> {
-    const files: string[] = [];
-
-    const processDirectory = async (currentDir: string): Promise<void> => {
+    /* Each directory's entries are walked concurrently, but results are joined in entry order so the output matches a sequential depth-first walk. */
+    const processDirectory = async (currentDir: string): Promise<string[]> => {
       const entries = await readdir(currentDir, { withFileTypes: true });
+      const found = await Promise.all(
+        entries.map(async (entry): Promise<string[]> => {
+          const fullPath = join(currentDir, entry.name);
 
-      for (const entry of entries) {
-        const fullPath = join(currentDir, entry.name);
+          if (entry.isDirectory()) {
+            return processDirectory(fullPath);
+          }
 
-        if (entry.isDirectory()) {
-          await processDirectory(fullPath);
-        } else if (entry.isFile() && extensions.includes(extname(entry.name))) {
-          files.push(fullPath);
-        }
-      }
+          return entry.isFile() && extensions.includes(extname(entry.name))
+            ? [fullPath]
+            : [];
+        }),
+      );
+
+      return found.flat();
     };
 
-    await processDirectory(resolve(dirPath));
-    return files;
+    return processDirectory(resolve(dirPath));
   }
 }

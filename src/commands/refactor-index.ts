@@ -6,7 +6,6 @@ import type { OperationChange } from "../types/operations.js";
 
 /**
  * The two index file naming conventions this command converts between.
- *
  * @category Commands
  */
 export type IndexConvention = "readme" | "index";
@@ -21,7 +20,6 @@ const CONVENTION_FILENAMES: Record<IndexConvention, string> = {
  * Configuration options for index file refactoring operations.
  *
  * Controls the target convention and the behaviour of the underlying move machinery.
- *
  * @category Commands
  */
 export interface RefactorIndexOptions {
@@ -40,7 +38,6 @@ export interface RefactorIndexOptions {
 
 /**
  * Result of an index file refactoring operation.
- *
  * @category Commands
  */
 export interface RefactorIndexResult {
@@ -71,28 +68,34 @@ export interface RefactorIndexResult {
 
 /**
  * Detect which index convention a filename follows.
- *
  * @param filename - Exact basename to inspect, matched case-sensitively
- *
  * @returns The convention the filename belongs to, or undefined when it is neither index filename
  */
 function detectConvention(filename: string): IndexConvention | undefined {
   if (filename === CONVENTION_FILENAMES.readme) return "readme";
   if (filename === CONVENTION_FILENAMES.index) return "index";
+
   return undefined;
 }
 
 /**
+ * Whether a value is one of the two index conventions.
+ * @param value - Any value, including one a plain-JS caller supplied
+ * @returns True when the value is exactly `readme` or `index`
+ */
+function isIndexConvention(value: unknown): value is IndexConvention {
+  return value === "readme" || value === "index";
+}
+
+/**
  * Build the result for a request refused before any file was touched.
- *
  * @param sourcePath - Absolute path of the file that was refused
  * @param errors - Human-readable reasons the request was refused
- *
  * @returns A failed result describing the refusal
  */
 function refusalResult(
   sourcePath: string,
-  errors: string[],
+  errors: readonly string[],
 ): RefactorIndexResult {
   return {
     success: false,
@@ -102,7 +105,7 @@ function refusalResult(
     changes: [],
     warnings: [],
     parseFailures: [],
-    errors,
+    errors: [...errors],
   };
 }
 
@@ -114,16 +117,14 @@ function refusalResult(
  * refactoring (relative-path recomputation and bystander discovery included). The file's own
  * content is never reformatted by this command; it reaches the new name byte-for-byte apart from
  * any link rewrites the shared move machinery itself performs.
- *
  * @param filePath - Path to the README.md or index.md file to convert
  * @param options - Configuration options for the operation
- *
  * @returns Promise resolving to the outcome of the conversion
  * @category Commands
  */
 export async function refactorIndex(
   filePath: string,
-  options: RefactorIndexOptions = {},
+  options: Readonly<RefactorIndexOptions> = {},
 ): Promise<RefactorIndexResult> {
   const sourcePath = resolve(filePath);
   const currentConvention = detectConvention(basename(sourcePath));
@@ -139,14 +140,13 @@ export async function refactorIndex(
   }
 
   // options.to is typed as IndexConvention for well-typed callers, but this function is also part of the public library API: a plain-JS consumer, or a caller that bypasses the type system, can still pass an arbitrary string here. Widening to unknown before the check keeps it a real runtime guard instead of one TypeScript considers unreachable given options.to's own type.
-  const rawTargetConvention: unknown =
+  const targetConvention: unknown =
     options.to ?? (currentConvention === "readme" ? "index" : "readme");
-  if (rawTargetConvention !== "readme" && rawTargetConvention !== "index") {
+  if (!isIndexConvention(targetConvention)) {
     throw new Error(
-      `Unknown index convention '${String(rawTargetConvention)}': expected readme or index`,
+      `Unknown index convention '${String(targetConvention)}': expected readme or index`,
     );
   }
-  const targetConvention: IndexConvention = rawTargetConvention;
   const targetFilename = CONVENTION_FILENAMES[targetConvention];
 
   if (targetConvention === currentConvention) {
@@ -178,7 +178,7 @@ export async function refactorIndex(
   const moveResult = await fileOps.moveFile(sourcePath, targetPath, {
     dryRun: options.dryRun ?? false,
     verbose: options.verbose ?? false,
-    ...(options.discoveryRoot
+    ...(options.discoveryRoot !== undefined && options.discoveryRoot !== ""
       ? { discoverySeeds: [options.discoveryRoot] }
       : {}),
   });
@@ -204,7 +204,6 @@ export async function refactorIndex(
 
 /**
  * CLI-specific options for the refactor-index command.
- *
  * @category Commands
  */
 export interface RefactorIndexCliOptions extends RefactorIndexOptions {
@@ -219,26 +218,24 @@ export interface RefactorIndexCliOptions extends RefactorIndexOptions {
  * This is the entry point for the CLI command. It reports the outcome in conventional or JSON form,
  * exits non-zero when the conversion is refused or fails, and surfaces parse failures the move
  * machinery encountered along the way.
- *
  * @category Commands
- *
  * @example
- *   ```typescript await refactorIndexCommand('docs/README.md', { to: 'index' }); ```;
- *
+ * ```typescript
+ * await refactorIndexCommand('docs/README.md', { to: 'index' });
+ * ```
  * @param filePath - Path to the README.md or index.md file to convert
  * @param options - CLI configuration options for the operation
- *
  * @throws Will exit the process with code 1 if the operation is refused or fails
  */
 export async function refactorIndexCommand(
   filePath: string,
-  options: RefactorIndexCliOptions,
+  options: Readonly<RefactorIndexCliOptions>,
 ): Promise<void> {
   const operationOptions: RefactorIndexOptions = {
     dryRun: options.dryRun ?? false,
     verbose: options.verbose ?? false,
-    // The CLI runs from the user's chosen working directory, which anchors discovery wide
-    // enough to catch bystanders above the renamed file's directory
+    /* The CLI runs from the user's chosen working directory, which anchors discovery wide
+       enough to catch bystanders above the renamed file's directory */
     discoveryRoot: process.cwd(),
   };
   if (options.to !== undefined) {
@@ -247,7 +244,7 @@ export async function refactorIndexCommand(
 
   const result = await refactorIndex(filePath, operationOptions);
 
-  if (options.json) {
+  if (options.json === true) {
     // stdout stays pure JSON: parse failures and warnings travel inside the payload, not as extra lines
     console.log(JSON.stringify(result, null, 2));
     if (!result.success) {
@@ -256,6 +253,7 @@ export async function refactorIndexCommand(
     if (result.parseFailures.length > 0) {
       process.exitCode = 1;
     }
+
     return;
   }
 
@@ -275,7 +273,7 @@ export async function refactorIndexCommand(
     process.exit(1);
   }
 
-  if (operationOptions.dryRun) {
+  if (operationOptions.dryRun === true) {
     console.log("🔍 Dry run mode - no changes will be made");
     console.log(
       `📄 ${result.sourcePath} would be renamed to ${result.targetPath}`,
@@ -303,7 +301,7 @@ export async function refactorIndexCommand(
       console.log(
         `📝 Updated ${String(result.linksUpdated)} link(s) across ${String(result.filesWithUpdatedLinks.length)} file(s)`,
       );
-      if (operationOptions.verbose) {
+      if (operationOptions.verbose === true) {
         console.log("\nFiles with updated links:");
         for (const file of result.filesWithUpdatedLinks) {
           console.log(`  ~ ${file}`);

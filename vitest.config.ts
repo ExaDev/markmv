@@ -1,15 +1,24 @@
 import { defineConfig } from "vitest/config";
 
+/** Reads an environment variable, treating an empty value the same as an unset one. */
+function envOrDefault(name: string, fallback: string): string {
+  const value = process.env[name];
+
+  return value === undefined || value === "" ? fallback : value;
+}
+
 export default defineConfig({
   test: {
     globals: true,
     environment: "node",
     env: {
       // Cross-platform test environment variables
-      MARKMV_TEST_OS: process.env.MARKMV_TEST_OS || "unknown",
-      MARKMV_TEST_CASE_SENSITIVE:
-        process.env.MARKMV_TEST_CASE_SENSITIVE || "auto",
-      MARKMV_TEST_PATH_SEP: process.env.MARKMV_TEST_PATH_SEP || "auto",
+      MARKMV_TEST_OS: envOrDefault("MARKMV_TEST_OS", "unknown"),
+      MARKMV_TEST_CASE_SENSITIVE: envOrDefault(
+        "MARKMV_TEST_CASE_SENSITIVE",
+        "auto",
+      ),
+      MARKMV_TEST_PATH_SEP: envOrDefault("MARKMV_TEST_PATH_SEP", "auto"),
       MARKMV_TEST_FILESYSTEM_CASE_SENSITIVE:
         process.env.MARKMV_TEST_FILESYSTEM_CASE_SENSITIVE,
       MARKMV_TEST_SUPPORTS_SYMLINKS: process.env.MARKMV_TEST_SUPPORTS_SYMLINKS,

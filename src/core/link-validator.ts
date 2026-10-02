@@ -9,12 +9,26 @@ import type { BrokenLink, ValidationResult } from "../types/config.js";
 import type { MarkdownLink, ParsedMarkdownFile } from "../types/links.js";
 import type { WikilinkResolution } from "./obsidian-vault.js";
 
+/** Time an external link check may take before it is abandoned. */
+const DEFAULT_EXTERNAL_TIMEOUT_MS = 5000;
+
+/** Lowest HTTP status that denotes a server-side failure. */
+const HTTP_SERVER_ERROR_MIN = 500;
+
+/** HTTP status for a rate-limited request, which is retried like a server failure. */
+const HTTP_TOO_MANY_REQUESTS = 429;
+
+/** HTTP status for a request lacking valid credentials. */
+const HTTP_UNAUTHORIZED = 401;
+
+/** HTTP status for a request the credentials do not permit. */
+const HTTP_FORBIDDEN = 403;
+
 /**
  * Configuration options for link validation operations.
  *
  * Controls which types of links are validated and how validation is performed, including external
  * link checking, timeout settings, and strictness levels.
- *
  * @category Core
  */
 export interface LinkValidatorOptions {
@@ -52,41 +66,38 @@ export interface LinkValidatorOptions {
  * The LinkValidator checks various types of links including internal file references, external
  * URLs, and Claude import syntax. It provides comprehensive reporting of validation issues and
  * supports different validation modes for different use cases.
- *
  * @category Core
- *
  * @example
- *   Basic link validation
- *   ```typescript
- *   const validator = new LinkValidator({
- *       checkExternal: true,
- *       strictInternal: true,
- *       externalTimeout: 10000
+ * Basic link validation
+ * ```typescript
+ * const validator = new LinkValidator({
+ *     checkExternal: true,
+ *     strictInternal: true,
+ *     externalTimeout: 10000
+ * });
+ *
+ * const result = await validator.validateFile('docs/api.md');
+ *
+ * if (!result.isValid) {
+ *   console.log(`Found ${result.brokenLinks.length} broken links`);
+ *   result.brokenLinks.forEach(link => {
+ *       console.log(`- ${link.href} (line ${link.line}): ${link.reason}`);
  *   });
- *
- *   const result = await validator.validateFile('docs/api.md');
- *
- *   if (!result.isValid) {
- *     console.log(`Found ${result.brokenLinks.length} broken links`);
- *     result.brokenLinks.forEach(link => {
- *         console.log(`- ${link.href} (line ${link.line}): ${link.reason}`);
- *     });
- *   }
- *   ```
- *
+ * }
+ * ```
  * @example
- *   Batch validation
- *   ```typescript
- *   const validator = new LinkValidator();
- *   const files = ['docs/guide.md', 'docs/api.md', 'docs/examples.md'];
+ * Batch validation
+ * ```typescript
+ * const validator = new LinkValidator();
+ * const files = ['docs/guide.md', 'docs/api.md', 'docs/examples.md'];
  *
- *   const results = await validator.validateFiles(files);
- *   const totalBroken = results.reduce((sum, r) => sum + r.brokenLinks.length, 0);
- *   console.log(`Found ${totalBroken} broken links across ${files.length} files`);
- *   ```
+ * const results = await validator.validateFiles(files);
+ * const totalBroken = results.reduce((sum, r) => sum + r.brokenLinks.length, 0);
+ * console.log(`Found ${totalBroken} broken links across ${files.length} files`);
+ * ```
  */
 export class LinkValidator {
-  private options: Required<
+  private readonly options: Required<
     Omit<
       LinkValidatorOptions,
       "freshnessConfig" | "authConfig" | "wikilinkResolver"
@@ -96,18 +107,19 @@ export class LinkValidator {
     authConfig?: Partial<AuthConfig>;
     wikilinkResolver?: (target: string) => WikilinkResolution;
   };
-  private freshnessDetector?: ContentFreshnessDetector;
-  private authDetector?: AuthDetector;
+
+  private readonly freshnessDetector?: ContentFreshnessDetector;
+
+  private readonly authDetector?: AuthDetector;
 
   /**
    * Creates a validator, filling any option left unset with its default: external links unchecked, a 5000 ms external timeout, missing internal files treated as errors, Claude imports checked, freshness and authentication detection off, authentication-required links allowed, wikilinks unchecked, no skipped domains and 2 retries for transient external failures. The freshness and authentication detectors are created only when their option is enabled.
-   *
    * @param options - Validation options.
    */
   constructor(options: LinkValidatorOptions = {}) {
     this.options = {
       checkExternal: options.checkExternal ?? false,
-      externalTimeout: options.externalTimeout ?? 5000,
+      externalTimeout: options.externalTimeout ?? DEFAULT_EXTERNAL_TIMEOUT_MS,
       strictInternal: options.strictInternal ?? true,
       checkClaudeImports: options.checkClaudeImports ?? true,
       checkContentFreshness: options.checkContentFreshness ?? false,
@@ -138,12 +150,12 @@ export class LinkValidator {
 
   /**
    * Validates every link in each of the given files.
-   *
    * @param files - Parsed markdown files to check.
-   *
    * @returns A result that is valid only when no broken links were found, with the number of files and links checked.
    */
-  async validateFiles(files: ParsedMarkdownFile[]): Promise<ValidationResult> {
+  async validateFiles(
+    files: readonly ParsedMarkdownFile[],
+  ): Promise<ValidationResult> {
     const brokenLinks: BrokenLink[] = [];
     const warnings: string[] = [];
     let linksChecked = 0;
@@ -165,9 +177,7 @@ export class LinkValidator {
 
   /**
    * Validates every link in one file.
-   *
    * @param file - Parsed markdown file to check.
-   *
    * @returns The broken links found, empty when every link is valid or skipped by the options.
    */
   async validateFile(file: ParsedMarkdownFile): Promise<BrokenLink[]> {
@@ -185,14 +195,12 @@ export class LinkValidator {
 
   /**
    * Validates one link according to its type and the validator's options. Link types whose checking is disabled, and reference links, are treated as valid. An unexpected failure while checking is reported as an `invalid-format` broken link rather than thrown.
-   *
    * @param link - Link to check.
    * @param sourceFile - Path of the file containing the link.
-   *
    * @returns A broken link description, or `null` when the link is valid or not checked.
    */
   async validateLink(
-    link: MarkdownLink,
+    link: Readonly<MarkdownLink>,
     sourceFile: string,
   ): Promise<BrokenLink | null> {
     try {
@@ -240,10 +248,10 @@ export class LinkValidator {
   }
 
   private async validateInternalLink(
-    link: MarkdownLink,
+    link: Readonly<MarkdownLink>,
     sourceFile: string,
   ): Promise<BrokenLink | null> {
-    if (!link.resolvedPath) {
+    if (link.resolvedPath === undefined || link.resolvedPath === "") {
       return {
         sourceFile,
         link,
@@ -254,7 +262,9 @@ export class LinkValidator {
 
     try {
       await access(link.resolvedPath, constants.F_OK);
-      return null; // Link is valid
+
+      // Link is valid
+      return null;
     } catch {
       if (this.options.strictInternal) {
         return {
@@ -264,15 +274,17 @@ export class LinkValidator {
           details: `File does not exist: ${link.resolvedPath}`,
         };
       }
-      return null; // Not strict, so ignore missing files
+
+      // Not strict, so ignore missing files
+      return null;
     }
   }
 
   private async validateClaudeImportLink(
-    link: MarkdownLink,
+    link: Readonly<MarkdownLink>,
     sourceFile: string,
   ): Promise<BrokenLink | null> {
-    if (!link.resolvedPath) {
+    if (link.resolvedPath === undefined || link.resolvedPath === "") {
       return {
         sourceFile,
         link,
@@ -284,7 +296,9 @@ export class LinkValidator {
     // Claude imports should point to existing files
     try {
       await access(link.resolvedPath, constants.F_OK);
-      return null; // Import is valid
+
+      // Import is valid
+      return null;
     } catch {
       return {
         sourceFile,
@@ -296,11 +310,11 @@ export class LinkValidator {
   }
 
   private async validateExternalLink(
-    link: MarkdownLink,
+    link: Readonly<MarkdownLink>,
     sourceFile: string,
   ): Promise<BrokenLink | null> {
-    // Domains on the skip list are never contacted -- a site known to block or throttle checkers
-    // would otherwise surface as broken and drown out real findings
+    /* Domains on the skip list are never contacted -- a site known to block or throttle checkers
+       would otherwise surface as broken and drown out real findings */
     try {
       const hostname = new URL(link.href).hostname;
       if (this.options.skipDomains.includes(hostname)) {
@@ -340,7 +354,9 @@ export class LinkValidator {
         // Add authentication headers if available
         if (this.authDetector.shouldAttemptAuth(link.href)) {
           const authHeaders = this.authDetector.getAuthHeaders(link.href);
-          Object.assign(headers, authHeaders);
+          for (const [name, value] of Object.entries(authHeaders)) {
+            headers[name] = value;
+          }
           authInfo.authAttempted = true;
         }
       }
@@ -357,11 +373,12 @@ export class LinkValidator {
       }
 
       if (this.options.enableAuthDetection) {
-        fetchOptions.redirect = "follow"; // Follow redirects to detect auth redirects
+        // Follow redirects to detect auth redirects
+        fetchOptions.redirect = "follow";
       }
 
-      // Transient failures -- network errors, 5xx, 429 -- are retried up to externalRetries
-      // extra times before the link is reported, each attempt with its own timeout budget
+      /* Transient failures -- network errors, 5xx, 429 -- are retried up to externalRetries
+         extra times before the link is reported, each attempt with its own timeout budget */
       const maxAttempts = 1 + this.options.externalRetries;
       let response: Response | undefined;
       for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -376,7 +393,8 @@ export class LinkValidator {
           });
           clearTimeout(timeoutId);
           if (
-            (attemptResponse.status >= 500 || attemptResponse.status === 429) &&
+            (attemptResponse.status >= HTTP_SERVER_ERROR_MIN ||
+              attemptResponse.status === HTTP_TOO_MANY_REQUESTS) &&
             attempt < maxAttempts - 1
           ) {
             continue;
@@ -406,7 +424,7 @@ export class LinkValidator {
           link.href,
           response,
         );
-        Object.assign(authInfo, finalAuthInfo);
+        authInfo = { ...authInfo, ...finalAuthInfo };
 
         if (finalAuthInfo.requiresAuth && this.options.allowAuthRequired) {
           return {
@@ -423,7 +441,8 @@ export class LinkValidator {
         // Check if this is an auth-related error (only if auth detection is enabled)
         if (
           this.options.enableAuthDetection &&
-          (response.status === 401 || response.status === 403) &&
+          (response.status === HTTP_UNAUTHORIZED ||
+            response.status === HTTP_FORBIDDEN) &&
           this.options.allowAuthRequired
         ) {
           const authErrorInfo = {
@@ -486,11 +505,12 @@ export class LinkValidator {
       }
 
       // Mark auth as succeeded if we attempted it
-      if (authInfo?.authAttempted) {
+      if (authInfo?.authAttempted === true) {
         authInfo.authSucceeded = true;
       }
 
-      return null; // Link is valid, fresh, and accessible
+      // Link is valid, fresh, and accessible
+      return null;
     } catch (error) {
       return {
         sourceFile,
@@ -502,7 +522,7 @@ export class LinkValidator {
   }
 
   private async validateImageLink(
-    link: MarkdownLink,
+    link: Readonly<MarkdownLink>,
     sourceFile: string,
   ): Promise<BrokenLink | null> {
     // For external images, use external validation if enabled
@@ -513,7 +533,7 @@ export class LinkValidator {
     }
 
     // For internal images, check if file exists
-    if (!link.resolvedPath) {
+    if (link.resolvedPath === undefined || link.resolvedPath === "") {
       return {
         sourceFile,
         link,
@@ -524,7 +544,9 @@ export class LinkValidator {
 
     try {
       await access(link.resolvedPath, constants.F_OK);
-      return null; // Image exists
+
+      // Image exists
+      return null;
     } catch {
       return {
         sourceFile,
@@ -537,12 +559,10 @@ export class LinkValidator {
 
   /**
    * Combines link validation with circular reference detection across a set of files.
-   *
    * @param files - Parsed markdown files to check.
-   *
    * @returns A result whose `valid` flag is true only when there are no broken links and no cycles, plus the cycles, the broken links and any warnings.
    */
-  async validateLinkIntegrity(files: ParsedMarkdownFile[]): Promise<{
+  async validateLinkIntegrity(files: readonly ParsedMarkdownFile[]): Promise<{
     /** True when there are no broken links and no circular references */
     valid: boolean;
     /** Dependency cycles found, each as a path of files */
@@ -573,14 +593,12 @@ export class LinkValidator {
 
   /**
    * Validates a specific array of links from a single file.
-   *
    * @param links - Array of links to validate
    * @param sourceFile - Path to the source file containing the links
-   *
    * @returns Promise resolving to validation result with broken links
    */
   async validateLinks(
-    links: MarkdownLink[],
+    links: readonly MarkdownLink[],
     sourceFile: string,
   ): Promise<{
     /** Broken links found among the given links */
@@ -600,21 +618,21 @@ export class LinkValidator {
 
   /**
    * Checks for circular references. With parsed files, follows each file's dependencies and returns every cycle found as a path of files. With plain path strings there is no dependency information to follow, so the result always reports no circular references.
-   *
    * @param files - Parsed markdown files or file paths to check.
-   *
    * @returns The cycles for parsed files, or a summary object for paths.
    */
   async checkCircularReferences(
-    files: ParsedMarkdownFile[],
+    files: readonly ParsedMarkdownFile[],
   ): Promise<string[][]>;
-  async checkCircularReferences(files: string[]): Promise<{
+  async checkCircularReferences(files: readonly string[]): Promise<{
     /** Whether a circular reference was found */
     hasCircularReferences: boolean;
     /** Paths forming the circular reference, when one was found */
     circularPaths?: string[] | undefined;
   }>;
-  checkCircularReferences(files: ParsedMarkdownFile[] | string[]): Promise<
+  async checkCircularReferences(
+    files: readonly ParsedMarkdownFile[] | readonly string[],
+  ): Promise<
     | string[][]
     | {
         hasCircularReferences: boolean;
@@ -636,12 +654,13 @@ export class LinkValidator {
       const recursionStack = new Set<string>();
       const cycles: string[][] = [];
 
-      const detectCycle = (filePath: string, path: string[]): void => {
+      const detectCycle = (filePath: string, path: readonly string[]): void => {
         if (recursionStack.has(filePath)) {
           // Found a cycle - extract the cycle from the path
           const cycleStart = path.indexOf(filePath);
           const cycle = path.slice(cycleStart).concat(filePath);
           cycles.push(cycle);
+
           return;
         }
 
@@ -681,7 +700,7 @@ export class LinkValidator {
 
   /** Validates a wikilink or transclusion by resolving its target against the vault, reporting ambiguous matches and missing notes. */
   private async validateWikilinkLink(
-    link: MarkdownLink,
+    link: Readonly<MarkdownLink>,
     sourceFile: string,
   ): Promise<BrokenLink | null> {
     const resolver = this.options.wikilinkResolver;
@@ -700,7 +719,7 @@ export class LinkValidator {
     }
 
     const resolvedPath = resolution.resolvedPath;
-    if (!resolvedPath) {
+    if (resolvedPath === undefined || resolvedPath === "") {
       return {
         sourceFile,
         link,
@@ -711,6 +730,7 @@ export class LinkValidator {
 
     try {
       await access(resolvedPath, constants.F_OK);
+
       return null;
     } catch {
       return {
@@ -724,14 +744,12 @@ export class LinkValidator {
 
   /**
    * Validates anchor links by checking if the target heading exists in the file.
-   *
    * @param link - The anchor link to validate
    * @param sourceFile - Path to the file containing the link
-   *
    * @returns Promise resolving to BrokenLink if invalid, null if valid
    */
   private async validateAnchorLink(
-    link: MarkdownLink,
+    link: Readonly<MarkdownLink>,
     sourceFile: string,
   ): Promise<BrokenLink | null> {
     try {
@@ -749,8 +767,8 @@ export class LinkValidator {
       // Read the source file to check for the heading
       const content = await readFile(sourceFile, "utf-8");
 
-      // Convert anchor to the format used in markdown headings
-      // GitHub-style anchor generation: lowercase, replace spaces with hyphens, remove special chars
+      /* Convert anchor to the format used in markdown headings
+         GitHub-style anchor generation: lowercase, replace spaces with hyphens, remove special chars */
       const normalizedAnchor = anchor
         .toLowerCase()
         .replace(/\s+/g, "-")
@@ -772,7 +790,8 @@ export class LinkValidator {
 
         // Check if this heading matches our anchor
         if (normalizedHeading === normalizedAnchor) {
-          return null; // Anchor is valid
+          // Anchor is valid
+          return null;
         }
       }
 

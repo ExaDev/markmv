@@ -14,7 +14,6 @@ import { PathUtils } from "../utils/path-utils.js";
  * Configuration options for move command operations.
  *
  * Controls the behavior of the move command including preview mode and output verbosity.
- *
  * @category Commands
  */
 export interface MoveOptions {
@@ -34,7 +33,6 @@ export interface MoveOptions {
  * A single source/destination relocation within a multi-pair move.
  *
  * Both paths are literal paths: pair mode performs no glob expansion and moves no directories as units, so the caller's shell does any matching up front.
- *
  * @category Commands
  */
 export interface MovePair {
@@ -48,19 +46,14 @@ export interface MovePair {
  * Parse the pairs input format read by --pairs-file.
  *
  * Each non-blank line is one pair: a source path, the first tab character on the line, and a destination path. The tab is the separator precisely because paths may contain spaces, so splitting at the first tab keeps the remainder of the line intact for the destination. Fields are trimmed, so padded input and CRLF line endings parse identically to plain input. A non-blank line without a tab is malformed and throws naming its 1-based line number.
- *
  * @example
  * ```typescript
  * parsePairsInput('acme/acme.md\tacme/README.md\n');
  * // => [{ source: 'acme/acme.md', destination: 'acme/README.md' }]
- * ```;
- *
+ * ```
  * @param input - Raw pairs input text
- *
  * @returns Pairs in input order
- *
  * @throws Error naming the offending 1-based line number when a non-blank line has no tab
- *
  * @internal
  */
 export function parsePairsInput(input: string): MovePair[] {
@@ -80,6 +73,7 @@ export function parsePairsInput(input: string): MovePair[] {
       destination: trimmed.slice(separator + 1).trim(),
     });
   }
+
   return pairs;
 }
 
@@ -87,11 +81,8 @@ export function parsePairsInput(input: string): MovePair[] {
  * Read the raw pairs input for --pairs-file: the named file, or piped stdin when the path is "-".
  *
  * The stdin property is read at call time, and a TTY stdin is refused rather than read, since reading an interactive terminal would hang waiting for input that never arrives.
- *
  * @param pairsFile - Pairs file path, or "-" for stdin
- *
  * @returns Promise resolving to the raw input text
- *
  * @internal
  */
 async function readPairsInput(pairsFile: string): Promise<string> {
@@ -101,16 +92,14 @@ async function readPairsInput(pairsFile: string): Promise<string> {
   if (process.stdin.isTTY) {
     throw new Error("--pairs-file - expects piped input");
   }
+
   return text(process.stdin);
 }
 
 /**
  * Read and parse the --pairs-file input, failing loudly on read or format errors.
- *
  * @param pairsFile - Pairs file path, or "-" for stdin
- *
  * @returns Promise resolving to the parsed pairs
- *
  * @internal
  */
 async function loadPairsFile(pairsFile: string): Promise<MovePair[]> {
@@ -125,37 +114,33 @@ async function loadPairsFile(pairsFile: string): Promise<MovePair[]> {
     console.error(
       "Format: one pair per line, source and destination separated by a tab",
     );
-    process.exit(1);
+
+    return process.exit(1);
   }
 }
 
 /**
  * Group a flat alternating argument list into source/destination pairs.
- *
  * @param args - Even-length list alternating source and destination
- *
  * @returns Pairs in argument order
- *
  * @internal
  */
-function pairUpArguments(args: string[]): MovePair[] {
+function pairUpArguments(args: readonly string[]): MovePair[] {
   const pairs: MovePair[] = [];
   for (let index = 0; index < args.length; index += 2) {
     pairs.push({ source: args[index], destination: args[index + 1] });
   }
+
   return pairs;
 }
 
 /**
  * Resolve every pair to absolute paths and validate both of its paths: each source must be an existing file and may appear in only one pair, and each destination must be a non-empty path. Destinations resolve through PathUtils.resolveDestination, so a destination naming an existing directory (or ending in a slash) receives the source's basename. Globs and directory-as-unit sources are classic-mode concepts, so a source that fails these checks means pair mode was handed the wrong shape of input; every offender is collected and listed rather than stopping at the first.
- *
  * @param pairs - Pairs to resolve and validate
- *
  * @returns Pairs with sources and destinations resolved to absolute paths
- *
  * @internal
  */
-function resolvePairs(pairs: MovePair[]): MovePair[] {
+function resolvePairs(pairs: readonly MovePair[]): MovePair[] {
   // An empty destination string resolves to the current directory, silently relocating the file to the cwd root, so it is rejected as wrongly-shaped input before any resolution
   const emptyDestinations = pairs
     .filter((pair) => pair.destination.trim() === "")
@@ -172,6 +157,7 @@ function resolvePairs(pairs: MovePair[]): MovePair[] {
 
   const resolved = pairs.map((pair) => {
     const source = resolve(pair.source);
+
     return {
       source,
       destination: PathUtils.resolveDestination(source, pair.destination),
@@ -217,22 +203,19 @@ function resolvePairs(pairs: MovePair[]): MovePair[] {
  * Execute a batch of source/destination pairs as one moveFiles operation.
  *
  * Each pair is an independent rename, but all of them share a single transaction and one dependency-graph pass, so links between co-moved files are rewritten to their new sibling locations alongside the inbound links from bystander files.
- *
  * @param pairs - Pairs to move; must contain at least one pair
  * @param options - Configuration options for the move operation
- *
  * @throws Will exit the process with code 1 if the operation fails
- *
  * @internal
  */
 async function executePairMoves(
-  pairs: MovePair[],
-  options: MoveOptions,
+  pairs: readonly MovePair[],
+  options: Readonly<MoveOptions>,
 ): Promise<void> {
   const moves = resolvePairs(pairs);
 
   try {
-    if (options.verbose) {
+    if (options.verbose === true) {
       console.log(
         `🔀 Moving ${String(moves.length)} pair(s) in one operation:`,
       );
@@ -240,7 +223,7 @@ async function executePairMoves(
         console.log(`   • ${move.source} → ${move.destination}`);
       }
 
-      if (options.dryRun) {
+      if (options.dryRun === true) {
         console.log("🔍 Dry run mode - no changes will be made");
       }
     }
@@ -270,28 +253,24 @@ async function executePairMoves(
  * Any resolved file is accepted, since `markmv move` can relocate a non-markdown asset (an image,
  * for example) and update every markdown link that points at it, not only markdown files
  * themselves. Provides verbose output when requested.
- *
  * @example
- *   ```typescript
- *   // Direct file paths
- *   await expandSourcePatterns(['README.md', 'docs/guide.md', 'docs/diagram.png']);
+ * ```typescript
+ * // Direct file paths
+ * await expandSourcePatterns(['README.md', 'docs/guide.md', 'docs/diagram.png']);
  *
- *   // Glob patterns
- *   await expandSourcePatterns(['*.md', 'docs/*.png']);
+ * // Glob patterns
+ * await expandSourcePatterns(['*.md', 'docs/*.png']);
  *
- *   // Mixed patterns
- *   await expandSourcePatterns(['README.md', 'docs/*.md']);
- *   ```;
- *
+ * // Mixed patterns
+ * await expandSourcePatterns(['README.md', 'docs/*.md']);
+ * ```
  * @param patterns - Array of file patterns or direct paths to expand
  * @param verbose - Whether to output detailed expansion information
- *
  * @returns Promise resolving to an array of absolute file paths
- *
  * @internal
  */
 async function expandSourcePatterns(
-  patterns: string[],
+  patterns: readonly string[],
   verbose = false,
 ): Promise<string[]> {
   const allFiles = new Set<string>();
@@ -316,7 +295,8 @@ async function expandSourcePatterns(
       const globResults = await glob(pattern.replace(/\\/g, "/"), {
         ignore: ["node_modules/**", ".git/**", "dist/**"],
         absolute: true,
-        nodir: true, // Only return files, not directories
+        // Only return files, not directories
+        nodir: true,
       });
 
       if (verbose && globResults.length > 0) {
@@ -350,11 +330,8 @@ const IGNORED_DIRECTORY_NAMES = new Set(["node_modules", ".git", "dist"]);
 /**
  * Collect every file inside a directory tree, recursively, mirroring the ignores that glob
  * expansion applies so a directory source and a glob source treat the same tree consistently.
- *
  * @param directoryRoot - Directory to walk
- *
  * @returns Promise resolving to sorted absolute file paths
- *
  * @internal
  */
 async function collectDirectoryFiles(directoryRoot: string): Promise<string[]> {
@@ -362,18 +339,21 @@ async function collectDirectoryFiles(directoryRoot: string): Promise<string[]> {
 
   const walk = async (currentDir: string): Promise<void> => {
     const entries = await readdir(currentDir, { withFileTypes: true });
+    const subdirectories: string[] = [];
     for (const entry of entries) {
       const entryPath = join(currentDir, entry.name);
       if (entry.isDirectory()) {
         if (IGNORED_DIRECTORY_NAMES.has(entry.name)) continue;
-        await walk(entryPath);
+        subdirectories.push(entryPath);
       } else if (entry.isFile()) {
         files.push(entryPath);
       }
     }
+    await Promise.all(subdirectories.map(walk));
   };
 
   await walk(resolve(directoryRoot));
+
   return files.sort();
 }
 
@@ -381,31 +361,26 @@ async function collectDirectoryFiles(directoryRoot: string): Promise<string[]> {
  * Remove the directories a unit move vacated, deepest first. A directory that still contains
  * anything is left untouched, so a partial expansion or files the operator left behind keep their
  * parent directories alive.
- *
  * @param directoryRoot - The directory whose contents were just moved out
- *
  * @internal
  */
 async function pruneEmptyDirectories(directoryRoot: string): Promise<void> {
   const prune = async (currentDir: string): Promise<boolean> => {
-    let allChildrenPruned = true;
     const entries = await readdir(currentDir, { withFileTypes: true });
-    for (const entry of entries) {
-      if (!entry.isDirectory()) {
-        allChildrenPruned = false;
-        continue;
-      }
-      if (IGNORED_DIRECTORY_NAMES.has(entry.name)) {
-        allChildrenPruned = false;
-        continue;
-      }
-      const childPruned = await prune(join(currentDir, entry.name));
-      if (!childPruned) allChildrenPruned = false;
-    }
-    if (!allChildrenPruned) {
+    const childResults = await Promise.all(
+      entries.map(async (entry) => {
+        if (!entry.isDirectory() || IGNORED_DIRECTORY_NAMES.has(entry.name)) {
+          return false;
+        }
+
+        return prune(join(currentDir, entry.name));
+      }),
+    );
+    if (!childResults.every(Boolean)) {
       return false;
     }
     await rmdir(currentDir);
+
     return true;
   };
 
@@ -414,14 +389,13 @@ async function pruneEmptyDirectories(directoryRoot: string): Promise<void> {
 
 /**
  * Map the command's move options onto the operation options both modes hand to FileOperations, so the pair and classic paths cannot drift apart.
- *
  * @param options - Move options from the command layer
- *
  * @returns Operation options for FileOperations
- *
  * @internal
  */
-function toMoveOperationOptions(options: MoveOptions): MoveOperationOptions {
+function toMoveOperationOptions(
+  options: Readonly<MoveOptions>,
+): MoveOperationOptions {
   return {
     dryRun: options.dryRun ?? false,
     verbose: options.verbose ?? false,
@@ -432,16 +406,14 @@ function toMoveOperationOptions(options: MoveOptions): MoveOperationOptions {
 
 /**
  * Report a completed (or failed) move operation: failure errors, the dry-run preview, the success summary, parse failures, warnings, and the verbose post-move link validation. Shared by the classic and pair modes so both report identically.
- *
  * @param result - The operation result to report
  * @param options - Move options controlling dry-run and verbose reporting
  * @param fileOps - FileOperations instance used for the verbose post-move validation
- *
  * @internal
  */
 async function reportMoveResult(
   result: OperationResult,
-  options: MoveOptions,
+  options: Readonly<MoveOptions>,
   fileOps: FileOperations,
 ): Promise<void> {
   if (!result.success) {
@@ -460,7 +432,7 @@ async function reportMoveResult(
     new Set(linkChanges.map((change) => change.filePath)),
   );
 
-  if (options.dryRun) {
+  if (options.dryRun === true) {
     console.log("\n📋 Changes that would be made:");
 
     if (result.createdFiles.length > 0) {
@@ -507,7 +479,7 @@ async function reportMoveResult(
       console.log("📝 No links needed updating");
     }
 
-    if (options.verbose && changedFilePaths.length > 0) {
+    if (options.verbose === true && changedFilePaths.length > 0) {
       console.log("\nFiles with updated links:");
       for (const file of changedFilePaths) {
         console.log(`  ~ ${file}`);
@@ -536,7 +508,7 @@ async function reportMoveResult(
   }
 
   // Validate the operation
-  if (!options.dryRun && options.verbose) {
+  if (options.dryRun !== true && options.verbose === true) {
     console.log("\n🔍 Validating link integrity...");
     const validation = await fileOps.validateOperation(result);
 
@@ -562,17 +534,15 @@ const PAIRS_FILE_USAGE = "Usage: markmv move --pairs-file <path>";
 
 /**
  * Report a pair-mode usage error and exit: the error line, the given usage lines, and an Examples block, mirroring the classic path's error output.
- *
  * @param error - One-line description of the rejected input
  * @param usageLines - Usage lines naming the valid invocation forms
  * @param examples - Example invocations, printed indented under an Examples header
- *
  * @internal
  */
 function failPairUsage(
   error: string,
-  usageLines: string[],
-  examples: string[],
+  usageLines: readonly string[],
+  examples: readonly string[],
 ): never {
   console.error(`❌ Error: ${error}`);
   for (const line of usageLines) {
@@ -603,32 +573,39 @@ function failPairUsage(
  *
  * The command automatically discovers and updates all cross-references to moved files throughout
  * the project, ensuring that no links are broken during the move operation.
- *
  * @category Commands
- *
  * @example
- *   Single file move ```typescript await moveCommand(['docs/old.md', 'docs/new.md'], { verbose: true }); ```
- *
+ * Single file move
+ * ```typescript
+ * await moveCommand(['docs/old.md', 'docs/new.md'], { verbose: true });
+ * ```
  * @example
- *   Moving a linked image, updating any markdown files that reference it ```typescript await moveCommand(['image.png', 'assets/image.png'], { verbose: true }); ```
- *
+ * Moving a linked image, updating any markdown files that reference it
+ * ```typescript
+ * await moveCommand(['image.png', 'assets/image.png'], { verbose: true });
+ * ```
  * @example
- *   Multiple files to directory ```typescript await moveCommand(['*.md', 'archive/'], { dryRun: true }); ```
- *
+ * Multiple files to directory
+ * ```typescript
+ * await moveCommand(['*.md', 'archive/'], { dryRun: true });
+ * ```
  * @example
- *   Glob pattern with dry run ```typescript await moveCommand(['docs/**\/*.md', 'backup/'], { dryRun: true, verbose: true }); ```
- *
+ * Glob pattern with dry run
+ * ```typescript
+ * await moveCommand(['docs/**\/*.md', 'backup/'], { dryRun: true, verbose: true });
+ * ```
  * @example
- *   Multi-pair move, renaming two folder-named indexes in one operation ```typescript await moveCommand(['acme/acme.md', 'acme/README.md', 'globex/globex.md', 'globex/README.md'], { pairs: true }); ```
- *
+ * Multi-pair move, renaming two folder-named indexes in one operation
+ * ```typescript
+ * await moveCommand(['acme/acme.md', 'acme/README.md', 'globex/globex.md', 'globex/README.md'], { pairs: true });
+ * ```
  * @param sources - Classic mode: source patterns with the destination last. Pair mode (--pairs): an alternating source/destination list. Unused with --pairs-file.
  * @param options - Configuration options for the move operation
- *
  * @throws Will exit the process with code 1 if the operation fails
  */
 export async function moveCommand(
-  sources: string[],
-  options: MoveOptions,
+  sources: readonly string[],
+  options: Readonly<MoveOptions>,
 ): Promise<void> {
   if (options.pairs === true && options.pairsFile !== undefined) {
     failPairUsage(
@@ -661,6 +638,7 @@ export async function moveCommand(
       process.exit(1);
     }
     await executePairMoves(pairs, options);
+
     return;
   }
 
@@ -682,6 +660,7 @@ export async function moveCommand(
       );
     }
     await executePairMoves(pairUpArguments(sources), options);
+
     return;
   }
 
@@ -744,9 +723,14 @@ export async function moveCommand(
 
     // Expand directory sources into per-file moves that map each file to its mirrored path under the destination
     const directoryMoves: MovePair[] = [];
-    for (const directorySource of directorySources) {
-      const filesInDirectory = await collectDirectoryFiles(directorySource);
-      if (options.verbose) {
+    const collectedDirectories = await Promise.all(
+      directorySources.map(async (directorySource) => ({
+        directorySource,
+        filesInDirectory: await collectDirectoryFiles(directorySource),
+      })),
+    );
+    for (const { directorySource, filesInDirectory } of collectedDirectories) {
+      if (options.verbose === true) {
         console.log(
           `📁 Directory source ${directorySource}: ${String(filesInDirectory.length)} file(s)`,
         );
@@ -764,7 +748,7 @@ export async function moveCommand(
 
     const totalSourceFiles = sourceFiles.length + directoryMoves.length;
 
-    if (options.verbose) {
+    if (options.verbose === true) {
       console.log(
         `🎯 Destination: ${destination} ${isDestDirectory ? "(directory)" : "(file)"}`,
       );
@@ -776,7 +760,7 @@ export async function moveCommand(
         console.log(`   • ${move.source}`);
       }
 
-      if (options.dryRun) {
+      if (options.dryRun === true) {
         console.log("🔍 Dry run mode - no changes will be made");
       }
     }
@@ -803,7 +787,7 @@ export async function moveCommand(
       result = await fileOps.moveFiles(moves, moveOptions);
 
       // Once a directory's contents have relocated, remove the directories it vacated
-      if (!options.dryRun && result.success) {
+      if (options.dryRun !== true && result.success) {
         for (const directorySource of directorySources) {
           await pruneEmptyDirectories(directorySource);
         }

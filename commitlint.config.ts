@@ -1,6 +1,9 @@
 import type { UserConfig } from "@commitlint/types";
 import { commitTypes } from "./release.config.ts";
 
+/** Longest permitted commit header, in characters. */
+const HEADER_MAX_LENGTH = 100;
+
 const Configuration: UserConfig = {
   extends: ["@commitlint/config-conventional"],
   rules: {
@@ -8,7 +11,7 @@ const Configuration: UserConfig = {
     "subject-case": [2, "never", ["start-case", "pascal-case", "upper-case"]],
     "subject-empty": [2, "never"],
     "subject-full-stop": [2, "never", "."],
-    "header-max-length": [2, "always", 100],
+    "header-max-length": [2, "always", HEADER_MAX_LENGTH],
     "scope-enum": [
       2,
       "always",

@@ -8,20 +8,42 @@
 import type { ApiResponse, HealthResponse } from "../src/types/api.js";
 import type { OperationResult } from "../src/types/operations.js";
 
+/** Width of the divider printed between examples. */
+const SEPARATOR_WIDTH = 50;
+
+/** Options for a single API request. */
+interface RequestOptions {
+  /** HTTP method; defaults to POST. */
+  method?: "GET" | "POST";
+  /** JSON body, sent only with POST. */
+  data?: unknown;
+}
+
+/**
+ * Checks the response envelope shared by every endpoint.
+ *
+ * The payload under `data` is trusted to match `T`, as the server owns that contract.
+ */
+function isApiResponse<T>(value: unknown): value is ApiResponse<T> {
+  if (typeof value !== "object" || value === null) return false;
+  if (!("success" in value) || typeof value.success !== "boolean") return false;
+
+  return "timestamp" in value && typeof value.timestamp === "string";
+}
+
 /** Example API client for markmv REST API */
 class MarkMvApiClient {
-  private baseUrl: string;
+  private readonly baseUrl: string;
 
-  constructor(baseUrl: string = "http://localhost:3000") {
+  constructor(baseUrl = "http://localhost:3000") {
     this.baseUrl = baseUrl;
   }
 
   /** Make HTTP request to API */
   private async makeRequest<T>(
     endpoint: string,
-    method: "GET" | "POST" = "POST",
-    data?: unknown,
-  ): Promise<T> {
+    { method = "POST", data }: RequestOptions = {},
+  ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
 
     const options: RequestInit = {
@@ -31,19 +53,23 @@ class MarkMvApiClient {
       },
     };
 
-    if (data && method === "POST") {
+    if (data !== undefined && method === "POST") {
       options.body = JSON.stringify(data);
     }
 
     try {
       const response = await fetch(url, options);
-      const result = (await response.json()) as ApiResponse<unknown>;
+      const result: unknown = await response.json();
+
+      if (!isApiResponse<T>(result)) {
+        throw new Error("API Error: malformed response envelope");
+      }
 
       if (!response.ok) {
         throw new Error(`API Error: ${result.error ?? "Unknown error"}`);
       }
 
-      return result as T;
+      return result;
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`Request failed: ${error.message}`, { cause: error });
@@ -54,7 +80,7 @@ class MarkMvApiClient {
 
   /** Check API health */
   async health(): Promise<ApiResponse<HealthResponse>> {
-    return this.makeRequest("/health", "GET");
+    return this.makeRequest("/health", { method: "GET" });
   }
 
   /** Move a single file */
@@ -63,21 +89,25 @@ class MarkMvApiClient {
     destination: string,
     options: Record<string, unknown> = {},
   ): Promise<ApiResponse<OperationResult>> {
-    return this.makeRequest("/api/move", "POST", {
-      source,
-      destination,
-      options,
+    return this.makeRequest("/api/move", {
+      data: {
+        source,
+        destination,
+        options,
+      },
     });
   }
 
   /** Move multiple files */
   async moveFiles(
-    moves: Array<{ source: string; destination: string }>,
+    moves: readonly { source: string; destination: string }[],
     options: Record<string, unknown> = {},
   ): Promise<ApiResponse<OperationResult>> {
-    return this.makeRequest("/api/move-batch", "POST", {
-      moves,
-      options,
+    return this.makeRequest("/api/move-batch", {
+      data: {
+        moves,
+        options,
+      },
     });
   }
 
@@ -86,9 +116,11 @@ class MarkMvApiClient {
     pattern: string,
     options: Record<string, unknown> = {},
   ): Promise<ApiResponse<OperationResult>> {
-    return this.makeRequest("/api/convert", "POST", {
-      pattern,
-      options,
+    return this.makeRequest("/api/convert", {
+      data: {
+        pattern,
+        options,
+      },
     });
   }
 
@@ -97,33 +129,39 @@ class MarkMvApiClient {
     filePath: string,
     options: Record<string, unknown>,
   ): Promise<ApiResponse<OperationResult>> {
-    return this.makeRequest("/api/split", "POST", {
-      filePath,
-      options,
+    return this.makeRequest("/api/split", {
+      data: {
+        filePath,
+        options,
+      },
     });
   }
 
   /** Join multiple files */
   async joinFiles(
-    filePaths: string[],
+    filePaths: readonly string[],
     options: Record<string, unknown>,
   ): Promise<ApiResponse<OperationResult>> {
-    return this.makeRequest("/api/join", "POST", {
-      filePaths,
-      options,
+    return this.makeRequest("/api/join", {
+      data: {
+        filePaths,
+        options,
+      },
     });
   }
 
   /** Merge files */
   async mergeFiles(
-    filePaths: string[],
+    filePaths: readonly string[],
     targetPath: string,
     options: Record<string, unknown>,
   ): Promise<ApiResponse<OperationResult>> {
-    return this.makeRequest("/api/merge", "POST", {
-      filePaths,
-      targetPath,
-      options,
+    return this.makeRequest("/api/merge", {
+      data: {
+        filePaths,
+        targetPath,
+        options,
+      },
     });
   }
 
@@ -133,8 +171,10 @@ class MarkMvApiClient {
   ): Promise<
     ApiResponse<{ valid: boolean; brokenLinks: number; errors: string[] }>
   > {
-    return this.makeRequest("/api/validate", "POST", {
-      result,
+    return this.makeRequest("/api/validate", {
+      data: {
+        result,
+      },
     });
   }
 }
@@ -174,10 +214,12 @@ async function moveFileExample() {
     );
 
     console.log("✅ Move operation result:");
-    console.log(`  Success: ${result.success}`);
-    console.log(`  Modified files: ${result.data.modifiedFiles.length}`);
-    console.log(`  Created files: ${result.data.createdFiles.length}`);
-    console.log(`  Errors: ${result.data.errors.length}`);
+    console.log(`  Success: ${String(result.success)}`);
+    console.log(
+      `  Modified files: ${String(result.data.modifiedFiles.length)}`,
+    );
+    console.log(`  Created files: ${String(result.data.createdFiles.length)}`);
+    console.log(`  Errors: ${String(result.data.errors.length)}`);
   } catch (error) {
     console.error(
       "❌ Move failed:",
@@ -202,9 +244,11 @@ async function convertLinksExample() {
     });
 
     console.log("✅ Convert operation result:");
-    console.log(`  Success: ${result.success}`);
-    console.log(`  Modified files: ${result.data.modifiedFiles.length}`);
-    console.log(`  Changes made: ${result.data.changes.length}`);
+    console.log(`  Success: ${String(result.success)}`);
+    console.log(
+      `  Modified files: ${String(result.data.modifiedFiles.length)}`,
+    );
+    console.log(`  Changes made: ${String(result.data.changes.length)}`);
   } catch (error) {
     console.error(
       "❌ Convert failed:",
@@ -229,9 +273,9 @@ async function splitFileExample() {
     });
 
     console.log("✅ Split operation result:");
-    console.log(`  Success: ${result.success}`);
-    console.log(`  Created files: ${result.data.createdFiles.length}`);
-    console.log(`  Changes: ${result.data.changes.length}`);
+    console.log(`  Success: ${String(result.success)}`);
+    console.log(`  Created files: ${String(result.data.createdFiles.length)}`);
+    console.log(`  Changes: ${String(result.data.changes.length)}`);
   } catch (error) {
     console.error(
       "❌ Split failed:",
@@ -260,10 +304,14 @@ async function batchMoveExample() {
     });
 
     console.log("✅ Batch move operation result:");
-    console.log(`  Success: ${result.success}`);
-    console.log(`  Total modified files: ${result.data.modifiedFiles.length}`);
-    console.log(`  Total created files: ${result.data.createdFiles.length}`);
-    console.log(`  Total changes: ${result.data.changes.length}`);
+    console.log(`  Success: ${String(result.success)}`);
+    console.log(
+      `  Total modified files: ${String(result.data.modifiedFiles.length)}`,
+    );
+    console.log(
+      `  Total created files: ${String(result.data.createdFiles.length)}`,
+    );
+    console.log(`  Total changes: ${String(result.data.changes.length)}`);
   } catch (error) {
     console.error(
       "❌ Batch move failed:",
@@ -294,9 +342,9 @@ async function joinFilesExample() {
     });
 
     console.log("✅ Join operation result:");
-    console.log(`  Success: ${result.success}`);
+    console.log(`  Success: ${String(result.success)}`);
     console.log(`  Output file: ${result.data.createdFiles[0] || "N/A"}`);
-    console.log(`  Changes: ${result.data.changes.length}`);
+    console.log(`  Changes: ${String(result.data.changes.length)}`);
   } catch (error) {
     console.error(
       "❌ Join failed:",
@@ -344,22 +392,22 @@ async function runExamples() {
 
   try {
     await healthCheckExample();
-    console.log("\n" + "=".repeat(50) + "\n");
+    console.log("\n" + "=".repeat(SEPARATOR_WIDTH) + "\n");
 
     await moveFileExample();
-    console.log("\n" + "=".repeat(50) + "\n");
+    console.log("\n" + "=".repeat(SEPARATOR_WIDTH) + "\n");
 
     await convertLinksExample();
-    console.log("\n" + "=".repeat(50) + "\n");
+    console.log("\n" + "=".repeat(SEPARATOR_WIDTH) + "\n");
 
     await splitFileExample();
-    console.log("\n" + "=".repeat(50) + "\n");
+    console.log("\n" + "=".repeat(SEPARATOR_WIDTH) + "\n");
 
     await batchMoveExample();
-    console.log("\n" + "=".repeat(50) + "\n");
+    console.log("\n" + "=".repeat(SEPARATOR_WIDTH) + "\n");
 
     await joinFilesExample();
-    console.log("\n" + "=".repeat(50) + "\n");
+    console.log("\n" + "=".repeat(SEPARATOR_WIDTH) + "\n");
 
     showCurlExamples();
 
@@ -378,6 +426,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 }
 
 // Also support tsx execution
-if (process.argv[1] && process.argv[1].endsWith("api-usage.ts")) {
+if (process.argv[1]?.endsWith("api-usage.ts")) {
   runExamples().catch(console.error);
 }
