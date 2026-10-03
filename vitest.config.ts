@@ -55,7 +55,11 @@ export default defineConfig({
         },
       },
     },
-    include: ["src/**/*.test.ts", "src/**/*.spec.ts"],
+    include: [
+      "src/**/*.test.ts",
+      "src/**/*.spec.ts",
+      ".github/scripts/**/*.test.ts",
+    ],
     exclude: ["node_modules/", "dist/", "coverage/"],
   },
 });

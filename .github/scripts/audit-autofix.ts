@@ -129,12 +129,31 @@ export function currentOverrides(workspace: Document): Record<string, string> {
   return result;
 }
 
+/** Relinks node_modules to the lockfile on disk, which a file restore alone leaves pointing at whatever the last attempt resolved. */
+function resyncNodeModules(): void {
+  spawnSync("pnpm", ["install", "--frozen-lockfile"], { encoding: "utf8" });
+}
+
 function restoreFromGit(): void {
   spawnSync("git", ["checkout", "--", LOCKFILE, WORKSPACE_FILE], {
     encoding: "utf8",
   });
   // `pnpm update` only touches the packages it's told to; a plain `git checkout` restores the two tracked files but leaves node_modules linked against whatever the last attempt resolved, so resync it for whatever runs next (the final re-audit below, or any later step in this same job).
-  spawnSync("pnpm", ["install", "--frozen-lockfile"], { encoding: "utf8" });
+  resyncNodeModules();
+}
+
+/**
+ * Captures the current contents of `paths` and returns a function that writes them back. A rollback to the state captured here is not the same as `git checkout`, which returns to the committed state and so also discards every uncommitted change made before the snapshot.
+ */
+export function snapshotFiles(paths: readonly string[]): () => void {
+  const contents = paths.map((path) => ({
+    path,
+    text: readFileSync(path, "utf8"),
+  }));
+
+  return () => {
+    for (const { path, text } of contents) writeFileSync(path, text);
+  };
 }
 
 function setOutput(name: string, value: string): void {
@@ -374,6 +393,7 @@ function main(): void {
 
   // Prune inert overrides: entries whose package the lockfile already resolves entirely inside the override's target. The pruned pnpm-workspace.yaml rides the same fix PR, and the pruned state is verified below before it is kept -- anything that regresses restores the pre-prune files.
   let prunedKeys: string[] = [];
+  const restorePrePrune = snapshotFiles([LOCKFILE, WORKSPACE_FILE]);
   const workspaceNow = readWorkspaceDoc();
   const overridesNow = currentOverrides(workspaceNow);
   const inert = inertOverrideKeys(
@@ -402,13 +422,15 @@ function main(): void {
         );
         prunedKeys = inert;
       } else {
-        restoreFromGit();
+        restorePrePrune();
+        resyncNodeModules();
         console.log(
           "::warning::override prune regressed the audit; keeping the unpruned set.",
         );
       }
     } else {
-      restoreFromGit();
+      restorePrePrune();
+      resyncNodeModules();
       console.log(
         "::warning::override prune install failed; keeping the unpruned set.",
       );
