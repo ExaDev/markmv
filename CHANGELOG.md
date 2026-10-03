@@ -1,3 +1,9 @@
+## [1.41.2](https://github.com/ExaDev/markmv/compare/v1.41.1...v1.41.2) (2026-10-03)
+
+### Tests
+
+- give the API server test an operating-system-assigned port ([015111a](https://github.com/ExaDev/markmv/commit/015111a8546e98be693021344206928726fe1311))
+
 ## [1.41.1](https://github.com/ExaDev/markmv/compare/v1.41.0...v1.41.1) (2026-10-03)
 
 ### Documentation
