@@ -17,6 +17,10 @@ import { PathUtils } from "../utils/path-utils.js";
  * @category Commands
  * @param content - Raw markdown file content
  * @returns Number of whitespace-separated tokens outside code spans and fences
+ * @example
+ * ```typescript
+ * console.log(countWords("one two `code` three")); // 3
+ * ```
  */
 export function countWords(content: string): number {
   const withoutFences = content.replace(
@@ -87,6 +91,13 @@ export interface TreeStatistics {
  * @category Commands
  * @param files - Scanned file measurements for the full scan
  * @returns Aggregate statistics with a stable field order
+ * @example
+ * ```typescript
+ * const files = await scanMarkdownTree("./docs");
+ * const statistics = computeTreeStatistics(files);
+ *
+ * console.log(statistics);
+ * ```
  */
 export function computeTreeStatistics(
   files: readonly ScannedMarkdownFile[],
@@ -232,6 +243,11 @@ function toDirectoryNode(
  * @param maxDepth - Maximum rendering depth, where the root is depth 0 and its children depth 1
  * @returns The root directory node; its name and path are empty strings
  * @throws Error if a scanned file carries an empty relative path
+ * @example
+ * ```typescript
+ * const files = await scanMarkdownTree("./docs");
+ * const tree = buildFileTree(files, 2);
+ * ```
  */
 export function buildFileTree(
   files: readonly ScannedMarkdownFile[],
@@ -339,6 +355,13 @@ function renderDirectoryLines(
  * @param root - Tree node to render, as produced by buildFileTree
  * @param rootLabel - Label printed on the first line for the scan root
  * @returns The full rendering, one entry per line, without a trailing newline
+ * @example
+ * ```typescript
+ * const files = await scanMarkdownTree("./docs");
+ * const tree = buildFileTree(files);
+ *
+ * console.log(renderTreeAscii(tree, "docs"));
+ * ```
  */
 export function renderTreeAscii(
   root: TreeDirectoryNode,
@@ -400,6 +423,11 @@ async function collectMarkdownFiles(
  * @param options - Scan options
  * @returns Scanned file measurements ordered by relative path, excluding skipped directories
  * @throws Error if the target path does not exist or a file cannot be read or parsed
+ * @example
+ * ```typescript
+ * const files = await scanMarkdownTree("./docs");
+ * const orphans = files.filter((file) => file.inboundLinkCount === 0);
+ * ```
  */
 export async function scanMarkdownTree(
   targetPath: string,

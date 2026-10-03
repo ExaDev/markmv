@@ -209,6 +209,7 @@ export class LinkGraphGenerator {
    * @param graph - The link graph to export
    * @param format - Output format
    * @returns Formatted graph representation
+   * @throws Error when the format is not a supported export format
    */
   exportGraph(graph: LinkGraph, format: GraphOutputFormat): string {
     switch (format) {

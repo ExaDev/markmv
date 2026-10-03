@@ -23,9 +23,15 @@ export interface TocOperationOptions extends OperationOptions {
   includeLineNumbers: boolean;
   /** Position where to insert TOC: 'top' | 'after-title' | 'before-content' | 'replace' */
   position: "top" | "after-title" | "before-content" | "replace";
-  /** Custom TOC title (default: "Table of Contents") */
+  /**
+   * Custom TOC title
+   * @defaultValue "Table of Contents"
+   */
   title: string;
-  /** TOC heading level (1-6, default: 2) */
+  /**
+   * TOC heading level (1-6)
+   * @defaultValue 2
+   */
   headingLevel: number;
   /** Custom marker to find existing TOC for replacement */
   marker?: string;
@@ -271,7 +277,10 @@ function generateTocMarkdown(
   return `${headingPrefix} ${title}\n\n${toc}`;
 }
 
-/** Insert TOC into content at the specified position. */
+/**
+ * Insert TOC into content at the specified position.
+ * @throws Error when the position option is not a recognised insertion position
+ */
 function insertTocIntoContent(
   content: string,
   tocMarkdown: string,

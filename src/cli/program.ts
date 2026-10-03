@@ -16,6 +16,7 @@ function isPackageJson(value: unknown): value is { version: string } {
 /**
  * Reads the package version from package.json at runtime so the reported version always matches the
  * published package instead of a literal that drifts between releases.
+ * @throws Error when package.json does not hold a string version field
  */
 function getPackageVersion(): string {
   const raw: unknown = JSON.parse(

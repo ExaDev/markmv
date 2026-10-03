@@ -40,6 +40,14 @@ export interface ImageLinkOccurrence {
  * @category Core
  * @param content - Markdown content to scan
  * @returns Occurrences of local image links in source order
+ * @example
+ * ```typescript
+ * const images = findLocalImages(
+ *   "![logo](./logo.png)\n\n![hosted](https://example.com/a.png)",
+ * );
+ *
+ * console.log(images.map((image) => image.href)); // ["./logo.png"]
+ * ```
  */
 export function findLocalImages(content: string): ImageLinkOccurrence[] {
   return findImageOccurrences(content, (href) => isLocalImagePath(href));
@@ -50,6 +58,13 @@ export function findLocalImages(content: string): ImageLinkOccurrence[] {
  * @category Core
  * @param content - Markdown content to scan
  * @returns Occurrences of data URI image links in source order
+ * @example
+ * ```typescript
+ * const dataUri = "data:image/png;base64,iVBORw0KGgo=";
+ * const images = findInlineImages(`![dot](${dataUri})`);
+ *
+ * console.log(images.length); // 1
+ * ```
  */
 export function findInlineImages(content: string): ImageLinkOccurrence[] {
   return findImageOccurrences(content, (href) => href.startsWith("data:"));
@@ -75,6 +90,13 @@ const ERROR_PREVIEW_LENGTH = 60;
  * @param href - The data URI to parse, typically an image link href
  * @returns The media type and base64 payload
  * @throws Error when the URI is malformed, not base64 encoded, or not an image type
+ * @example
+ * ```typescript
+ * const parsed = parseImageDataUri("data:image/png;base64,iVBORw0KGgo=");
+ *
+ * console.log(parsed.mimeType); // "image/png"
+ * console.log(parsed.data); // "iVBORw0KGgo="
+ * ```
  */
 export function parseImageDataUri(href: string): ParsedImageDataUri {
   const separatorIndex = href.indexOf(",");
@@ -132,6 +154,10 @@ const EXTENSION_BY_MIME: Partial<Record<string, string>> = {
  * @param extension - File extension with or without a leading dot; case-insensitive
  * @returns The image mime type for the extension
  * @throws Error when the extension has no known image mime type
+ * @example
+ * ```typescript
+ * console.log(imageMimeTypeForExtension(".jpg")); // "image/jpeg"
+ * ```
  */
 export function imageMimeTypeForExtension(extension: string): string {
   const normalised = extension.replace(/^\./, "").toLowerCase();
@@ -151,6 +177,10 @@ export function imageMimeTypeForExtension(extension: string): string {
  * @param mimeType - Image mime type, for example the one parsed from a data URI
  * @returns The file extension without a leading dot
  * @throws Error when the mime type has no known image file extension
+ * @example
+ * ```typescript
+ * console.log(imageExtensionForMimeType("image/jpeg")); // "jpg"
+ * ```
  */
 export function imageExtensionForMimeType(mimeType: string): string {
   const extension = EXTENSION_BY_MIME[mimeType.toLowerCase()];
@@ -174,6 +204,11 @@ export function imageExtensionForMimeType(mimeType: string): string {
  * @param href - The href, typically a data URI or a filesystem path
  * @param title - Optional link title rendered after the href
  * @returns The rendered `![alt](href "title")` expression
+ * @example
+ * ```typescript
+ * console.log(renderImageMarkdown("logo", "./logo.png", "Company logo"));
+ * // ![logo](./logo.png "Company logo")
+ * ```
  */
 export function renderImageMarkdown(
   alt: string | undefined,
@@ -243,6 +278,14 @@ export interface SpanReplacement {
  * @param replacements - Spans to replace, in any order; they must not overlap
  * @returns The content with every span replaced
  * @throws Error when spans overlap or lie outside the content bounds
+ * @example
+ * ```typescript
+ * const content = replaceSpans("Hello world", [
+ *   { start: 6, end: 11, replacement: "there" },
+ * ]);
+ *
+ * console.log(content); // "Hello there"
+ * ```
  */
 export function replaceSpans(
   content: string,

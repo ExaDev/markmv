@@ -1,8 +1,9 @@
 /**
  * Markmv - TypeScript library for markdown file operations with intelligent link refactoring
- *
+ * @remarks
  * This library provides programmatic access to all markmv functionality for use in scripts, build
  * processes, and other Node.js applications.
+ * @packageDocumentation
  * @example
  * Basic usage
  * ```typescript

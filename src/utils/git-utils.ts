@@ -171,6 +171,7 @@ export class GitUtils {
    * @param base - Base reference (commit, branch, tag)
    * @param head - Head reference (defaults to current HEAD)
    * @returns Array of changed files
+   * @throws Error when git cannot diff the two references
    */
   getChangedFiles(base: string, head = "HEAD"): GitFileChange[] {
     try {
@@ -189,6 +190,7 @@ export class GitUtils {
   /**
    * Get currently staged files.
    * @returns Array of staged files
+   * @throws Error when git cannot list the staged files
    */
   getStagedFiles(): GitFileChange[] {
     try {
@@ -207,6 +209,7 @@ export class GitUtils {
   /**
    * Get files changed in working directory (unstaged).
    * @returns Array of unstaged changes
+   * @throws Error when git cannot list the unstaged files
    */
   getUnstagedFiles(): GitFileChange[] {
     try {
@@ -226,6 +229,7 @@ export class GitUtils {
    * Get list of all tracked files.
    * @param pattern - Optional file pattern to filter
    * @returns Array of tracked file paths
+   * @throws Error when git cannot list the tracked files
    */
   getTrackedFiles(pattern?: string): string[] {
     try {
@@ -269,6 +273,7 @@ export class GitUtils {
    * @param ref1 - First reference
    * @param ref2 - Second reference
    * @returns Merge base commit hash
+   * @throws Error when git cannot find a merge base for the two references
    */
   getMergeBase(ref1: string, ref2: string): string {
     try {
@@ -315,6 +320,7 @@ export class GitUtils {
   /**
    * Execute a git command and return output.
    * @private
+   * @throws Error when the git command fails, naming the command and keeping the original error as its cause
    */
   private execGit(command: string): string {
     try {

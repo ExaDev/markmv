@@ -14,25 +14,49 @@ import type { MarkdownLink } from "../types/links.js";
  * @category Commands
  */
 export interface CheckLinksOperationOptions extends OperationOptions {
-  /** Timeout for external link validation in milliseconds (default: 10000) */
+  /**
+   * Timeout for external link validation in milliseconds
+   * @defaultValue 10000
+   */
   timeout: number;
-  /** Number of retry attempts for failed requests (default: 3) */
+  /**
+   * Number of retry attempts for failed requests
+   * @defaultValue 3
+   */
   retry: number;
-  /** Delay between retry attempts in milliseconds (default: 1000) */
+  /**
+   * Delay between retry attempts in milliseconds
+   * @defaultValue 1000
+   */
   retryDelay: number;
-  /** Maximum concurrent requests (default: 10) */
+  /**
+   * Maximum concurrent requests
+   * @defaultValue 10
+   */
   concurrency: number;
-  /** HTTP method to use for checking links (default: 'HEAD') */
+  /**
+   * HTTP method to use for checking links
+   * @defaultValue 'HEAD'
+   */
   method: "HEAD" | "GET";
-  /** Follow redirects (default: true) */
+  /**
+   * Follow redirects
+   * @defaultValue true
+   */
   followRedirects: boolean;
-  /** HTTP status codes to ignore (default: [403, 999]) */
+  /**
+   * HTTP status codes to ignore
+   * @defaultValue [403, 999]
+   */
   ignoreStatusCodes: number[];
   /** URL patterns to ignore (regex strings) */
   ignorePatterns: string[];
   /** Cache results to avoid re-checking recently validated URLs */
   useCache: boolean;
-  /** Cache duration in minutes (default: 60) */
+  /**
+   * Cache duration in minutes
+   * @defaultValue 60
+   */
   cacheDuration: number;
   /** Show progress indicator for large operations */
   showProgress: boolean;

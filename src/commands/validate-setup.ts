@@ -118,6 +118,7 @@ export function resolveValidateOptions(
  *
  * Git-only options fail when the working directory is not a repository; the cache alone merely
  * loses its git commit stamp.
+ * @throws Error when a git-only option is used outside a git repository
  */
 export function createGitUtils(
   opts: ResolvedValidateOptions,

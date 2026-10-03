@@ -23,7 +23,10 @@ const CONVENTION_FILENAMES: Record<IndexConvention, string> = {
  * @category Commands
  */
 export interface RefactorIndexOptions {
-  /** Target naming convention; defaults to the opposite of the file's current convention */
+  /**
+   * Target naming convention
+   * @defaultValue the opposite of the file's current convention
+   */
   to?: IndexConvention;
   /** Perform a dry run without making actual changes */
   dryRun?: boolean;
@@ -121,6 +124,12 @@ function refusalResult(
  * @param options - Configuration options for the operation
  * @returns Promise resolving to the outcome of the conversion
  * @category Commands
+ * @example
+ * ```typescript
+ * const result = await refactorIndex("docs/README.md", { dryRun: true });
+ *
+ * console.log(result.targetPath);
+ * ```
  */
 export async function refactorIndex(
   filePath: string,

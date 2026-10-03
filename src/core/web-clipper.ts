@@ -380,6 +380,7 @@ export class WebClipper {
   /**
    * Extract content using Mozilla Readability.
    * @private
+   * @throws Error when Readability finds no article content in the page
    */
   private extractWithReadability(html: string, url: string): ExtractedContent {
     const dom = new JSDOM(html, { url });
@@ -411,6 +412,7 @@ export class WebClipper {
   /**
    * Extract content using custom selectors.
    * @private
+   * @throws Error when none of the selectors match any content
    */
   private extractWithSelectors(html: string, url: string): ExtractedContent {
     const root = parse(html);
@@ -463,6 +465,7 @@ export class WebClipper {
   /**
    * Extract full page content.
    * @private
+   * @throws Error when the page has no body element
    */
   private extractFullPage(html: string, url: string): ExtractedContent {
     const root = parse(html);
