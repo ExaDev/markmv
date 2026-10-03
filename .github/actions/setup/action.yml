@@ -29,7 +29,7 @@ runs:
       shell: bash
 
     # turbo's local filesystem cache, keyed per task. A task whose declared inputs are unchanged since the last run on this branch replays its cached result instead of re-running it. restore-keys falls back to the newest cache for the same task when no exact commit match exists, which is the normal case on a new commit.
-    - uses: actions/cache@v4
+    - uses: actions/cache@v6
       with:
         path: .turbo
         key: turbo-${{ inputs.task }}-${{ runner.os }}-${{ github.sha }}
