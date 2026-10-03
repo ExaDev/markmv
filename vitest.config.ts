@@ -1,5 +1,22 @@
 import { defineConfig } from "vitest/config";
 
+/**
+ * Forwards the named environment variables to the tests, leaving out any that are unset or empty.
+ * Vitest turns an undefined `env` value into the string "undefined", which a test reading the
+ * variable would take for a real setting.
+ * @param names - The variables to forward
+ * @returns The variables that are set, with their values
+ */
+function forwardedEnv(names: readonly string[]): Record<string, string> {
+  return Object.fromEntries(
+    names.flatMap((name) => {
+      const value = process.env[name];
+
+      return value === undefined || value === "" ? [] : [[name, value]];
+    }),
+  );
+}
+
 /** Reads an environment variable, treating an empty value the same as an unset one. */
 function envOrDefault(name: string, fallback: string): string {
   const value = process.env[name];
@@ -19,9 +36,10 @@ export default defineConfig({
         "auto",
       ),
       MARKMV_TEST_PATH_SEP: envOrDefault("MARKMV_TEST_PATH_SEP", "auto"),
-      MARKMV_TEST_FILESYSTEM_CASE_SENSITIVE:
-        process.env.MARKMV_TEST_FILESYSTEM_CASE_SENSITIVE,
-      MARKMV_TEST_SUPPORTS_SYMLINKS: process.env.MARKMV_TEST_SUPPORTS_SYMLINKS,
+      ...forwardedEnv([
+        "MARKMV_TEST_FILESYSTEM_CASE_SENSITIVE",
+        "MARKMV_TEST_SUPPORTS_SYMLINKS",
+      ]),
     },
     coverage: {
       provider: "v8",
