@@ -18,6 +18,7 @@
       "outputs": [".eslintcache"]
     },
     "_test": {
+      "env": ["MARKMV_TEST_*"],
       "inputs": ["src/**/*.ts", "vitest.config.ts"],
       "outputs": ["coverage/**"]
     },
