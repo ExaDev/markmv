@@ -97,6 +97,8 @@ This will prompt you through creating a proper conventional commit message.
 - Run tests with coverage: `npm run test:coverage`
 - Run tests in watch mode: `npm run test:watch`
 
+How the suite covers different operating systems and filesystems is described in the [cross-platform testing guide](docs-src/guides/cross-platform-testing.md).
+
 ## Code Style
 
 This project uses [ESLint](https://eslint.org/) (with `eslint-plugin-prettier` enforcing [Prettier](https://prettier.io/) formatting as a lint rule) for linting and formatting:
@@ -115,11 +117,12 @@ Releases are automated using semantic-release based on conventional commits:
 
 The release process runs automatically on the main branch and:
 
-1. Analyzes commit messages since the last release
+1. Analyses commit messages since the last release
 2. Determines the next version number
-3. Generates a changelog
-4. Creates a GitHub release
-5. Publishes to npm (if configured)
+3. Publishes to npm through npm trusted publishing (OIDC), so no npm token is stored
+4. Creates a GitHub release with the changelog, coverage report and software bill of materials
+
+The configuration is in `release.config.ts` and the `release` job of `.github/workflows/ci.yml`.
 
 ## Questions?
 

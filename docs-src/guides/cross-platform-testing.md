@@ -1,3 +1,7 @@
+---
+title: Cross-platform testing
+---
+
 # Cross-Platform Testing
 
 This document describes the cross-platform testing setup for markmv, which ensures the tool works correctly across different operating systems and filesystem types.
