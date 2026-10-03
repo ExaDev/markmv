@@ -5,7 +5,9 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 // Mock console.error to avoid output during tests
 const mockConsoleError = vi
   .spyOn(console, "error")
-  .mockImplementation(() => undefined);
+  .mockImplementation(function () {
+    return undefined;
+  });
 
 // Mock the markmv index module
 vi.mock("./index.js", () => ({
@@ -43,9 +45,9 @@ vi.mock("./index.js", () => ({
 
 // startMcpServer connects over stdio; give it one end of a real in-memory transport pair instead (the other end is left unconnected, since nothing in this test sends it anything) so server.connect() satisfies the real Transport contract rather than a hand-rolled stub.
 vi.mock("@modelcontextprotocol/sdk/server/stdio.js", () => ({
-  StdioServerTransport: vi
-    .fn()
-    .mockImplementation(() => InMemoryTransport.createLinkedPair()[0]),
+  StdioServerTransport: vi.fn().mockImplementation(function () {
+    return InMemoryTransport.createLinkedPair()[0];
+  }),
 }));
 
 import { createMcpServer, startMcpServer } from "./mcp-server.js";

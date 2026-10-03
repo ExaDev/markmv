@@ -16,7 +16,9 @@ const mockClip = vi.hoisted(() =>
 
 // Mock the WebClipper class
 vi.mock("../core/web-clipper.js", () => ({
-  WebClipper: vi.fn().mockImplementation(() => ({ clip: mockClip })),
+  WebClipper: vi.fn().mockImplementation(function () {
+    return { clip: mockClip };
+  }),
 }));
 
 /** Mock `process.exit` for the duration of a test and capture the code it was called with. */

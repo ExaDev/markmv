@@ -4,15 +4,12 @@
  * Tests git-aware validation features including caching and incremental validation.
  */
 
+import { implementAsInstance } from "../test-support/implement-as-instance.js";
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { validateLinks } from "./validate.js";
-import type { GitUtils } from "../utils/git-utils.js";
-import type { ValidationCache } from "../utils/validation-cache.js";
-import type { LinkValidator } from "../core/link-validator.js";
-import type { LinkParser } from "../core/link-parser.js";
 
 const mocks = vi.hoisted(() => {
   const createGitUtilsInstance = () => ({
@@ -118,16 +115,16 @@ describe("Git Integration in Validate Command", () => {
     const { LinkValidator } = await import("../core/link-validator.js");
     const { LinkParser } = await import("../core/link-parser.js");
     vi.mocked(GitUtils).mockImplementation(
-      () => mocks.createGitUtilsInstance() as unknown as GitUtils,
+      implementAsInstance(() => mocks.createGitUtilsInstance()),
     );
     vi.mocked(ValidationCache).mockImplementation(
-      () => mocks.createValidationCacheInstance() as unknown as ValidationCache,
+      implementAsInstance(() => mocks.createValidationCacheInstance()),
     );
     vi.mocked(LinkValidator).mockImplementation(
-      () => mocks.createLinkValidatorInstance() as unknown as LinkValidator,
+      implementAsInstance(() => mocks.createLinkValidatorInstance()),
     );
     vi.mocked(LinkParser).mockImplementation(
-      () => mocks.createLinkParserInstance() as unknown as LinkParser,
+      implementAsInstance(() => mocks.createLinkParserInstance()),
     );
   });
 
@@ -164,11 +161,10 @@ describe("Git Integration in Validate Command", () => {
       const { GitUtils } = await import("../utils/git-utils.js");
       const mockGitUtils = vi.mocked(GitUtils);
       mockGitUtils.mockImplementation(
-        () =>
-          ({
-            isGitRepository: vi.fn().mockReturnValue(true),
-            refExists: vi.fn().mockReturnValue(false),
-          }) as unknown as GitUtils,
+        implementAsInstance(() => ({
+          isGitRepository: vi.fn().mockReturnValue(true),
+          refExists: vi.fn().mockReturnValue(false),
+        })),
       );
 
       await expect(
@@ -182,23 +178,22 @@ describe("Git Integration in Validate Command", () => {
       const { GitUtils } = await import("../utils/git-utils.js");
       const mockGitUtils = vi.mocked(GitUtils);
       mockGitUtils.mockImplementation(
-        () =>
-          ({
-            isGitRepository: vi.fn().mockReturnValue(true),
-            getRepositoryRoot: vi.fn().mockReturnValue("/test/repo"),
-            getStatus: vi.fn().mockReturnValue({
-              branch: "main",
-              commit: "abc123",
-              isDirty: false,
-              rootDir: "/test/repo",
-            }),
-            refExists: vi.fn().mockReturnValue(true),
-            getChangedFiles: vi.fn().mockReturnValue([
-              { path: "/test/repo/modified.md", status: "modified" },
-              { path: "/test/repo/deleted.md", status: "deleted" },
-              { path: "/test/repo/added.md", status: "added" },
-            ]),
-          }) as unknown as GitUtils,
+        implementAsInstance(() => ({
+          isGitRepository: vi.fn().mockReturnValue(true),
+          getRepositoryRoot: vi.fn().mockReturnValue("/test/repo"),
+          getStatus: vi.fn().mockReturnValue({
+            branch: "main",
+            commit: "abc123",
+            isDirty: false,
+            rootDir: "/test/repo",
+          }),
+          refExists: vi.fn().mockReturnValue(true),
+          getChangedFiles: vi.fn().mockReturnValue([
+            { path: "/test/repo/modified.md", status: "modified" },
+            { path: "/test/repo/deleted.md", status: "deleted" },
+            { path: "/test/repo/added.md", status: "added" },
+          ]),
+        })),
       );
 
       const result = await validateLinks(["**/*.md"], {
@@ -228,18 +223,17 @@ describe("Git Integration in Validate Command", () => {
       const { GitUtils } = await import("../utils/git-utils.js");
       const mockGitUtils = vi.mocked(GitUtils);
       mockGitUtils.mockImplementation(
-        () =>
-          ({
-            isGitRepository: vi.fn().mockReturnValue(true),
-            getRepositoryRoot: vi.fn().mockReturnValue("/test/repo"),
-            getStatus: vi.fn().mockReturnValue({
-              branch: "main",
-              commit: "abc123",
-              isDirty: false,
-              rootDir: "/test/repo",
-            }),
-            getStagedFiles: vi.fn().mockReturnValue([]),
-          }) as unknown as GitUtils,
+        implementAsInstance(() => ({
+          isGitRepository: vi.fn().mockReturnValue(true),
+          getRepositoryRoot: vi.fn().mockReturnValue("/test/repo"),
+          getStatus: vi.fn().mockReturnValue({
+            branch: "main",
+            commit: "abc123",
+            isDirty: false,
+            rootDir: "/test/repo",
+          }),
+          getStagedFiles: vi.fn().mockReturnValue([]),
+        })),
       );
 
       const result = await validateLinks(["**/*.md"], {
@@ -267,7 +261,7 @@ describe("Git Integration in Validate Command", () => {
         set: vi.fn(),
       };
       vi.mocked(ValidationCache).mockImplementation(
-        () => mockCacheInstance as unknown as ValidationCache,
+        implementAsInstance(() => mockCacheInstance),
       );
 
       const result = await validateLinks(["/test/cached.md"], {
@@ -288,7 +282,7 @@ describe("Git Integration in Validate Command", () => {
         set: vi.fn(),
       };
       vi.mocked(ValidationCache).mockImplementation(
-        () => mockCacheInstance as unknown as ValidationCache,
+        implementAsInstance(() => mockCacheInstance),
       );
 
       await validateLinks(["/test/new.md"], {
@@ -304,7 +298,7 @@ describe("Git Integration in Validate Command", () => {
         isEnabled: vi.fn().mockResolvedValue(false),
       };
       vi.mocked(ValidationCache).mockImplementation(
-        () => mockCacheInstance as unknown as ValidationCache,
+        implementAsInstance(() => mockCacheInstance),
       );
 
       // Should not throw error
@@ -335,7 +329,7 @@ describe("Git Integration in Validate Command", () => {
         set: vi.fn(),
       };
       vi.mocked(ValidationCache).mockImplementation(
-        () => mockCacheInstance as unknown as ValidationCache,
+        implementAsInstance(() => mockCacheInstance),
       );
 
       const result = await validateLinks(["/test/file1.md", "/test/file2.md"], {
@@ -353,20 +347,19 @@ describe("Git Integration in Validate Command", () => {
     it("should exit early when fail-fast is enabled and broken link found", async () => {
       const { LinkValidator } = await import("../core/link-validator.js");
       vi.mocked(LinkValidator).mockImplementation(
-        () =>
-          ({
-            validateLinks: vi.fn().mockResolvedValue({
-              brokenLinks: [
-                {
-                  link: { href: "broken.md", type: "internal", line: 1 },
-                  reason: "File not found",
-                },
-              ],
-            }),
-            checkCircularReferences: vi.fn().mockResolvedValue({
-              hasCircularReferences: false,
-            }),
-          }) as unknown as LinkValidator,
+        implementAsInstance(() => ({
+          validateLinks: vi.fn().mockResolvedValue({
+            brokenLinks: [
+              {
+                link: { href: "broken.md", type: "internal", line: 1 },
+                reason: "File not found",
+              },
+            ],
+          }),
+          checkCircularReferences: vi.fn().mockResolvedValue({
+            hasCircularReferences: false,
+          }),
+        })),
       );
 
       const result = await validateLinks(["/test/file1.md", "/test/file2.md"], {
@@ -385,10 +378,9 @@ describe("Git Integration in Validate Command", () => {
     it("should handle git repository detection failure", async () => {
       const { GitUtils } = await import("../utils/git-utils.js");
       vi.mocked(GitUtils).mockImplementation(
-        () =>
-          ({
-            isGitRepository: vi.fn().mockReturnValue(false),
-          }) as unknown as GitUtils,
+        implementAsInstance(() => ({
+          isGitRepository: vi.fn().mockReturnValue(false),
+        })),
       );
 
       await expect(
@@ -401,10 +393,9 @@ describe("Git Integration in Validate Command", () => {
     it("should gracefully disable git integration when not in repository but cache enabled", async () => {
       const { GitUtils } = await import("../utils/git-utils.js");
       vi.mocked(GitUtils).mockImplementation(
-        () =>
-          ({
-            isGitRepository: vi.fn().mockReturnValue(false),
-          }) as unknown as GitUtils,
+        implementAsInstance(() => ({
+          isGitRepository: vi.fn().mockReturnValue(false),
+        })),
       );
 
       // Should not throw, just disable git integration
@@ -419,14 +410,13 @@ describe("Git Integration in Validate Command", () => {
     it("should handle git command failures gracefully", async () => {
       const { GitUtils } = await import("../utils/git-utils.js");
       vi.mocked(GitUtils).mockImplementation(
-        () =>
-          ({
-            isGitRepository: vi.fn().mockReturnValue(true),
-            refExists: vi.fn().mockReturnValue(true),
-            getChangedFiles: vi.fn().mockImplementation(() => {
-              throw new Error("Git command failed");
-            }),
-          }) as unknown as GitUtils,
+        implementAsInstance(() => ({
+          isGitRepository: vi.fn().mockReturnValue(true),
+          refExists: vi.fn().mockReturnValue(true),
+          getChangedFiles: vi.fn().mockImplementation(() => {
+            throw new Error("Git command failed");
+          }),
+        })),
       );
 
       await expect(
@@ -444,7 +434,7 @@ describe("Git Integration in Validate Command", () => {
         set: vi.fn().mockRejectedValue(new Error("Cache write error")),
       };
       vi.mocked(ValidationCache).mockImplementation(
-        () => mockCacheInstance as unknown as ValidationCache,
+        implementAsInstance(() => mockCacheInstance),
       );
 
       /* Should not throw, just continue without cache. The mocked glob resolves every
@@ -518,7 +508,7 @@ describe("Git Integration in Validate Command", () => {
         set: vi.fn(),
       };
       vi.mocked(ValidationCache).mockImplementation(
-        () => mockCacheInstance as unknown as ValidationCache,
+        implementAsInstance(() => mockCacheInstance),
       );
 
       const result = await validateLinks(["/test/file.md"], {
