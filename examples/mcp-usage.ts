@@ -16,7 +16,7 @@ import { spawn } from "node:child_process";
 /** Example MCP client that connects to markmv server */
 export async function createMcpClient(): Promise<Client> {
   // Start the markmv MCP server as a child process
-  const serverProcess = spawn("node", ["dist/mcp-server.js"], {
+  const serverProcess = spawn("node", ["dist/cli.js", "mcp"], {
     stdio: ["pipe", "pipe", "pipe"],
   });
 

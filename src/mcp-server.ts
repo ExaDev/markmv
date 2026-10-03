@@ -109,11 +109,3 @@ export async function startMcpServer(): Promise<void> {
 
   console.error("markmv MCP server started");
 }
-
-// For direct execution
-if (process.argv[1]?.endsWith("mcp-server.js")) {
-  startMcpServer().catch((error: unknown) => {
-    console.error("Failed to start MCP server:", error);
-    process.exit(1);
-  });
-}

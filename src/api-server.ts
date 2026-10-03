@@ -226,16 +226,16 @@ export function createApiServer(port = DEFAULT_PORT): http.Server {
   return server;
 }
 
-/** Start the API server with environment-based configuration */
-export function startApiServer(): http.Server {
+/**
+ * Starts the API server on the given port, falling back to the PORT environment variable and then
+ * to the default port.
+ * @param port - The port to listen on, when it should override the environment
+ * @returns The listening HTTP server
+ */
+export function startApiServer(port?: number): http.Server {
   const { PORT } = process.env;
-  const port =
+  const fromEnvironment =
     PORT !== undefined && PORT !== "" ? parseInt(PORT, 10) : DEFAULT_PORT;
 
-  return createApiServer(port);
-}
-
-// For direct execution
-if (process.argv[1]?.endsWith("api-server.js")) {
-  startApiServer();
+  return createApiServer(port ?? fromEnvironment);
 }
