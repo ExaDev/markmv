@@ -31,6 +31,7 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "0.18.5",
     "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.2.3",
     "@commitlint/types": "^21.2.3",
@@ -59,6 +60,7 @@
     "knip": "^6.38.0",
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.9",
+    "publint": "0.3.24",
     "semantic-release": "^25.0.9",
     "semver": "7.8.5",
     "tsx": "4.23.15",
@@ -112,7 +114,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ExaDev/markmv.git"
+    "url": "git+https://github.com/ExaDev/markmv.git"
   },
   "scripts": {
     "_build": "tsc -p tsconfig.build.json",
@@ -136,18 +138,18 @@
     "lint:fix": "eslint . --fix",
     "mcp-server": "node dist/cli.js mcp",
     "prepare": "husky",
-    "prepublishOnly": "pnpm run build && pnpm run test:run",
+    "prepublishOnly": "pnpm run build && pnpm run test && publint && attw --pack --profile esm-only",
     "publish:dry": "npm pack --dry-run",
     "publish:npm": "npm publish --access public",
     "release": "semantic-release",
     "release:dry": "semantic-release --dry-run",
     "start": "node dist/cli.js",
-    "test": "vitest",
+    "test": "turbo run _test",
     "test:coverage": "vitest run --coverage",
     "test:cross-platform": "node scripts/test-cross-platform.js",
     "test:cross-platform:cli": "node scripts/test-cross-platform.js --cli-only",
     "test:cross-platform:data": "node scripts/test-cross-platform.js --test-data-only",
-    "test:run": "turbo run _test",
+    "test:watch": "vitest",
     "typecheck": "turbo run _typecheck"
   },
   "type": "module",

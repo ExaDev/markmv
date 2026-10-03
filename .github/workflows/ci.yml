@@ -286,7 +286,7 @@ jobs:
         env:
           MARKMV_TEST_FILESYSTEM_CASE_SENSITIVE: ${{ env.FILESYSTEM_IS_CASE_SENSITIVE }}
           MARKMV_TEST_SUPPORTS_SYMLINKS: ${{ env.FILESYSTEM_SUPPORTS_SYMLINKS }}
-        run: pnpm run test:run
+        run: pnpm run test
 
       - name: Report filesystem test results
         run: |

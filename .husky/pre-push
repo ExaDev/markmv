@@ -1,6 +1,6 @@
 # Typecheck and unit tests before push, to catch breakage before it reaches CI.
 pnpm run typecheck
-pnpm run test:run
+pnpm run test
 
 # actionlint gates CI workflows; warn-and-continue when the binary is missing locally (CI always runs it), so contributors without it are not blocked.
 if command -v actionlint >/dev/null 2>&1; then

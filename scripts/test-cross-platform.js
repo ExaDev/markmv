@@ -106,7 +106,7 @@ function runTests() {
 
   try {
     // Run the test suite with our environment
-    execSync("npm run test:run", {
+    execSync("npm test", {
       env: testEnv,
       stdio: "inherit",
     });
