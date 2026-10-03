@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { defineConfig } from "eslint/config";
 import { exadevConfig } from "@exadev/eslint-config";
 import globals from "globals";
@@ -5,6 +6,20 @@ import markdown from "@eslint/markdown";
 import depend from "eslint-plugin-depend";
 import * as yamlParser from "yaml-eslint-parser";
 import prettierRecommended from "eslint-plugin-prettier/recommended";
+
+/**
+ * The source files `src/index.ts` re-exports from, read from that file so the list cannot drift from
+ * the library's actual public surface.
+ */
+const publicModules = [
+  ...new Set(
+    [
+      ...readFileSync("src/index.ts", "utf8").matchAll(
+        /from "\.\/([^"]+)\.js"/g,
+      ),
+    ].map(([, module]) => `src/${module}.ts`),
+  ),
+];
 
 export default defineConfig(
   ...exadevConfig(),
@@ -55,6 +70,65 @@ export default defineConfig(
       "src/utils/transaction-manager.ts",
     ],
     rules: { "no-await-in-loop": "off" },
+  },
+  {
+    // What readers of the published API see is every exported function and class re-exported from src/index.ts, so each must show how it is used. Methods, constructors and internal modules are left to their class's own example.
+    files: ["src/index.ts", ...publicModules],
+    ignores: ["**/*.test.ts"],
+    rules: {
+      "jsdoc/require-example": [
+        "error",
+        {
+          contexts: [
+            "ExportNamedDeclaration > FunctionDeclaration",
+            "ExportNamedDeclaration > ClassDeclaration",
+          ],
+          checkConstructors: false,
+          checkGetters: false,
+          checkSetters: false,
+        },
+      ],
+    },
+  },
+  {
+    // TypeDoc renders a module comment only when it carries @packageDocumentation, so without the tag the entry point's overview and examples are silently dropped from the published site.
+    files: ["src/index.ts"],
+    rules: {
+      "jsdoc/require-file-overview": [
+        "error",
+        {
+          tags: {
+            packageDocumentation: { mustExist: true, preventDuplicates: true },
+          },
+        },
+      ],
+    },
+  },
+  {
+    // TypeDoc renders @defaultValue as its own block, which a default buried in a sentence never gets.
+    files: ["src/**/*.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: {
+      "jsdoc/match-description": [
+        "error",
+        {
+          contexts: ["TSPropertySignature"],
+          matchDescription:
+            "^(?![\\s\\S]*(\\(default|\\bdefaults? to\\b))[\\s\\S]*$",
+          message:
+            "State a default with @defaultValue, not in the description.",
+        },
+      ],
+    },
+  },
+  {
+    // A function that throws must say when, wherever it lives: callers cannot read that from the signature.
+    files: ["src/**/*.ts"],
+    ignores: ["**/*.test.ts"],
+    rules: {
+      "jsdoc/require-throws": "error",
+      "jsdoc/require-throws-description": "error",
+    },
   },
   {
     // Test fixtures legitimately encode raw literal values (sizes, counts, line numbers, timestamps) that are the point of the assertion; naming each would obscure what the test checks.
