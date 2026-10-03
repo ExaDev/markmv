@@ -64,13 +64,12 @@ export default defineConfig({
         "release.config.*",
       ],
       include: ["src/**/*.ts"],
+      // Floors set at the coverage measured when they were introduced, rounded down, so coverage can only be held or raised. A `global` key here is not one Vitest reads, which is how the earlier thresholds came to enforce nothing.
       thresholds: {
-        global: {
-          branches: 40,
-          functions: 40,
-          lines: 40,
-          statements: 40,
-        },
+        branches: 69,
+        functions: 86,
+        lines: 80,
+        statements: 80,
       },
     },
     include: [
@@ -79,6 +78,6 @@ export default defineConfig({
       ".github/scripts/**/*.test.ts",
       "scripts/**/*.test.ts",
     ],
-    exclude: ["node_modules/", "dist/", "coverage/"],
+    exclude: ["**/node_modules/**", "**/dist/**", "**/coverage/**"],
   },
 });
