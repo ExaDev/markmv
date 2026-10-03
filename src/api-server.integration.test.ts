@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as http from "node:http";
+import * as net from "node:net";
 import { createApiServer } from "./api-server.js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type {
@@ -50,14 +51,37 @@ vi.mock("./schemas/api-routes.js", () => ({
   getApiRoutePaths: vi.fn(() => ["/api/test"]),
 }));
 
+/**
+ * Asks the operating system for a port nothing is listening on. A fixed or randomly chosen range can
+ * collide with a server another test file is running at the same time, which showed up as a socket
+ * hang up.
+ * @returns A port that was free a moment ago
+ */
+async function freePort(): Promise<number> {
+  const probe = net.createServer();
+  await new Promise<void>((resolve) => {
+    probe.listen(0, resolve);
+  });
+  const address = probe.address();
+  await new Promise<void>((resolve) => {
+    probe.close(() => {
+      resolve();
+    });
+  });
+  if (address === null || typeof address === "string") {
+    throw new Error("the probe server did not report a port");
+  }
+
+  return address.port;
+}
+
 describe("API Server", () => {
   let server: http.Server | null = null;
   let port: number;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
-    // Random port to avoid conflicts
-    port = 3001 + Math.floor(Math.random() * 1000);
+    port = await freePort();
   });
 
   afterEach(async () => {
