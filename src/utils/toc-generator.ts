@@ -29,11 +29,20 @@ export interface MarkdownHeading {
  * @category Utilities
  */
 export interface TocOptions {
-  /** Minimum heading level to include (default: 1) */
+  /**
+   * Minimum heading level to include
+   * @defaultValue 1
+   */
   minDepth?: number;
-  /** Maximum heading level to include (default: 6) */
+  /**
+   * Maximum heading level to include
+   * @defaultValue 6
+   */
   maxDepth?: number;
-  /** Include line numbers in output (default: false) */
+  /**
+   * Include line numbers in output
+   * @defaultValue false
+   */
   includeLineNumbers?: boolean;
   /** Custom slug generator function */
   slugify?: (text: string) => string;

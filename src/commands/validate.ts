@@ -50,7 +50,10 @@ const CLI_LINK_TYPES: readonly string[] = [
  * @category Commands
  */
 export interface ValidateOperationOptions extends OperationOptions {
-  /** Types of links to validate (default: all types) */
+  /**
+   * Types of links to validate
+   * @defaultValue all types
+   */
   linkTypes?: LinkType[];
   /** Enable external HTTP/HTTPS link validation */
   checkExternal: boolean;
@@ -246,6 +249,14 @@ export type FixPrompter = (fix: PlannedLinkFix) => Promise<number | undefined>;
  * @param knownFiles - Absolute paths of every candidate file in the project
  * @returns One planned fix per broken internal link that has suggestions
  * @category Commands
+ * @example
+ * ```typescript
+ * const fixes = planLinkFixes(result, knownFiles);
+ *
+ * for (const fix of fixes) {
+ *   console.log(`${fix.sourceFile}:${fix.line} ${fix.brokenHref}`);
+ * }
+ * ```
  */
 export function planLinkFixes(
   result: ValidateResult,
@@ -283,6 +294,14 @@ export function planLinkFixes(
  * @param fix - The planned fix being accepted
  * @param choiceIndex - Zero-based index into fix.suggestions
  * @category Commands
+ * @example
+ * ```typescript
+ * const [fix] = planLinkFixes(result, knownFiles);
+ *
+ * if (fix) {
+ *   await applyLinkFix(fix, 0);
+ * }
+ * ```
  */
 export async function applyLinkFix(
   fix: PlannedLinkFix,

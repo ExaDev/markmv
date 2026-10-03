@@ -126,6 +126,12 @@ export interface WikilinkResolution {
  * @param filePaths - Absolute paths of every file in the vault
  * @returns A function mapping a wikilink target to its resolution
  * @category Core
+ * @example
+ * ```typescript
+ * const resolve = createWikilinkResolver("/vault", ["/vault/notes/Idea.md"]);
+ *
+ * console.log(resolve("Idea")); // { resolvedPath: "/vault/notes/Idea.md" }
+ * ```
  */
 export function createWikilinkResolver(
   vaultRoot: string,
@@ -204,6 +210,14 @@ function dependenciesOf(file: Readonly<ParsedMarkdownFile>): string[] {
  * @param files - Every parsed markdown file in the vault
  * @returns Each stem that more than one markdown file carries
  * @category Core
+ * @example
+ * ```typescript
+ * const duplicates = findDuplicateNoteStems(parsedFiles);
+ *
+ * for (const { stem, paths } of duplicates) {
+ *   console.warn(`${stem} is carried by ${paths.length} notes`);
+ * }
+ * ```
  */
 export function findDuplicateNoteStems(
   files: readonly ParsedMarkdownFile[],
@@ -231,6 +245,12 @@ export function findDuplicateNoteStems(
  * @param files - Every parsed markdown file in the vault
  * @returns Map from stem (basename without .md) to the number of markdown files carrying it
  * @category Core
+ * @example
+ * ```typescript
+ * const counts = computeNoteStemCounts(parsedFiles);
+ *
+ * console.log(counts.get("index"));
+ * ```
  */
 export function computeNoteStemCounts(
   files: readonly ParsedMarkdownFile[],

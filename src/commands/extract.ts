@@ -19,7 +19,10 @@ import {
  * @category Commands
  */
 export interface ExtractOptions {
-  /** Directory the extracted image files are written to (default: alongside each markdown file) */
+  /**
+   * Directory the extracted image files are written to
+   * @defaultValue alongside each markdown file
+   */
   outputDir?: string;
   /** Perform a dry run without making actual changes */
   dryRun?: boolean;

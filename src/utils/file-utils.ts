@@ -45,9 +45,15 @@ export interface FileStats {
 export interface FileCopyOptions {
   /** Replace an existing destination file. When false (the default), copying onto an existing file throws. */
   overwrite?: boolean;
-  /** Set the destination's access and modification times to those of the source after copying. Defaults to false. */
+  /**
+   * Set the destination's access and modification times to those of the source after copying.
+   * @defaultValue false
+   */
   preserveTimestamps?: boolean;
-  /** Create missing parent directories of the destination first. Defaults to true. */
+  /**
+   * Create missing parent directories of the destination first.
+   * @defaultValue true
+   */
   createDirectories?: boolean;
 }
 
@@ -59,7 +65,10 @@ export interface FileCopyOptions {
  * @category Utilities
  */
 export interface FileMoveOptions extends FileCopyOptions {
-  /** When overwriting an existing destination, first copy it to the same path with a `.backup` suffix. Has no effect unless `overwrite` is also set. Defaults to false. */
+  /**
+   * When overwriting an existing destination, first copy it to the same path with a `.backup` suffix. Has no effect unless `overwrite` is also set.
+   * @defaultValue false
+   */
   backup?: boolean;
 }
 
@@ -145,7 +154,10 @@ async function writeTextFile(
   filePath: string,
   content: string,
   options: Readonly<{
-    /** Create missing parent directories of the file first. Defaults to false. */
+    /**
+     * Create missing parent directories of the file first.
+     * @defaultValue false
+     */
     createDirectories?: boolean;
   }> = {},
 ): Promise<void> {
@@ -257,11 +269,17 @@ async function deleteFile(filePath: string): Promise<void> {
 async function listFiles(
   dirPath: string,
   options: {
-    /** Descend into subdirectories. Defaults to false. */
+    /**
+     * Descend into subdirectories.
+     * @defaultValue false
+     */
     recursive?: boolean;
     /** Only include files whose lower-cased extension, with its leading dot (for example `.md`), is in this list. Files of every extension are included when omitted. */
     extensions?: string[];
-    /** Also include directory paths in the result. Defaults to false. */
+    /**
+     * Also include directory paths in the result.
+     * @defaultValue false
+     */
     includeDirectories?: boolean;
   } = {},
 ): Promise<string[]> {

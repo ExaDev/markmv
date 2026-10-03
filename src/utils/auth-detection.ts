@@ -53,7 +53,18 @@ export interface AuthInfo {
   suggestion?: string;
 }
 
-/** Authentication detector for external links. */
+/**
+ * Authentication detector for external links.
+ * @example
+ * ```typescript
+ * const detector = new AuthDetector();
+ * const info = detector.analyzeAuth("https://console.aws.amazon.com/s3");
+ *
+ * if (info.requiresAuth) {
+ *   console.log(info.warning);
+ * }
+ * ```
+ */
 export class AuthDetector {
   private readonly config: AuthConfig;
 

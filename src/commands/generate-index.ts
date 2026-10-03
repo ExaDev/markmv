@@ -86,15 +86,30 @@ export interface IndexableFile {
  * @category Commands
  */
 export interface IndexCliOptions {
-  /** Type of index content to generate; defaults to `links` */
+  /**
+   * Type of index content to generate
+   * @defaultValue `links`
+   */
   type?: "links" | "import" | "embed" | "hybrid";
-  /** Strategy for organising files in the index; defaults to `directory` */
+  /**
+   * Strategy for organising files in the index
+   * @defaultValue `directory`
+   */
   strategy?: "directory" | "metadata" | "manual";
-  /** Where to place generated index files; defaults to `root` */
+  /**
+   * Where to place generated index files
+   * @defaultValue `root`
+   */
   location?: "all" | "root" | "branch" | "existing";
-  /** Name for generated index files; defaults to `index.md` */
+  /**
+   * Name for generated index files
+   * @defaultValue `index.md`
+   */
   name?: string;
-  /** Style for embedded content; defaults to `obsidian` */
+  /**
+   * Style for embedded content
+   * @defaultValue `obsidian`
+   */
   embedStyle?: "obsidian" | "markdown";
   /** Path to a custom template file */
   template?: string;
@@ -112,9 +127,15 @@ export interface IndexCliOptions {
   boundary?: string;
   /** Generate a table of contents for each indexed file */
   generateToc?: boolean;
-  /** Minimum heading depth included in generated tables of contents; defaults to 1 */
+  /**
+   * Minimum heading depth included in generated tables of contents
+   * @defaultValue 1
+   */
   tocMinDepth?: number;
-  /** Maximum heading depth included in generated tables of contents; defaults to 6 */
+  /**
+   * Maximum heading depth included in generated tables of contents
+   * @defaultValue 6
+   */
   tocMaxDepth?: number;
   /** Include line numbers in generated tables of contents */
   tocIncludeLineNumbers?: boolean;
