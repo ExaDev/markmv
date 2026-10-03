@@ -1,3 +1,9 @@
+## [1.41.5](https://github.com/ExaDev/markmv/compare/v1.41.4...v1.41.5) (2026-10-03)
+
+### Continuous Integration
+
+- **deps:** bump the github-actions group across 2 directories with 2 updates ([01e6ca0](https://github.com/ExaDev/markmv/commit/01e6ca0ca4e5e281fad5409dfaab421d31aa20e3))
+
 ## [1.41.4](https://github.com/ExaDev/markmv/compare/v1.41.3...v1.41.4) (2026-10-03)
 
 ### Bug Fixes
