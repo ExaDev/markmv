@@ -14,6 +14,7 @@
     ".github/scripts/*.ts",
     "examples/*.ts",
     "examples/*.js",
-    "scripts/*.js"
+    "scripts/*.js",
+    "scripts/*.ts"
   ]
 }
