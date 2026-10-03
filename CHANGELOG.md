@@ -1,3 +1,10 @@
+## [1.40.4](https://github.com/ExaDev/markmv/compare/v1.40.3...v1.40.4) (2026-10-03)
+
+### Documentation
+
+- add a favicon and social share metadata to the site ([f999ead](https://github.com/ExaDev/markmv/commit/f999ead51931dc83da4aaadea99d719225553def))
+- add link refactoring and integrations guides to the site ([c4c7434](https://github.com/ExaDev/markmv/commit/c4c7434f3ed928e0d7ad68c58f07a9c023613b88))
+
 ## [1.40.3](https://github.com/ExaDev/markmv/compare/v1.40.2...v1.40.3) (2026-10-03)
 
 ### Documentation
