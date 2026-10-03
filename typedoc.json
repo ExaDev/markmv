@@ -16,6 +16,7 @@
   "excludeExternals": true,
   "excludeInternal": true,
   "excludePrivate": true,
+  "favicon": "docs-src/assets/favicon.svg",
   "hostedBaseUrl": "https://exadev.github.io/markmv/",
   "includeVersion": true,
   "name": "markmv",
@@ -30,6 +31,9 @@
     "npm": "https://www.npmjs.com/package/markmv"
   },
   "out": "docs",
+  "plugin": [
+    "./scripts/typedoc-plugin-social-meta.ts"
+  ],
   "projectDocuments": [
     "docs-src/guides/*.md",
     "docs-generated/cli/*.md"
