@@ -422,10 +422,20 @@ async function deleteUnreferencedImages(
       if (outsideReferencer !== undefined) {
         return { imagePath, kind: "keptOutside" as const, outsideReferencer };
       }
-      await unlink(imagePath);
 
       return { imagePath, kind: "deleted" as const };
     }),
+  );
+
+  /* Every decision above scans the surrounding tree, so nothing is removed until all of them have
+     finished: a scan that lists the directory and then stats a file a sibling deletion has just
+     unlinked fails with ENOENT. */
+  await Promise.all(
+    outcomes
+      .filter((outcome) => outcome.kind === "deleted")
+      .map(async ({ imagePath }) => {
+        await unlink(imagePath);
+      }),
   );
 
   const deletions: ImageDeletions = { deleted: [], kept: [], keptOutside: [] };
