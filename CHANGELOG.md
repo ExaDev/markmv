@@ -1,3 +1,9 @@
+## [1.41.1](https://github.com/ExaDev/markmv/compare/v1.41.0...v1.41.1) (2026-10-03)
+
+### Documentation
+
+- remove stale root markdown and move the cross-platform guide into the site ([98488ba](https://github.com/ExaDev/markmv/commit/98488ba446a81eaad4072223637af775ef80c5cd))
+
 ## [1.41.0](https://github.com/ExaDev/markmv/compare/v1.40.4...v1.41.0) (2026-10-03)
 
 ### Features
