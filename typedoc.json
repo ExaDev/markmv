@@ -30,6 +30,9 @@
     "npm": "https://www.npmjs.com/package/markmv"
   },
   "out": "docs",
+  "projectDocuments": [
+    "docs-generated/cli/*.md"
+  ],
   "readme": "README.md",
   "requiredToBeDocumented": [
     "Class",
