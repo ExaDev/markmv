@@ -1,3 +1,14 @@
+## [1.41.3](https://github.com/ExaDev/markmv/compare/v1.41.2...v1.41.3) (2026-10-03)
+
+### Documentation
+
+- document throws, examples, defaults and the package overview in TSDoc ([7f35873](https://github.com/ExaDev/markmv/commit/7f35873fe0c5c9101a6ae1f719f48076ba1a5f4b))
+
+### Chores
+
+- **lint:** require the TSDoc that the public API now carries ([013145c](https://github.com/ExaDev/markmv/commit/013145cad7b6777ed50b9818f6de315473486edb))
+- relicense under MIT ([2d65685](https://github.com/ExaDev/markmv/commit/2d656855ea921fdb3487787a66af1d3b33574956))
+
 ## [1.41.2](https://github.com/ExaDev/markmv/compare/v1.41.1...v1.41.2) (2026-10-03)
 
 ### Tests
