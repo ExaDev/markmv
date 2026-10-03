@@ -1,3 +1,4 @@
+import { realpathSync } from "node:fs";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -56,6 +57,32 @@ describe("FileOperations", () => {
       const updatedContent = await FileUtils.readTextFile(dependentPath);
       expect(updatedContent).toContain("./moved-target.md");
       expect(updatedContent).toContain("@./moved-target.md");
+    });
+
+    it("rewrites inbound links when the paths are given relative to the working directory", async () => {
+      await writeFile(join(testDir, "target.md"), "# Target File");
+      await writeFile(
+        join(testDir, "dependent.md"),
+        "# Dependent File\n\n[Link to target](./target.md)\n",
+      );
+
+      const originalCwd = process.cwd();
+      process.chdir(testDir);
+      try {
+        const result = await fileOps.moveFile("target.md", "renamed.md");
+
+        expect(result.success).toBe(true);
+        expect(result.modifiedFiles).toContain(
+          realpathSync(join(testDir, "dependent.md")),
+        );
+      } finally {
+        process.chdir(originalCwd);
+      }
+
+      const updated = await FileUtils.readTextFile(
+        join(testDir, "dependent.md"),
+      );
+      expect(updated).toContain("./renamed.md");
     });
 
     it("should handle dry-run mode", async () => {

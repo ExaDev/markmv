@@ -246,15 +246,19 @@ export class FileOperations {
     const { dryRun = false, verbose = false } = options;
 
     try {
+      /* The dependency graph is keyed by the absolute paths the parser produces, so a source spelled
+         relative to the working directory would find no dependents and silently rewrite nothing.
+         Resolving it here, as moveFiles does, makes every later lookup and comparison use one form. */
+      const resolvedSource = PathUtils.resolvePath(sourcePath);
       // Resolve destination in case it's a directory
       const resolvedDestination = PathUtils.resolveDestination(
-        sourcePath,
+        resolvedSource,
         destinationPath,
       );
 
       // Validate inputs
       const validation = this.validateMoveOperation(
-        sourcePath,
+        resolvedSource,
         resolvedDestination,
       );
       if (!validation.valid) {
@@ -283,15 +287,18 @@ export class FileOperations {
       }
 
       // Parse the source file (only meaningful for markdown, which may itself contain links to update) and build a dependency graph from the surrounding project's markdown files.
-      const sourceIsMarkdown = PathUtils.isMarkdownFile(sourcePath);
+      const sourceIsMarkdown = PathUtils.isMarkdownFile(resolvedSource);
       const sourceFile = sourceIsMarkdown
-        ? await this.linkParser.parseFile(sourcePath)
+        ? await this.linkParser.parseFile(resolvedSource)
         : null;
       const {
         files: projectFiles,
         parseFailures,
         vaultRoot,
-      } = await this.discoverProjectFiles([sourcePath, resolvedDestination]);
+      } = await this.discoverProjectFiles([
+        resolvedSource,
+        resolvedDestination,
+      ]);
       const allParsedFiles = uniqueByFilePath(
         sourceFile ? [...projectFiles, sourceFile] : projectFiles,
       );
@@ -304,12 +311,12 @@ export class FileOperations {
 
       // Find all files that link to the source file. The moved file itself is excluded: a link to its own old path is the self pass's job, and scheduling it here would write content to the vacated source path after the move, resurrecting the old file
       const dependentFiles = dependencyGraph
-        .getDependents(sourcePath)
-        .filter((dependent) => dependent !== sourcePath);
+        .getDependents(resolvedSource)
+        .filter((dependent) => dependent !== resolvedSource);
 
       if (verbose) {
         console.log(
-          `Found ${String(dependentFiles.length)} files that reference ${sourcePath}`,
+          `Found ${String(dependentFiles.length)} files that reference ${resolvedSource}`,
         );
       }
 
@@ -326,9 +333,9 @@ export class FileOperations {
       // Plan file move
       if (!dryRun) {
         transaction.addFileMove(
-          sourcePath,
+          resolvedSource,
           resolvedDestination,
-          `Move ${sourcePath} to ${resolvedDestination}`,
+          `Move ${resolvedSource} to ${resolvedDestination}`,
         );
       }
 
@@ -346,7 +353,7 @@ export class FileOperations {
               const refactorResult: LinkRefactorResult =
                 await this.linkRefactorer.refactorLinksForFileMove(
                   dependentFile,
-                  sourcePath,
+                  resolvedSource,
                   resolvedDestination,
                 );
 
@@ -395,9 +402,7 @@ export class FileOperations {
             await this.linkRefactorer.refactorLinksForCurrentFileMove(
               sourceFile,
               resolvedDestination,
-              new Map([
-                [PathUtils.resolvePath(sourcePath), resolvedDestination],
-              ]),
+              new Map([[resolvedSource, resolvedDestination]]),
             );
 
           changes.push(...selfRefactorResult.changes);
@@ -427,8 +432,9 @@ export class FileOperations {
           success: true,
           modifiedFiles,
           createdFiles:
-            resolvedDestination !== sourcePath ? [resolvedDestination] : [],
-          deletedFiles: resolvedDestination !== sourcePath ? [sourcePath] : [],
+            resolvedDestination !== resolvedSource ? [resolvedDestination] : [],
+          deletedFiles:
+            resolvedDestination !== resolvedSource ? [resolvedSource] : [],
           errors: [],
           warnings,
           changes,
@@ -455,7 +461,7 @@ export class FileOperations {
         success: true,
         modifiedFiles,
         createdFiles: [resolvedDestination],
-        deletedFiles: [sourcePath],
+        deletedFiles: [resolvedSource],
         errors: [],
         warnings,
         changes,
