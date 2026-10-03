@@ -2,7 +2,7 @@
   "$schema": "https://turborepo.dev/schema.json",
   "tasks": {
     "_build": {
-      "inputs": ["src/**/*.ts", "tsconfig.json", "tsconfig.build.json"],
+      "inputs": ["src/**/*.ts", "tsconfig*.json"],
       "outputs": ["dist/**", "tsconfig.tsbuildinfo"]
     },
     "_check": {
@@ -23,7 +23,7 @@
       "outputs": ["coverage/**"]
     },
     "_typecheck": {
-      "inputs": ["src/**/*.ts", "tsconfig.json"],
+      "inputs": ["src/**/*.ts", "tsconfig*.json"],
       "outputs": []
     }
   }
