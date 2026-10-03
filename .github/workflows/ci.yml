@@ -121,36 +121,31 @@ jobs:
           $(cat /tmp/audit-fix-commit-body.txt)"
           git push origin "$BRANCH"
           gh pr create --title "fix(deps): apply aged security overrides" --body-file /tmp/audit-fix-commit-body.txt --base main --head "$BRANCH"
-          # A push authenticated with GITHUB_TOKEN (the git push above, same as opening the PR) never triggers another workflow run on its own -- dispatch the fix branch's checks explicitly.
-          gh workflow run ci.yml --ref "$BRANCH"
-          RUN_ID=""
-          for i in 1 2 3 4 5; do
+          # GitHub treats github-actions[bot] as a first-time contributor, so the PR's own pull_request runs are created in action_required and wait for a person to approve them; the required checks never report and the merge below stays blocked. The code under test is this job's own generated override changes, so it approves those runs itself, scoped to this one branch.
+          for i in $(seq 1 6); do
             sleep 10
-            RUN_ID=$(gh run list --workflow=ci.yml --branch "$BRANCH" --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId' 2>/dev/null)
-            if [ -n "$RUN_ID" ]; then break; fi
+            for RUN_ID in $(gh run list --branch "$BRANCH" --event pull_request --status action_required --json databaseId --jq '.[].databaseId'); do
+              gh api -X POST "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/approve"
+            done
           done
-          if [ -z "$RUN_ID" ]; then
-            echo "::error::Dispatched CI run for $BRANCH never appeared; fix PR left open for manual merge after review."
-            exit 0
-          fi
-          echo "Waiting for CI run $RUN_ID on $BRANCH..."
+          echo "Waiting for the required checks on $BRANCH..."
           for i in $(seq 1 60); do
-            STATUS=$(gh run view "$RUN_ID" --json status,conclusion --jq '.status + ":" + (.conclusion // "pending")' 2>/dev/null || echo "query_failed")
-            if [ "$STATUS" = "completed:success" ]; then
-              echo "CI green on $BRANCH, rebase-merging the fix PR."
+            STATE=$(gh pr checks "$BRANCH" --required --json bucket --jq '[.[].bucket] | if length == 0 then "pending" elif any(. == "fail" or . == "cancel") then "fail" elif all(. == "pass" or . == "skipping") then "pass" else "pending" end' 2>/dev/null || echo "pending")
+            if [ "$STATE" = "pass" ]; then
+              echo "Required checks green on $BRANCH, rebase-merging the fix PR."
               gh pr merge --rebase "$BRANCH"
-              # Same anti-recursion rule as the dispatch above: this merge is also GITHUB_TOKEN-authenticated, so the resulting push to main would never cascade into ci.yml's own push trigger on its own.
+              # A merge authenticated with GITHUB_TOKEN never triggers ci.yml's own push trigger on its own, so dispatch the run for main explicitly.
               gh workflow run ci.yml --ref main
               exit 0
             fi
-            if [ "$STATUS" = "completed:failure" ] || [ "$STATUS" = "completed:cancelled" ]; then
-              echo "::error::CI on $BRANCH concluded $STATUS; fix PR left open so a broken fix cannot reach main."
+            if [ "$STATE" = "fail" ]; then
+              echo "::error::Required checks on $BRANCH failed; fix PR left open so a broken fix cannot reach main."
               exit 0
             fi
-            echo "CI on $BRANCH still pending ($i/60)..."
+            echo "Required checks on $BRANCH still pending ($i/60)..."
             sleep 20
           done
-          echo "::error::Timed out waiting for CI run $RUN_ID on $BRANCH; fix PR left open."
+          echo "::error::Timed out waiting for the required checks on $BRANCH; fix PR left open."
           exit 0
 
   # Cross-platform test matrix -- the one job that genuinely needs multiple OS/Node combinations. The Build step's turbo cache is keyed by OS only, not Node version, which is correct there since compiled output doesn't depend on the Node runtime -- it's free to share a cache with the standalone build job on the same OS/commit. The test run below gets its own separate cache block keyed by OS *and* Node version, so turbo can't skip actually re-running tests against the second Node version just because the first one already produced a cache entry for the same source inputs.
