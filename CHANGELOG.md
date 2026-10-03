@@ -1,3 +1,9 @@
+## [1.40.3](https://github.com/ExaDev/markmv/compare/v1.40.2...v1.40.3) (2026-10-03)
+
+### Documentation
+
+- publish a CLI reference generated from the command definitions ([f6c3650](https://github.com/ExaDev/markmv/commit/f6c3650053324b7d8a6fec7811a4cac1b31a98f9))
+
 ## [1.40.2](https://github.com/ExaDev/markmv/compare/v1.40.1...v1.40.2) (2026-10-03)
 
 ### Bug Fixes
