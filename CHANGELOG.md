@@ -1,3 +1,26 @@
+## [1.41.4](https://github.com/ExaDev/markmv/compare/v1.41.3...v1.41.4) (2026-10-03)
+
+### Bug Fixes
+
+- **commands:** delete embedded images only after every scan has finished ([b490bcf](https://github.com/ExaDev/markmv/commit/b490bcf585f9d7b23b6224828f3f1ca246ffc99e))
+- **deps:** hold the conventional commits preset at version 9 ([f43dbf9](https://github.com/ExaDev/markmv/commit/f43dbf984f8511ff9dcea9ca8d5f55a5fa70c1ac))
+- pass the cross-platform test variables to the tests ([3a458bd](https://github.com/ExaDev/markmv/commit/3a458bd8b6886f120e711c511e9a9013afb9c9c9))
+
+### Tests
+
+- construct class mocks with functions and a helper instead of arrows ([86fac99](https://github.com/ExaDev/markmv/commit/86fac9975ae78a7635b76e7642c5385bc3316dfe))
+- enforce coverage thresholds that vitest actually reads ([a20eea0](https://github.com/ExaDev/markmv/commit/a20eea07753c4096351dd2b0fbd9e06efdc4f586))
+
+### Build System
+
+- **deps:** upgrade every dependency to its latest release ([e9df397](https://github.com/ExaDev/markmv/commit/e9df3973ddb0f7e97b0c703f65c318cd863859da))
+- key the build and typecheck caches on every tsconfig ([6af80ad](https://github.com/ExaDev/markmv/commit/6af80ad0611b3950fbc7247747181c2e481fa0fe))
+- run publint and attw before publishing and make test delegate to turbo ([e432eae](https://github.com/ExaDev/markmv/commit/e432eaec11b2b1b9f39565c01df318e6e6d68f47))
+
+### Chores
+
+- **lint:** use the shared config's turbo, tooling wiring and import policy ([cbb855d](https://github.com/ExaDev/markmv/commit/cbb855dc723acd682ff62fc6fdc173faba546076))
+
 ## [1.41.3](https://github.com/ExaDev/markmv/compare/v1.41.2...v1.41.3) (2026-10-03)
 
 ### Documentation
