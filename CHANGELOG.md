@@ -1,3 +1,46 @@
+## [1.40.1](https://github.com/ExaDev/markmv/compare/v1.40.0...v1.40.1) (2026-10-03)
+
+### Bug Fixes
+
+- **ci:** roll a failed override prune back to the applied fixes, not the committed files ([a125295](https://github.com/ExaDev/markmv/commit/a125295721fd020eceabcfc27e2bfeeee1dffff0))
+- **deps:** apply aged security overrides ([ad3e3b0](https://github.com/ExaDev/markmv/commit/ad3e3b0dc0653ed9645992dc06cc08bd75084d88))
+- report the exact header level that has no match when splitting ([e37e1bf](https://github.com/ExaDev/markmv/commit/e37e1bf7cd3a3531a501f666f14568cfaa5ab5c0))
+
+### Documentation
+
+- add live usage charts to the readme ([ec19028](https://github.com/ExaDev/markmv/commit/ec1902807957ad413c8fdbaece43d9145d677113))
+- categorise every symbol and export the types the API exposes ([8865efc](https://github.com/ExaDev/markmv/commit/8865efcfc35a911ba770c4e2b0e6a16c1f94c292))
+- document the command APIs and export the types they reference ([75b29ef](https://github.com/ExaDev/markmv/commit/75b29ef03a63eab73bc3f7e33bf9781fb08b47d6))
+- document the core link, graph and file operation APIs ([e1a0f81](https://github.com/ExaDev/markmv/commit/e1a0f81f06bbba17776b041368da59fb745394aa))
+- document the file, path, transaction and table of contents utilities ([cec23e1](https://github.com/ExaDev/markmv/commit/cec23e110d807222bd6567bb67326fd79af04aab))
+- document the join, merge and split strategies ([c34bb7d](https://github.com/ExaDev/markmv/commit/c34bb7de86f4b4b1749a326288d9d13057fe35be))
+- drop the generated README API section and the typedoc plugins behind it ([d878272](https://github.com/ExaDev/markmv/commit/d878272ac55395796cf51e657b1c33623700abeb))
+- use one shared badge set in the readme ([cc305a1](https://github.com/ExaDev/markmv/commit/cc305a1a2c7cb7822c4663fa7d9629c8abd34da4))
+- validate and organise the typedoc site from a single config ([56bea88](https://github.com/ExaDev/markmv/commit/56bea88a90aaef53c5a0deeff4f9abceaa757c01))
+
+### Code Refactoring
+
+- satisfy the shared exadev lint rules ([7794b0a](https://github.com/ExaDev/markmv/commit/7794b0a566b68faa564a6517f7a7e6d29fd37b3b))
+
+### Build System
+
+- **deps:** bump eslint ([7f7a6ab](https://github.com/ExaDev/markmv/commit/7f7a6abb734aa4d5e65a1ea857e79f02ce99a24f))
+- **deps:** bump eslint ([b0e0c32](https://github.com/ExaDev/markmv/commit/b0e0c323f7602b2d76e169ca2be808fb12a66338))
+- **deps:** bump globals from 17.11.0 to 17.12.0 ([4010ea0](https://github.com/ExaDev/markmv/commit/4010ea00f68a705c79e9597431050d4fc2299137))
+- **deps:** bump lint-staged from 17.3.0 to 17.4.1 ([31ad436](https://github.com/ExaDev/markmv/commit/31ad4365df15c1e7d522a75d2f743bc2b10f0653))
+- **deps:** bump the patch-updates group with 2 updates ([e8f6894](https://github.com/ExaDev/markmv/commit/e8f6894d74e3ea61a3f4d427d2ad1b369ece49d8))
+- **deps:** bump the patch-updates group with 5 updates ([141d62c](https://github.com/ExaDev/markmv/commit/141d62c0a42de93290f7597cee26e8f0716e595f))
+- **deps:** bump typedoc-plugin-markdown from 4.12.0 to 4.13.0 ([d5bfd10](https://github.com/ExaDev/markmv/commit/d5bfd10c71ed26003f64946a4cb134bf4ce4ffdd))
+- **deps:** bump yaml from 2.9.0 to 2.9.1 in the patch-updates group ([20148f2](https://github.com/ExaDev/markmv/commit/20148f2d4c3456d91ff4b5aa2680fd4f452d08e7))
+- **deps:** bump zod from 4.4.3 to 4.5.4 ([a0ff34d](https://github.com/ExaDev/markmv/commit/a0ff34da26d48286474b9cdc6aba2b6de958acf5))
+- **deps:** bump zod from 4.5.4 to 4.6.5 ([9df476a](https://github.com/ExaDev/markmv/commit/9df476acf54eaa77ffdbd70cbbdd6b3118f1d495))
+- exempt the in-house eslint config from the release age gate ([0e79b61](https://github.com/ExaDev/markmv/commit/0e79b6120ca7950f1c78e0756bfb15ae682746df))
+- lint with the shared exadev eslint config ([0d0e512](https://github.com/ExaDev/markmv/commit/0d0e5121d4a9c241be1a4e7c3cffcbdf6649e44a))
+
+### Chores
+
+- name the renamed test file in the knip ignore comment ([d05ec92](https://github.com/ExaDev/markmv/commit/d05ec9202300e5c9c4e8ccd57ef881576f912764))
+
 ## [1.40.0](https://github.com/ExaDev/markmv/compare/v1.39.2...v1.40.0) (2026-08-27)
 
 ### Features
