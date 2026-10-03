@@ -1,7 +1,7 @@
 {
   "name": "markmv",
   "description": "TypeScript CLI for markdown file operations with intelligent link refactoring",
-  "version": "1.40.1",
+  "version": "1.40.2",
   "author": "Joe Mearman",
   "bin": {
     "markmv": "./dist/cli.js",

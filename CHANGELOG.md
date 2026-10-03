@@ -1,3 +1,9 @@
+## [1.40.2](https://github.com/ExaDev/markmv/compare/v1.40.1...v1.40.2) (2026-10-03)
+
+### Bug Fixes
+
+- **ci:** approve the audit fix PR's own runs and merge on its required checks ([8ec0736](https://github.com/ExaDev/markmv/commit/8ec07360f13eac787c7afa6c2917deaa6b7e29ee))
+
 ## [1.40.1](https://github.com/ExaDev/markmv/compare/v1.40.0...v1.40.1) (2026-10-03)
 
 ### Bug Fixes
