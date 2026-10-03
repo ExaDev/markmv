@@ -1,3 +1,9 @@
+## [1.41.6](https://github.com/ExaDev/markmv/compare/v1.41.5...v1.41.6) (2026-10-03)
+
+### Bug Fixes
+
+- **core:** resolve the source path before moveFile looks up its dependents ([7736679](https://github.com/ExaDev/markmv/commit/7736679a2de99edd8182fd6c78769d0f10a8ca6d))
+
 ## [1.41.5](https://github.com/ExaDev/markmv/compare/v1.41.4...v1.41.5) (2026-10-03)
 
 ### Continuous Integration
