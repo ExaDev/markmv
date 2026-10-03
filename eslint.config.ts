@@ -22,7 +22,29 @@ const publicModules = [
 ];
 
 export default defineConfig(
-  ...exadevConfig(),
+  ...exadevConfig({
+    turbo: {},
+    // The `root` section is switched off on purpose: its knip check expects a script that runs knip itself, which the turbo convention (a public script delegating to `_knip`) rules out, so both cannot hold in a turbo repository (ExaDev/eslint-config#110).
+    toolingWiring: {
+      root: false,
+      hooks: true,
+      publish: { tools: ["publint", "attw"] },
+    },
+    importPolicies: [
+      {
+        files: ["src/**"],
+        ignores: ["**/*.test.ts", "src/test-support/**"],
+        deny: [
+          {
+            specifiers: ["src/test-support", "src/utils/test-helpers"],
+            message:
+              "test doubles and helpers stay out of shipped code; import them from tests only",
+          },
+        ],
+        computedSpecifiers: "report",
+      },
+    ],
+  }),
   {
     // Tracked but still not meant to be linted or reformatted: .d.ts is generated at build time, both lockfiles are machine-written, and CHANGELOG.md is entirely semantic-release output rewritten wholesale on every release -- all three are tracked, so .gitignore doesn't exclude them, and reformatting CHANGELOG.md by hand here would just be undone (noisily) by the next release anyway.
     ignores: [
