@@ -90,6 +90,9 @@ importers:
       "@semantic-release/git":
         specifier: ^11.0.1
         version: 11.0.1(semantic-release@25.0.9(@typescript/typescript6@6.0.2)(supports-color@7.2.0))(supports-color@7.2.0)
+      "@semantic-release/release-notes-generator":
+        specifier: 14.1.1
+        version: 14.1.1(semantic-release@25.0.9(@typescript/typescript6@6.0.2)(supports-color@7.2.0))(supports-color@7.2.0)
       "@types/jsdom":
         specifier: ^30.0.0
         version: 30.0.0
@@ -115,8 +118,8 @@ importers:
         specifier: ^4.3.2
         version: 4.3.2(@types/node@26.6.3)(@typescript/typescript6@6.0.2)
       conventional-changelog-conventionalcommits:
-        specifier: ^10.4.0
-        version: 10.4.0
+        specifier: ^9.3.1
+        version: 9.3.1
       cz-conventional-changelog:
         specifier: ^3.3.0
         version: 3.3.0(@types/node@26.6.3)(@typescript/typescript6@6.0.2)
@@ -3040,6 +3043,13 @@ packages:
         integrity: sha512-Rriac6ZrAlVm6cy9Bz4NSp+WMHpwNXoPIYex+HjCgduAVUSbnew29DQjQw0C4g9u3HtSYzGiGY+pdBXAZo+4aA==,
       }
     engines: { node: ">=22" }
+
+  conventional-changelog-conventionalcommits@9.3.1:
+    resolution:
+      {
+        integrity: sha512-dTYtpIacRpcZgrvBYvBfArMmK2xvIpv2TaxM0/ZI5CBtNUzvF2x0t15HsbRABWprS6UPmvj+PzHVjSx4qAVKyw==,
+      }
+    engines: { node: ">=18" }
 
   conventional-changelog-writer@8.4.0:
     resolution:
@@ -8732,6 +8742,10 @@ snapshots:
   conventional-changelog-conventionalcommits@10.4.0:
     dependencies:
       "@conventional-changelog/template": 1.4.0
+
+  conventional-changelog-conventionalcommits@9.3.1:
+    dependencies:
+      compare-func: 2.0.0
 
   conventional-changelog-writer@8.4.0:
     dependencies:
