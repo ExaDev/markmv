@@ -1,3 +1,9 @@
+## [1.41.0](https://github.com/ExaDev/markmv/compare/v1.40.4...v1.41.0) (2026-10-03)
+
+### Features
+
+- **cli:** start the API and MCP servers with markmv api and markmv mcp ([c56280f](https://github.com/ExaDev/markmv/commit/c56280fd0a4a3b878054baba784ed38c5aa47c1c))
+
 ## [1.40.4](https://github.com/ExaDev/markmv/compare/v1.40.3...v1.40.4) (2026-10-03)
 
 ### Documentation
