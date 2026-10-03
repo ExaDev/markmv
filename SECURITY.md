@@ -20,7 +20,7 @@ markmv moves, splits, joins, and rewrites markdown files based on link targets p
 
 ## What is out of scope
 
-- The REST API server (`markmv-api`) has no built-in authentication and, by default, binds to every network interface, not just localhost -- this is documented, expected behaviour for a local development tool, not a vulnerability on its own. Running it reachable from an untrusted network without a reverse proxy or firewall in front of it is a deployment choice, not a markmv bug; a report is in scope only if it shows a way to bypass such a proxy/firewall, not that the server itself lacks one.
+- The REST API server (`markmv api`) has no built-in authentication and, by default, binds to every network interface, not just localhost -- this is documented, expected behaviour for a local development tool, not a vulnerability on its own. Running it reachable from an untrusted network without a reverse proxy or firewall in front of it is a deployment choice, not a markmv bug; a report is in scope only if it shows a way to bypass such a proxy/firewall, not that the server itself lacks one.
 - Denial of service from a large or deeply nested markdown file you supplied to your own process. A report is useful when it shows a way to trigger disproportionate resource use relative to input size, not that a large input takes proportionate time to process.
 - Vulnerabilities in a transitive dependency with no reachable path from this code. Dependabot already tracks advisories against every dependency here, and CI auto-fixes what it can (see below); a report is useful when you can show the vulnerable path is actually reachable through markmv's own API surface.
 

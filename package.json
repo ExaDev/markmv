@@ -5,8 +5,8 @@
   "author": "Joe Mearman",
   "bin": {
     "markmv": "./dist/cli.js",
-    "markmv-api": "./dist/api-server.js",
-    "markmv-mcp": "./dist/mcp-server.js"
+    "markmv-api": "./dist/bin/markmv-api.js",
+    "markmv-mcp": "./dist/bin/markmv-mcp.js"
   },
   "bugs": {
     "url": "https://github.com/ExaDev/markmv/issues"
@@ -119,7 +119,7 @@
     "_lint": "eslint . --cache --max-warnings 0",
     "_test": "vitest run",
     "_typecheck": "tsc --noEmit",
-    "api-server": "node dist/api-server.js",
+    "api-server": "node dist/cli.js api",
     "build": "turbo run _build",
     "check": "turbo run _check",
     "commit": "cz",
@@ -133,7 +133,7 @@
     "knip": "turbo run _knip",
     "lint": "turbo run _lint",
     "lint:fix": "eslint . --fix",
-    "mcp-server": "node dist/mcp-server.js",
+    "mcp-server": "node dist/cli.js mcp",
     "prepare": "husky",
     "prepublishOnly": "pnpm run build && pnpm run test:run",
     "publish:dry": "npm pack --dry-run",

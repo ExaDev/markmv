@@ -4,6 +4,7 @@ import { registerFileCommands } from "./file-commands.js";
 import { registerStructureCommands } from "./structure-commands.js";
 import { registerValidationCommands } from "./validation-commands.js";
 import { registerContentCommands } from "./content-commands.js";
+import { registerServerCommands } from "./server-commands.js";
 
 function isPackageJson(value: unknown): value is { version: string } {
   if (typeof value !== "object" || value === null) return false;
@@ -45,6 +46,7 @@ export function createProgram(): Command {
   registerStructureCommands(program);
   registerValidationCommands(program);
   registerContentCommands(program);
+  registerServerCommands(program);
 
   return program;
 }

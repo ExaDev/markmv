@@ -66,13 +66,13 @@ npx markmv move old.md new.md --json  # JSON output for scripting
 ### REST API Server
 
 ```bash
-npx --package=markmv markmv-api  # Start HTTP server on port 3000
+npx markmv api  # Start HTTP server on port 3000 (--port to change it)
 ```
 
 ### MCP Server (AI Integration)
 
 ```bash
-npx --package=markmv markmv-mcp  # Model Context Protocol server
+npx markmv mcp  # Model Context Protocol server
 ```
 
 ### Programmatic API
@@ -98,7 +98,7 @@ Add markmv to your Claude Desktop configuration:
   "mcpServers": {
     "markmv": {
       "command": "npx",
-      "args": ["--package=markmv", "markmv-mcp"],
+      "args": ["markmv", "mcp"],
       "env": {
         "NODE_OPTIONS": "--no-warnings"
       }

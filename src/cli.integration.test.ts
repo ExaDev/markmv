@@ -101,6 +101,8 @@ describe("CLI Entry Point", () => {
       expect(mockCommand).toHaveBeenCalledWith("join");
       expect(mockCommand).toHaveBeenCalledWith("merge");
       expect(mockCommand).toHaveBeenCalledWith("index");
+      expect(mockCommand).toHaveBeenCalledWith("api");
+      expect(mockCommand).toHaveBeenCalledWith("mcp");
     });
 
     it("should set descriptions for all commands", async () => {
@@ -171,8 +173,9 @@ describe("CLI Entry Point", () => {
     it("should set action handlers for commands", async () => {
       await import("./cli.js");
 
-      // Should call action 18 times (once for each command: clip, convert, move, split, join, merge, index, barrel, toc, validate, refactor-headings, graph, check-links, embed, extract, wayback, refactor-index, tree)
-      expect(mockAction).toHaveBeenCalledTimes(18);
+      // Every registered command needs exactly one action handler, however many commands there are.
+      expect(mockCommand.mock.calls.length).toBeGreaterThan(0);
+      expect(mockAction).toHaveBeenCalledTimes(mockCommand.mock.calls.length);
     });
 
     it("should add help text for convert command", async () => {
