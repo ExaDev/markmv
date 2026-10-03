@@ -167,7 +167,7 @@ jobs:
           echo "Symlinks: ${{ steps.filesystem.outputs.symlinks }}"
 
           # Run tests with cross-platform environment
-          pnpm run test:run
+          pnpm run test
         env:
           MARKMV_TEST_CROSS_PLATFORM: "true"
 

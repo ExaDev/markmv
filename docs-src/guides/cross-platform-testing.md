@@ -137,7 +137,7 @@ npm run test:cross-platform:data
 npm run test:cross-platform:cli
 
 # Run with specific environment
-MARKMV_TEST_CASE_SENSITIVE=false npm run test:run
+MARKMV_TEST_CASE_SENSITIVE=false npm test
 ```
 
 ### Manual Testing
@@ -210,10 +210,10 @@ Enable debug output in tests:
 
 ```bash
 # Enable verbose test output
-npm run test:run -- --reporter=verbose
+npx vitest run --reporter=verbose
 
 # Run specific test file
-npm run test:run -- src/utils/test-helpers.test.ts
+npx vitest run src/utils/test-helpers.test.ts
 
 # Check filesystem capabilities
 node scripts/test-cross-platform.js --test-data-only
