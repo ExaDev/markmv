@@ -149,7 +149,7 @@ pnpm test
 
 ## 📄 License
 
-[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) - see the [LICENSE](LICENSE) file for details.
+[MIT](https://opensource.org/license/mit) - see the [LICENSE](LICENSE) file for details.
 
 ---
 

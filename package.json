@@ -101,7 +101,7 @@
     "refactoring",
     "typescript"
   ],
-  "license": "CC-BY-NC-SA-4.0",
+  "license": "MIT",
   "main": "dist/index.js",
   "packageManager": "pnpm@11.22.0",
   "publishConfig": {
