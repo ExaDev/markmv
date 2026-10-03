@@ -2,41 +2,48 @@
  * Tests for the WebClipper core class, covering web page content extraction and processing.
  */
 
+import { implementAsInstance } from "../test-support/implement-as-instance.js";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { WebClipper } from "./web-clipper.js";
 
 // Mock external dependencies
 vi.mock("jsdom", () => ({
-  JSDOM: vi.fn().mockImplementation(() => ({
-    window: {
-      document: {
-        title: "Test Article",
-        body: {
-          textContent: "Test content",
+  JSDOM: vi.fn().mockImplementation(function () {
+    return {
+      window: {
+        document: {
+          title: "Test Article",
+          body: {
+            textContent: "Test content",
+          },
         },
       },
-    },
-  })),
+    };
+  }),
 }));
 
 vi.mock("@mozilla/readability", () => ({
-  Readability: vi.fn().mockImplementation(() => ({
-    parse: vi.fn().mockReturnValue({
-      title: "Test Article",
-      byline: "Test Author",
-      excerpt: "Test excerpt",
-      content: "<h1>Test Article</h1><p>This is test content.</p>",
-    }),
-  })),
+  Readability: vi.fn().mockImplementation(function () {
+    return {
+      parse: vi.fn().mockReturnValue({
+        title: "Test Article",
+        byline: "Test Author",
+        excerpt: "Test excerpt",
+        content: "<h1>Test Article</h1><p>This is test content.</p>",
+      }),
+    };
+  }),
 }));
 
 vi.mock("turndown", () => {
-  const TurndownService = vi.fn().mockImplementation(() => ({
-    turndown: vi
-      .fn()
-      .mockReturnValue("# Test Article\n\nThis is test content."),
-    addRule: vi.fn(),
-  }));
+  const TurndownService = vi.fn().mockImplementation(function () {
+    return {
+      turndown: vi
+        .fn()
+        .mockReturnValue("# Test Article\n\nThis is test content."),
+      addRule: vi.fn(),
+    };
+  });
 
   return { default: TurndownService };
 });
@@ -734,7 +741,9 @@ describe("WebClipper", () => {
       const mockInstance = {
         parse: vi.fn().mockReturnValue(null),
       };
-      vi.mocked(Readability).mockImplementationOnce(() => mockInstance);
+      vi.mocked(Readability).mockImplementationOnce(
+        implementAsInstance(() => mockInstance),
+      );
 
       const mockResponse = {
         ok: true,

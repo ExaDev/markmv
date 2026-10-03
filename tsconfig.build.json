@@ -3,6 +3,6 @@
     "incremental": true,
     "tsBuildInfoFile": "./tsconfig.tsbuildinfo"
   },
-  "exclude": ["node_modules", "dist", "**/*.test.ts"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "src/test-support"],
   "extends": "./tsconfig.json"
 }

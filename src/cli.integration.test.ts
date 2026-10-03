@@ -68,7 +68,9 @@ const mockCommandInstance = {
 };
 
 vi.mock("commander", () => ({
-  Command: vi.fn().mockImplementation(() => mockCommandInstance),
+  Command: vi.fn().mockImplementation(function () {
+    return mockCommandInstance;
+  }),
 }));
 
 describe("CLI Entry Point", () => {
