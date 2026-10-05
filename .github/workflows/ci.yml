@@ -377,7 +377,7 @@ jobs:
           node dist/cli.js --version || echo "CLI not yet ready"
 
       - name: Generate SBOM for NPM attestations
-        uses: anchore/sbom-action@v0.24.2
+        uses: anchore/sbom-action@v0.24.3
         with:
           path: ./
           format: spdx-json
