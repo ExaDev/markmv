@@ -1,3 +1,13 @@
+## [1.41.7](https://github.com/ExaDev/markmv/compare/v1.41.6...v1.41.7) (2026-10-06)
+
+### Continuous Integration
+
+- **deps:** bump anchore/sbom-action ([cb4076a](https://github.com/ExaDev/markmv/commit/cb4076a0870bed6fdd68ad2f7a76278f3f804047))
+
+### Chores
+
+- upgrade turbo to 2.11.5 and disable agentGuidance ([9f1df85](https://github.com/ExaDev/markmv/commit/9f1df85d39dd5604665296f4ceda315e78e3f9cc))
+
 ## [1.41.6](https://github.com/ExaDev/markmv/compare/v1.41.5...v1.41.6) (2026-10-03)
 
 ### Bug Fixes
