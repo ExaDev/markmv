@@ -1,29 +1,56 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
+  "agentGuidance": false,
   "tasks": {
     "_build": {
-      "inputs": ["src/**/*.ts", "tsconfig*.json"],
-      "outputs": ["dist/**", "tsconfig.tsbuildinfo"]
+      "inputs": [
+        "src/**/*.ts",
+        "tsconfig*.json"
+      ],
+      "outputs": [
+        "dist/**",
+        "tsconfig.tsbuildinfo"
+      ]
     },
     "_check": {
-      "dependsOn": ["_typecheck", "_lint"],
+      "dependsOn": [
+        "_typecheck",
+        "_lint"
+      ],
       "outputs": []
     },
     "_knip": {
-      "inputs": ["src/**/*.ts", "knip.config.ts"],
+      "inputs": [
+        "src/**/*.ts",
+        "knip.config.ts"
+      ],
       "outputs": []
     },
     "_lint": {
-      "dependsOn": ["_build"],
-      "outputs": [".eslintcache"]
+      "dependsOn": [
+        "_build"
+      ],
+      "outputs": [
+        ".eslintcache"
+      ]
     },
     "_test": {
-      "env": ["MARKMV_TEST_*"],
-      "inputs": ["src/**/*.ts", "vitest.config.ts"],
-      "outputs": ["coverage/**"]
+      "env": [
+        "MARKMV_TEST_*"
+      ],
+      "inputs": [
+        "src/**/*.ts",
+        "vitest.config.ts"
+      ],
+      "outputs": [
+        "coverage/**"
+      ]
     },
     "_typecheck": {
-      "inputs": ["src/**/*.ts", "tsconfig*.json"],
+      "inputs": [
+        "src/**/*.ts",
+        "tsconfig*.json"
+      ],
       "outputs": []
     }
   }
