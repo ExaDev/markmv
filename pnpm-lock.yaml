@@ -119,8 +119,8 @@ importers:
         specifier: ^4.3.2
         version: 4.3.2(@types/node@26.6.3)(@typescript/typescript6@6.0.2)
       conventional-changelog-conventionalcommits:
-        specifier: ^9.3.1
-        version: 9.3.1
+        specifier: ^10.4.1
+        version: 10.4.1
       cz-conventional-changelog:
         specifier: ^3.3.0
         version: 3.3.0(@types/node@26.6.3)(@typescript/typescript6@6.0.2)
@@ -1947,13 +1947,9 @@ packages:
     resolution: {integrity: sha512-HdxRxuS8bBXVIuo4V82gvSwAXT0vYQUizrjs/izmPg5JdDstr8v8I5hduGL3iQbG+o310dUDxC4+LetuS5hu9w==}
     engines: {node: '>=22'}
 
-  conventional-changelog-conventionalcommits@10.4.0:
-    resolution: {integrity: sha512-Rriac6ZrAlVm6cy9Bz4NSp+WMHpwNXoPIYex+HjCgduAVUSbnew29DQjQw0C4g9u3HtSYzGiGY+pdBXAZo+4aA==}
+  conventional-changelog-conventionalcommits@10.4.1:
+    resolution: {integrity: sha512-jS1LRFSbRoAr6JbhhRy1JYfNNUj5LM3+v49hRE03CgccsiYqgdVj/RTmrw4J1rylrqijHwdOlJWiJa61JHOgHg==}
     engines: {node: '>=22'}
-
-  conventional-changelog-conventionalcommits@9.3.1:
-    resolution: {integrity: sha512-dTYtpIacRpcZgrvBYvBfArMmK2xvIpv2TaxM0/ZI5CBtNUzvF2x0t15HsbRABWprS6UPmvj+PzHVjSx4qAVKyw==}
-    engines: {node: '>=18'}
 
   conventional-changelog-writer@8.4.0:
     resolution: {integrity: sha512-HHBFkk1EECxxmCi4CTu091iuDpQv5/OavuCUAuZmrkWpmYfyD816nom1CvtfXJ/uYfAAjavgHvXHX291tSLK8g==}
@@ -4419,7 +4415,7 @@ snapshots:
   '@commitlint/config-conventional@21.2.3':
     dependencies:
       '@commitlint/types': 21.2.3
-      conventional-changelog-conventionalcommits: 10.4.0
+      conventional-changelog-conventionalcommits: 10.4.1
 
   '@commitlint/config-validator@21.2.3':
     dependencies:
@@ -5900,13 +5896,9 @@ snapshots:
     dependencies:
       '@conventional-changelog/template': 1.4.0
 
-  conventional-changelog-conventionalcommits@10.4.0:
+  conventional-changelog-conventionalcommits@10.4.1:
     dependencies:
       '@conventional-changelog/template': 1.4.0
-
-  conventional-changelog-conventionalcommits@9.3.1:
-    dependencies:
-      compare-func: 2.0.0
 
   conventional-changelog-writer@8.4.0:
     dependencies:
