@@ -28,7 +28,7 @@
     "turndown": "^7.2.4",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.1.0",
-    "zod": "4.6.5"
+    "zod": "4.6.6"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
