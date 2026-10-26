@@ -28,14 +28,14 @@
     "turndown": "^7.2.4",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.1.0",
-    "zod": "4.6.6"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
     "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.2.3",
     "@commitlint/types": "^21.2.3",
-    "@eslint/json": "2.1.0",
+    "@eslint/json": "2.1.1",
     "@eslint/markdown": "8.0.3",
     "@exadev/eslint-config": "2.35.0",
     "@semantic-release/changelog": "^7.0.0",
