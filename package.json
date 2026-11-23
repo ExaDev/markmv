@@ -37,7 +37,7 @@
     "@commitlint/types": "^21.2.3",
     "@eslint/json": "2.1.1",
     "@eslint/markdown": "8.0.3",
-    "@exadev/eslint-config": "2.35.0",
+    "@exadev/eslint-config": "3.1.0",
     "@semantic-release/changelog": "^7.0.0",
     "@semantic-release/git": "^11.0.1",
     "@semantic-release/release-notes-generator": "14.1.1",
